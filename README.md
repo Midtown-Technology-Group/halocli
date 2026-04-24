@@ -110,9 +110,9 @@ itself a Halo API credential.
 halocli auth test
 halocli auth discover --tenant-url https://yourtenant.halopsa.com
 halocli tickets list --open --max-records 25
-halocli clients list --param search=Covi
+halocli clients list --param search=Example
 halocli agents list --output table
-halocli raw GET /Client --param search=Covi
+halocli raw GET /Client --param search=Example
 ```
 
 Raw write-capable requests require both `--apply` and `--yes`:

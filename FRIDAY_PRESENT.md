@@ -21,17 +21,17 @@ for automation or plan an Entra-backed broker.
 
 It is not wired to Bifrost and it does not need our workspace runtime. The idea
 is that you can use it as a tiny operator tool, hand it to automation, or remix
-the shape into whatever Covi wants next.
+the shape into whatever the next Halo tenant needs.
 
 Quick start:
 
 ```powershell
 python -m pip install -e ".[dev]"
 halocli configure --profile haloagent --auth-mode halo-interactive
-halocli auth discover --tenant-url https://yourtenant.halopsa.com --profile thomas --save
+halocli auth discover --tenant-url https://yourtenant.halopsa.com --profile haloagent --save
 halocli auth login --profile haloagent
 halocli auth test
-halocli clients list --param search=Dental
+halocli clients list --param search=Example
 halocli tickets list --open --max-records 25
 ```
 
