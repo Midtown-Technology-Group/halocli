@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import platform
 from pathlib import Path
 from typing import Any
 
@@ -75,6 +76,9 @@ class KeyringTokenCache:
         keyring.delete_password(self.service_name, profile_name)
         return True
 
+    def store_label(self) -> str:
+        return describe_secure_store()
+
 
 def _load_keyring():
     try:
@@ -85,3 +89,25 @@ def _load_keyring():
             "--allow-file-token-cache."
         ) from exc
     return keyring
+
+
+def describe_secure_store() -> str:
+    keyring = _load_keyring()
+    backend = keyring.get_keyring()
+    module = type(backend).__module__.lower()
+    name = type(backend).__name__.lower()
+    system = platform.system().lower()
+
+    if "windows" in module or system == "windows":
+        return "windows-credential-manager-dpapi"
+    if "macos" in module or "osx" in module or system == "darwin":
+        return "macos-keychain"
+    if "secretservice" in module:
+        return "secret-service"
+    if "kwallet" in module:
+        return "kwallet"
+    if "libsecret" in module:
+        return "libsecret"
+    if "fail" in name:
+        return "unavailable-keyring"
+    return f"keyring:{type(backend).__module__}.{type(backend).__name__}"

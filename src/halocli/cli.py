@@ -279,8 +279,9 @@ async def _auth_login_exchange(
         TokenCache(halo_profile, allow_file_cache=True).save(profile, token_data)
         store = "file"
     else:
-        KeyringTokenCache().save(profile, token_data)
-        store = "keyring"
+        secure_cache = KeyringTokenCache()
+        secure_cache.save(profile, token_data)
+        store = secure_cache.store_label()
     render(
         {
             "ok": True,

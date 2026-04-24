@@ -83,8 +83,11 @@ halocli auth test --profile jack
 
 Interactive login opens the system browser, listens on a temporary localhost
 callback, exchanges the authorization code at Halo's token endpoint, and stores
-tokens in the OS keychain. Use `--allow-file-token-cache` only on machines where
-keychain storage is unavailable and you understand the local-file tradeoff.
+tokens in the operating system's secure credential store. On Windows this is
+Windows Credential Manager, backed by Windows data protection behavior. On
+macOS this is Keychain. Use `--allow-file-token-cache` only on machines where
+secure credential storage is unavailable and you understand the local-file
+tradeoff.
 
 The default redirect URL to register in Halo is:
 
