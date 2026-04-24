@@ -11,13 +11,13 @@ the same command surface.
 From the latest GitHub release tag:
 
 ```powershell
-pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.2
+pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.3
 ```
 
 If you use `uv`:
 
 ```powershell
-uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.2
+uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.3
 ```
 
 From a local checkout:
