@@ -131,3 +131,6 @@ stays portable.
 
 HaloCLI is released under the GNU General Public License v3.0. See
 `LICENSE` for details.
+
+See `THIRD_PARTY_NOTICES.md` for attribution to `netaryx/pyhalopsa`, which
+served as prior art for this project.
