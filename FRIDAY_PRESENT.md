@@ -1,6 +1,6 @@
-# Friday Present For Jack
+# Friday Present For Thomas
 
-Jack,
+Thomas,
 
 Here is a small HaloPSA CLI that came out of our agent-speedup work. It is
 standalone, JSON-first, and deliberately boring in the places that should be
@@ -13,7 +13,7 @@ There is also a safe SSO discovery path now:
 halocli auth discover --tenant-url https://yourtenant.halopsa.com
 ```
 
-That command does not store secrets unless you explicitly add `--profile jack
+That command does not store secrets unless you explicitly add `--profile thomas
 --save`. It checks whether your Halo instance looks like it supports a
 CLI-friendly browser callback flow before anyone tries to use Entra SSO from the
 command line. If discovery does not confirm it, stick with client-credentials
@@ -27,9 +27,9 @@ Quick start:
 
 ```powershell
 python -m pip install -e ".[dev]"
-halocli configure --profile jack --auth-mode halo-interactive
-halocli auth discover --tenant-url https://yourtenant.halopsa.com --profile jack --save
-halocli auth login --profile jack
+halocli configure --profile thomas --auth-mode halo-interactive
+halocli auth discover --tenant-url https://yourtenant.halopsa.com --profile thomas --save
+halocli auth login --profile thomas
 halocli auth test
 halocli clients list --param search=Covi
 halocli tickets list --open --max-records 25

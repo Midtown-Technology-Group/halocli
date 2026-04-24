@@ -58,7 +58,7 @@ If discovery does not confirm an authorization endpoint, keep using
 client-credentials for API automation:
 
 ```powershell
-halocli configure --profile jack --auth-mode client-credentials
+halocli configure --profile thomas --auth-mode client-credentials
 ```
 
 You can create an experimental interactive profile, but `halocli auth login`
@@ -67,18 +67,18 @@ right browser callback flow. The easiest onboarding sequence is:
 
 ```powershell
 halocli configure `
-  --profile jack `
+  --profile thomas `
   --tenant-url https://yourtenant.halopsa.com `
   --client-id YOUR_HALO_OAUTH_CLIENT_ID `
   --auth-mode halo-interactive
 
 halocli auth discover `
   --tenant-url https://yourtenant.halopsa.com `
-  --profile jack `
+  --profile thomas `
   --save
 
-halocli auth login --profile jack
-halocli auth test --profile jack
+halocli auth login --profile thomas
+halocli auth test --profile thomas
 ```
 
 Interactive login opens the system browser, listens on a temporary localhost

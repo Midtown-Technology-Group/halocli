@@ -59,7 +59,7 @@ def test_configure_supports_interactive_auth_mode() -> None:
 
 
 def test_auth_login_refuses_without_discovery() -> None:
-    result = runner.invoke(app, ["auth", "login", "--profile", "jack"])
+    result = runner.invoke(app, ["auth", "login", "--profile", "thomas"])
 
     assert result.exit_code != 0
     assert "not confirmed" in result.output

@@ -16,7 +16,7 @@ def test_profile_loads_auth_mode(tmp_path: Path) -> None:
         yaml.safe_dump(
             {
                 "profiles": {
-                    "jack": {
+                    "thomas": {
                         "tenant_url": "https://halo.example.com",
                         "client_id": "id",
                         "client_secret": "secret",
@@ -28,7 +28,7 @@ def test_profile_loads_auth_mode(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    profile = load_profile("jack", config_file=config_file)
+    profile = load_profile("thomas", config_file=config_file)
 
     assert profile.auth_mode == "halo_interactive"
 
@@ -39,7 +39,7 @@ def test_interactive_profile_does_not_require_client_secret(tmp_path: Path) -> N
         yaml.safe_dump(
             {
                 "profiles": {
-                    "jack": {
+                    "thomas": {
                         "tenant_url": "https://halo.example.com",
                         "client_id": "id",
                         "auth_mode": "halo_interactive",
@@ -50,7 +50,7 @@ def test_interactive_profile_does_not_require_client_secret(tmp_path: Path) -> N
         encoding="utf-8",
     )
 
-    profile = load_profile("jack", config_file=config_file)
+    profile = load_profile("thomas", config_file=config_file)
 
     assert profile.client_secret is None
 
@@ -68,4 +68,4 @@ def test_file_token_cache_refuses_without_explicit_allowance(tmp_path: Path) -> 
     cache = TokenCache(HaloProfile(tenant_url="https://halo.example.com", client_id="id"), tmp_path)
 
     with pytest.raises(FileTokenCacheDisabled):
-        cache.save("jack", {"access_token": "abc"})
+        cache.save("thomas", {"access_token": "abc"})
