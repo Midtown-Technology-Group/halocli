@@ -10,6 +10,7 @@ from typing import Annotated
 import httpx
 import typer
 
+from halocli import __version__
 from halocli.auth import DEFAULT_CALLBACK_PORT, build_login_request, wait_for_callback
 from halocli.client import HaloClient
 from halocli.config import ConfigOverrides, HaloProfile, load_profile, save_profile, update_profile
@@ -42,6 +43,28 @@ RESOURCE_ALIASES = {
 
 def main() -> None:
     app()
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"halocli {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def global_options(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            "-v",
+            callback=_version_callback,
+            is_eager=True,
+            help="Show version and exit.",
+        ),
+    ] = False,
+) -> None:
+    pass
 
 
 @app.command()

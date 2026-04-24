@@ -15,6 +15,13 @@ def test_help_loads() -> None:
     assert "HaloPSA" in result.output
 
 
+def test_version_loads() -> None:
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0
+    assert "halocli 0.3.2" in result.output
+
+
 def test_tickets_list_help_loads() -> None:
     result = runner.invoke(app, ["tickets", "list", "--help"])
 
