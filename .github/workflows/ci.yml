@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package and dev tools
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: CLI smoke test
+        run: |
+          halocli --version
+          halocli --help
+          halocli auth discover --help
+          halocli tickets list --help
+
+  package:
+    name: Package Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Upgrade packaging baseline
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install release tools
+        run: python -m pip install ".[release]"
+
+      - name: Build distributions
+        run: |
+          rm -rf dist build
+          python -m build
+
+      - name: Check package metadata
+        run: python -m twine check dist/*.tar.gz dist/*.whl
+
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --output-format JSON --output-file dist/halocli-sbom.cdx.json
+
+      - name: Audit installed dependencies
+        run: pip-audit --progress-spinner off --skip-editable .
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: halocli-dist
+          path: |
+            dist/*.tar.gz
+            dist/*.whl
+            dist/*sbom*.json

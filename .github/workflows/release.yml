@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to package, such as v0.3.2"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Upgrade packaging baseline
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install release tools
+        run: python -m pip install ".[release]"
+
+      - name: Run tests
+        run: |
+          python -m pip install -e ".[dev]"
+          python -m pytest -q
+
+      - name: Build distributions
+        run: |
+          rm -rf dist build
+          python -m build
+
+      - name: Check package metadata
+        run: python -m twine check dist/*.tar.gz dist/*.whl
+
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --output-format JSON --output-file dist/halocli-sbom.cdx.json
+
+      - name: Audit installed dependencies
+        run: pip-audit --progress-spinner off --skip-editable .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*.whl
+            dist/*sbom*.json

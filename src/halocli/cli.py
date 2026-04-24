@@ -13,7 +13,7 @@ import typer
 from halocli import __version__
 from halocli.auth import DEFAULT_CALLBACK_PORT, build_login_request, wait_for_callback
 from halocli.client import HaloClient
-from halocli.config import ConfigOverrides, HaloProfile, load_profile, save_profile, update_profile
+from halocli.config import HaloProfile, load_profile, save_profile, update_profile
 from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload

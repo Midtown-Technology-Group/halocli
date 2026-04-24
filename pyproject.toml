@@ -34,6 +34,12 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "ruff>=0.1.0",
 ]
+release = [
+    "build>=1.0.0",
+    "cyclonedx-bom>=5.0.0",
+    "pip-audit>=2.7.0",
+    "twine>=5.0.0",
+]
 
 [project.scripts]
 halocli = "halocli.cli:main"
@@ -42,6 +48,7 @@ halocli = "halocli.cli:main"
 Homepage = "https://github.com/Midtown-Technology-Group/halocli"
 Repository = "https://github.com/Midtown-Technology-Group/halocli"
 Issues = "https://github.com/Midtown-Technology-Group/halocli/issues"
+Changelog = "https://github.com/Midtown-Technology-Group/halocli/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -8,7 +8,19 @@ the same command surface.
 
 ## Install
 
-From the repo root:
+From the latest GitHub release tag:
+
+```powershell
+pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.2
+```
+
+If you use `uv`:
+
+```powershell
+uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.2
+```
+
+From a local checkout:
 
 ```powershell
 pipx install --force .
@@ -25,6 +37,9 @@ For development:
 ```powershell
 python -m pip install -e ".[dev]"
 ```
+
+Release packaging is documented in `RELEASE.md`. GitHub Releases include the
+wheel, source distribution, and a CycloneDX SBOM.
 
 ## Configure
 

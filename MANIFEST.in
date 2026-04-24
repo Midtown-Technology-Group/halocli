@@ -1,3 +1,5 @@
 include README.md
 include FRIDAY_PRESENT.md
 include THIRD_PARTY_NOTICES.md
+include CHANGELOG.md
+include RELEASE.md
