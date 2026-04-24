@@ -6,6 +6,10 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.3.4 - 2026-04-24
+
+- Fixed Python 3.10 compatibility by replacing `enum.StrEnum` usage.
+
 ## 0.3.3 - 2026-04-24
 
 - Added GitHub Actions CI across Windows, macOS, and Linux.

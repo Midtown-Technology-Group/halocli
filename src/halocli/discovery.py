@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 import httpx
 from pydantic import BaseModel, Field
 
 
-class DiscoveryStatus(StrEnum):
+class DiscoveryStatus(str, Enum):
     INTERACTIVE_SUPPORTED = "interactive_supported"
     CLIENT_CREDENTIALS_ONLY = "client_credentials_only"
     UNKNOWN = "unknown"

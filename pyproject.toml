@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "halocli"
-version = "0.3.3"
+version = "0.3.4"
 description = "Standalone HaloPSA CLI for safe operator and automation workflows"
 readme = "README.md"
 license = "GPL-3.0-only"
