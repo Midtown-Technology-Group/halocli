@@ -25,6 +25,7 @@ from halocli.todo import (
     GraphMicrosoftTodoRepository,
     HaloTodoRepository,
     JsonMicrosoftTodoRepository,
+    import_tasks,
     preview_import,
 )
 from halocli.utils import list_all, normalize_halo_result
@@ -226,13 +227,38 @@ def todo_import_ms(
     list_name: Annotated[str | None, typer.Option("--list")] = None,
     include_completed: Annotated[bool, typer.Option("--include-completed")] = False,
     max_records: Annotated[int | None, typer.Option("--max-records")] = 50,
+    apply: Annotated[bool, typer.Option("--apply", help="Create Halo Todo records.")] = False,  # noqa: A002
+    complete_source: Annotated[
+        bool,
+        typer.Option("--complete-source", help="Mark each Microsoft To Do task complete after a successful Halo import."),
+    ] = False,
+    profile: Annotated[str, typer.Option("--profile", help="Halo profile used when --apply is set.")] = "default",
     output: Annotated[str, typer.Option("--output", "-o")] = "json",
 ) -> None:
+    if complete_source and not apply:
+        raise typer.BadParameter("--complete-source requires --apply.")
+    if apply and source_json:
+        raise typer.BadParameter("--apply cannot complete or mutate a --source-json import.")
     repository = (
         JsonMicrosoftTodoRepository(source_json)
         if source_json
-        else GraphMicrosoftTodoRepository.from_shared_auth(scopes=["Tasks.Read"])
+        else GraphMicrosoftTodoRepository.from_shared_auth(
+            scopes=["Tasks.Read", "Tasks.ReadWrite"] if complete_source else ["Tasks.Read"]
+        )
     )
+    if apply:
+        _run(
+            _todo_import_ms_apply(
+                repository=repository,
+                profile=profile,
+                list_name=list_name,
+                include_completed=include_completed,
+                max_records=max_records,
+                complete_source=complete_source,
+                output=output,
+            )
+        )
+        return
     previews = preview_import(
         repository,
         list_name=list_name,
@@ -424,6 +450,44 @@ async def _todo_add(
             tags=tags,
         )
     render({"ok": True, "todo": normalize_halo_result(todo)}, output=output)
+
+
+async def _todo_import_ms_apply(
+    *,
+    repository,
+    profile: str,
+    list_name: str | None,
+    include_completed: bool,
+    max_records: int | None,
+    complete_source: bool,
+    output: str,
+) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        results = await import_tasks(
+            repository,
+            HaloTodoRepository(client),
+            list_name=list_name,
+            include_completed=include_completed,
+            max_records=max_records,
+            complete_source=complete_source,
+        )
+    imported = [item for item in results if item.get("imported")]
+    failed = [item for item in results if item.get("error")]
+    completed = [item for item in results if item.get("source_completed")]
+    render(
+        {
+            "source": "microsoft.todo",
+            "apply": True,
+            "complete_source": complete_source,
+            "count": len(results),
+            "imported_count": len(imported),
+            "source_completed_count": len(completed),
+            "failed_count": len(failed),
+            "items": normalize_halo_result(results),
+        },
+        output=output,
+    )
 
 
 def _parse_params(values: list[str]) -> dict[str, str]:

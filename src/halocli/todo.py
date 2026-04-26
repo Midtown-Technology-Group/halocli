@@ -58,6 +58,9 @@ class MicrosoftTodoRepository(Protocol):
     ) -> list[MicrosoftTodoTask]:
         """Return Microsoft To Do tasks."""
 
+    def complete_task(self, task: MicrosoftTodoTask) -> dict[str, Any]:
+        """Mark a Microsoft To Do task complete."""
+
 
 class GraphMicrosoftTodoRepository:
     def __init__(self, graph_client: Any) -> None:
@@ -105,6 +108,14 @@ class GraphMicrosoftTodoRepository:
                 tasks.append(task_from_graph(raw, list_id=list_id, list_name=name))
         return filter_tasks(tasks, include_completed=include_completed, max_records=max_records)
 
+    def complete_task(self, task: MicrosoftTodoTask) -> dict[str, Any]:
+        if not task.list_id:
+            raise ValueError(f"Cannot complete Microsoft To Do task {task.id}: missing list id.")
+        return self.graph_client.patch(
+            f"/me/todo/lists/{task.list_id}/tasks/{task.id}",
+            {"status": "completed"},
+        )
+
 
 class JsonMicrosoftTodoRepository:
     def __init__(self, path: str) -> None:
@@ -123,6 +134,9 @@ class JsonMicrosoftTodoRepository:
         if list_name:
             tasks = [task for task in tasks if (task.list_name or "").lower() == list_name.lower()]
         return filter_tasks(tasks, include_completed=include_completed, max_records=max_records)
+
+    def complete_task(self, task: MicrosoftTodoTask) -> dict[str, Any]:
+        return {"ok": False, "skipped": True, "reason": "source-json is read-only", "task_id": task.id}
 
 
 class HaloTodoRepository:
@@ -174,6 +188,59 @@ def preview_import(
         max_records=max_records,
     )
     return [preview_task(task) for task in tasks]
+
+
+async def import_tasks(
+    microsoft_repository: MicrosoftTodoRepository,
+    halo_repository: HaloTodoRepository,
+    *,
+    list_name: str | None = None,
+    include_completed: bool = False,
+    max_records: int | None = None,
+    complete_source: bool = False,
+) -> list[dict[str, Any]]:
+    tasks = microsoft_repository.list_tasks(
+        list_name=list_name,
+        include_completed=include_completed,
+        max_records=max_records,
+    )
+    results: list[dict[str, Any]] = []
+    for task in tasks:
+        preview = preview_task(task)
+        if task.is_completed:
+            results.append({**preview, "imported": False, "skipped_reason": "completed"})
+            continue
+        try:
+            proposed = preview["proposed"]
+            todo = await halo_repository.create(
+                title=proposed["title"],
+                description=proposed["description"],
+                due=task.due_date,
+                tags=proposed["tags"],
+                source_metadata=proposed["source_metadata"],
+            )
+            completed = None
+            if complete_source:
+                completed = microsoft_repository.complete_task(task)
+            results.append(
+                {
+                    **preview,
+                    "imported": True,
+                    "halo_todo": todo,
+                    "source_completed": bool(complete_source),
+                    "source_completion": completed,
+                }
+            )
+        except Exception as exc:  # pragma: no cover - exercised through CLI/live runs
+            results.append(
+                {
+                    **preview,
+                    "imported": False,
+                    "error": str(exc),
+                    "source_completed": False,
+                }
+            )
+    return results
 
 
 def preview_task(task: MicrosoftTodoTask) -> dict[str, Any]:
