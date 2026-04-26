@@ -7,6 +7,8 @@ from halocli.cli import app
 from halocli.todo import (
     GraphMicrosoftTodoRepository,
     HaloTodoRepository,
+    MicrosoftTodoTask,
+    import_tasks,
     task_from_graph,
 )
 
@@ -26,7 +28,16 @@ def test_import_ms_help_loads() -> None:
     result = runner.invoke(app, ["todo", "import-ms", "--help"])
 
     assert result.exit_code == 0
-    assert "--source-json" in result.output
+    assert "Usage:" in result.output
+    assert "import-ms" in result.output
+    assert "Microsoft" in result.output
+
+
+def test_import_ms_complete_source_requires_apply() -> None:
+    result = runner.invoke(app, ["todo", "import-ms", "--complete-source"])
+
+    assert result.exit_code != 0
+    assert "--complete-source requires --apply" in result.output
 
 
 def test_task_from_graph_maps_empty_body_cleanly() -> None:
@@ -113,3 +124,40 @@ def test_task_from_graph_maps_due_date() -> None:
 
     assert task.due_date is not None
     assert task.due_date.isoformat() == "2026-04-30"
+
+
+@pytest.mark.asyncio
+async def test_import_tasks_creates_halo_then_completes_source() -> None:
+    completed = []
+
+    class FakeMicrosoftRepository:
+        def list_tasks(self, *, list_name=None, include_completed=False, max_records=None):
+            return [
+                MicrosoftTodoTask(
+                    id="ms-1",
+                    list_id="list-1",
+                    list_name="Tasks",
+                    title="Migrate me",
+                    body="Body",
+                )
+            ]
+
+        def complete_task(self, task):
+            completed.append(task.id)
+            return {"id": task.id, "status": "completed"}
+
+    class FakeHaloRepository:
+        async def create(self, **kwargs):
+            assert kwargs["title"] == "Migrate me"
+            assert kwargs["source_metadata"]["microsoft_todo_id"] == "ms-1"
+            return {"id": 321, "title": kwargs["title"]}
+
+    results = await import_tasks(
+        FakeMicrosoftRepository(),
+        FakeHaloRepository(),
+        complete_source=True,
+    )
+
+    assert results[0]["imported"] is True
+    assert results[0]["halo_todo"]["id"] == 321
+    assert completed == ["ms-1"]
