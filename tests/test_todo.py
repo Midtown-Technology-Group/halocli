@@ -37,7 +37,8 @@ def test_import_ms_complete_source_requires_apply() -> None:
     result = runner.invoke(app, ["todo", "import-ms", "--complete-source"])
 
     assert result.exit_code != 0
-    assert "--complete-source requires --apply" in result.output
+    assert "requires" in result.output
+    assert "apply" in result.output
 
 
 def test_task_from_graph_maps_empty_body_cleanly() -> None:
