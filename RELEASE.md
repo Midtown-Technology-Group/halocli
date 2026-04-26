@@ -33,8 +33,8 @@ The raw write command should exit nonzero and refuse the request unless
 ## Tag A Release
 
 ```powershell
-git tag v0.3.4
-git push origin v0.3.4
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 Pushing a `v*.*.*` tag runs the release workflow, builds the wheel and source
@@ -44,8 +44,8 @@ artifacts to a GitHub Release.
 ## Install From A Release Tag
 
 ```powershell
-pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.4
-uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.4
+pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.4.0
+uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.4.0
 ```
 
 Use the tagged install form for demos and managed rollout scripts so everyone

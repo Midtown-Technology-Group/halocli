@@ -9,6 +9,7 @@ import httpx
 from halocli.config import HaloProfile
 from halocli.errors import HaloCLIError, classify_error
 from halocli.models import TokenPayload
+from halocli.resources import get_resource
 from halocli.token_cache import KeyringTokenCache, TokenCache
 
 
@@ -76,7 +77,11 @@ class HaloClient:
         raise _response_error(last_response, endpoint=self._endpoint(path))
 
     async def list_resource(self, resource: str, **params: Any) -> Any:
-        return await self.request("GET", _resource_path(resource), params=params)
+        return await self.request("GET", get_resource(resource).endpoint, params=params)
+
+    async def get_resource(self, resource: str, item_id: str | int) -> Any:
+        resource_def = get_resource(resource)
+        return await self.request("GET", f"{resource_def.endpoint}/{item_id}")
 
     async def raw(self, method: str, path: str, *, params: dict[str, Any] | None = None, body: Any = None) -> Any:
         return await self.request(method, path, params=params, json_body=body)
@@ -184,19 +189,6 @@ class HaloClient:
             except ValueError:
                 pass
         return float(2**attempt)
-
-
-def _resource_path(resource: str) -> str:
-    paths = {
-        "tickets": "/Tickets",
-        "clients": "/Client",
-        "agents": "/Agent",
-        "teams": "/Team",
-        "users": "/Users",
-        "kb": "/KBArticle",
-    }
-    return paths[resource]
-
 
 def _response_error(response: httpx.Response, *, endpoint: str) -> HaloCLIError:
     error = RuntimeError(f"HTTP {response.status_code}: {response.text[:500]}")

@@ -6,6 +6,17 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.4.0 - 2026-04-26
+
+- Added a central Halo resource registry.
+- Expanded first-class read commands across common HaloPSA operational,
+  business, and admin resources.
+- Added generic `get` commands for registry resources.
+- Added resource-specific default table fields.
+- Kept first-class writes limited to the specialized `todo add` command and
+  guarded raw requests.
+- Kept live Microsoft To Do auth optional while preserving JSON preview.
+
 ## 0.3.4 - 2026-04-24
 
 - Fixed Python 3.10 compatibility by replacing `enum.StrEnum` usage.

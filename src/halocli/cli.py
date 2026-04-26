@@ -4,6 +4,7 @@ import asyncio
 import json
 import time
 import webbrowser
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -18,28 +19,22 @@ from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload
 from halocli.output import render, render_error
+from halocli.resources import RESOURCES, HaloResource
 from halocli.token_cache import KeyringTokenCache, TokenCache
+from halocli.todo import (
+    GraphMicrosoftTodoRepository,
+    HaloTodoRepository,
+    JsonMicrosoftTodoRepository,
+    preview_import,
+)
 from halocli.utils import list_all, normalize_halo_result
 
 
 app = typer.Typer(help="HaloPSA CLI for safe operator and automation workflows.")
 auth_app = typer.Typer(help="Authentication helpers.")
+todo_app = typer.Typer(help="Create and preview lightweight Halo Todo tasks.")
 app.add_typer(auth_app, name="auth")
-
-RESOURCE_ALIASES = {
-    "tickets": "tickets",
-    "ticket": "tickets",
-    "clients": "clients",
-    "client": "clients",
-    "agents": "agents",
-    "agent": "agents",
-    "teams": "teams",
-    "team": "teams",
-    "users": "users",
-    "user": "users",
-    "kb": "kb",
-}
-
+app.add_typer(todo_app, name="todo")
 
 def main() -> None:
     app()
@@ -157,8 +152,8 @@ def auth_logout(
     render({"ok": True, "profile": profile, "deleted": deleted}, output="json")
 
 
-def _resource_command(resource: str):
-    resource_app = typer.Typer(help=f"{resource.title()} commands.")
+def _resource_command(resource: HaloResource):
+    resource_app = typer.Typer(help=f"{resource.name.title()} commands.")
 
     @resource_app.command("list")
     def list_command(
@@ -172,7 +167,7 @@ def _resource_command(resource: str):
     ) -> None:
         _run(
             _list_resource(
-                resource=RESOURCE_ALIASES[resource],
+                resource=resource,
                 profile=profile,
                 output=output,
                 open_only=open_only,
@@ -183,11 +178,19 @@ def _resource_command(resource: str):
             )
         )
 
+    @resource_app.command("get")
+    def get_command(
+        item_id: str,
+        profile: Annotated[str, typer.Option("--profile")] = "default",
+        output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    ) -> None:
+        _run(_get_resource(resource=resource, item_id=item_id, profile=profile, output=output))
+
     return resource_app
 
 
-for _resource in ("tickets", "clients", "agents", "teams", "users", "kb"):
-    app.add_typer(_resource_command(_resource), name=_resource)
+for _resource in RESOURCES:
+    app.add_typer(_resource_command(_resource), name=_resource.name)
 
 
 @app.command()
@@ -213,6 +216,51 @@ def raw(
             path=path,
             params=_parse_params(param or []),
             body=body,
+        )
+    )
+
+
+@todo_app.command("import-ms")
+def todo_import_ms(
+    source_json: Annotated[str | None, typer.Option("--source-json")] = None,
+    list_name: Annotated[str | None, typer.Option("--list")] = None,
+    include_completed: Annotated[bool, typer.Option("--include-completed")] = False,
+    max_records: Annotated[int | None, typer.Option("--max-records")] = 50,
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    repository = (
+        JsonMicrosoftTodoRepository(source_json)
+        if source_json
+        else GraphMicrosoftTodoRepository.from_shared_auth(scopes=["Tasks.Read"])
+    )
+    previews = preview_import(
+        repository,
+        list_name=list_name,
+        include_completed=include_completed,
+        max_records=max_records,
+    )
+    render({"source": "microsoft.todo", "count": len(previews), "items": previews}, output=output)
+
+
+@todo_app.command("add")
+def todo_add(
+    title: str,
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    description: Annotated[str, typer.Option("--description", "--body")] = "",
+    owner: Annotated[int | None, typer.Option("--owner")] = None,
+    due: Annotated[str | None, typer.Option("--due")] = None,
+    tag: Annotated[list[str] | None, typer.Option("--tag")] = None,
+) -> None:
+    _run(
+        _todo_add(
+            title=title,
+            profile=profile,
+            output=output,
+            description=description,
+            owner=owner,
+            due=date.fromisoformat(due) if due else None,
+            tags=tag or [],
         )
     )
 
@@ -296,7 +344,7 @@ async def _auth_login_exchange(
 
 async def _list_resource(
     *,
-    resource: str,
+    resource: HaloResource,
     profile: str,
     output: str,
     open_only: bool,
@@ -305,18 +353,40 @@ async def _list_resource(
     max_records: int | None,
     params: dict[str, str],
 ) -> None:
-    if resource == "tickets" and open_only:
+    if resource.name == "tickets" and open_only:
         params["open_only"] = "true"
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
         rows = await list_all(
-            lambda **kwargs: client.list_resource(resource, **kwargs),
+            lambda **kwargs: client.list_resource(resource.name, **kwargs),
             page_size=page_size,
             max_pages=max_pages,
             max_records=max_records,
+            list_key=resource.list_key,
             **params,
         )
-    render({"resource": resource, "count": len(rows), "items": rows}, output=output)
+    render(
+        {"resource": resource.name, "count": len(rows), "items": rows},
+        output=output,
+        table_fields=resource.table_fields,
+    )
+
+
+async def _get_resource(
+    *,
+    resource: HaloResource,
+    item_id: str,
+    profile: str,
+    output: str,
+) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        item = await client.get_resource(resource.name, item_id)
+    render(
+        {"resource": resource.name, "id": item_id, "item": normalize_halo_result(item)},
+        output=output,
+        table_fields=resource.table_fields,
+    )
 
 
 async def _raw(
@@ -332,6 +402,28 @@ async def _raw(
     async with HaloClient(halo_profile, profile_name=profile) as client:
         result = await client.raw(method, path, params=params, body=body)
     render({"ok": True, "body": normalize_halo_result(result)}, output=output)
+
+
+async def _todo_add(
+    *,
+    title: str,
+    profile: str,
+    output: str,
+    description: str,
+    owner: int | None,
+    due: date | None,
+    tags: list[str],
+) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        todo = await HaloTodoRepository(client).create(
+            title=title,
+            description=description,
+            owner=owner,
+            due=due,
+            tags=tags,
+        )
+    render({"ok": True, "todo": normalize_halo_result(todo)}, output=output)
 
 
 def _parse_params(values: list[str]) -> dict[str, str]:

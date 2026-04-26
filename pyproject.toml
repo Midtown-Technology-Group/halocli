@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "halocli"
-version = "0.3.4"
+version = "0.4.0"
 description = "Standalone HaloPSA CLI for safe operator and automation workflows"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -12,6 +12,7 @@ requires-python = ">=3.10"
 authors = [{name = "Midtown Technology Group", email = "info@midtowntg.com"}]
 dependencies = [
     "httpx>=0.27.0",
+    "click>=8.2.1",
     "typer>=0.12.0",
     "rich>=13.0.0",
     "pydantic>=2.0.0",
@@ -39,6 +40,9 @@ release = [
     "cyclonedx-bom>=5.0.0",
     "pip-audit>=2.7.0",
     "twine>=5.0.0",
+]
+microsoft-todo = [
+    "mtg-microsoft-auth @ git+https://github.com/Midtown-Technology-Group/mtg-microsoft-auth.git@main",
 ]
 
 [project.scripts]

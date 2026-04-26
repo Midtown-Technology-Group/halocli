@@ -11,13 +11,13 @@ the same command surface.
 From the latest GitHub release tag:
 
 ```powershell
-pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.4
+pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.4.0
 ```
 
 If you use `uv`:
 
 ```powershell
-uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.3.4
+uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.4.0
 ```
 
 From a local checkout:
@@ -126,14 +126,65 @@ halocli auth test
 halocli auth discover --tenant-url https://yourtenant.halopsa.com
 halocli tickets list --open --max-records 25
 halocli clients list --param search=Example
+halocli sites get 123
+halocli assets list --param client_id=42 --output table
 halocli agents list --output table
 halocli raw GET /Client --param search=Example
+```
+
+## Resource Commands
+
+HaloCLI has registry-driven read commands for common HaloPSA resources:
+
+```text
+tickets, clients, agents, teams, users, kb, sites, assets, actions, statuses,
+priorities, categories, ticket-types, slas, appointments, contracts, invoices,
+opportunities, projects, suppliers, items, quotations, releases, reports,
+webhooks, workdays, software-licences, crm-notes, top-levels, expenses,
+timesheets, attachments
+```
+
+Each resource supports:
+
+```powershell
+halocli <resource> list --param key=value --max-records 25
+halocli <resource> get ID
 ```
 
 Raw write-capable requests require both `--apply` and `--yes`:
 
 ```powershell
 halocli raw POST /Tickets --data payload.json --apply --yes
+```
+
+## Todo And Microsoft To Do Preview
+
+HaloCLI includes a slim Todo surface for experimenting with lightweight Halo
+work items without Bifrost. Microsoft To Do access uses the shared
+`mtg-microsoft-auth` backend and defaults to read-only `Tasks.Read`.
+
+Live Microsoft To Do import requires the optional auth backend:
+
+```powershell
+python -m pip install -e ".[microsoft-todo]"
+```
+
+```powershell
+$env:TODO_CLIENT_ID = "e02be6f7-063a-46a6-b2cc-109d5f51055c"
+$env:TODO_SCOPES = "Tasks.Read"
+halocli todo import-ms --max-records 10
+```
+
+Preview from captured JSON instead of live Graph:
+
+```powershell
+halocli todo import-ms --source-json microsoft-todos.json
+```
+
+Create a lightweight Halo Todo backed by Halo's `Appointment` API:
+
+```powershell
+halocli todo add "Independent todo list front end for HaloPSA" --owner 37 --due 2026-04-26 --tag microsoft-todo --tag halo-todo
 ```
 
 ## Bifrost Compatibility
