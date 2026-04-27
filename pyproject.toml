@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "halocli"
-version = "0.4.0"
+version = "0.5.0"
 description = "Standalone HaloPSA CLI for safe operator and automation workflows"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -35,6 +35,10 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "ruff>=0.1.0",
 ]
+web = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+]
 release = [
     "build>=1.0.0",
     "cyclonedx-bom>=5.0.0",
@@ -56,6 +60,9 @@ Changelog = "https://github.com/Midtown-Technology-Group/halocli/blob/main/CHANG
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+halocli = ["web_static/*", "web_static/assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

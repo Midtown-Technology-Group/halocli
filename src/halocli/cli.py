@@ -291,6 +291,24 @@ def todo_add(
     )
 
 
+@todo_app.command("web")
+def todo_web(
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port")] = 8766,
+    reload: Annotated[bool, typer.Option("--reload")] = False,
+) -> None:
+    try:
+        import uvicorn
+    except ModuleNotFoundError as exc:
+        raise typer.BadParameter("Install halocli with the web extra: pip install 'halocli[web]'.") from exc
+
+    from halocli.todo_web import create_halo_todo_api
+
+    typer.echo(f"Starting Halo Todo web UI at http://{host}:{port}")
+    uvicorn.run(create_halo_todo_api(profile=profile), host=host, port=port, reload=reload)
+
+
 async def _auth_test(*, profile: str, output: str) -> None:
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:

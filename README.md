@@ -11,13 +11,13 @@ the same command surface.
 From the latest GitHub release tag:
 
 ```powershell
-pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.4.0
+pipx install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.5.0
 ```
 
 If you use `uv`:
 
 ```powershell
-uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.4.0
+uv tool install git+https://github.com/Midtown-Technology-Group/halocli.git@v0.5.0
 ```
 
 From a local checkout:
@@ -186,6 +186,19 @@ Create a lightweight Halo Todo backed by Halo's `Appointment` API:
 ```powershell
 halocli todo add "Independent todo list front end for HaloPSA" --owner 37 --due 2026-04-26 --tag microsoft-todo --tag halo-todo
 ```
+
+Run the local-first Todo web UI from the same HaloCLI profile:
+
+```powershell
+python -m pip install -e ".[web]"
+halocli todo web --profile midtown --host 127.0.0.1 --port 8766
+```
+
+The web UI serves a compact three-pane task triage surface over Halo appointment
+tasks: quick capture, Inbox/Today/Upcoming/Blocked/Completed views, search,
+keyboard selection, completion, detail editing, notes, and source metadata for
+imported Microsoft To Do items. HaloPSA remains the system of record; the UI API
+returns normalized Todo JSON and does not create a local database.
 
 ## Bifrost Compatibility
 

@@ -8,7 +8,9 @@ from halocli.todo import (
     GraphMicrosoftTodoRepository,
     HaloTodoRepository,
     MicrosoftTodoTask,
+    extract_description,
     import_tasks,
+    note_html,
     task_from_graph,
 )
 
@@ -162,3 +164,53 @@ async def test_import_tasks_creates_halo_then_completes_source() -> None:
     assert results[0]["imported"] is True
     assert results[0]["halo_todo"]["id"] == 321
     assert completed == ["ms-1"]
+
+
+@pytest.mark.asyncio
+async def test_halo_repository_update_preserves_metadata_and_sets_links() -> None:
+    calls = []
+    existing_note = note_html(
+        "Existing body",
+        {"kind": "halocli.todo", "tags": ["microsoft-todo"], "microsoft_todo_id": "ms-1"},
+    )
+
+    class FakeClient:
+        async def raw(self, method, path, *, params=None, body=None):
+            calls.append((method, path, body))
+            if method == "GET":
+                return {
+                    "id": 123,
+                    "subject": "Old",
+                    "note_html": existing_note,
+                    "is_task": True,
+                    "complete_status": -1,
+                    "client_id": 1,
+                }
+            return [{**body[0], "id": 123}]
+
+    repository = HaloTodoRepository(FakeClient())
+    result = await repository.update(
+        123,
+        title="New title",
+        description="Updated body",
+        priority="high",
+        client_id=99,
+        ticket_id=456,
+        tags=["microsoft-todo", "triage"],
+    )
+
+    assert result["title"] == "New title"
+    assert result["description"] == "Updated body"
+    assert result["priority"] == "high"
+    assert result["client_id"] == 99
+    assert result["ticket_id"] == 456
+    assert result["source_metadata"]["microsoft_todo_id"] == "ms-1"
+    post_body = calls[-1][2][0]
+    assert "microsoft_todo_id" in post_body["note_html"]
+    assert "triage" in post_body["note_html"]
+
+
+def test_extract_description_ignores_metadata_marker() -> None:
+    value = note_html("Plain text body", {"kind": "halocli.todo", "tags": ["x"]})
+
+    assert extract_description(value) == "Plain text body"
