@@ -91,6 +91,10 @@ function fakeApi(): TodoApi {
       item.time_entries.push(entry);
       return { time_entry: entry, todo: item };
     },
+    async listTimeEntries(id) {
+      const item = state.find((todo) => todo.id === id)!;
+      return { count: item.time_entries.length, items: item.time_entries };
+    },
     async searchClients() {
       return { items: [{ id: 12, name: "Midtown Technology Group" }] };
     },
@@ -158,6 +162,16 @@ describe("Halo Todo app", () => {
 
     expect(await screen.findByText("Reviewed alert context.")).toBeInTheDocument();
     expect(screen.getByText("0 min")).toBeInTheDocument();
+  });
+
+  test("loads work log history for the selected task", async () => {
+    const api = fakeApi();
+    const first = todos[0];
+    first.time_entries = [{ id: 9003, todo_id: first.id, duration_minutes: 0, note: "Historical work log" }];
+
+    render(<App api={api} />);
+
+    expect(await screen.findByText("Historical work log")).toBeInTheDocument();
   });
 
   test("slash focuses search and filters task list", async () => {

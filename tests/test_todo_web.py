@@ -72,6 +72,9 @@ class FakeTodoRepository:
         self.todos[int(todo_id)]["time_entries"].append(entry)
         return entry
 
+    async def list_time_entries(self, todo_id):
+        return self.todos[int(todo_id)]["time_entries"]
+
     async def search_clients(self, q=None):
         return self.clients
 
@@ -147,3 +150,18 @@ def test_todo_api_logs_zero_duration_work() -> None:
     assert payload["time_entry"]["duration_minutes"] == 0
     assert payload["time_entry"]["client_id"] == 12
     assert payload["time_entry"]["ticket_id"] == 12345
+
+
+def test_todo_api_reads_time_entry_history() -> None:
+    repository = FakeTodoRepository()
+    repository.todos[1]["time_entries"].append(
+        {"id": 9001, "todo_id": 1, "duration_minutes": 0, "note": "Reviewed alert context."}
+    )
+    client = TestClient(create_todo_api(lambda: repository))
+
+    response = client.get("/api/todos/1/time-entries")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["items"][0]["note"] == "Reviewed alert context."

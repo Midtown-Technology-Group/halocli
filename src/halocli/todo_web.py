@@ -173,6 +173,11 @@ def create_todo_api(repository_factory: Callable[[], Any]):
         todo["time_entries"] = [entry, *list(todo.get("time_entries") or [])]
         return {"time_entry": entry, "todo": todo}
 
+    @app.get("/api/todos/{todo_id}/time-entries")
+    async def list_time_entries(todo_id: int, repo: Any = Depends(repository)):
+        items = await repo.list_time_entries(todo_id)
+        return {"count": len(items), "items": items}
+
     static_dir = web_static_dir()
     if static_dir.exists():
         assets = static_dir / "assets"
@@ -225,6 +230,9 @@ class ManagedHaloTodoRepository(HaloTodoRepository):
 
     async def log_time(self, todo_id: int | str, **payload: Any) -> dict[str, Any]:
         return await self._run("log_time", todo_id, **payload)
+
+    async def list_time_entries(self, todo_id: int | str) -> list[dict[str, Any]]:
+        return await self._run("list_time_entries", todo_id)
 
     async def search_clients(self, q: str | None = None) -> list[dict[str, Any]]:
         return await self._run("search_clients", q)

@@ -334,6 +334,22 @@ class HaloTodoRepository:
         item = first_result(result) or payload
         return time_entry_from_halo(item, todo_id=int(todo_id), duration_minutes=duration_minutes)
 
+    async def list_time_entries(self, todo_id: int | str) -> list[dict[str, Any]]:
+        existing = first_result(await self.halo_client.raw("GET", f"/Appointment/{todo_id}")) or {}
+        params: dict[str, Any] = {"todo_id": int(todo_id), "page_size": 50}
+        if existing.get("client_id") is not None:
+            params["client_id"] = int(existing["client_id"])
+        if existing.get("ticket_id") is not None:
+            params["ticket_id"] = int(existing["ticket_id"])
+        rows = result_rows(await self.halo_client.raw("GET", "/TimesheetEvent", params=params))
+        marker = f"[Todo #{todo_id}]"
+        entries = [
+            time_entry_from_halo(row, todo_id=int(todo_id), duration_minutes=minutes_from_timetaken(row.get("timetaken")))
+            for row in rows
+            if str(row.get("todo_id") or "") == str(todo_id) or marker in str(row.get("subject") or "")
+        ]
+        return entries
+
     async def search_clients(self, q: str | None = None) -> list[dict[str, Any]]:
         params: dict[str, Any] = {"page_size": 25}
         if q:
@@ -743,6 +759,13 @@ def time_entry_from_halo(item: dict[str, Any], *, todo_id: int, duration_minutes
         "start": item.get("start_date"),
         "end": item.get("end_date"),
     }
+
+
+def minutes_from_timetaken(value: Any) -> float:
+    try:
+        return float(value or 0) * 60
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def compact_client(row: dict[str, Any]) -> dict[str, Any]:

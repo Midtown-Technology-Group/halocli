@@ -35,6 +35,7 @@ export type TodoApi = {
   completeTodo(id: number): Promise<{ todo: Todo }>;
   addNote(id: number, note: string): Promise<{ todo: Todo }>;
   logTime(id: number, payload: { note: string; minutes?: number; client_id?: number | null; ticket_id?: number | null }): Promise<{ time_entry: TimeEntry; todo: Todo }>;
+  listTimeEntries(id: number): Promise<{ count: number; items: TimeEntry[] }>;
   searchClients(query?: string): Promise<{ count?: number; items: ClientOption[] }>;
   searchTickets(query?: string, clientId?: number | null): Promise<{ count?: number; items: TicketOption[] }>;
   me(): Promise<Me>;
@@ -62,6 +63,9 @@ export const httpTodoApi: TodoApi = {
   },
   async logTime(id, payload) {
     return request(`/api/todos/${id}/time-entries`, { method: "POST", body: JSON.stringify(payload) });
+  },
+  async listTimeEntries(id) {
+    return request(`/api/todos/${id}/time-entries`);
   },
   async searchClients(query = "") {
     const search = new URLSearchParams();

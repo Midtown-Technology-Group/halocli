@@ -14,6 +14,7 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   and noting tasks, preserving the HaloCLI metadata marker in `note_html`.
 - Added client/ticket picker APIs and 0-duration Halo time-entry-backed work
   logs for Todo updates.
+- Added Todo work-log history reads from Halo time entries.
 - Added the optional `web` package extra for FastAPI and Uvicorn.
 
 ## 0.4.0 - 2026-04-26

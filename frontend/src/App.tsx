@@ -85,6 +85,17 @@ export function App({ api = httpTodoApi }: { api?: TodoApi }) {
   }, [selected, selectedId]);
 
   useEffect(() => {
+    async function loadTimeEntries() {
+      if (!selected) return;
+      const result = await api.listTimeEntries(selected.id);
+      setTodos((items) =>
+        items.map((todo) => (todo.id === selected.id ? { ...todo, time_entries: result.items } : todo))
+      );
+    }
+    loadTimeEntries();
+  }, [selected?.id]);
+
+  useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       const isTyping = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";

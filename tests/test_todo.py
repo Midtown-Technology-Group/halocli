@@ -312,3 +312,55 @@ async def test_halo_repository_time_entry_client_override_updates_todo() -> None
     appointment_updates = [call for call in calls if call[1] == "/Appointment"]
     assert appointment_updates[0][2][0]["client_id"] == 99
     assert result["client_id"] == 99
+
+
+@pytest.mark.asyncio
+async def test_halo_repository_reads_time_entry_history_for_todo() -> None:
+    calls = []
+
+    class FakeClient:
+        async def raw(self, method, path, *, params=None, body=None):
+            calls.append((method, path, params))
+            if method == "GET" and path == "/Appointment/123":
+                return {
+                    "id": 123,
+                    "subject": "Investigate backup alert",
+                    "note_html": note_html("", {"kind": "halocli.todo", "tags": []}),
+                    "is_task": True,
+                    "complete_status": -1,
+                    "client_id": 12,
+                    "ticket_id": 12345,
+                }
+            if method == "GET" and path == "/TimesheetEvent":
+                return [
+                    {
+                        "id": 9001,
+                        "todo_id": 123,
+                        "subject": "[Todo #123] Investigate backup alert",
+                        "note": "Reviewed alert context.",
+                        "timetaken": 0,
+                        "client_id": 12,
+                        "ticket_id": 12345,
+                    },
+                    {
+                        "id": 9002,
+                        "subject": "Unrelated",
+                        "note": "Ignore me",
+                        "timetaken": 1,
+                        "client_id": 12,
+                    },
+                ]
+            return {}
+
+    repository = HaloTodoRepository(FakeClient())
+    entries = await repository.list_time_entries(123)
+
+    assert len(entries) == 1
+    assert entries[0]["id"] == 9001
+    assert entries[0]["note"] == "Reviewed alert context."
+    assert entries[0]["duration_minutes"] == 0
+    assert calls[-1] == (
+        "GET",
+        "/TimesheetEvent",
+        {"todo_id": 123, "client_id": 12, "ticket_id": 12345, "page_size": 50},
+    )
