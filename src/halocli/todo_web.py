@@ -186,9 +186,6 @@ def create_todo_api(repository_factory: Callable[[], Any]):
 
         @app.get("/{path:path}", include_in_schema=False)
         async def index(path: str = ""):
-            candidate = static_dir / path
-            if path and candidate.is_file():
-                return FileResponse(candidate)
             return FileResponse(static_dir / "index.html")
 
     return app
