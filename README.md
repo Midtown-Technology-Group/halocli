@@ -196,9 +196,14 @@ halocli todo web --profile midtown --host 127.0.0.1 --port 8766
 
 The web UI serves a compact three-pane task triage surface over Halo appointment
 tasks: quick capture, Inbox/Today/Upcoming/Blocked/Completed views, search,
-keyboard selection, completion, detail editing, notes, and source metadata for
+keyboard selection, completion, detail editing, customer/ticket pickers, work
+logs backed by Halo time entries, and source metadata for
 imported Microsoft To Do items. HaloPSA remains the system of record; the UI API
 returns normalized Todo JSON and does not create a local database.
+
+Todo priority is currently stored as HaloCLI metadata in the backing
+appointment `note_html`; it is not mapped to Halo ticket priority or a native
+Halo appointment priority field.
 
 ## Bifrost Compatibility
 

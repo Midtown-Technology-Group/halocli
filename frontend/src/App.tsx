@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { Todo, TodoApi } from "./api";
+import type { ClientOption, TicketOption, Todo, TodoApi } from "./api";
 import { httpTodoApi } from "./api";
 import "./styles.css";
 
@@ -20,6 +20,12 @@ export function App({ api = httpTodoApi }: { api?: TodoApi }) {
   const [view, setView] = useState<ViewKey>("open");
   const [query, setQuery] = useState("");
   const [quickTitle, setQuickTitle] = useState("");
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [tickets, setTickets] = useState<TicketOption[]>([]);
+  const [quickClientId, setQuickClientId] = useState<number | null>(null);
+  const [quickTicketId, setQuickTicketId] = useState<number | null>(null);
+  const [showClients, setShowClients] = useState(false);
+  const [showTickets, setShowTickets] = useState(false);
   const [busy, setBusy] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const quickRef = useRef<HTMLInputElement>(null);
@@ -38,6 +44,23 @@ export function App({ api = httpTodoApi }: { api?: TodoApi }) {
   useEffect(() => {
     refresh();
   }, [view]);
+
+  useEffect(() => {
+    async function loadPickers() {
+      const [clientResult, me] = await Promise.all([api.searchClients(""), api.me()]);
+      setClients(clientResult.items);
+      setQuickClientId(me.client_id ?? clientResult.items[0]?.id ?? null);
+    }
+    loadPickers();
+  }, []);
+
+  useEffect(() => {
+    async function loadTickets() {
+      const result = await api.searchTickets("", quickClientId);
+      setTickets(result.items);
+    }
+    loadTickets();
+  }, [quickClientId]);
 
   const visibleTodos = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -90,7 +113,7 @@ export function App({ api = httpTodoApi }: { api?: TodoApi }) {
     event.preventDefault();
     const title = quickTitle.trim();
     if (!title) return;
-    const result = await api.createTodo({ title });
+    const result = await api.createTodo({ title, client_id: quickClientId, ticket_id: quickTicketId });
     setTodos((items) => [result.todo, ...items]);
     setSelectedId(result.todo.id);
     setQuickTitle("");
@@ -141,6 +164,29 @@ export function App({ api = httpTodoApi }: { api?: TodoApi }) {
             onChange={(event) => setQuickTitle(event.target.value)}
             placeholder="Capture a task"
           />
+          <Picker
+            label="Choose customer"
+            value={clients.find((client) => client.id === quickClientId)?.name ?? "Customer"}
+            open={showClients}
+            onToggle={() => setShowClients((value) => !value)}
+            options={clients.map((client) => ({ id: client.id, label: client.name }))}
+            onSelect={(id) => {
+              setQuickClientId(id);
+              setQuickTicketId(null);
+              setShowClients(false);
+            }}
+          />
+          <Picker
+            label="Choose ticket"
+            value={tickets.find((ticket) => ticket.id === quickTicketId)?.summary ?? "Ticket"}
+            open={showTickets}
+            onToggle={() => setShowTickets((value) => !value)}
+            options={tickets.map((ticket) => ({ id: ticket.id, label: ticket.summary }))}
+            onSelect={(id) => {
+              setQuickTicketId(id);
+              setShowTickets(false);
+            }}
+          />
           <button type="submit">Add task</button>
         </form>
         <input
@@ -169,21 +215,85 @@ export function App({ api = httpTodoApi }: { api?: TodoApi }) {
         </div>
       </section>
 
-      <TaskDetail todo={selected} onComplete={completeSelected} onSave={saveSelected} />
+      <TaskDetail
+        todo={selected}
+        clients={clients}
+        tickets={tickets}
+        onComplete={completeSelected}
+        onSave={saveSelected}
+        onLogTime={async (id, payload) => {
+          const result = await api.logTime(id, payload);
+          setTodos((items) => items.map((todo) => (todo.id === id ? result.todo : todo)));
+        }}
+      />
     </main>
+  );
+}
+
+function Picker({
+  label,
+  value,
+  open,
+  options,
+  onToggle,
+  onSelect
+}: {
+  label: string;
+  value: string;
+  open: boolean;
+  options: { id: number; label: string }[];
+  onToggle: () => void;
+  onSelect: (id: number) => void;
+}) {
+  return (
+    <div className="picker">
+      <button type="button" aria-label={label} onClick={onToggle}>
+        {value}
+      </button>
+      {open ? (
+        <div role="listbox" className="picker-menu">
+          {options.map((option) => (
+            <button key={option.id} type="button" role="option" onClick={() => onSelect(option.id)}>
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 function TaskDetail({
   todo,
+  clients,
+  tickets,
   onComplete,
-  onSave
+  onSave,
+  onLogTime
 }: {
   todo: Todo | null;
+  clients: ClientOption[];
+  tickets: TicketOption[];
   onComplete: (id: number) => void;
   onSave: (patch: Partial<Todo>) => void;
+  onLogTime: (id: number, payload: { note: string; minutes: number; client_id?: number | null; ticket_id?: number | null }) => void;
 }) {
+  const [workNote, setWorkNote] = useState("");
+  const [minutes, setMinutes] = useState("0");
   if (!todo) return <aside className="detail-pane empty">No task selected</aside>;
+
+  function submitWorkLog(event: FormEvent) {
+    event.preventDefault();
+    if (!workNote.trim()) return;
+    onLogTime(todo.id, {
+      note: workNote,
+      minutes: Number(minutes || 0),
+      client_id: todo.client_id,
+      ticket_id: todo.ticket_id
+    });
+    setWorkNote("");
+    setMinutes("0");
+  }
 
   return (
     <aside className="detail-pane">
@@ -215,6 +325,36 @@ function TaskDetail({
           Due
           <input value={todo.due_date ?? ""} onChange={(event) => onSave({ due_date: event.target.value })} />
         </label>
+        <label>
+          Customer
+          <select
+            value={todo.client_id ?? ""}
+            onChange={(event) => onSave({ client_id: event.target.value ? Number(event.target.value) : null })}
+          >
+            <option value="">None</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Ticket
+          <select
+            value={todo.ticket_id ?? ""}
+            onChange={(event) => onSave({ ticket_id: event.target.value ? Number(event.target.value) : null })}
+          >
+            <option value="">None</option>
+            {tickets
+              .filter((ticket) => !todo.client_id || ticket.client_id === todo.client_id)
+              .map((ticket) => (
+                <option key={ticket.id} value={ticket.id}>
+                  {ticket.summary}
+                </option>
+              ))}
+          </select>
+        </label>
       </div>
       <div className="chips">
         {todo.client_id ? <span>Client #{todo.client_id}</span> : null}
@@ -228,8 +368,29 @@ function TaskDetail({
         <code>{String(todo.source_metadata.source ?? "halocli")}</code>
       </section>
       <section className="notes">
-        <h2>Notes</h2>
-        {todo.notes.length === 0 ? <p>No notes yet.</p> : todo.notes.map((note, index) => <p key={index}>{note.body}</p>)}
+        <h2>Work Log</h2>
+        <form className="work-log-form" onSubmit={submitWorkLog}>
+          <textarea
+            aria-label="Work log note"
+            value={workNote}
+            onChange={(event) => setWorkNote(event.target.value)}
+            placeholder="Add a Halo time entry"
+          />
+          <label>
+            Minutes
+            <input aria-label="Minutes" value={minutes} onChange={(event) => setMinutes(event.target.value)} />
+          </label>
+          <button type="submit">Log work</button>
+        </form>
+        {todo.time_entries.length === 0 ? (
+          <p>No work logged yet.</p>
+        ) : (
+          todo.time_entries.map((entry, index) => (
+            <p key={entry.id ?? index}>
+              {entry.note} <span>{entry.duration_minutes} min</span>
+            </p>
+          ))
+        )}
       </section>
     </aside>
   );

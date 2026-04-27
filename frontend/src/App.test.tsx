@@ -17,6 +17,7 @@ const todos = [
     ticket_id: 12345,
     tags: ["microsoft-todo", "Tasks"],
     notes: [],
+    time_entries: [],
     source_metadata: { source: "microsoft.todo" }
   },
   {
@@ -31,6 +32,7 @@ const todos = [
     ticket_id: null,
     tags: [],
     notes: [],
+    time_entries: [],
     source_metadata: { source: "halocli" }
   }
 ];
@@ -39,7 +41,15 @@ function fakeApi(): TodoApi {
   const state = [...todos];
   return {
     async listTodos() {
-      return { count: state.length, items: state.map((item) => ({ ...item, notes: [...item.notes], tags: [...item.tags] })) };
+      return {
+        count: state.length,
+        items: state.map((item) => ({
+          ...item,
+          notes: [...item.notes],
+          tags: [...item.tags],
+          time_entries: [...item.time_entries]
+        }))
+      };
     },
     async createTodo(payload) {
       const created = {
@@ -53,6 +63,7 @@ function fakeApi(): TodoApi {
         ticket_id: null,
         tags: [],
         notes: [],
+        time_entries: [],
         source_metadata: { source: "halocli" },
         ...payload
       };
@@ -73,6 +84,21 @@ function fakeApi(): TodoApi {
       const item = state.find((todo) => todo.id === id)!;
       item.notes.push({ body: note });
       return { todo: item };
+    },
+    async logTime(id, payload) {
+      const item = state.find((todo) => todo.id === id)!;
+      const entry = { id: 9001, todo_id: id, duration_minutes: payload.minutes ?? 0, note: payload.note };
+      item.time_entries.push(entry);
+      return { time_entry: entry, todo: item };
+    },
+    async searchClients() {
+      return { items: [{ id: 12, name: "Midtown Technology Group" }] };
+    },
+    async searchTickets(_query, clientId) {
+      return { items: [{ id: 12345, summary: "Backup alert", client_id: clientId ?? 12, status: "Open" }] };
+    },
+    async me() {
+      return { id: 37, name: "Thomas Bray", client_id: 12, client_name: "Midtown Technology Group" };
     }
   };
 }
@@ -103,6 +129,35 @@ describe("Halo Todo app", () => {
     await waitFor(() => {
       expect(screen.getByText("Done")).toBeInTheDocument();
     });
+  });
+
+  test("quick-add can select a customer and related ticket", async () => {
+    const user = userEvent.setup();
+    render(<App api={fakeApi()} />);
+
+    await user.click(await screen.findByRole("button", { name: "Choose customer" }));
+    await user.click(screen.getAllByRole("option", { name: "Midtown Technology Group" })[0]);
+    await user.click(screen.getByRole("button", { name: "Choose ticket" }));
+    await user.click(screen.getAllByRole("option", { name: "Backup alert" })[0]);
+    await user.type(screen.getByLabelText("Quick add title"), "Customer-linked task");
+    await user.click(screen.getByRole("button", { name: "Add task" }));
+
+    expect(await screen.findByText("Customer-linked task")).toBeInTheDocument();
+    expect(screen.getByText("Client #12")).toBeInTheDocument();
+    expect(screen.getAllByText("Ticket #12345").length).toBeGreaterThan(0);
+  });
+
+  test("work log submits a zero-duration time entry", async () => {
+    const user = userEvent.setup();
+    render(<App api={fakeApi()} />);
+
+    await user.type(await screen.findByLabelText("Work log note"), "Reviewed alert context.");
+    await user.clear(screen.getByLabelText("Minutes"));
+    await user.type(screen.getByLabelText("Minutes"), "0");
+    await user.click(screen.getByRole("button", { name: "Log work" }));
+
+    expect(await screen.findByText("Reviewed alert context.")).toBeInTheDocument();
+    expect(screen.getByText("0 min")).toBeInTheDocument();
   });
 
   test("slash focuses search and filters task list", async () => {

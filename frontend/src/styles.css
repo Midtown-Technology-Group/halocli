@@ -71,7 +71,7 @@ button {
 
 .quick-add {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(180px, 1fr) 150px 150px auto;
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -98,6 +98,46 @@ select,
   color: #fff;
   padding: 9px 12px;
   font-weight: 650;
+}
+
+.picker {
+  position: relative;
+}
+
+.picker > button {
+  width: 100%;
+  min-height: 37px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-menu {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  width: 260px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #c9d3dd;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 12px 32px #17202a22;
+  padding: 4px;
+}
+
+.picker-menu button {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #17202a;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.picker-menu button:hover {
+  background: #edf2f7;
 }
 
 .search {
@@ -249,6 +289,26 @@ textarea {
   text-transform: uppercase;
   color: #66758a;
   margin: 0 0 8px;
+}
+
+.work-log-form {
+  display: grid;
+  gap: 8px;
+}
+
+.work-log-form textarea {
+  min-height: 72px;
+  margin-bottom: 0;
+}
+
+.work-log-form button {
+  justify-self: end;
+  border: 0;
+  border-radius: 6px;
+  background: #1264a3;
+  color: #fff;
+  padding: 8px 11px;
+  font-weight: 650;
 }
 
 @media (max-width: 920px) {

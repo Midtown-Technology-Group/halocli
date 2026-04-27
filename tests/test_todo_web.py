@@ -20,9 +20,12 @@ class FakeTodoRepository:
                 "ticket_id": 12345,
                 "tags": ["microsoft-todo", "Tasks"],
                 "notes": [],
+                "time_entries": [],
                 "source_metadata": {"source": "microsoft.todo"},
             }
         }
+        self.clients = [{"id": 12, "name": "Midtown Technology Group"}]
+        self.tickets = [{"id": 12345, "summary": "Backup alert", "client_id": 12, "status": "Open"}]
 
     async def list(self, **filters):
         items = list(self.todos.values())
@@ -46,6 +49,7 @@ class FakeTodoRepository:
             "priority": "normal",
             "tags": data.get("tags") or [],
             "notes": [],
+            "time_entries": [],
             "source_metadata": {"source": "halocli"},
             **data,
         }
@@ -62,6 +66,20 @@ class FakeTodoRepository:
     async def add_note(self, todo_id, note):
         self.todos[int(todo_id)]["notes"].append({"body": note})
         return self.todos[int(todo_id)]
+
+    async def log_time(self, todo_id, **payload):
+        entry = {"id": 9001, "todo_id": int(todo_id), "duration_minutes": payload.get("minutes", 0), **payload}
+        self.todos[int(todo_id)]["time_entries"].append(entry)
+        return entry
+
+    async def search_clients(self, q=None):
+        return self.clients
+
+    async def search_tickets(self, q=None, client_id=None, open_only=True):
+        return [ticket for ticket in self.tickets if client_id is None or ticket["client_id"] == client_id]
+
+    async def me(self):
+        return {"id": 37, "name": "Thomas Bray", "client_id": 12, "client_name": "Midtown Technology Group"}
 
 
 def test_todo_api_lists_filtered_items() -> None:
@@ -98,3 +116,34 @@ def test_todo_api_create_update_complete_and_note() -> None:
     completed = client.post("/api/todos/2/complete")
     assert completed.status_code == 200
     assert completed.json()["todo"]["status"] == "done"
+
+
+def test_todo_api_searches_clients_and_tickets() -> None:
+    client = TestClient(create_todo_api(lambda: FakeTodoRepository()))
+
+    clients = client.get("/api/clients", params={"q": "Midtown"})
+    tickets = client.get("/api/tickets", params={"q": "backup", "client_id": 12, "open": True})
+    me = client.get("/api/me")
+
+    assert clients.status_code == 200
+    assert clients.json()["items"] == [{"id": 12, "name": "Midtown Technology Group"}]
+    assert tickets.status_code == 200
+    assert tickets.json()["items"][0]["id"] == 12345
+    assert me.status_code == 200
+    assert me.json()["client_id"] == 12
+
+
+def test_todo_api_logs_zero_duration_work() -> None:
+    repository = FakeTodoRepository()
+    client = TestClient(create_todo_api(lambda: repository))
+
+    response = client.post(
+        "/api/todos/1/time-entries",
+        json={"note": "Reviewed alert context.", "minutes": 0, "client_id": 12, "ticket_id": 12345},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["time_entry"]["duration_minutes"] == 0
+    assert payload["time_entry"]["client_id"] == 12
+    assert payload["time_entry"]["ticket_id"] == 12345

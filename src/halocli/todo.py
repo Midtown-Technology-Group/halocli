@@ -294,11 +294,82 @@ class HaloTodoRepository:
         result = await self.halo_client.raw("POST", "/Appointment", body=[payload])
         return todo_from_appointment(first_result(result) or payload)
 
+    async def log_time(
+        self,
+        todo_id: int | str,
+        *,
+        note: str,
+        minutes: float | None = None,
+        hours: float | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        client_id: int | None = None,
+        ticket_id: int | None = None,
+    ) -> dict[str, Any]:
+        existing = first_result(await self.halo_client.raw("GET", f"/Appointment/{todo_id}")) or {}
+        resolved_client_id = client_id if client_id is not None else existing.get("client_id")
+        resolved_ticket_id = ticket_id if ticket_id is not None else existing.get("ticket_id")
+        agent = await self._current_agent()
+        if client_id is not None and client_id != existing.get("client_id"):
+            await self.update(todo_id, client_id=client_id)
+        duration_minutes = duration_as_minutes(minutes=minutes, hours=hours, start=start, end=end)
+        payload: dict[str, Any] = {
+            "subject": f"[Todo #{todo_id}] {existing.get('subject') or 'Todo work'}",
+            "note": note,
+            "timetaken": round(duration_minutes / 60, 4),
+            "lognewticket": False,
+            "todo_id": int(todo_id),
+        }
+        if start is not None:
+            payload["start_date"] = start.isoformat(timespec="seconds")
+        if end is not None:
+            payload["end_date"] = end.isoformat(timespec="seconds")
+        if resolved_client_id is not None:
+            payload["client_id"] = int(resolved_client_id)
+        if resolved_ticket_id is not None:
+            payload["ticket_id"] = int(resolved_ticket_id)
+        if agent.get("id") is not None:
+            payload["agent_id"] = int(agent["id"])
+        result = await self.halo_client.raw("POST", "/TimesheetEvent", body=[payload])
+        item = first_result(result) or payload
+        return time_entry_from_halo(item, todo_id=int(todo_id), duration_minutes=duration_minutes)
+
+    async def search_clients(self, q: str | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"page_size": 25}
+        if q:
+            params["search"] = q
+        rows = result_rows(await self.halo_client.raw("GET", "/Client", params=params))
+        return [compact_client(row) for row in rows]
+
+    async def search_tickets(
+        self,
+        *,
+        q: str | None = None,
+        client_id: int | None = None,
+        open_only: bool = True,
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"page_size": 25}
+        if q:
+            params["search"] = q
+        if client_id is not None:
+            params["client_id"] = client_id
+        if open_only:
+            params["open_only"] = True
+        rows = result_rows(await self.halo_client.raw("GET", "/Tickets", params=params))
+        return [compact_ticket(row) for row in rows]
+
+    async def me(self) -> dict[str, Any]:
+        return compact_agent(await self._current_agent())
+
     async def _current_agent_id(self) -> int:
-        agent = await self.halo_client.raw("GET", "/Agent/me")
+        agent = await self._current_agent()
         if isinstance(agent, dict) and agent.get("id") is not None:
             return int(agent["id"])
         raise RuntimeError("Could not resolve current Halo agent id.")
+
+    async def _current_agent(self) -> dict[str, Any]:
+        agent = await self.halo_client.raw("GET", "/Agent/me")
+        return agent if isinstance(agent, dict) else {}
 
 
 def preview_import(
@@ -479,6 +550,7 @@ def todo_from_appointment(item: dict[str, Any]) -> dict[str, Any]:
         "due_date": parse_halo_date(item.get("start_date")),
         "tags": metadata.get("tags", []),
         "notes": metadata.get("notes", []),
+        "time_entries": metadata.get("time_entries", []),
         "source_metadata": metadata,
     }
 
@@ -640,3 +712,56 @@ def result_rows(result: Any) -> list[dict[str, Any]]:
                 return [row for row in rows if isinstance(row, dict)]
         return [result]
     return []
+
+
+def duration_as_minutes(
+    *,
+    minutes: float | None = None,
+    hours: float | None = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> float:
+    if minutes is not None:
+        return float(minutes)
+    if hours is not None:
+        return float(hours) * 60
+    if start is not None and end is not None:
+        return max(0.0, (end - start).total_seconds() / 60)
+    return 0.0
+
+
+def time_entry_from_halo(item: dict[str, Any], *, todo_id: int, duration_minutes: float) -> dict[str, Any]:
+    return {
+        "id": item.get("id"),
+        "todo_id": todo_id,
+        "client_id": item.get("client_id"),
+        "ticket_id": item.get("ticket_id"),
+        "agent_id": item.get("agent_id"),
+        "note": item.get("note") or item.get("note_html") or "",
+        "duration_minutes": duration_minutes,
+        "timetaken": item.get("timetaken"),
+        "start": item.get("start_date"),
+        "end": item.get("end_date"),
+    }
+
+
+def compact_client(row: dict[str, Any]) -> dict[str, Any]:
+    return {"id": row.get("id"), "name": row.get("name") or row.get("client_name") or row.get("display_name")}
+
+
+def compact_ticket(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id"),
+        "summary": row.get("summary") or row.get("subject") or row.get("title"),
+        "client_id": row.get("client_id"),
+        "status": row.get("status") or row.get("status_name"),
+    }
+
+
+def compact_agent(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id"),
+        "name": row.get("name") or row.get("display_name"),
+        "client_id": row.get("client_id") or row.get("company_id"),
+        "client_name": row.get("client_name") or row.get("company_name"),
+    }

@@ -12,7 +12,20 @@ export type Todo = {
   ticket_id: number | null;
   tags: string[];
   notes: { body: string; created_at?: string }[];
+  time_entries: TimeEntry[];
   source_metadata: Record<string, unknown>;
+};
+
+export type ClientOption = { id: number; name: string };
+export type TicketOption = { id: number; summary: string; client_id: number | null; status: string | null };
+export type Me = { id: number; name: string; client_id: number | null; client_name: string | null };
+export type TimeEntry = {
+  id: number;
+  todo_id: number;
+  client_id: number | null;
+  ticket_id: number | null;
+  note: string;
+  duration_minutes: number;
 };
 
 export type TodoApi = {
@@ -21,6 +34,10 @@ export type TodoApi = {
   updateTodo(id: number, payload: Partial<Todo>): Promise<{ todo: Todo }>;
   completeTodo(id: number): Promise<{ todo: Todo }>;
   addNote(id: number, note: string): Promise<{ todo: Todo }>;
+  logTime(id: number, payload: { note: string; minutes?: number; client_id?: number | null; ticket_id?: number | null }): Promise<{ time_entry: TimeEntry; todo: Todo }>;
+  searchClients(query?: string): Promise<{ count?: number; items: ClientOption[] }>;
+  searchTickets(query?: string, clientId?: number | null): Promise<{ count?: number; items: TicketOption[] }>;
+  me(): Promise<Me>;
 };
 
 export const httpTodoApi: TodoApi = {
@@ -42,6 +59,23 @@ export const httpTodoApi: TodoApi = {
   },
   async addNote(id, note) {
     return request(`/api/todos/${id}/notes`, { method: "POST", body: JSON.stringify({ note }) });
+  },
+  async logTime(id, payload) {
+    return request(`/api/todos/${id}/time-entries`, { method: "POST", body: JSON.stringify(payload) });
+  },
+  async searchClients(query = "") {
+    const search = new URLSearchParams();
+    if (query) search.set("q", query);
+    return request(`/api/clients?${search.toString()}`);
+  },
+  async searchTickets(query = "", clientId = null) {
+    const search = new URLSearchParams();
+    if (query) search.set("q", query);
+    if (clientId !== null && clientId !== undefined) search.set("client_id", String(clientId));
+    return request(`/api/tickets?${search.toString()}`);
+  },
+  async me() {
+    return request("/api/me");
   }
 };
 
