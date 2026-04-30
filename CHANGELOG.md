@@ -6,6 +6,17 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.5.0 - 2026-04-27
+
+- Added `halocli todo web`, a local-first FastAPI/Vite React Todo web UI over
+  Halo appointment-backed tasks.
+- Added normalized Todo API routes for listing, creating, updating, completing,
+  and noting tasks, preserving the HaloCLI metadata marker in `note_html`.
+- Added client/ticket picker APIs and 0-duration Halo time-entry-backed work
+  logs for Todo updates.
+- Added Todo work-log history reads from Halo time entries.
+- Added the optional `web` package extra for FastAPI and Uvicorn.
+
 ## 0.4.0 - 2026-04-26
 
 - Added a central Halo resource registry.
