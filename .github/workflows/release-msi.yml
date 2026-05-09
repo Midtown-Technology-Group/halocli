@@ -1,0 +1,122 @@
+name: Build MSI Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to package
+        required: true
+        default: 0.5.0
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set package version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "release") {
+            $tag = "${{ github.event.release.tag_name }}"
+            if (-not $tag.StartsWith("v")) {
+              throw "Release tags must use the vX.Y.Z format so installer URLs match release assets."
+            }
+            $version = $tag.TrimStart("v")
+            "tag=$tag" >> $env:GITHUB_OUTPUT
+          } else {
+            $version = "${{ inputs.version }}"
+            "tag=v$version" >> $env:GITHUB_OUTPUT
+          }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install WiX
+        shell: pwsh
+        run: dotnet tool install --global wix --version 4.*
+
+      - name: Install build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . pyinstaller
+
+      - name: Build MSI
+        shell: pwsh
+        run: ./packaging/windows/build-msi.ps1 -Version "${{ steps.version.outputs.value }}"
+
+      - name: Get MSI metadata
+        id: msi
+        shell: pwsh
+        run: |
+          $sha = (Get-FileHash dist/halocli.msi -Algorithm SHA256).Hash.ToLower()
+          $productCode = ./scripts/get_msi_product_code.ps1 -Path dist/halocli.msi
+          "sha256=$sha" >> $env:GITHUB_OUTPUT
+          "product_code=$productCode" >> $env:GITHUB_OUTPUT
+
+      - name: Upload MSI to release
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/halocli.msi --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Upload workflow artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: halocli-msi
+          path: dist/halocli.msi
+
+      - name: Notify mtg-winget
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.MTG_WINGET_DISPATCH_TOKEN }}
+        run: |
+          $version = "${{ steps.version.outputs.value }}"
+          $tag = "${{ steps.version.outputs.tag }}"
+          $sha = "${{ steps.msi.outputs.sha256 }}"
+          $productCode = "${{ steps.msi.outputs.product_code }}"
+          if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
+            Write-Warning "MTG_WINGET_DISPATCH_TOKEN is not configured; skipping mtg-winget dispatch."
+            exit 0
+          }
+          if ([string]::IsNullOrWhiteSpace($version) -or [string]::IsNullOrWhiteSpace($tag) -or [string]::IsNullOrWhiteSpace($sha) -or [string]::IsNullOrWhiteSpace($productCode)) {
+            throw "Missing version, tag, SHA256, or ProductCode for mtg-winget dispatch."
+          }
+          $body = @{
+            event_type = "update-package"
+            client_payload = @{
+              package_key = "halocli"
+              version = $version
+              installer_url = "https://github.com/Midtown-Technology-Group/halocli/releases/download/$tag/halocli.msi"
+              sha256 = $sha
+              product_code = $productCode
+            }
+          } | ConvertTo-Json -Depth 5
+          if ([string]::IsNullOrWhiteSpace($body)) {
+            throw "Failed to build mtg-winget dispatch payload."
+          }
+          $body | Set-Content dispatch.json
+          if (-not (Test-Path dispatch.json)) {
+            throw "Failed to write dispatch.json."
+          }
+          gh api repos/Midtown-Technology-Group/mtg-winget/dispatches --method POST --input dispatch.json
+          if ($LASTEXITCODE -ne 0) {
+            throw "mtg-winget repository dispatch failed."
+          }
