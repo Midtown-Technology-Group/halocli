@@ -221,3 +221,7 @@ HaloCLI is released under the GNU General Public License v3.0. See
 
 See `THIRD_PARTY_NOTICES.md` for attribution to `netaryx/pyhalopsa`, which
 served as prior art for this project.
+
+## Windows MSI
+
+Tagged releases build a per-machine Windows MSI that installs `halocli.exe` under `Program Files` and adds that install directory to the system PATH. Installing or uninstalling the MSI requires an elevated prompt.
