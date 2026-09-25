@@ -142,6 +142,26 @@ def test_tools_list_returns_exactly_three_tools() -> None:
     assert set(execute["inputSchema"]["required"]) == {"method", "path"}
 
 
+def test_tools_advertise_read_only_annotations_for_discovery() -> None:
+    """Hosts gate writes on readOnlyHint (e.g. Codex's `writes` approval mode).
+
+    Discovery tools must be marked read-only or every halo_search call prompts
+    alongside genuine Halo writes.
+    """
+    tools = {tool["name"]: tool for tool in rpc("tools/list")["result"]["tools"]}
+
+    for name in ("halo_search", "halo_resources"):
+        annotations = tools[name]["annotations"]
+        assert annotations["readOnlyHint"] is True, name
+        assert annotations["destructiveHint"] is False, name
+        assert annotations["openWorldHint"] is False, name
+
+    execute = tools["halo_execute"]["annotations"]
+    assert execute["readOnlyHint"] is False
+    assert execute["destructiveHint"] is True  # DELETE with apply:true can destroy data
+    assert execute["openWorldHint"] is True  # results come from the live Halo tenant
+
+
 # --------------------------------------------------------------------------------------
 # halo_search / halo_resources
 # --------------------------------------------------------------------------------------

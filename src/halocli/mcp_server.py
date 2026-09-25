@@ -147,10 +147,19 @@ _RESOURCES_DESCRIPTION = (
     "(no '/api' prefix, no tenant host)."
 )
 
+# MCP tool annotations. Hosts read these: Codex's `writes` approval mode prompts
+# only for tools "that aren't marked read-only", so halo_search/halo_resources
+# must advertise readOnlyHint or every discovery call prompts alongside writes.
 _TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
         "name": "halo_search",
         "description": _SEARCH_DESCRIPTION,
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -172,6 +181,15 @@ _TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
         "name": "halo_execute",
         "description": _EXECUTE_DESCRIPTION,
+        # Not read-only: with apply:true this issues POST/PUT/PATCH/DELETE, and a
+        # DELETE can destroy records (destructiveHint defaults to true, stated for
+        # clarity). openWorld because results come from the live Halo tenant.
+        "annotations": {
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        },
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -216,6 +234,12 @@ _TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
         "name": "halo_resources",
         "description": _RESOURCES_DESCRIPTION,
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
         "inputSchema": {"type": "object", "properties": {}},
     },
 ]
