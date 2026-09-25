@@ -224,6 +224,7 @@ def test_search_respects_limit() -> None:
 
 def test_degrades_when_spec_path_missing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(schema, "SPEC_PATH", str(tmp_path / "does_not_exist.json"))
+    schema.clear_cache()
     assert schema.load_spec() is None
     assert schema.spec_meta() is None
     assert schema.lookup_operation("GET", "/Tickets") is None
@@ -235,25 +236,30 @@ def test_degrades_when_spec_is_corrupt(monkeypatch: pytest.MonkeyPatch, tmp_path
     broken = tmp_path / "halo_openapi.json"
     broken.write_text("{not valid json", encoding="utf-8")
     monkeypatch.setattr(schema, "SPEC_PATH", str(broken))
+    schema.clear_cache()
     assert schema.load_spec() is None
     assert schema.lookup_operation("GET", "/Tickets") is None
     assert schema.search_operations("tickets") == []
     assert schema.validate_request("GET", "/Nope", None) == []
 
 
-def test_degrades_when_spec_file_is_renamed_away() -> None:
-    real_path = Path(schema.SPEC_PATH)
-    backup = real_path.parent / (real_path.name + ".bak")
-    assert real_path.exists(), "vendored spec should exist before rename test"
+def test_degrades_when_spec_file_is_renamed_away(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # Never move the real vendored spec: an interrupted run would leave it renamed, other
+    # parallel tests would fail, and the test cannot work on a read-only install. Point
+    # SPEC_PATH at a temp path instead, clearing the cache around the change.
+    real_path = schema.SPEC_PATH
+    assert Path(real_path).exists(), "vendored spec should exist before rename test"
     schema.clear_cache()
-    real_path.rename(backup)
+    monkeypatch.setattr(schema, "SPEC_PATH", str(tmp_path / "renamed_away.json"))
     try:
         assert schema.load_spec() is None
         assert schema.lookup_operation("GET", "/Tickets") is None
         assert schema.search_operations("tickets") == []
         assert schema.validate_request("GET", "/Tickets", None) == []
+        # failures are not cached: restoring the path loads the real spec again
+        monkeypatch.setattr(schema, "SPEC_PATH", real_path)
+        assert schema.load_spec() is not None
     finally:
-        backup.rename(real_path)
         schema.clear_cache()
-    # failures are not cached: the restored file loads again
-    assert schema.load_spec() is not None

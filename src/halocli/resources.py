@@ -216,16 +216,11 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Contract",
         aliases=("contract",),
         table_fields=("id", "name", "client_name"),
-        # Assumption: /Contract follows the standard collection convention (POST
-        # creates, POST with id updates). The v2 API spec only documents
-        # /ClientContract and /SupplierContract, so /Contract write support is
-        # unverified — DELETE /Contract/{id} is deliberately left unsupported.
-        create_endpoint="/Contract",
-        update_endpoint="/Contract",
-        required_create_fields=("client_id",),
-        required_update_fields=("id",),
+        # Read-only: the vendored v2 spec has no /Contract path at all (it only
+        # documents POST on /ClientContract and /SupplierContract, whose semantics
+        # differ), so create/update are left unregistered rather than risk a
+        # confirmed write failing. DELETE /Contract/{id} is likewise unsupported.
         supports_delete=False,
-        write_preview_fields=("id", "ref", "client_id", "start_date", "end_date"),
     ),
     HaloResource(
         "invoices",

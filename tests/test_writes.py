@@ -126,6 +126,45 @@ def test_validate_write_reports_required_fields_and_allows_extra_keys() -> None:
     assert validate_write(tickets, {"summary": "ok", "custom_field_xyz": "kept"}) == []
 
 
+def test_create_rejects_concrete_id_because_halo_treats_it_as_update() -> None:
+    tickets = get_resource("tickets")
+
+    problems = validate_write(tickets, {"id": 42, "summary": "Printer on fire"})
+
+    assert problems
+    assert any("id" in problem and "update" in problem for problem in problems)
+
+
+def test_create_allows_absent_style_ids() -> None:
+    tickets = get_resource("tickets")
+
+    assert validate_write(tickets, {"id": None, "summary": "ok"}) == []
+    assert validate_write(tickets, {"id": "", "summary": "ok"}) == []
+
+
+def test_update_with_id_is_unaffected_by_create_id_rule() -> None:
+    tickets = get_resource("tickets")
+
+    assert validate_write(tickets, {"id": 42, "summary": "renamed"}, update=True) == []
+
+
+@pytest.mark.asyncio
+async def test_apply_refuses_create_payload_with_id_before_any_network_call() -> None:
+    tickets = get_resource("tickets")
+    client = RecordingClient()
+
+    result = await execute_write(
+        client,
+        tickets,
+        {"id": 42, "summary": "Printer on fire"},
+        apply=True,
+    )
+
+    assert result["ok"] is False
+    assert any("id" in problem for problem in result["errors"])
+    assert client.calls == []
+
+
 @pytest.mark.asyncio
 async def test_apply_posts_to_create_endpoint_with_payload() -> None:
     tickets = get_resource("tickets")
@@ -183,8 +222,19 @@ def test_extra_keys_warn_in_preview_without_blocking() -> None:
     warnings = collect_warnings(tickets, payload)
     assert any("totally_unknown_field" in warning for warning in warnings)
     assert validate_write(tickets, payload) == []
-    assert preview_payload(tickets, payload) == {"summary": "hi"}
-    assert "totally_unknown_field" not in preview_payload(tickets, payload)
+    # The preview shows EVERY field apply will send: write_preview_fields only
+    # orders/emphasises, it never redacts.
+    assert preview_payload(tickets, payload) == {"summary": "hi", "totally_unknown_field": 123}
+
+
+def test_preview_orders_declared_fields_first_then_extras_in_insertion_order() -> None:
+    tickets = get_resource("tickets")
+    payload = {"zzz_extra": 1, "summary": "hi", "client_id": 7, "aaa_extra": 2}
+
+    preview = preview_payload(tickets, payload)
+
+    assert list(preview) == ["summary", "client_id", "zzz_extra", "aaa_extra"]
+    assert preview == payload
 
 
 @pytest.mark.asyncio
@@ -199,7 +249,8 @@ async def test_preview_carries_warnings_for_extra_keys() -> None:
 
     assert preview["ok"] is True
     assert any("mystery_key" in warning for warning in preview["warnings"])
-    assert "mystery_key" not in preview["payload"]
+    # Warnings still fire, but the field is shown (and would be sent) regardless.
+    assert preview["payload"]["mystery_key"] is True
 
 
 @pytest.mark.asyncio

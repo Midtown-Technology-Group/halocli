@@ -42,7 +42,10 @@ def validate_write(
     Pure function: no network access, no mutation. Returns a list of problem
     strings; `[]` means the payload is acceptable. Extra/unknown keys are never
     errors (Halo accepts many optional fields) — they are reported as warnings by
-    `collect_warnings` instead.
+    `collect_warnings` instead. The one exception is a concrete `id` on a create
+    payload: Halo's POST-with-id convention would update that record instead of
+    creating one, so it is rejected here. `{"id": null}` / `{"id": ""}` count as
+    absent.
     """
     if not isinstance(payload, Mapping):
         return [f"payload for {resource.name} must be a JSON object"]
@@ -55,6 +58,11 @@ def validate_write(
     for key in required:
         if _is_missing(payload, key):
             problems.append(f"missing required field '{key}' to {verb} {resource.name}")
+    if not update and not _is_missing(payload, "id"):
+        problems.append(
+            "create payload must not include 'id'; Halo treats POST-with-id as an "
+            "update — use the update command or remove 'id'"
+        )
     return problems
 
 
@@ -78,11 +86,22 @@ def collect_warnings(resource: HaloResource, payload: Mapping[str, Any]) -> list
 
 
 def preview_payload(resource: HaloResource, payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Trim `payload` down to the fields shown in a dry-run preview."""
+    """Return the COMPLETE payload that `execute_write` will transmit.
+
+    The preview must never hide a field that apply will send. Declared
+    `effective_write_preview_fields` keys come first (in their declared order) as
+    an emphasis hint, followed by every remaining key in insertion order.
+    """
     if not isinstance(payload, Mapping):
         return {}
-    fields = resource.effective_write_preview_fields
-    return {key: payload[key] for key in fields if key in payload}
+    preview: dict[str, Any] = {}
+    for key in resource.effective_write_preview_fields:
+        if key in payload:
+            preview[key] = payload[key]
+    for key, value in payload.items():
+        if key not in preview:
+            preview[key] = value
+    return preview
 
 
 async def execute_write(

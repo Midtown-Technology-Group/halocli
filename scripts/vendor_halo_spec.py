@@ -72,20 +72,39 @@ def _clip(text: str) -> str:
     return collapsed[: MAX_DESCRIPTION - 1].rstrip() + "\u2026"
 
 
-def trim(node: Any) -> Any:
-    """Recursively strip x- extensions/examples and clip long descriptions."""
+def trim(node: Any, *, property_names: bool = False) -> Any:
+    """Recursively strip x- extensions/examples and clip long descriptions.
+
+    ``property_names`` marks the inside of a ``properties`` map: its KEYS are field names,
+    not schema keywords, so they are never dropped or rewritten (a field named ``example``
+    or ``x-foo`` must survive, even though it would be dropped anywhere else - and its name
+    may still appear in the enclosing ``required`` list). Only the values of such keys are
+    trimmed, with the normal keyword rules re-applied to them as schemas.
+    """
     if isinstance(node, dict):
         trimmed: dict[str, Any] = {}
         for key, value in node.items():
-            if key.startswith("x-") or key in DROP_KEYS:
+            if not property_names and (key.startswith("x-") or key in DROP_KEYS):
                 continue
-            if isinstance(value, str) and key in ("description", "summary"):
+            if (
+                isinstance(value, str)
+                and not property_names
+                and key in ("description", "summary")
+            ):
                 value = _clip(value)
                 if not value:
                     continue
             elif isinstance(value, (dict, list)):
-                value = trim(value)
-                if isinstance(value, list) and not value and key in EMPTY_LIST_KEYS:
+                # A properties map's VALUES are schemas -> trim them with keyword rules.
+                value = trim(
+                    value, property_names=key == "properties" and not property_names
+                )
+                if (
+                    isinstance(value, list)
+                    and not value
+                    and not property_names
+                    and key in EMPTY_LIST_KEYS
+                ):
                     continue
             trimmed[key] = value
         return trimmed

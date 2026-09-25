@@ -28,6 +28,15 @@ from halocli.resources import RESOURCES, HaloResource
 
 JSONRPC_VERSION = "2.0"
 LATEST_PROTOCOL_VERSION = "2025-06-18"
+# MCP protocol versions this server can speak. An unrecognized client request is
+# answered with LATEST_PROTOCOL_VERSION so the client can decide to disconnect.
+SUPPORTED_PROTOCOL_VERSIONS: frozenset[str] = frozenset(
+    {
+        "2024-11-05",
+        "2025-03-26",
+        "2025-06-18",
+    }
+)
 SERVER_NAME = "halocli"
 
 MAX_RESPONSE_CHARS = 40_000
@@ -565,7 +574,10 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
 
 def _initialize_result(params: dict[str, Any]) -> dict[str, Any]:
     requested = params.get("protocolVersion")
-    protocol = requested if isinstance(requested, str) and requested else LATEST_PROTOCOL_VERSION
+    if isinstance(requested, str) and requested in SUPPORTED_PROTOCOL_VERSIONS:
+        protocol = requested
+    else:
+        protocol = LATEST_PROTOCOL_VERSION
     return {
         "protocolVersion": protocol,
         "capabilities": {"tools": {}},

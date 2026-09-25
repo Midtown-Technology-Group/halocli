@@ -15,9 +15,15 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   the vendored spec, and `halocli raw` spec validation (unknown endpoints and
   missing required body fields are refused by default; `--no-validate`
   bypasses it, warnings pass through as `spec_warnings`).
-- Added first-class write commands for the ten resources with write metadata:
+- Added first-class write commands for the nine resources with write metadata:
   `create`, `update`, `delete` are preview-by-default dry runs that make zero
   network calls, and require `--apply --yes` to execute (matching `raw`).
+  All nine support create, update and delete. `contracts` stays read-only
+  because the vendored spec documents no `POST /Contract` (only
+  `POST /ClientContract` and `POST /SupplierContract`, whose semantics
+  differ). A create payload containing a concrete `id` is rejected — Halo
+  treats POST-with-id as an update — and the preview shows every field that
+  apply will send, with declared preview fields ordered first.
 - Added `halocli serve`, a code-mode MCP server (newline-delimited JSON-RPC
   over stdio, stdlib only) exposing exactly three tools — `halo_search`,
   `halo_execute`, `halo_resources` — instead of one tool per Halo operation.

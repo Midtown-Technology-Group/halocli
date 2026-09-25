@@ -10,6 +10,7 @@ from halocli.cli import app
 from halocli.client import HaloClient
 from halocli.config import HaloProfile
 from halocli.resources import RESOURCE_BY_COMMAND, RESOURCES, HaloResource, get_resource
+from halocli.schema import load_spec
 
 
 runner = CliRunner()
@@ -25,7 +26,6 @@ WRITE_RESOURCES = (
     "appointments",
     "statuses",
     "priorities",
-    "contracts",
 )
 
 
@@ -61,12 +61,13 @@ def test_registry_still_constructs_all_resources() -> None:
 
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
-    assert len(WRITE_RESOURCES) == 10
+    assert len(WRITE_RESOURCES) == 9
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
         assert resource.supports_create, name
         assert resource.supports_update, name
+        assert resource.supports_delete, name
         assert resource.create_endpoint == resource.endpoint, name
         assert resource.update_endpoint == resource.endpoint, name
         assert resource.required_create_fields, name
@@ -82,6 +83,24 @@ def test_write_metadata_present_for_write_enabled_resources() -> None:
             continue
         assert not resource.supports_write, resource.name
         assert not resource.supports_delete, resource.name
+
+
+def test_contracts_is_read_only_because_spec_has_no_post_contract() -> None:
+    contracts = get_resource("contracts")
+    assert contracts.endpoint == "/Contract"
+    assert not contracts.supports_write
+    assert not contracts.supports_create
+    assert not contracts.supports_update
+    assert contracts.supports_delete is False
+
+    # The vendored spec documents no /Contract path at all, so there is no
+    # verified write route; POST exists only on /ClientContract and
+    # /SupplierContract (different semantics). Guard against re-enabling writes.
+    spec = load_spec()
+    assert spec is not None
+    assert "/Contract" not in spec["paths"]
+    assert "post" in spec["paths"]["/ClientContract"]
+    assert "post" in spec["paths"]["/SupplierContract"]
 
 
 def test_ticket_and_action_write_shapes() -> None:

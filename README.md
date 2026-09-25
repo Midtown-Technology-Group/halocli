@@ -151,9 +151,11 @@ halocli <resource> list --param key=value --max-records 25
 halocli <resource> get ID
 ```
 
-Ten resources (tickets, actions, clients, sites, assets, agents,
-appointments, statuses, priorities, contracts) also have write metadata and
-first-class write commands. Writes are **preview by default**: without flags
+Nine resources (tickets, actions, clients, sites, assets, agents,
+appointments, statuses, priorities) also have write metadata and
+first-class write commands. `contracts` stays read-only: the vendored spec
+documents no `POST /Contract`, so no write route is enabled for it. Writes
+are **preview by default**: without flags
 they validate the payload and print what would be sent, with zero network
 calls. Executing requires both `--apply` and `--yes`:
 

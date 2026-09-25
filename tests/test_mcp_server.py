@@ -84,6 +84,34 @@ def test_initialize_defaults_to_latest_protocol_version() -> None:
     assert response["result"]["protocolVersion"] == mcp_server.LATEST_PROTOCOL_VERSION
 
 
+def test_initialize_empty_protocol_version_returns_latest() -> None:
+    response = rpc("initialize", {"protocolVersion": ""})
+    assert response["result"]["protocolVersion"] == mcp_server.LATEST_PROTOCOL_VERSION
+
+
+def test_initialize_unsupported_protocol_version_negotiates_to_latest() -> None:
+    response = rpc(
+        "initialize",
+        {
+            "protocolVersion": "1999-01-01",
+            "capabilities": {},
+            "clientInfo": {"name": "pytest", "version": "1.0"},
+        },
+    )
+    result = response["result"]
+    assert result["protocolVersion"] == mcp_server.LATEST_PROTOCOL_VERSION
+    assert result["protocolVersion"] != "1999-01-01"
+    # Every other initialize field stays unchanged.
+    assert result["capabilities"] == {"tools": {}}
+    assert result["serverInfo"]["name"] == "halocli"
+
+
+def test_latest_protocol_version_is_supported() -> None:
+    assert mcp_server.LATEST_PROTOCOL_VERSION in mcp_server.SUPPORTED_PROTOCOL_VERSIONS
+    assert "2024-11-05" in mcp_server.SUPPORTED_PROTOCOL_VERSIONS
+    assert "2025-03-26" in mcp_server.SUPPORTED_PROTOCOL_VERSIONS
+
+
 def test_initialized_notification_produces_no_response() -> None:
     responses = run_server(
         json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}),

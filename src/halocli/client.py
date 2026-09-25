@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import json
+import io
 import time
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -48,19 +50,25 @@ class HaloClient:
         json_body: Any = None,
         files: Any = None,
         data: Any = None,
+        as_bytes: bool = False,
     ) -> Any:
         """Send an authenticated HaloPSA request.
 
-        ``files``/``data`` are forwarded verbatim to httpx so callers can perform
+        ``files``/``data`` are forwarded to httpx so callers can perform
         multipart uploads (attachments) and form posts; when either is supplied
-        ``json_body`` is not sent.
+        ``json_body`` is not sent. File-like payloads in ``files`` are buffered
+        into ``bytes`` first, so a retried upload always resends identical bytes.
 
         Response contract for ``status < 300``:
 
+        * ``as_bytes=True`` -> the raw ``bytes`` body, never parsed
         * empty body -> ``None``
-        * JSON payload -> the parsed object (unchanged from earlier versions)
-        * anything else (octet-stream, pdf, csv, zip, image, ...) -> the raw
-          ``bytes`` body instead of raising
+        * declared JSON media type -> the parsed object (unchanged from earlier
+          versions); an unparseable declared-JSON body still raises
+        * declared non-JSON media type (text/plain, text/csv, octet-stream, pdf,
+          zip, image, ...) -> the raw ``bytes`` body instead of raising
+        * no ``Content-Type`` header -> best-effort JSON parse, falling back to
+          the raw ``bytes`` body for endpoints that omit the header
 
         Callers distinguish the raw case with ``isinstance(result, bytes)``.
         """
@@ -69,7 +77,7 @@ class HaloClient:
         token = await self._access_token()
         url = self._url(path)
         headers = {"Authorization": f"Bearer {token}"}
-        body_kwargs = _body_kwargs(json_body, files, data)
+        body_kwargs = _body_kwargs(json_body, _buffer_files(files), data)
 
         last_response: httpx.Response | None = None
         for attempt in range(self.profile.max_retries + 1):
@@ -82,6 +90,8 @@ class HaloClient:
             )
             last_response = response
             if response.status_code < 300:
+                if as_bytes:
+                    return response.content
                 return _success_payload(response)
             if response.status_code == 401 and attempt == 0:
                 self._token = None
@@ -108,12 +118,10 @@ class HaloClient:
     async def download(self, path: str, *, params: dict[str, Any] | None = None) -> bytes:
         """GET ``path`` (file, attachment, export) and return the body as ``bytes``.
 
-        Non-JSON responses are returned as-is. If the endpoint answers with JSON
-        instead, the payload is encoded back to UTF-8 bytes so the return type
-        stays ``bytes``.
+        The body is returned verbatim: it is never parsed, so even a JSON answer
+        keeps its exact bytes (whitespace, newlines, checksum) unchanged.
         """
-        payload = await self.request("GET", path, params=params)
-        return _as_bytes(payload)
+        return await self.request("GET", path, params=params, as_bytes=True)
 
     async def test_auth(self) -> Any:
         return await self.request("GET", "/Agent/me")
@@ -219,11 +227,59 @@ class HaloClient:
                 pass
         return float(2**attempt)
 
+
 def _body_kwargs(json_body: Any, files: Any, data: Any) -> dict[str, Any]:
     """Build the httpx body kwargs: multipart/form when files or data are given."""
     if files is not None or data is not None:
         return {"files": files, "data": data}
     return {"json": json_body}
+
+
+def _buffer_files(files: Any) -> Any:
+    """Read file-like payloads in ``files`` into ``bytes`` before the first attempt.
+
+    httpx rewinds seekable files between attempts, but a non-seekable stream is
+    read from its current position: a retry would upload an empty file and still
+    look successful. Buffering once means every attempt sends identical bytes.
+    """
+    if isinstance(files, Mapping):
+        return {name: _buffer_file_value(value) for name, value in files.items()}
+    if isinstance(files, (list, tuple)):
+        return [(name, _buffer_file_value(value)) for name, value in files]
+    return files
+
+
+def _buffer_file_value(value: Any) -> Any:
+    """Rewrite one ``files`` entry so its payload is bytes rather than a stream."""
+    if isinstance(value, tuple):
+        # (filename, file[, content_type[, headers]]): buffer only the file part.
+        if len(value) < 2 or not hasattr(value[1], "read"):
+            return value
+        content = _read_file_content(value[1])
+        if content is None:
+            return value
+        return (value[0], content, *value[2:])
+    if hasattr(value, "read"):
+        content = _read_file_content(value)
+        if content is None:
+            return value
+        # Mirror httpx, which derives the filename from the stream's name.
+        filename = Path(str(getattr(value, "name", "upload"))).name
+        return (filename, content)
+    return value
+
+
+def _read_file_content(fileobj: Any) -> bytes | None:
+    """Full content of ``fileobj``, or ``None`` to leave the entry untouched."""
+    if isinstance(fileobj, io.TextIOBase):
+        # Text streams stay untouched so httpx keeps raising its usual TypeError.
+        return None
+    content = fileobj.read()
+    if isinstance(content, bytes):
+        return content
+    if isinstance(content, bytearray):
+        return bytes(content)
+    return None
 
 
 def _media_type(response: httpx.Response) -> str:
@@ -262,25 +318,20 @@ def _success_payload(response: httpx.Response) -> Any:
     """Decode a successful (status < 300) body: ``None``, parsed JSON, or raw bytes."""
     if not response.content:
         return None
-    if _is_binary_media_type(_media_type(response)):
+    media_type = _media_type(response)
+    if _is_binary_media_type(media_type):
         return response.content
+    if _is_json_media_type(media_type):
+        # Declared JSON: an unparseable body keeps raising, as it always has.
+        return response.json()
+    if media_type:
+        # Declared non-JSON (text/plain, text/csv, ...): raw bytes, never parsed.
+        return response.content
+    # No Content-Type header: sloppy endpoints - try JSON, else the raw bytes.
     try:
         return response.json()
     except ValueError:  # JSONDecodeError / UnicodeDecodeError are ValueError subclasses
-        if _is_json_media_type(_media_type(response)):
-            # Declared JSON but unparseable: keep the historical failure visible.
-            raise
         return response.content
-
-
-def _as_bytes(payload: Any) -> bytes:
-    if isinstance(payload, bytes):
-        return payload
-    if payload is None:
-        return b""
-    if isinstance(payload, str):
-        return payload.encode("utf-8")
-    return json.dumps(payload).encode("utf-8")
 
 
 def _response_error(response: httpx.Response, *, endpoint: str) -> HaloCLIError:
