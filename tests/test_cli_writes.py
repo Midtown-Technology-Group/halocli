@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 
 from typer.testing import CliRunner
 
@@ -12,6 +13,15 @@ from halocli.cli import app
 from halocli.resources import RESOURCE_BY_COMMAND
 
 runner = CliRunner()
+
+# CI (and FORCE_COLOR runs) render click's rich errors with ANSI styling, which
+# interleaves escape codes inside option names ("--apply --yes"). Strip them
+# before substring assertions so tests do not depend on the color environment.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def plain(output: str) -> str:
+    return _ANSI_RE.sub("", output)
 
 
 def test_search_returns_ranked_registry_results() -> None:
@@ -82,7 +92,7 @@ def test_write_requires_both_apply_and_yes() -> None:
             app, ["tickets", "create", "--data", payload, *flags]
         )
         assert result.exit_code != 0
-        assert "--apply --yes" in result.output
+        assert "--apply --yes" in plain(result.output)
 
 
 def test_update_injects_item_id_into_payload() -> None:
@@ -134,12 +144,13 @@ def test_raw_no_validate_bypasses_spec_check() -> None:
     )
 
     assert result.exit_code == 1
-    assert "unknown endpoint" not in result.output
-    assert "profile" in result.output.lower()
+    output = plain(result.output)
+    assert "unknown endpoint" not in output
+    assert "profile" in output.lower()
 
 
 def test_raw_write_gate_still_applies_before_spec_check() -> None:
     result = runner.invoke(app, ["raw", "POST", "/Tickets", "--data", "{}"])
 
     assert result.exit_code != 0
-    assert "--apply --yes" in result.output
+    assert "--apply --yes" in plain(result.output)
