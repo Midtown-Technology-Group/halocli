@@ -6,6 +6,31 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.6.0 - 2026-09-25
+
+- Vendored the official HaloPSA REST API v2 OpenAPI specification
+  (`src/halocli/spec/halo_openapi.json`, 927 paths) with a re-runnable
+  `scripts/vendor_halo_spec.py` refresh script.
+- Added `halocli search`, offline discovery across the resource registry and
+  the vendored spec, and `halocli raw` spec validation (unknown endpoints and
+  missing required body fields are refused by default; `--no-validate`
+  bypasses it, warnings pass through as `spec_warnings`).
+- Added first-class write commands for the ten resources with write metadata:
+  `create`, `update`, `delete` are preview-by-default dry runs that make zero
+  network calls, and require `--apply --yes` to execute (matching `raw`).
+- Added `halocli serve`, a code-mode MCP server (newline-delimited JSON-RPC
+  over stdio, stdlib only) exposing exactly three tools — `halo_search`,
+  `halo_execute`, `halo_resources` — instead of one tool per Halo operation.
+  Non-GET calls require `apply: true` and responses are bounded at 40k chars.
+- Added multipart upload and binary-safe responses to `HaloClient`
+  (`files=`/`data=` passthrough, `download()`, bytes payloads for
+  non-JSON content types such as attachments, report exports and PDFs).
+- Isolated the test suite from ambient machine state: real config profiles,
+  `HALO_*` environment variables, the Windows Credential Manager keyring, and
+  the browser/OAuth callback are all faked or redirected per test.
+- Fixed JSON output being corrupted by terminal soft-wrapping when piped, so
+  `halocli ... | jq` is now reliable.
+
 ## 0.5.0 - 2026-04-27
 
 - Added `halocli todo web`, a local-first FastAPI/Vite React Todo web UI over

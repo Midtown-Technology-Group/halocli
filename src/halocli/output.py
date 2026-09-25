@@ -18,11 +18,15 @@ def render(data: Any, *, output: str = "json", table_fields: tuple[str, ...] | N
     if output == "table" and isinstance(data, dict) and isinstance(data.get("item"), dict):
         _render_table([data["item"]], table_fields=table_fields)
         return
-    console.print(json.dumps(data, indent=2, sort_keys=True, default=str))
+    # soft_wrap keeps JSON on one logical line: rich otherwise hard-wraps at the
+    # terminal width (80 cols when piped), which corrupts the JSON for consumers.
+    console.print(json.dumps(data, indent=2, sort_keys=True, default=str), soft_wrap=True)
 
 
 def render_error(data: dict[str, Any]) -> None:
-    error_console.print(json.dumps(data, indent=2, sort_keys=True, default=str))
+    error_console.print(
+        json.dumps(data, indent=2, sort_keys=True, default=str), soft_wrap=True
+    )
 
 
 def _render_table(items: list[dict], *, table_fields: tuple[str, ...] | None = None) -> None:

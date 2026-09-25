@@ -151,11 +151,80 @@ halocli <resource> list --param key=value --max-records 25
 halocli <resource> get ID
 ```
 
+Ten resources (tickets, actions, clients, sites, assets, agents,
+appointments, statuses, priorities, contracts) also have write metadata and
+first-class write commands. Writes are **preview by default**: without flags
+they validate the payload and print what would be sent, with zero network
+calls. Executing requires both `--apply` and `--yes`:
+
+```powershell
+halocli tickets create --data payload.json                      # dry-run preview
+halocli tickets create --data payload.json --apply --yes        # executes
+halocli tickets update 123 --data payload.json --apply --yes
+halocli tickets delete 123 --apply --yes
+```
+
 Raw write-capable requests require both `--apply` and `--yes`:
 
 ```powershell
 halocli raw POST /Tickets --data payload.json --apply --yes
 ```
+
+`raw` validates the method, path and body against the vendored OpenAPI spec
+before sending. Unknown endpoints and missing required body fields are
+refused; pass `--no-validate` to bypass the check (spec warnings are returned
+as `spec_warnings` either way).
+
+## Endpoint Discovery
+
+Find the right endpoint without leaving the terminal. This searches both the
+resource registry and the vendored HaloPSA OpenAPI spec (927 paths) offline:
+
+```powershell
+halocli search invoice
+halocli search "site" --limit 5
+```
+
+Refresh the vendored spec whenever Halo revs its API:
+
+```powershell
+python scripts/vendor_halo_spec.py
+```
+
+## MCP Server (Code Mode)
+
+`halocli serve` runs a code-mode MCP server over stdio (newline-delimited
+JSON-RPC 2.0, no extra dependencies). Instead of exposing one tool per Halo
+operation — which floods the model's context — it exposes exactly three tools
+with rich descriptions:
+
+| Tool | Purpose |
+| --- | --- |
+| `halo_search` | Discover resources/operations (registry + OpenAPI) |
+| `halo_execute` | Run one REST call with server-side guardrails |
+| `halo_resources` | Dump the full resource catalog when search misses |
+
+Guardrails are enforced server-side: non-GET methods require `apply: true`
+(otherwise you get a structured refusal and no request is sent), and
+responses are bounded at ~40,000 characters so a large collection cannot
+flood the context window.
+
+Register it with an MCP client (example for a generic MCP config):
+
+```json
+{
+  "mcpServers": {
+    "halo": {
+      "command": "halocli",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+`halocli --version` measures ~1.1s on cold start (Python + Typer import); the
+OpenAPI spec loads lazily and is not part of that cost. The MCP server is a
+long-lived process, so its startup is paid once.
 
 ## Todo And Microsoft To Do Preview
 

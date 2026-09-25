@@ -9,10 +9,24 @@ from typer.testing import CliRunner
 from halocli.cli import app
 from halocli.client import HaloClient
 from halocli.config import HaloProfile
-from halocli.resources import RESOURCE_BY_COMMAND, RESOURCES, get_resource
+from halocli.resources import RESOURCE_BY_COMMAND, RESOURCES, HaloResource, get_resource
 
 
 runner = CliRunner()
+
+# Resources that must carry first-class write metadata.
+WRITE_RESOURCES = (
+    "tickets",
+    "actions",
+    "clients",
+    "sites",
+    "assets",
+    "agents",
+    "appointments",
+    "statuses",
+    "priorities",
+    "contracts",
+)
 
 
 def test_registry_names_and_aliases_are_unique() -> None:
@@ -31,6 +45,53 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
     for resource in RESOURCES:
         assert resource.endpoint.startswith("/")
         assert resource.table_fields
+
+
+def test_registry_still_constructs_all_resources() -> None:
+    assert len(RESOURCES) == 32
+    # Backward compatibility: a resource with no write metadata stays read-only.
+    plain = HaloResource("plain", "/Plain")
+    assert plain.create_endpoint is None
+    assert plain.update_endpoint is None
+    assert plain.required_create_fields == ()
+    assert plain.required_update_fields == ()
+    assert plain.supports_delete is False
+    assert plain.write_preview_fields == ()
+    assert plain.supports_write is False
+
+
+def test_write_metadata_present_for_write_enabled_resources() -> None:
+    assert len(WRITE_RESOURCES) == 10
+    for name in WRITE_RESOURCES:
+        resource = get_resource(name)
+        assert resource.supports_write, name
+        assert resource.supports_create, name
+        assert resource.supports_update, name
+        assert resource.create_endpoint == resource.endpoint, name
+        assert resource.update_endpoint == resource.endpoint, name
+        assert resource.required_create_fields, name
+        assert "id" in resource.required_update_fields, name
+        assert resource.effective_write_preview_fields[0] == "id", name
+        assert set(resource.required_create_fields) <= set(
+            resource.effective_write_preview_fields
+        ), name
+
+    # Resources outside the write set keep their read-only defaults.
+    for resource in RESOURCES:
+        if resource.name in WRITE_RESOURCES:
+            continue
+        assert not resource.supports_write, resource.name
+        assert not resource.supports_delete, resource.name
+
+
+def test_ticket_and_action_write_shapes() -> None:
+    tickets = get_resource("tickets")
+    assert tickets.required_create_fields == ("summary",)
+    assert tickets.supports_delete is True
+
+    actions = get_resource("actions")
+    assert actions.required_create_fields == ("ticket_id", "note")
+    assert "note" in actions.write_preview_fields
 
 
 @pytest.mark.parametrize("resource", RESOURCES)

@@ -11,10 +11,43 @@ class HaloResource:
     table_fields: tuple[str, ...] = ("id", "name")
     list_key: str | None = None
     supports_get: bool = True
+    # Write metadata. Halo convention: POST to the collection creates a record when no
+    # `id` is supplied and updates the record when `id` is set; DELETE removes
+    # `{collection}/{id}`. Resources without write metadata stay read-only.
+    create_endpoint: str | None = None
+    update_endpoint: str | None = None
+    required_create_fields: tuple[str, ...] = ()
+    required_update_fields: tuple[str, ...] = ()
+    supports_delete: bool = False
+    # Fields shown in a dry-run preview; when empty, defaults to id + required fields.
+    write_preview_fields: tuple[str, ...] = ()
 
     @property
     def command_names(self) -> tuple[str, ...]:
         return (self.name, *self.aliases)
+
+    @property
+    def supports_create(self) -> bool:
+        return self.create_endpoint is not None
+
+    @property
+    def supports_update(self) -> bool:
+        return self.update_endpoint is not None
+
+    @property
+    def supports_write(self) -> bool:
+        return self.supports_create or self.supports_update
+
+    @property
+    def effective_write_preview_fields(self) -> tuple[str, ...]:
+        """Preview shape: the explicit override, else id plus the required fields."""
+        if self.write_preview_fields:
+            return self.write_preview_fields
+        merged: list[str] = []
+        for key in ("id", *self.required_create_fields, *self.required_update_fields):
+            if key not in merged:
+                merged.append(key)
+        return tuple(merged)
 
 
 RESOURCES: tuple[HaloResource, ...] = (
@@ -23,14 +56,44 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Tickets",
         aliases=("ticket",),
         table_fields=("id", "summary", "status_name", "client_name", "agent_name"),
+        # POST /Tickets creates (no id) and updates (id set) — closing is an update that
+        # sets status_id. Halo docs vary: some instances also require client_id and
+        # tickettype_id on create, so only summary is enforced here. DELETE /Tickets/{id}.
+        create_endpoint="/Tickets",
+        update_endpoint="/Tickets",
+        required_create_fields=("summary",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "summary", "client_id", "status_id", "priority_id"),
     ),
     HaloResource(
         "clients",
         "/Client",
         aliases=("client",),
         table_fields=("id", "name", "accountmanager_name"),
+        # POST /Client (Area) creates or updates by id; DELETE /Client/{id} exists.
+        create_endpoint="/Client",
+        update_endpoint="/Client",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "inactive"),
     ),
-    HaloResource("agents", "/Agent", aliases=("agent",), table_fields=("id", "name", "team", "use")),
+    HaloResource(
+        "agents",
+        "/Agent",
+        aliases=("agent",),
+        table_fields=("id", "name", "team", "use"),
+        # POST /Agent (Uname) creates or updates by id; DELETE /Agent/{id} exists.
+        # Assumption: name + email are required to create an agent (email is the login);
+        # instances may differ.
+        create_endpoint="/Agent",
+        update_endpoint="/Agent",
+        required_create_fields=("name", "email"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "email", "use", "team"),
+    ),
     HaloResource("teams", "/Team", aliases=("team",), table_fields=("id", "name")),
     HaloResource(
         "users",
@@ -44,25 +107,81 @@ RESOURCES: tuple[HaloResource, ...] = (
         aliases=("kb-articles", "kb-article"),
         table_fields=("id", "name", "title"),
     ),
-    HaloResource("sites", "/Site", aliases=("site",), table_fields=("id", "name", "client_name")),
+    HaloResource(
+        "sites",
+        "/Site",
+        aliases=("site",),
+        table_fields=("id", "name", "client_name"),
+        # POST /Site creates or updates by id; DELETE /Site/{id} exists.
+        create_endpoint="/Site",
+        update_endpoint="/Site",
+        required_create_fields=("name", "client_id"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "client_id", "sla_id", "inactive"),
+    ),
     HaloResource(
         "assets",
         "/Asset",
         aliases=("asset",),
         table_fields=("id", "inventory_number", "name", "client_name", "site_name"),
+        # POST /Asset (Device) creates or updates by id; DELETE /Asset/{id} exists.
+        # Assumption: the Device schema has no "name" field — assets are identified by
+        # inventory_number (+ assettype_id); only client_id is enforced as required.
+        create_endpoint="/Asset",
+        update_endpoint="/Asset",
+        required_create_fields=("client_id",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=(
+            "id",
+            "inventory_number",
+            "assettype_id",
+            "client_id",
+            "site_id",
+        ),
     ),
     HaloResource(
         "actions",
         "/Actions",
         aliases=("action",),
         table_fields=("id", "ticket_id", "who", "note"),
+        # POST /Actions creates a ticket action/note (ticket_id set, no id) or updates
+        # one (id set); DELETE /Actions/{id} exists. Instance config may additionally
+        # require outcome/outcome_id for some action types, so only ticket_id + note are
+        # enforced here.
+        create_endpoint="/Actions",
+        update_endpoint="/Actions",
+        required_create_fields=("ticket_id", "note"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "ticket_id", "note", "outcome", "hiddenfromuser"),
     ),
-    HaloResource("statuses", "/Status", aliases=("status",), table_fields=("id", "name", "use")),
+    HaloResource(
+        "statuses",
+        "/Status",
+        aliases=("status",),
+        table_fields=("id", "name", "use"),
+        # POST /Status (TStatus) creates or updates by id; DELETE /Status/{id} exists.
+        create_endpoint="/Status",
+        update_endpoint="/Status",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "type", "sequence"),
+    ),
     HaloResource(
         "priorities",
         "/Priority",
         aliases=("priority",),
         table_fields=("id", "name", "sequence"),
+        # POST /Priority (Policy) creates or updates by id; DELETE /Priority/{id} exists.
+        create_endpoint="/Priority",
+        update_endpoint="/Priority",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "colour", "slaid"),
     ),
     HaloResource(
         "categories",
@@ -82,12 +201,31 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Appointment",
         aliases=("appointment",),
         table_fields=("id", "subject", "agent_id", "start_date", "end_date"),
+        # POST /Appointment creates or updates by id; DELETE /Appointment/{id} exists.
+        # Assumption: subject + start_date + end_date are required; agent_id defaults to
+        # the authenticated agent when omitted.
+        create_endpoint="/Appointment",
+        update_endpoint="/Appointment",
+        required_create_fields=("subject", "start_date", "end_date"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "subject", "agent_id", "start_date", "end_date"),
     ),
     HaloResource(
         "contracts",
         "/Contract",
         aliases=("contract",),
         table_fields=("id", "name", "client_name"),
+        # Assumption: /Contract follows the standard collection convention (POST
+        # creates, POST with id updates). The v2 API spec only documents
+        # /ClientContract and /SupplierContract, so /Contract write support is
+        # unverified — DELETE /Contract/{id} is deliberately left unsupported.
+        create_endpoint="/Contract",
+        update_endpoint="/Contract",
+        required_create_fields=("client_id",),
+        required_update_fields=("id",),
+        supports_delete=False,
+        write_preview_fields=("id", "ref", "client_id", "start_date", "end_date"),
     ),
     HaloResource(
         "invoices",

@@ -4,3 +4,5 @@ include THIRD_PARTY_NOTICES.md
 include CHANGELOG.md
 include RELEASE.md
 recursive-include src/halocli/web_static *
+recursive-include src/halocli/spec *.json
+include scripts/vendor_halo_spec.py

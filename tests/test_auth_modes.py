@@ -5,9 +5,11 @@ from pathlib import Path
 import pytest
 import yaml
 
+from conftest import InMemoryKeyring
+from halocli import token_cache
 from halocli.auth import parse_callback_query
 from halocli.config import HaloProfile, load_profile
-from halocli.token_cache import FileTokenCacheDisabled, TokenCache
+from halocli.token_cache import FileTokenCacheDisabled, KeyringTokenCache, TokenCache
 
 
 def test_profile_loads_auth_mode(tmp_path: Path) -> None:
@@ -69,3 +71,15 @@ def test_file_token_cache_refuses_without_explicit_allowance(tmp_path: Path) -> 
 
     with pytest.raises(FileTokenCacheDisabled):
         cache.save("thomas", {"access_token": "abc"})
+
+
+def test_keyring_access_is_isolated_from_windows_credential_manager() -> None:
+    # The conftest fixture replaces _load_keyring with an in-memory fake, so these
+    # calls must never reach the real Windows Credential Manager (or any OS keyring).
+    assert isinstance(token_cache._load_keyring(), InMemoryKeyring)
+
+    secure_cache = KeyringTokenCache()
+    secure_cache.save("isolation-probe", {"access_token": "abc"})
+    assert secure_cache.load("isolation-probe") == {"access_token": "abc"}
+    assert secure_cache.delete("isolation-probe") is True
+    assert secure_cache.load("isolation-probe") is None

@@ -20,7 +20,9 @@ from halocli.errors import HaloCLIError, classify_error, diagnose_permission_fai
 from halocli.models import TokenPayload
 from halocli.output import render, render_error
 from halocli.resources import RESOURCES, HaloResource
+from halocli.schema import validate_request as validate_schema_request
 from halocli.token_cache import KeyringTokenCache, TokenCache
+from halocli.writes import delete_resource, execute_write
 from halocli.todo import (
     GraphMicrosoftTodoRepository,
     HaloTodoRepository,
@@ -187,6 +189,75 @@ def _resource_command(resource: HaloResource):
     ) -> None:
         _run(_get_resource(resource=resource, item_id=item_id, profile=profile, output=output))
 
+    if resource.supports_create:
+
+        @resource_app.command("create")
+        def create_command(
+            data: Annotated[str, typer.Option("--data", help="JSON file path or inline JSON object.")],
+            profile: Annotated[str, typer.Option("--profile")] = "default",
+            output: Annotated[str, typer.Option("--output", "-o")] = "json",
+            apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,  # noqa: A002
+            yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+        ) -> None:
+            execute = _resolve_apply(apply, yes)
+            payload = _require_payload(_load_body(data))
+            result = _run(
+                _write_resource(
+                    resource=resource,
+                    payload=payload,
+                    update=False,
+                    profile=profile,
+                    apply=execute,
+                )
+            )
+            _finish_write(result, output=output)
+
+    if resource.supports_update:
+
+        @resource_app.command("update")
+        def update_command(
+            item_id: str,
+            data: Annotated[str, typer.Option("--data", help="JSON file path or inline JSON object.")],
+            profile: Annotated[str, typer.Option("--profile")] = "default",
+            output: Annotated[str, typer.Option("--output", "-o")] = "json",
+            apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,  # noqa: A002
+            yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+        ) -> None:
+            execute = _resolve_apply(apply, yes)
+            payload = dict(_require_payload(_load_body(data)))
+            payload["id"] = int(item_id) if item_id.isdigit() else item_id
+            result = _run(
+                _write_resource(
+                    resource=resource,
+                    payload=payload,
+                    update=True,
+                    profile=profile,
+                    apply=execute,
+                )
+            )
+            _finish_write(result, output=output)
+
+    if resource.supports_delete:
+
+        @resource_app.command("delete")
+        def delete_command(
+            item_id: str,
+            profile: Annotated[str, typer.Option("--profile")] = "default",
+            output: Annotated[str, typer.Option("--output", "-o")] = "json",
+            apply: Annotated[bool, typer.Option("--apply", help="Execute the delete (requires --yes).")] = False,  # noqa: A002
+            yes: Annotated[bool, typer.Option("--yes", help="Confirm the delete (requires --apply).")] = False,
+        ) -> None:
+            execute = _resolve_apply(apply, yes)
+            result = _run(
+                _delete_command(
+                    resource=resource,
+                    item_id=item_id,
+                    profile=profile,
+                    apply=execute,
+                )
+            )
+            _finish_write(result, output=output)
+
     return resource_app
 
 
@@ -204,11 +275,38 @@ def raw(
     data: Annotated[str | None, typer.Option("--data")] = None,
     apply: Annotated[bool, typer.Option("--apply")] = False,  # noqa: A002
     yes: Annotated[bool, typer.Option("--yes")] = False,
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Check method/path/body against the vendored Halo OpenAPI spec (default on).",
+        ),
+    ] = True,
 ) -> None:
     method = method.upper()
     if method in {"POST", "PUT", "PATCH", "DELETE"} and not (apply and yes):
         raise typer.BadParameter(f"Refusing {method} {path} without --apply --yes.")
     body = _load_body(data)
+    warnings: list[str] = []
+    if validate:
+        problems = validate_schema_request(method, path, body)
+        warnings = [problem for problem in problems if problem.startswith("warning: ")]
+        fatal = [problem for problem in problems if not problem.startswith("warning: ")]
+        if fatal:
+            render_error(
+                {
+                    "ok": False,
+                    "category": "validation",
+                    "status_code": None,
+                    "error": f"Refusing {method} {path}: spec validation failed.",
+                    "problems": fatal,
+                    "diagnostic": (
+                        "Fix the request, or pass --no-validate to bypass the vendored "
+                        "OpenAPI spec check."
+                    ),
+                }
+            )
+            raise typer.Exit(1)
     _run(
         _raw(
             profile=profile,
@@ -217,8 +315,45 @@ def raw(
             path=path,
             params=_parse_params(param or []),
             body=body,
+            spec_warnings=warnings,
         )
     )
+
+
+@app.command()
+def search(
+    query: str,
+    limit: Annotated[int, typer.Option("--limit", min=1, max=50)] = 10,
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Discover Halo resources and OpenAPI operations for a free-text query."""
+    from halocli import mcp_server
+
+    results = mcp_server.search_catalog(query, limit)
+    render(
+        {
+            "ok": True,
+            "query": query,
+            "count": len(results),
+            "results": results,
+            "hint": (
+                "Pass a result's endpoint to `halocli raw <METHOD> <path>` "
+                "(writes need --apply --yes)."
+            ),
+        },
+        output=output,
+    )
+
+
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option("--host", help="Bind address for stdio (ignored; reserved).")] = "stdio",
+) -> None:
+    """Run the code-mode MCP server on stdin/stdout (newline-delimited JSON-RPC 2.0)."""
+    from halocli import mcp_server
+
+    del host  # reserved so future transports can be added without breaking callers
+    mcp_server.main()
 
 
 @todo_app.command("import-ms")
@@ -433,6 +568,65 @@ async def _get_resource(
     )
 
 
+def _resolve_apply(apply: bool, yes: bool) -> bool:
+    """Normalize the `--apply --yes` pair into a single execute decision.
+
+    Both flags are required to write (matching `halocli raw`); preview is the default
+    when neither is given. Passing exactly one is a usage error, not a silent preview —
+    a half-confirmed write flag deserves a loud refusal.
+    """
+    if apply and yes:
+        return True
+    if apply or yes:
+        raise typer.BadParameter(
+            "Writes require both --apply and --yes (preview is the default; "
+            "pass --apply --yes to execute)."
+        )
+    return False
+
+
+def _require_payload(body: object) -> dict:
+    if not isinstance(body, dict):
+        raise typer.BadParameter("--data must decode to a JSON object.")
+    return body
+
+
+async def _write_resource(
+    *,
+    resource: HaloResource,
+    payload: dict,
+    update: bool,
+    profile: str,
+    apply: bool,
+) -> dict:
+    if not apply:
+        # Preview: zero network calls, so no profile/client is needed.
+        return await execute_write(None, resource, payload, update=update, apply=False)
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        return await execute_write(client, resource, payload, update=update, apply=True)
+
+
+async def _delete_command(
+    *,
+    resource: HaloResource,
+    item_id: str,
+    profile: str,
+    apply: bool,
+) -> dict:
+    if not apply:
+        return await delete_resource(None, resource, item_id, apply=False)
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        return await delete_resource(client, resource, item_id, apply=True)
+
+
+def _finish_write(result: dict, *, output: str) -> None:
+    render(result, output=output)
+    if not result.get("ok"):
+        raise typer.Exit(1)
+
+
 async def _raw(
     *,
     profile: str,
@@ -441,11 +635,16 @@ async def _raw(
     path: str,
     params: dict[str, str],
     body: object,
-) -> None:
+    spec_warnings: list[str] | None = None,
+) -> dict:
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
         result = await client.raw(method, path, params=params, body=body)
-    render({"ok": True, "body": normalize_halo_result(result)}, output=output)
+    payload = {"ok": True, "body": normalize_halo_result(result)}
+    if spec_warnings:
+        payload["spec_warnings"] = spec_warnings
+    render(payload, output=output)
+    return payload
 
 
 async def _todo_add(
@@ -554,9 +753,9 @@ def _load_body(value: str | None) -> object:
     return json.loads(value)
 
 
-def _run(coro) -> None:
+def _run(coro):
     try:
-        asyncio.run(coro)
+        return asyncio.run(coro)
     except HaloCLIError as exc:
         render_error(
             {

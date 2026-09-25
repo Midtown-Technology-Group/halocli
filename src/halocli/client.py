@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from typing import Any
 
@@ -45,12 +46,30 @@ class HaloClient:
         *,
         params: dict[str, Any] | None = None,
         json_body: Any = None,
+        files: Any = None,
+        data: Any = None,
     ) -> Any:
+        """Send an authenticated HaloPSA request.
+
+        ``files``/``data`` are forwarded verbatim to httpx so callers can perform
+        multipart uploads (attachments) and form posts; when either is supplied
+        ``json_body`` is not sent.
+
+        Response contract for ``status < 300``:
+
+        * empty body -> ``None``
+        * JSON payload -> the parsed object (unchanged from earlier versions)
+        * anything else (octet-stream, pdf, csv, zip, image, ...) -> the raw
+          ``bytes`` body instead of raising
+
+        Callers distinguish the raw case with ``isinstance(result, bytes)``.
+        """
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         token = await self._access_token()
         url = self._url(path)
         headers = {"Authorization": f"Bearer {token}"}
+        body_kwargs = _body_kwargs(json_body, files, data)
 
         last_response: httpx.Response | None = None
         for attempt in range(self.profile.max_retries + 1):
@@ -58,12 +77,12 @@ class HaloClient:
                 method.upper(),
                 url,
                 params=params,
-                json=json_body,
                 headers=headers,
+                **body_kwargs,
             )
             last_response = response
             if response.status_code < 300:
-                return response.json() if response.content else None
+                return _success_payload(response)
             if response.status_code == 401 and attempt == 0:
                 self._token = None
                 headers["Authorization"] = f"Bearer {await self._access_token()}"
@@ -85,6 +104,16 @@ class HaloClient:
 
     async def raw(self, method: str, path: str, *, params: dict[str, Any] | None = None, body: Any = None) -> Any:
         return await self.request(method, path, params=params, json_body=body)
+
+    async def download(self, path: str, *, params: dict[str, Any] | None = None) -> bytes:
+        """GET ``path`` (file, attachment, export) and return the body as ``bytes``.
+
+        Non-JSON responses are returned as-is. If the endpoint answers with JSON
+        instead, the payload is encoded back to UTF-8 bytes so the return type
+        stays ``bytes``.
+        """
+        payload = await self.request("GET", path, params=params)
+        return _as_bytes(payload)
 
     async def test_auth(self) -> Any:
         return await self.request("GET", "/Agent/me")
@@ -190,7 +219,86 @@ class HaloClient:
                 pass
         return float(2**attempt)
 
+def _body_kwargs(json_body: Any, files: Any, data: Any) -> dict[str, Any]:
+    """Build the httpx body kwargs: multipart/form when files or data are given."""
+    if files is not None or data is not None:
+        return {"files": files, "data": data}
+    return {"json": json_body}
+
+
+def _media_type(response: httpx.Response) -> str:
+    raw = response.headers.get("content-type") or ""
+    return raw.split(";")[0].strip().lower()
+
+
+def _is_json_media_type(media_type: str) -> bool:
+    return media_type.endswith("/json") or media_type.endswith("+json")
+
+
+_BINARY_MEDIA_TYPES = frozenset(
+    {
+        "application/octet-stream",
+        "application/pdf",
+        "application/zip",
+        "application/gzip",
+        "application/x-gzip",
+        "application/x-tar",
+        "application/x-7z-compressed",
+        "application/x-bzip2",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
+)
+
+
+def _is_binary_media_type(media_type: str) -> bool:
+    if media_type.startswith(("image/", "audio/", "video/", "font/", "multipart/")):
+        return True
+    return media_type in _BINARY_MEDIA_TYPES
+
+
+def _success_payload(response: httpx.Response) -> Any:
+    """Decode a successful (status < 300) body: ``None``, parsed JSON, or raw bytes."""
+    if not response.content:
+        return None
+    if _is_binary_media_type(_media_type(response)):
+        return response.content
+    try:
+        return response.json()
+    except ValueError:  # JSONDecodeError / UnicodeDecodeError are ValueError subclasses
+        if _is_json_media_type(_media_type(response)):
+            # Declared JSON but unparseable: keep the historical failure visible.
+            raise
+        return response.content
+
+
+def _as_bytes(payload: Any) -> bytes:
+    if isinstance(payload, bytes):
+        return payload
+    if payload is None:
+        return b""
+    if isinstance(payload, str):
+        return payload.encode("utf-8")
+    return json.dumps(payload).encode("utf-8")
+
+
 def _response_error(response: httpx.Response, *, endpoint: str) -> HaloCLIError:
-    error = RuntimeError(f"HTTP {response.status_code}: {response.text[:500]}")
+    snippet = _error_snippet(response)
+    error = RuntimeError(f"HTTP {response.status_code}: {snippet}")
+    error.response_body = snippet  # type: ignore[attr-defined] - read by classify_error
     error.response = response  # type: ignore[attr-defined]
     return classify_error(error, endpoint=endpoint)
+
+
+def _error_snippet(response: httpx.Response, limit: int = 500) -> str:
+    """Short, never-raising summary of an error body (JSON, text, binary or empty)."""
+    if not response.content:
+        return ""
+    media_type = _media_type(response)
+    if _is_binary_media_type(media_type):
+        return f"<binary body: {len(response.content)} bytes, {media_type}>"
+    try:
+        return response.text[:limit]
+    except Exception:  # pragma: no cover - httpx normally decodes with replacement
+        return f"<unreadable body: {len(response.content)} bytes>"
