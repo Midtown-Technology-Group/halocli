@@ -28,6 +28,17 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   over stdio, stdlib only) exposing exactly three tools — `halo_search`,
   `halo_execute`, `halo_resources` — instead of one tool per Halo operation.
   Non-GET calls require `apply: true` and responses are bounded at 40k chars.
+  Tools advertise MCP annotations (`readOnlyHint` etc.) so hosts can gate
+  writes without prompting on discovery calls — e.g. Codex's `writes`
+  approval mode.
+- Added a coverage oracle (`scripts/coverage_report.py`) that diffs the
+  vendored spec against the resource registry offline: first-class coverage
+  percentages, uncurated roots ranked as curation candidates, and both
+  mismatch directions — `write_mismatches` (write metadata pointing at
+  endpoints the spec lacks, the `/Contract` bug class; `--check` is a CI
+  gate) and `read_mismatches` (registry endpoints absent from the spec:
+  currently `contracts`, `opportunities`, `projects`). Test-pinned so a spec
+  refresh cannot silently change the state.
 - Added multipart upload and binary-safe responses to `HaloClient`
   (`files=`/`data=` passthrough, `download()`, bytes payloads for
   non-JSON content types such as attachments, report exports and PDFs).

@@ -13,4 +13,5 @@ htmlcov/
 config.yaml
 scripts/*
 !scripts/vendor_halo_spec.py
+!scripts/coverage_report.py
 !scripts/get_msi_product_code.ps1

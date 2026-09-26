@@ -193,6 +193,27 @@ Refresh the vendored spec whenever Halo revs its API:
 python scripts/vendor_halo_spec.py
 ```
 
+Then re-run the coverage oracle to see what the new spec adds:
+
+```powershell
+python scripts/coverage_report.py --top 25   # JSON report
+python scripts/coverage_report.py --check    # CI gate: exit 1 on write mismatches
+```
+
+The oracle diffs the vendored spec against the resource registry offline. It
+reports first-class coverage (`list`/`get` per operation), ranks uncurated
+roots as curation candidates (roots of existing resources first — extending
+`Attachment` or `Tickets` is cheaper than adopting a new subsystem), and
+verifies registry promises against the spec in both directions:
+
+- `write_mismatches` — create/update/delete metadata pointing at endpoints the
+  spec does not support (the `/Contract` bug class; must stay empty),
+- `read_mismatches` — registry endpoints absent from the spec entirely
+  (undocumented reads that work today but nothing verifies).
+
+`tests/test_coverage.py` pins the current state of both lists, so a spec
+refresh that changes them fails the suite and forces a re-evaluation.
+
 ## MCP Server (Code Mode)
 
 `halocli serve` runs a code-mode MCP server over stdio (newline-delimited
