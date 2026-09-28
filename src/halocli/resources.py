@@ -213,13 +213,21 @@ RESOURCES: tuple[HaloResource, ...] = (
     ),
     HaloResource(
         "contracts",
-        "/Contract",
+        # Verified against the live tenant (2026-09-28): GET /Contract is 404 —
+        # the spec has no /Contract path at all. GET /ClientContract returns 200
+        # (list verified; Halo's own array key is "contracts"), so reads point
+        # there (client contracts; supplier contracts live at /SupplierContract,
+        # which this tenant's agents get 403 on). Note: GET /ClientContract/{id}
+        # returns 401 for a team-leader agent while list succeeds — Halo uses 401
+        # for module-permission denial on detail endpoints, so `contracts get`
+        # needs contract-module view rights that `contracts list` does not.
+        "/ClientContract",
         aliases=("contract",),
-        table_fields=("id", "name", "client_name"),
-        # Read-only: the vendored v2 spec has no /Contract path at all (it only
-        # documents POST on /ClientContract and /SupplierContract, whose semantics
-        # differ), so create/update are left unregistered rather than risk a
-        # confirmed write failing. DELETE /Contract/{id} is likewise unsupported.
+        table_fields=("id", "client_name", "contracttype_name", "end_date"),
+        # Read-only: POST exists on /ClientContract, but enabling it would silently
+        # narrow "contracts" writes to client contracts only — a semantic decision,
+        # not a mechanical one. DELETE /ClientContract/{id} exists in the spec but
+        # stays disabled until that decision is made deliberately.
         supports_delete=False,
     ),
     HaloResource(
@@ -230,15 +238,25 @@ RESOURCES: tuple[HaloResource, ...] = (
     ),
     HaloResource(
         "opportunities",
-        "/Opportunity",
+        # Verified against the live tenant (2026-09-28): GET /Opportunity is 404;
+        # the spec documents /Opportunities (GET/POST), which this agent gets 403
+        # on — correct path, no Sales-module permission. Table fields unverified
+        # for the same reason; missing columns drop out of table output harmlessly.
+        "/Opportunities",
         aliases=("opportunity",),
         table_fields=("id", "summary", "client_name", "status_name"),
     ),
     HaloResource(
         "projects",
-        "/Project",
+        # Verified against the live tenant (2026-09-28): GET /Project is 404;
+        # GET /Projects returns 200 and is the only project read the v2 API
+        # offers — the spec models it as fault-shaped ("List of Faults",
+        # /Projects/{id} = "Get one Faults", /Projects/View = array[Faults]),
+        # i.e. Halo exposes projects through the Faults schema rather than as
+        # separate entities. Rows carry `summary`, not `name`/`status_name`.
+        "/Projects",
         aliases=("project",),
-        table_fields=("id", "name", "client_name", "status_name"),
+        table_fields=("id", "summary", "client_name"),
     ),
     HaloResource("suppliers", "/Supplier", aliases=("supplier",), table_fields=("id", "name")),
     HaloResource(

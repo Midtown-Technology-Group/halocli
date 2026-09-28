@@ -34,10 +34,18 @@ def test_classify_nested_under_curated_endpoint() -> None:
 
 
 def test_classify_prefix_collision_is_uncurated() -> None:
-    # /Client must NOT swallow /ClientContract-style paths (prefix trap).
-    kind, resource = coverage.classify_path("/ClientContract")
+    # Real spec path: starts with /Client but is a different resource entirely.
+    # The trailing-slash guard must keep it out of `nested`-under-clients.
+    kind, resource = coverage.classify_path("/ClientCache")
     assert kind == "uncurated"
     assert resource is None
+
+    # /ClientContract is now the contracts endpoint itself (live-verified fix),
+    # not a prefix casualty of /Client.
+    kind, resource = coverage.classify_path("/ClientContract")
+    assert kind == "exact"
+    assert resource is not None
+    assert resource.name == "contracts"
 
 
 def test_classify_unknown_root_is_uncurated() -> None:
@@ -102,22 +110,21 @@ def test_read_mismatch_detects_undocumented_endpoint() -> None:
     assert mismatches[0]["resource"] == "ghost"
 
 
-def test_read_mismatch_flags_contract_on_real_spec() -> None:
-    """Registry endpoints the spec does not document (oracle findings).
+def test_read_mismatches_empty_after_live_verification() -> None:
+    """Every registry read endpoint must be spec-documented.
 
-    These are the current, verified state of the registry-vs-spec diff:
-    - contracts reads /Contract (spec has only ClientContract/SupplierContract)
-    - opportunities reads /Opportunity (zero opportunity paths in the spec)
-    - projects reads /Project (spec documents /Projects, plural)
-    Runtime verification of these three is a follow-up; the oracle's job is to flag.
+    Regression gate for the three 404s found by the oracle and verified against
+    the live tenant on 2026-09-28: contracts read /Contract (404),
+    opportunities read /Opportunity (404), projects read /Project (404 — the
+    spec documents /Projects, which returns 200). All three now point at
+    spec-documented paths, so this list must stay empty; a spec refresh that
+    drops a path we read fails the suite rather than shipping another 404.
     """
     from halocli.schema import load_spec
 
     spec = load_spec()
     assert spec is not None
-    mismatches = coverage.find_read_mismatches(spec, RESOURCES)
-    flagged = {m["resource"] for m in mismatches}
-    assert flagged == {"contracts", "opportunities", "projects"}
+    assert coverage.find_read_mismatches(spec, RESOURCES) == []
 
 
 def test_build_report_structure_on_real_spec() -> None:

@@ -85,22 +85,50 @@ def test_write_metadata_present_for_write_enabled_resources() -> None:
         assert not resource.supports_delete, resource.name
 
 
-def test_contracts_is_read_only_because_spec_has_no_post_contract() -> None:
+def test_contracts_reads_client_contract_and_stays_read_only() -> None:
     contracts = get_resource("contracts")
-    assert contracts.endpoint == "/Contract"
+    # Live-verified 2026-09-28: GET /Contract is 404 on the real tenant; reads
+    # point at /ClientContract, which returns 200.
+    assert contracts.endpoint == "/ClientContract"
     assert not contracts.supports_write
     assert not contracts.supports_create
     assert not contracts.supports_update
     assert contracts.supports_delete is False
 
-    # The vendored spec documents no /Contract path at all, so there is no
-    # verified write route; POST exists only on /ClientContract and
-    # /SupplierContract (different semantics). Guard against re-enabling writes.
+    # The read endpoint is spec-documented with GET, but no verified *write*
+    # route exists for generic "contracts": POST /ClientContract narrows the
+    # semantics to client contracts only, POST /SupplierContract is a different
+    # entity again, and /SupplierContract is permission-gated (403) for our
+    # agents. Guard against re-enabling writes without that decision.
     spec = load_spec()
     assert spec is not None
     assert "/Contract" not in spec["paths"]
+    assert "get" in spec["paths"]["/ClientContract"]
     assert "post" in spec["paths"]["/ClientContract"]
     assert "post" in spec["paths"]["/SupplierContract"]
+
+
+def test_flagged_read_endpoints_use_spec_documented_paths() -> None:
+    """The three oracle-flagged 404s must point at spec-documented paths.
+
+    Live-verified against the real tenant (2026-09-28): /Contract,
+    /Opportunity and /Project all return 404; /Projects returns 200,
+    /ClientContract returns 200, /Opportunities is permission-gated (403,
+    correct path). /Opportunities does NOT contain the substring "Opportunity"
+    — a naive substring search misses it; the oracle's exact-path check does not.
+    """
+    spec = load_spec()
+    assert spec is not None
+    for resource_name, path in (
+        ("contracts", "/ClientContract"),
+        ("opportunities", "/Opportunities"),
+        ("projects", "/Projects"),
+    ):
+        resource = get_resource(resource_name)
+        assert resource.endpoint == path
+        assert path in spec["paths"], f"{path} missing from spec"
+        assert "get" in spec["paths"][path]
+        assert f"{path}/{{id}}" in spec["paths"], f"{path}/{{id}} missing from spec"
 
 
 def test_ticket_and_action_write_shapes() -> None:

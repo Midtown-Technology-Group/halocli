@@ -36,9 +36,16 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   percentages, uncurated roots ranked as curation candidates, and both
   mismatch directions — `write_mismatches` (write metadata pointing at
   endpoints the spec lacks, the `/Contract` bug class; `--check` is a CI
-  gate) and `read_mismatches` (registry endpoints absent from the spec:
-  currently `contracts`, `opportunities`, `projects`). Test-pinned so a spec
-  refresh cannot silently change the state.
+  gate) and `read_mismatches` (registry endpoints absent from the spec).
+  Test-pinned so a spec refresh cannot silently change the state.
+- Fixed three registry endpoints that returned 404 against the live
+  tenant (verified 2026-09-28): `contracts` `/Contract` → `/ClientContract`
+  (list 200; detail 401 for agents without contract-module view rights),
+  `opportunities` `/Opportunity` → `/Opportunities` (correct path; 403
+  without Sales-module permission), `projects` `/Project` → `/Projects`
+  (200; Halo exposes projects through the fault schema, rows carry
+  `summary`, so the table fields follow). All three are now spec-documented
+  and the oracle's `read_mismatches` list is empty.
 - Added multipart upload and binary-safe responses to `HaloClient`
   (`files=`/`data=` passthrough, `download()`, bytes payloads for
   non-JSON content types such as attachments, report exports and PDFs).
