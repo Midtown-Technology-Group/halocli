@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import time
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -45,12 +48,36 @@ class HaloClient:
         *,
         params: dict[str, Any] | None = None,
         json_body: Any = None,
+        files: Any = None,
+        data: Any = None,
+        as_bytes: bool = False,
     ) -> Any:
+        """Send an authenticated HaloPSA request.
+
+        ``files``/``data`` are forwarded to httpx so callers can perform
+        multipart uploads (attachments) and form posts; when either is supplied
+        ``json_body`` is not sent. File-like payloads in ``files`` are buffered
+        into ``bytes`` first, so a retried upload always resends identical bytes.
+
+        Response contract for ``status < 300``:
+
+        * ``as_bytes=True`` -> the raw ``bytes`` body, never parsed
+        * empty body -> ``None``
+        * declared JSON media type -> the parsed object (unchanged from earlier
+          versions); an unparseable declared-JSON body still raises
+        * declared non-JSON media type (text/plain, text/csv, octet-stream, pdf,
+          zip, image, ...) -> the raw ``bytes`` body instead of raising
+        * no ``Content-Type`` header -> best-effort JSON parse, falling back to
+          the raw ``bytes`` body for endpoints that omit the header
+
+        Callers distinguish the raw case with ``isinstance(result, bytes)``.
+        """
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         token = await self._access_token()
         url = self._url(path)
         headers = {"Authorization": f"Bearer {token}"}
+        body_kwargs = _body_kwargs(json_body, _buffer_files(files), data)
 
         last_response: httpx.Response | None = None
         for attempt in range(self.profile.max_retries + 1):
@@ -58,12 +85,14 @@ class HaloClient:
                 method.upper(),
                 url,
                 params=params,
-                json=json_body,
                 headers=headers,
+                **body_kwargs,
             )
             last_response = response
             if response.status_code < 300:
-                return response.json() if response.content else None
+                if as_bytes:
+                    return response.content
+                return _success_payload(response)
             if response.status_code == 401 and attempt == 0:
                 self._token = None
                 headers["Authorization"] = f"Bearer {await self._access_token()}"
@@ -85,6 +114,14 @@ class HaloClient:
 
     async def raw(self, method: str, path: str, *, params: dict[str, Any] | None = None, body: Any = None) -> Any:
         return await self.request(method, path, params=params, json_body=body)
+
+    async def download(self, path: str, *, params: dict[str, Any] | None = None) -> bytes:
+        """GET ``path`` (file, attachment, export) and return the body as ``bytes``.
+
+        The body is returned verbatim: it is never parsed, so even a JSON answer
+        keeps its exact bytes (whitespace, newlines, checksum) unchanged.
+        """
+        return await self.request("GET", path, params=params, as_bytes=True)
 
     async def test_auth(self) -> Any:
         return await self.request("GET", "/Agent/me")
@@ -190,7 +227,129 @@ class HaloClient:
                 pass
         return float(2**attempt)
 
+
+def _body_kwargs(json_body: Any, files: Any, data: Any) -> dict[str, Any]:
+    """Build the httpx body kwargs: multipart/form when files or data are given."""
+    if files is not None or data is not None:
+        return {"files": files, "data": data}
+    return {"json": json_body}
+
+
+def _buffer_files(files: Any) -> Any:
+    """Read file-like payloads in ``files`` into ``bytes`` before the first attempt.
+
+    httpx rewinds seekable files between attempts, but a non-seekable stream is
+    read from its current position: a retry would upload an empty file and still
+    look successful. Buffering once means every attempt sends identical bytes.
+    """
+    if isinstance(files, Mapping):
+        return {name: _buffer_file_value(value) for name, value in files.items()}
+    if isinstance(files, (list, tuple)):
+        return [(name, _buffer_file_value(value)) for name, value in files]
+    return files
+
+
+def _buffer_file_value(value: Any) -> Any:
+    """Rewrite one ``files`` entry so its payload is bytes rather than a stream."""
+    if isinstance(value, tuple):
+        # (filename, file[, content_type[, headers]]): buffer only the file part.
+        if len(value) < 2 or not hasattr(value[1], "read"):
+            return value
+        content = _read_file_content(value[1])
+        if content is None:
+            return value
+        return (value[0], content, *value[2:])
+    if hasattr(value, "read"):
+        content = _read_file_content(value)
+        if content is None:
+            return value
+        # Mirror httpx, which derives the filename from the stream's name.
+        filename = Path(str(getattr(value, "name", "upload"))).name
+        return (filename, content)
+    return value
+
+
+def _read_file_content(fileobj: Any) -> bytes | None:
+    """Full content of ``fileobj``, or ``None`` to leave the entry untouched."""
+    if isinstance(fileobj, io.TextIOBase):
+        # Text streams stay untouched so httpx keeps raising its usual TypeError.
+        return None
+    content = fileobj.read()
+    if isinstance(content, bytes):
+        return content
+    if isinstance(content, bytearray):
+        return bytes(content)
+    return None
+
+
+def _media_type(response: httpx.Response) -> str:
+    raw = response.headers.get("content-type") or ""
+    return raw.split(";")[0].strip().lower()
+
+
+def _is_json_media_type(media_type: str) -> bool:
+    return media_type.endswith("/json") or media_type.endswith("+json")
+
+
+_BINARY_MEDIA_TYPES = frozenset(
+    {
+        "application/octet-stream",
+        "application/pdf",
+        "application/zip",
+        "application/gzip",
+        "application/x-gzip",
+        "application/x-tar",
+        "application/x-7z-compressed",
+        "application/x-bzip2",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
+)
+
+
+def _is_binary_media_type(media_type: str) -> bool:
+    if media_type.startswith(("image/", "audio/", "video/", "font/", "multipart/")):
+        return True
+    return media_type in _BINARY_MEDIA_TYPES
+
+
+def _success_payload(response: httpx.Response) -> Any:
+    """Decode a successful (status < 300) body: ``None``, parsed JSON, or raw bytes."""
+    if not response.content:
+        return None
+    media_type = _media_type(response)
+    if _is_binary_media_type(media_type):
+        return response.content
+    if _is_json_media_type(media_type):
+        # Declared JSON: an unparseable body keeps raising, as it always has.
+        return response.json()
+    if media_type:
+        # Declared non-JSON (text/plain, text/csv, ...): raw bytes, never parsed.
+        return response.content
+    # No Content-Type header: sloppy endpoints - try JSON, else the raw bytes.
+    try:
+        return response.json()
+    except ValueError:  # JSONDecodeError / UnicodeDecodeError are ValueError subclasses
+        return response.content
+
+
 def _response_error(response: httpx.Response, *, endpoint: str) -> HaloCLIError:
-    error = RuntimeError(f"HTTP {response.status_code}: {response.text[:500]}")
+    snippet = _error_snippet(response)
+    error = RuntimeError(f"HTTP {response.status_code}: {snippet}")
+    error.response_body = snippet  # type: ignore[attr-defined] - read by classify_error
     error.response = response  # type: ignore[attr-defined]
     return classify_error(error, endpoint=endpoint)
+
+
+def _error_snippet(response: httpx.Response, limit: int = 500) -> str:
+    """Short, never-raising summary of an error body (JSON, text, binary or empty)."""
+    if not response.content:
+        return ""
+    media_type = _media_type(response)
+    if _is_binary_media_type(media_type):
+        return f"<binary body: {len(response.content)} bytes, {media_type}>"
+    try:
+        return response.text[:limit]
+    except Exception:  # pragma: no cover - httpx normally decodes with replacement
+        return f"<unreadable body: {len(response.content)} bytes>"

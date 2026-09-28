@@ -43,6 +43,35 @@ jobs:
           halocli auth discover --help
           halocli tickets list --help
 
+  coverage:
+    name: Coverage Oracle
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      # Fails when registry write metadata points at endpoints the spec lacks
+      # (the /Contract bug class). read_mismatches is report-only: those are
+      # documented by tests and may be legitimately undocumented endpoints.
+      - name: Spec-vs-registry coverage gate
+        run: python scripts/coverage_report.py --check --top 50 > coverage-report.json
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-report
+          path: coverage-report.json
+          if-no-files-found: ignore
+
   package:
     name: Package Checks
     runs-on: ubuntu-latest

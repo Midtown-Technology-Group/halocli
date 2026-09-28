@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any
 
 from rich.console import Console
@@ -18,11 +19,14 @@ def render(data: Any, *, output: str = "json", table_fields: tuple[str, ...] | N
     if output == "table" and isinstance(data, dict) and isinstance(data.get("item"), dict):
         _render_table([data["item"]], table_fields=table_fields)
         return
-    console.print(json.dumps(data, indent=2, sort_keys=True, default=str))
+    # JSON is data, never presentation: rich would soft-wrap at the terminal
+    # width (corrupting the stream when piped) and, under FORCE_COLOR
+    # environments, interleave ANSI codes. Write it raw to stdout instead.
+    print(json.dumps(data, indent=2, sort_keys=True, default=str))
 
 
 def render_error(data: dict[str, Any]) -> None:
-    error_console.print(json.dumps(data, indent=2, sort_keys=True, default=str))
+    print(json.dumps(data, indent=2, sort_keys=True, default=str), file=sys.stderr)
 
 
 def _render_table(items: list[dict], *, table_fields: tuple[str, ...] | None = None) -> None:

@@ -6,6 +6,55 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.6.0 - 2026-09-25
+
+- Vendored the official HaloPSA REST API v2 OpenAPI specification
+  (`src/halocli/spec/halo_openapi.json`, 927 paths) with a re-runnable
+  `scripts/vendor_halo_spec.py` refresh script.
+- Added `halocli search`, offline discovery across the resource registry and
+  the vendored spec, and `halocli raw` spec validation (unknown endpoints and
+  missing required body fields are refused by default; `--no-validate`
+  bypasses it, warnings pass through as `spec_warnings`).
+- Added first-class write commands for the nine resources with write metadata:
+  `create`, `update`, `delete` are preview-by-default dry runs that make zero
+  network calls, and require `--apply --yes` to execute (matching `raw`).
+  All nine support create, update and delete. `contracts` stays read-only
+  because the vendored spec documents no `POST /Contract` (only
+  `POST /ClientContract` and `POST /SupplierContract`, whose semantics
+  differ). A create payload containing a concrete `id` is rejected — Halo
+  treats POST-with-id as an update — and the preview shows every field that
+  apply will send, with declared preview fields ordered first.
+- Added `halocli serve`, a code-mode MCP server (newline-delimited JSON-RPC
+  over stdio, stdlib only) exposing exactly three tools — `halo_search`,
+  `halo_execute`, `halo_resources` — instead of one tool per Halo operation.
+  Non-GET calls require `apply: true` and responses are bounded at 40k chars.
+  Tools advertise MCP annotations (`readOnlyHint` etc.) so hosts can gate
+  writes without prompting on discovery calls — e.g. Codex's `writes`
+  approval mode.
+- Added a coverage oracle (`scripts/coverage_report.py`) that diffs the
+  vendored spec against the resource registry offline: first-class coverage
+  percentages, uncurated roots ranked as curation candidates, and both
+  mismatch directions — `write_mismatches` (write metadata pointing at
+  endpoints the spec lacks, the `/Contract` bug class; `--check` is a CI
+  gate) and `read_mismatches` (registry endpoints absent from the spec).
+  Test-pinned so a spec refresh cannot silently change the state.
+- Fixed three registry endpoints that returned 404 against the live
+  tenant (verified 2026-09-28): `contracts` `/Contract` → `/ClientContract`
+  (list 200; detail 401 for agents without contract-module view rights),
+  `opportunities` `/Opportunity` → `/Opportunities` (correct path; 403
+  without Sales-module permission), `projects` `/Project` → `/Projects`
+  (200; Halo exposes projects through the fault schema, rows carry
+  `summary`, so the table fields follow). All three are now spec-documented
+  and the oracle's `read_mismatches` list is empty.
+- Added multipart upload and binary-safe responses to `HaloClient`
+  (`files=`/`data=` passthrough, `download()`, bytes payloads for
+  non-JSON content types such as attachments, report exports and PDFs).
+- Isolated the test suite from ambient machine state: real config profiles,
+  `HALO_*` environment variables, the Windows Credential Manager keyring, and
+  the browser/OAuth callback are all faked or redirected per test.
+- Fixed JSON output being corrupted by terminal soft-wrapping when piped, so
+  `halocli ... | jq` is now reliable.
+
 ## 0.5.0 - 2026-04-27
 
 - Added `halocli todo web`, a local-first FastAPI/Vite React Todo web UI over

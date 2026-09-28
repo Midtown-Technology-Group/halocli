@@ -9,10 +9,24 @@ from typer.testing import CliRunner
 from halocli.cli import app
 from halocli.client import HaloClient
 from halocli.config import HaloProfile
-from halocli.resources import RESOURCE_BY_COMMAND, RESOURCES, get_resource
+from halocli.resources import RESOURCE_BY_COMMAND, RESOURCES, HaloResource, get_resource
+from halocli.schema import load_spec
 
 
 runner = CliRunner()
+
+# Resources that must carry first-class write metadata.
+WRITE_RESOURCES = (
+    "tickets",
+    "actions",
+    "clients",
+    "sites",
+    "assets",
+    "agents",
+    "appointments",
+    "statuses",
+    "priorities",
+)
 
 
 def test_registry_names_and_aliases_are_unique() -> None:
@@ -31,6 +45,100 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
     for resource in RESOURCES:
         assert resource.endpoint.startswith("/")
         assert resource.table_fields
+
+
+def test_registry_still_constructs_all_resources() -> None:
+    assert len(RESOURCES) == 32
+    # Backward compatibility: a resource with no write metadata stays read-only.
+    plain = HaloResource("plain", "/Plain")
+    assert plain.create_endpoint is None
+    assert plain.update_endpoint is None
+    assert plain.required_create_fields == ()
+    assert plain.required_update_fields == ()
+    assert plain.supports_delete is False
+    assert plain.write_preview_fields == ()
+    assert plain.supports_write is False
+
+
+def test_write_metadata_present_for_write_enabled_resources() -> None:
+    assert len(WRITE_RESOURCES) == 9
+    for name in WRITE_RESOURCES:
+        resource = get_resource(name)
+        assert resource.supports_write, name
+        assert resource.supports_create, name
+        assert resource.supports_update, name
+        assert resource.supports_delete, name
+        assert resource.create_endpoint == resource.endpoint, name
+        assert resource.update_endpoint == resource.endpoint, name
+        assert resource.required_create_fields, name
+        assert "id" in resource.required_update_fields, name
+        assert resource.effective_write_preview_fields[0] == "id", name
+        assert set(resource.required_create_fields) <= set(
+            resource.effective_write_preview_fields
+        ), name
+
+    # Resources outside the write set keep their read-only defaults.
+    for resource in RESOURCES:
+        if resource.name in WRITE_RESOURCES:
+            continue
+        assert not resource.supports_write, resource.name
+        assert not resource.supports_delete, resource.name
+
+
+def test_contracts_reads_client_contract_and_stays_read_only() -> None:
+    contracts = get_resource("contracts")
+    # Live-verified 2026-09-28: GET /Contract is 404 on the real tenant; reads
+    # point at /ClientContract, which returns 200.
+    assert contracts.endpoint == "/ClientContract"
+    assert not contracts.supports_write
+    assert not contracts.supports_create
+    assert not contracts.supports_update
+    assert contracts.supports_delete is False
+
+    # The read endpoint is spec-documented with GET, but no verified *write*
+    # route exists for generic "contracts": POST /ClientContract narrows the
+    # semantics to client contracts only, POST /SupplierContract is a different
+    # entity again, and /SupplierContract is permission-gated (403) for our
+    # agents. Guard against re-enabling writes without that decision.
+    spec = load_spec()
+    assert spec is not None
+    assert "/Contract" not in spec["paths"]
+    assert "get" in spec["paths"]["/ClientContract"]
+    assert "post" in spec["paths"]["/ClientContract"]
+    assert "post" in spec["paths"]["/SupplierContract"]
+
+
+def test_flagged_read_endpoints_use_spec_documented_paths() -> None:
+    """The three oracle-flagged 404s must point at spec-documented paths.
+
+    Live-verified against the real tenant (2026-09-28): /Contract,
+    /Opportunity and /Project all return 404; /Projects returns 200,
+    /ClientContract returns 200, /Opportunities is permission-gated (403,
+    correct path). /Opportunities does NOT contain the substring "Opportunity"
+    — a naive substring search misses it; the oracle's exact-path check does not.
+    """
+    spec = load_spec()
+    assert spec is not None
+    for resource_name, path in (
+        ("contracts", "/ClientContract"),
+        ("opportunities", "/Opportunities"),
+        ("projects", "/Projects"),
+    ):
+        resource = get_resource(resource_name)
+        assert resource.endpoint == path
+        assert path in spec["paths"], f"{path} missing from spec"
+        assert "get" in spec["paths"][path]
+        assert f"{path}/{{id}}" in spec["paths"], f"{path}/{{id}} missing from spec"
+
+
+def test_ticket_and_action_write_shapes() -> None:
+    tickets = get_resource("tickets")
+    assert tickets.required_create_fields == ("summary",)
+    assert tickets.supports_delete is True
+
+    actions = get_resource("actions")
+    assert actions.required_create_fields == ("ticket_id", "note")
+    assert "note" in actions.write_preview_fields
 
 
 @pytest.mark.parametrize("resource", RESOURCES)

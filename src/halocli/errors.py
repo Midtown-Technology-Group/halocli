@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Literal
+from typing import Any, Literal
 
 
 ErrorCategory = Literal[
@@ -92,9 +92,10 @@ def _category(status_code: int | None, text: str) -> ErrorCategory:
 
 
 def _status_code(exc: BaseException) -> int | None:
-    value = getattr(exc, "status_code", None)
-    if value is None and getattr(exc, "response", None) is not None:
-        value = getattr(exc.response, "status_code", None)
+    value = _safe_attr(exc, "status_code")
+    if value is None:
+        response = _safe_attr(exc, "response")
+        value = _safe_attr(response, "status_code") if response is not None else None
     if value is None:
         match = re.search(r"\bHTTP\s+(\d{3})\b", str(exc), flags=re.IGNORECASE)
         if match:
@@ -107,20 +108,45 @@ def _status_code(exc: BaseException) -> int | None:
 
 def _body(exc: BaseException) -> str | None:
     for attr in ("response_body", "text"):
-        value = getattr(exc, attr, None)
-        if value not in (None, ""):
-            return str(value)
-    if getattr(exc, "response", None) is not None:
-        value = getattr(exc.response, "text", None)
-        if value not in (None, ""):
-            return str(value)
+        text = _as_text(_safe_attr(exc, attr))
+        if text:
+            return text
+    response = _safe_attr(exc, "response")
+    if response is not None:
+        text = _as_text(_safe_attr(response, "text"))
+        if text:
+            return text
     return None
 
 
+def _safe_attr(obj: object, name: str) -> Any:
+    """Read an attribute without letting a raising property or unreadable body blow up."""
+    try:
+        return getattr(obj, name, None)
+    except Exception:
+        return None
+
+
+def _as_text(value: Any) -> str | None:
+    """Coerce an error body (str, bytes or anything else) into a printable string."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("utf-8", errors="replace")
+    try:
+        text = str(value)
+    except Exception:
+        return None
+    return text or None
+
+
 def _retry_after(exc: BaseException) -> float | None:
-    value = getattr(exc, "retry_after", None)
-    if value is None and getattr(exc, "response", None) is not None:
-        value = (getattr(exc.response, "headers", {}) or {}).get("Retry-After")
+    value = _safe_attr(exc, "retry_after")
+    if value is None:
+        response = _safe_attr(exc, "response")
+        headers = _safe_attr(response, "headers") if response is not None else None
+        get = getattr(headers, "get", None)
+        value = get("Retry-After") if callable(get) else None
     try:
         return float(value) if value is not None else None
     except (TypeError, ValueError):

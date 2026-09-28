@@ -11,4 +11,7 @@ node_modules/
 htmlcov/
 .env
 config.yaml
-scripts/
+scripts/*
+!scripts/vendor_halo_spec.py
+!scripts/coverage_report.py
+!scripts/get_msi_product_code.ps1

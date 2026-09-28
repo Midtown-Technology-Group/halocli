@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "halocli"
-version = "0.5.0"
+version = "0.6.0"
 description = "Standalone HaloPSA CLI for safe operator and automation workflows"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -64,7 +64,7 @@ Changelog = "https://github.com/Midtown-Technology-Group/halocli/blob/main/CHANG
 where = ["src"]
 
 [tool.setuptools.package-data]
-halocli = ["web_static/*", "web_static/assets/*"]
+halocli = ["web_static/*", "web_static/assets/*", "spec/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -74,3 +74,10 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+# Lock the rule set explicitly: ruff 0.16 broadened its defaults (adding BLE,
+# B, DTZ, TRY, I, UP, RUF, PL...), which broke CI on code that passed 0.15.
+# Pinning selection here keeps the effective rules identical across ruff
+# versions; revisit deliberately if we want to adopt the broader set.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
