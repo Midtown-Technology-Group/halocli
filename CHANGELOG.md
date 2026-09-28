@@ -6,6 +6,33 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.7.0 - 2026-09-28
+
+- Added first-class commands for 22 nested operations across three resources
+  (`tickets` x7, `invoices` x5, `attachments` x10), declared as
+  `ResourceOperation` metadata and generated into subcommands: e.g.
+  `halocli invoices pdf 42 --save invoice.pdf`, `halocli tickets zapier`,
+  `halocli attachments get-image 7`. Path arguments are arity-checked and
+  URL-quoted; reads never take `--apply/--yes`; writes preview by default
+  (zero network, no profile needed) and require `--apply --yes` to execute.
+  Binary responses (PDFs, images) are never dumped into JSON — pass
+  `--save PATH` to write them to a file.
+- Multipart operations (e.g. `attachments upload-image`) accept `--file` and
+  send the spec-declared `multipart/form-data` field `file`.
+- Every operation carries honest verification provenance (`live`,
+  `live:403`, `live:500`, `route-verified`, `spec`) shown in `--help`,
+  recorded from probing the real tenant on 2026-09-28 — writes are never
+  fired at a tenant without an operator.
+- The coverage oracle gained an `operation` classification (declared
+  nested ops count as first-class) plus an `operation_mismatches` gate that
+  fails `--check` when a declared operation's path or method is missing
+  from the spec: first-class coverage 125 -> 147 operations (8.6% -> 10.1%),
+  candidates 361 -> 358 (Attachment, Tickets and Invoice fully declared).
+- MCP `halo_search`/`halo_resources` now surface operations (`operations`
+  entries with name/method/path/write, `matched_operations` on search hits),
+  so agents can discover e.g. `pdf` and execute it through `halo_execute`
+  by passing the operation's path — still exactly three tools.
+
 ## 0.6.0 - 2026-09-25
 
 - Vendored the official HaloPSA REST API v2 OpenAPI specification

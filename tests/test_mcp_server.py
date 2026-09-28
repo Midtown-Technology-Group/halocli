@@ -202,6 +202,65 @@ def test_halo_resources_dumps_full_catalog() -> None:
     assert by_name["quotations"]["aliases"] == ["quotation", "quotes", "quote"]
 
 
+def test_halo_resources_dumps_all_32_resources_with_operations() -> None:
+    _, payload = call_tool("halo_resources", {})
+    assert payload["count"] == 32
+    by_name = {entry["name"]: entry for entry in payload["resources"]}
+
+    pdf_ops = [op for op in by_name["invoices"]["operations"] if op["name"] == "pdf"]
+    assert pdf_ops == [
+        {"name": "pdf", "method": "POST", "path": "/Invoice/PDF/{id}", "write": True}
+    ]
+    assert len(by_name["invoices"]["operations"]) == 5
+    assert len(by_name["tickets"]["operations"]) == 7
+    assert len(by_name["attachments"]["operations"]) == 10
+    # Resources without declared operations keep an empty list, never a missing key.
+    assert by_name["clients"]["operations"] == []
+    # The catalog dump has no query, so it never carries matched_operations.
+    assert all("matched_operations" not in entry for entry in payload["resources"])
+
+
+def test_halo_resources_operation_entries_have_exact_shape() -> None:
+    _, payload = call_tool("halo_resources", {})
+    expected_keys = {"name", "method", "path", "write"}
+    entries = []
+    for entry in payload["resources"]:
+        for op in entry["operations"]:
+            entries.append(op)
+    assert entries, "expected declared operations in the catalog"
+    for op in entries:
+        assert set(op) == expected_keys, op
+        assert isinstance(op["write"], bool), op
+
+
+def test_halo_search_surfaces_operations_via_matched_terms() -> None:
+    # Query terms that exist nowhere at resource level still surface the owner.
+    _, pdf_payload = call_tool("halo_search", {"query": "pdf"})
+    pdf_top = pdf_payload["results"][0]
+    assert pdf_top["name"] == "invoices"
+    assert "pdf" in pdf_top["matched_operations"]
+
+    _, void_payload = call_tool("halo_search", {"query": "void"})
+    void_top = void_payload["results"][0]
+    assert void_top["name"] == "invoices"
+    assert "void" in void_top["matched_operations"]
+
+    _, zapier_payload = call_tool("halo_search", {"query": "zapier"})
+    zapier_top = zapier_payload["results"][0]
+    assert zapier_top["name"] == "tickets"
+    assert "zapier" in zapier_top["matched_operations"]
+    # Operation match keys describe ops, not the whole entry shape.
+    assert set(zapier_top["operations"][0]) == {"name", "method", "path", "write"}
+
+
+def test_halo_search_omits_matched_operations_for_resource_level_matches() -> None:
+    # Queries with no operation-term hits keep the old entry shape (no new key).
+    _, payload = call_tool("halo_search", {"query": "quotations"})
+    top = payload["results"][0]
+    assert top["name"] == "quotations"
+    assert "matched_operations" not in top
+
+
 # --------------------------------------------------------------------------------------
 # halo_execute: guardrails, execution, truncation, errors
 # --------------------------------------------------------------------------------------

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from halocli import coverage
-from halocli.resources import RESOURCES, HaloResource
+from halocli.resources import RESOURCES, HaloResource, ResourceOperation
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -31,6 +31,44 @@ def test_classify_nested_under_curated_endpoint() -> None:
     assert kind == "nested"
     assert resource is not None
     assert resource.name == "tickets"
+
+
+def test_classify_declared_operations() -> None:
+    # Declared ResourceOperations are first-class (`halo invoices pdf …`).
+    kind, resource = coverage.classify_path("/Invoice/PDF/{id}")
+    assert kind == "operation"
+    assert resource is not None
+    assert resource.name == "invoices"
+
+    kind, resource = coverage.classify_path("/Attachment/image")
+    assert kind == "operation"
+    assert resource is not None
+    assert resource.name == "attachments"
+
+    # A single trailing "/" is tolerated on either side of the declaration.
+    kind, resource = coverage.classify_path("/Attachment/image/")
+    assert kind == "operation"
+    assert resource is not None
+    assert resource.name == "attachments"
+
+
+def test_classify_operation_does_not_steal_other_kinds() -> None:
+    # {endpoint}/{id} wins over the operation check (checked first).
+    kind, resource = coverage.classify_path("/Attachment/{id}")
+    assert kind == "by_id"
+    assert resource is not None
+    assert resource.name == "attachments"
+
+    # Undeclared nested paths stay nested…
+    kind, resource = coverage.classify_path("/Tickets/{id}/Actions")
+    assert kind == "nested"
+    assert resource is not None
+    assert resource.name == "tickets"
+
+    # …and a non-registry root stays uncurated.
+    kind, resource = coverage.classify_path("/ClientCache")
+    assert kind == "uncurated"
+    assert resource is None
 
 
 def test_classify_prefix_collision_is_uncurated() -> None:
@@ -98,6 +136,47 @@ def test_write_mismatches_empty_for_real_registry() -> None:
     assert coverage.find_write_mismatches(spec, RESOURCES) == []
 
 
+def test_operation_mismatch_detects_bad_path_and_method() -> None:
+    spec = {"paths": {"/Known": {"get": {}}, "/Other": {"get": {}}}}
+    resources = (
+        HaloResource(
+            "demo",
+            "/Known",
+            operations=(
+                # Path absent from the spec entirely.
+                ResourceOperation("ghost", "post", "/Missing"),
+                # Path exists but has no POST.
+                ResourceOperation("wrong-method", "post", "/Known"),
+                # Declared and spec-verified → no entry.
+                ResourceOperation("fine", "get", "/Other"),
+            ),
+        ),
+    )
+    mismatches = coverage.find_operation_mismatches(spec, resources)
+    by_operation = {m["operation"]: m for m in mismatches}
+    assert set(by_operation) == {"ghost", "wrong-method"}
+
+    ghost = by_operation["ghost"]
+    assert ghost["resource"] == "demo"
+    assert ghost["path"] == "/Missing"
+    assert ghost["method"] == "POST"
+    assert "not present in spec" in ghost["problem"]
+
+    wrong = by_operation["wrong-method"]
+    assert wrong["path"] == "/Known"
+    assert wrong["method"] == "POST"
+    assert "no POST" in wrong["problem"]
+
+
+def test_operation_mismatches_empty_for_real_registry() -> None:
+    """Every declared ResourceOperation must be spec-verified (path AND method)."""
+    from halocli.schema import load_spec
+
+    spec = load_spec()
+    assert spec is not None
+    assert coverage.find_operation_mismatches(spec, RESOURCES) == []
+
+
 def test_read_mismatch_detects_undocumented_endpoint() -> None:
     spec = {"paths": {"/Known": {"get": {}}}}
     resources = (
@@ -140,10 +219,21 @@ def test_build_report_structure_on_real_spec() -> None:
     assert kind_ops == spec["operations"]
     assert cov["first_class_paths"] >= len(RESOURCES)
     assert 0.0 <= cov["operations_pct"] <= 100.0
-    # first_class == exact + by_id
+    # first_class == exact + by_id + operation (declared nested commands).
     assert cov["first_class_paths"] == (
-        cov["by_kind"]["exact"]["paths"] + cov["by_kind"]["by_id"]["paths"]
+        cov["by_kind"]["exact"]["paths"]
+        + cov["by_kind"]["by_id"]["paths"]
+        + cov["by_kind"]["operation"]["paths"]
     )
+    # Same for operations: an operation path's declared methods all count here.
+    assert cov["first_class_operations"] == (
+        cov["by_kind"]["exact"]["operations"]
+        + cov["by_kind"]["by_id"]["operations"]
+        + cov["by_kind"]["operation"]["operations"]
+    )
+    # Registry promises nothing the spec cannot back — all gates empty.
+    assert report["write_mismatches"] == []
+    assert report["operation_mismatches"] == []
 
     assert report["candidates_total"] >= len(report["candidates"])
     assert len(report["candidates"]) <= 10
@@ -155,6 +245,53 @@ def test_build_report_structure_on_real_spec() -> None:
             assert left["operations"] >= right["operations"]
 
 
+def test_build_report_splits_partially_declared_operation(tmp_path, monkeypatch) -> None:
+    """Path bucket vs operation bucket: 2 spec methods, 1 declared → split 1 + 1."""
+    from halocli import schema
+
+    fake_spec = {
+        "paths": {
+            "/Part/Thing": {"get": {}, "post": {}, "parameters": []},
+            "/Solo": {"get": {}},
+        }
+    }
+    spec_file = tmp_path / "fake_spec.json"
+    spec_file.write_text(json.dumps(fake_spec), encoding="utf-8")
+    monkeypatch.setattr(schema, "SPEC_PATH", str(spec_file))
+    schema.clear_cache()
+    resources = (
+        HaloResource(
+            "part",
+            "/Part",
+            operations=(ResourceOperation("thing", "get", "/Part/Thing"),),
+        ),
+    )
+    report = coverage.build_report(resources=resources)
+    schema.clear_cache()
+
+    cov = report["coverage"]
+    # The path is first-class as a whole…
+    assert cov["by_kind"]["operation"]["paths"] == 1
+    # …but only the declared GET is first-class; the undeclared POST is
+    # genuinely not, so it lands in the `nested` *operation* bucket.
+    assert cov["by_kind"]["operation"]["operations"] == 1
+    assert cov["by_kind"]["nested"]["paths"] == 0
+    assert cov["by_kind"]["nested"]["operations"] == 1
+    assert cov["first_class_paths"] == 1
+    assert cov["first_class_operations"] == 1
+    # The declared method is spec-verified → no operation mismatch.
+    assert report["operation_mismatches"] == []
+
+    # The split still partitions both totals exactly.
+    assert sum(k["paths"] for k in cov["by_kind"].values()) == report["spec"]["paths"]
+    assert sum(k["paths"] for k in cov["by_kind"].values()) == 2
+    assert (
+        sum(k["operations"] for k in cov["by_kind"].values())
+        == report["spec"]["operations"]
+        == 3
+    )
+
+
 def test_build_report_candidates_have_samples_and_relations() -> None:
     report = coverage.build_report(top=5)
     for candidate in report["candidates"]:
@@ -162,6 +299,21 @@ def test_build_report_candidates_have_samples_and_relations() -> None:
         assert candidate["operations"] >= 1
         assert candidate["sample_paths"], candidate["root"]
         assert isinstance(candidate["related_resources"], list)
+
+
+def test_build_report_candidates_drop_fully_declared_roots() -> None:
+    """Roots whose nested paths are all declared operations leave the candidates.
+
+    Attachment (7), Tickets (7) and Invoice (5) had every nested spec path declared
+    as a ResourceOperation, so they are first-class now and must not show up as
+    curation work; `candidates_total` keeps counting the other roots.
+    """
+    report = coverage.build_report(top=50)
+    roots = {c["root"] for c in report["candidates"]}
+    for root in ("Attachment", "Tickets", "Invoice"):
+        assert root not in roots
+    assert report["candidates_total"] > 50
+    assert len(report["candidates"]) == 50
 
 
 def test_build_report_degrades_without_spec(tmp_path, monkeypatch) -> None:
