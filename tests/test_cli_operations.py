@@ -26,7 +26,15 @@ PDF_BYTES = b"%PDF-fake"
 
 
 def plain(output: str) -> str:
-    return _ANSI_RE.sub("", output)
+    """Normalize rendered CLI output for substring assertions.
+
+    Strips ANSI escapes (FORCE_COLOR runs style option tokens, which would
+    otherwise split phrases like "--save"), removes rich box-drawing borders
+    (the error box can wrap mid-phrase), and collapses whitespace.
+    """
+    text = _ANSI_RE.sub("", output)
+    text = re.sub(r"[│╭╮╰╯─┌┐└┘┬┴├┤┼]", " ", text)
+    return re.sub(r"\s+", " ", text)
 
 
 def save_default_profile() -> None:
@@ -371,7 +379,7 @@ def test_save_rejects_a_directory_before_any_request(monkeypatch: Any, tmp_path:
     )
 
     assert result.exit_code == 2, result.output
-    assert "--save must be a file path" in result.output.replace("\x1b", "")
+    assert "--save must be a file path" in plain(result.output)
     # zero requests: the guard fires before the client is built
     assert state["calls"] == []
 
