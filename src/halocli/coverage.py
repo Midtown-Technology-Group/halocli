@@ -3,14 +3,25 @@
 Answers "which operator-relevant operations has HaloCLI not curated yet?" without
 network access (it reads the vendored spec) and catches registry write metadata the
 spec does not actually support — the `/Contract` case, where we shipped create/update
-endpoints for a path that has no POST in the spec.
+endpoints for a path that has no POST in the spec — plus declared `ResourceOperation`s
+the spec does not document (`operation_mismatches`).
 
 Path classification against the registry:
 
 * ``exact``     — the registry `list` endpoint (`GET <endpoint>`)
 * ``by_id``     — the registry `get` endpoint (`GET <endpoint>/{id}`)
+* ``operation`` — declared verbatim as a ``ResourceOperation`` by the owning
+                  resource (e.g. ``/Invoice/PDF/{id}`` → ``halo invoices pdf``);
+                  first-class through that command
 * ``nested``    — deeper than a curated endpoint; curable by extending that resource
 * ``uncurated`` — no registry resource owns this path's root segment
+
+An ``operation`` path splits across two counting buckets in ``build_report``: the
+PATH counts once under ``by_kind["operation"]["paths"]`` (it is first-class), while
+its spec METHODS divide — declared methods go to ``by_kind["operation"]["operations"]``
+and any undeclared method goes to ``by_kind["nested"]["operations"]`` (it really is
+not first-class). Both partition invariants still hold: by_kind paths sum to the
+spec's path count and by_kind operations sum to the spec's operation count.
 """
 
 from __future__ import annotations
@@ -18,11 +29,11 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from halocli.resources import RESOURCES, HaloResource
+from halocli.resources import RESOURCES, HaloResource, ResourceOperation
 from halocli.schema import load_spec, spec_meta
 
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
-PATH_KINDS = ("exact", "by_id", "nested", "uncurated")
+PATH_KINDS = ("exact", "by_id", "operation", "nested", "uncurated")
 
 
 def _iter_operations(spec: dict[str, Any]) -> Iterator[tuple[str, str]]:
@@ -44,14 +55,36 @@ def _root(path: str) -> str:
     return stripped.split("/", 1)[0] if stripped else ""
 
 
+def _strip_trailing_slash(text: str) -> str:
+    return text[:-1] if text.endswith("/") else text
+
+
+def _matching_operations(
+    path: str,
+    resources: tuple[HaloResource, ...] = RESOURCES,
+) -> Iterator[tuple[HaloResource, ResourceOperation]]:
+    """Yield (resource, operation) for every declared operation claiming this path.
+
+    String equality against the declared spec path template, tolerating a single
+    trailing "/" on either side (mirrors the `exact` endpoint match).
+    """
+    wanted = _strip_trailing_slash(path)
+    for resource in resources:
+        for operation in resource.operations:
+            if _strip_trailing_slash(operation.path) == wanted:
+                yield resource, operation
+
+
 def classify_path(
     path: str,
     resources: tuple[HaloResource, ...] = RESOURCES,
 ) -> tuple[str, HaloResource | None]:
     """Classify a spec path against the curated registry.
 
-    Pure registry/-string comparison — spec membership is not consulted, so the
-    result for a given path is stable across spec refreshes.
+    Pure registry/string comparison — spec membership is not consulted, so the
+    result for a given path is stable across spec refreshes. Declaration order
+    matters: `exact`/`by_id` win first (a list/get endpoint is the primary shape),
+    then a declared `ResourceOperation`, then the generic `nested` fallback.
     """
     for resource in resources:
         endpoint = _endpoint(resource)
@@ -59,6 +92,8 @@ def classify_path(
             return "exact", resource
         if path == endpoint + "/{id}":
             return "by_id", resource
+    for resource, _operation in _matching_operations(path, resources):
+        return "operation", resource
     for resource in resources:
         # Trailing "/" in the prefix prevents /Client matching /ClientContract.
         if path.startswith(_endpoint(resource) + "/"):
@@ -136,6 +171,50 @@ def find_write_mismatches(
     return mismatches
 
 
+def find_operation_mismatches(
+    spec: dict[str, Any],
+    resources: tuple[HaloResource, ...] = RESOURCES,
+) -> list[dict[str, Any]]:
+    """Return declared `ResourceOperation`s the spec does not support.
+
+    Every declared operation promises ``<method> <path>`` as a first-class command;
+    this flags any whose ``path`` is absent from the spec or whose ``method`` is not
+    an operation on that path. Sibling of `find_write_mismatches` for the operation
+    table: an empty list means all 22 declarations are spec-verified.
+    """
+    spec_paths = spec.get("paths", {})
+    mismatches: list[dict[str, Any]] = []
+    for resource in resources:
+        for operation in resource.operations:
+            path = _strip_trailing_slash(operation.path)
+            item = spec_paths.get(path, spec_paths.get(path + "/"))
+            available = (
+                sorted(m.lower() for m in item if m.lower() in HTTP_METHODS)
+                if isinstance(item, dict)
+                else []
+            )
+            if not available:
+                problem = f"path not present in spec: {path}"
+            elif operation.method.lower() not in available:
+                spec_methods = ", ".join(m.upper() for m in available)
+                problem = (
+                    f"spec has no {operation.method.upper()} on {path} "
+                    f"(has: {spec_methods})"
+                )
+            else:
+                continue
+            mismatches.append(
+                {
+                    "resource": resource.name,
+                    "operation": operation.name,
+                    "method": operation.method.upper(),
+                    "path": operation.path,
+                    "problem": problem,
+                }
+            )
+    return mismatches
+
+
 def find_read_mismatches(
     spec: dict[str, Any],
     resources: tuple[HaloResource, ...] = RESOURCES,
@@ -173,6 +252,8 @@ def build_report(
 
     `top` limits the candidate list (roots ranked by: curated root first, then
     uncovered operation count); `candidates_total` is always the full count.
+    `write_mismatches` and `operation_mismatches` are the spec-vs-registry gates:
+    both must be empty for the registry to promise only things the spec supports.
     """
     spec = load_spec()
     if spec is None:
@@ -200,13 +281,37 @@ def build_report(
         total_operations += len(methods)
 
         kind, _ = classify_path(path, resources)
-        by_kind[kind]["paths"] += 1
-        by_kind[kind]["operations"] += len(methods)
 
-        if kind in ("exact", "by_id"):
+        # PATH bucket vs OPERATION bucket: an `operation` path counts as ONE path
+        # under by_kind["operation"] (it is first-class via its ResourceOperation),
+        # but its spec METHODS split — declared methods count under
+        # by_kind["operation"]["operations"] (and first_class), while any method we
+        # did NOT declare is genuinely not first-class and goes to
+        # by_kind["nested"]["operations"]. That is a deliberate split, not double
+        # counting: both partition invariants (by_kind paths == spec paths,
+        # by_kind operations == spec operations) still hold exactly.
+        candidate_methods = methods
+        if kind == "operation":
+            declared = {
+                op.method.lower()
+                for _res, op in _matching_operations(path, resources)
+            }
+            covered = [m for m in methods if m.lower() in declared]
+            candidate_methods = [m for m in methods if m.lower() not in declared]
+            by_kind["operation"]["paths"] += 1
+            by_kind["operation"]["operations"] += len(covered)
             first_class_paths += 1
-            first_class_operations += len(methods)
-            continue
+            first_class_operations += len(covered)
+            if not candidate_methods:
+                continue
+            by_kind["nested"]["operations"] += len(candidate_methods)
+        else:
+            by_kind[kind]["paths"] += 1
+            by_kind[kind]["operations"] += len(methods)
+            if kind in ("exact", "by_id"):
+                first_class_paths += 1
+                first_class_operations += len(methods)
+                continue
 
         root = _root(path)
         if not root:
@@ -221,8 +326,10 @@ def build_report(
                 "sample_paths": [],
             },
         )
-        entry["operations"] += len(methods)
-        entry["get_operations"] += sum(1 for m in methods if m.lower() == "get")
+        entry["operations"] += len(candidate_methods)
+        entry["get_operations"] += sum(
+            1 for m in candidate_methods if m.lower() == "get"
+        )
         if len(entry["sample_paths"]) < 3:
             entry["sample_paths"].append(path)
 
@@ -255,6 +362,7 @@ def build_report(
             "by_kind": by_kind,
         },
         "write_mismatches": find_write_mismatches(spec, resources),
+        "operation_mismatches": find_operation_mismatches(spec, resources),
         "read_mismatches": find_read_mismatches(spec, resources),
         "candidates_total": candidates_total,
         "candidates": candidates[: max(0, top)],

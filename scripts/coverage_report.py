@@ -8,11 +8,14 @@ Prints a JSON report:
   an existing resource is cheaper than adopting a new subsystem)
 * `write_mismatches`: registry write metadata the spec does NOT support
   (the `/Contract` bug class — non-empty means a confirmed write could fail)
+* `operation_mismatches`: declared `ResourceOperation`s the spec does NOT support
+  (non-empty means a first-class command points at an unknown path/method)
 
 Usage:
     python scripts/coverage_report.py
     python scripts/coverage_report.py --top 50
-    python scripts/coverage_report.py --check   # exit 1 on write mismatches (CI gate)
+    python scripts/coverage_report.py --check   # exit 1 on write/operation
+                                                # mismatches (CI gate)
 """
 
 from __future__ import annotations
@@ -30,7 +33,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="exit 1 if write metadata is unsupported by the spec (CI gate)",
+        help="exit 1 if write or operation metadata is unsupported by the spec (CI gate)",
     )
     args = parser.parse_args()
 
@@ -39,12 +42,17 @@ def main() -> int:
 
     if not report.get("ok"):
         return 1
-    if args.check and report["write_mismatches"]:
-        print(
-            f"FAIL: {len(report['write_mismatches'])} write mismatch(es)",
-            file=sys.stderr,
-        )
-        return 1
+    if args.check:
+        failures = []
+        if report.get("write_mismatches"):
+            failures.append(f"{len(report['write_mismatches'])} write mismatch(es)")
+        if report.get("operation_mismatches"):
+            failures.append(
+                f"{len(report['operation_mismatches'])} operation mismatch(es)"
+            )
+        if failures:
+            print(f"FAIL: {'; '.join(failures)}", file=sys.stderr)
+            return 1
     return 0
 
 

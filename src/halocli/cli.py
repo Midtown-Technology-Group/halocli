@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import time
 import webbrowser
 from datetime import date
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
+from urllib.parse import quote
 
 import httpx
 import typer
@@ -19,7 +21,7 @@ from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload
 from halocli.output import render, render_error
-from halocli.resources import RESOURCES, HaloResource
+from halocli.resources import RESOURCES, HaloResource, ResourceOperation
 from halocli.schema import validate_request as validate_schema_request
 from halocli.token_cache import KeyringTokenCache, TokenCache
 from halocli.writes import delete_resource, execute_write
@@ -155,6 +157,110 @@ def auth_logout(
     render({"ok": True, "profile": profile, "deleted": deleted}, output="json")
 
 
+def _operation_help(op: ResourceOperation) -> str:
+    """One-line help for a nested operation (shown in resource and op listings)."""
+    return f"{op.method} {op.path} — {op.summary} [{op.verification}]"
+
+
+def _operation_command(resource: HaloResource, op: ResourceOperation):
+    """Build the callback for one nested operation subcommand.
+
+    `op` arrives as a parameter of this factory rather than as a loop variable
+    closed over by a nested function: every generated command therefore binds its
+    own operation, which is what keeps the `for op in resource.operations`
+    registration loop from late-binding every command to the last operation.
+    """
+
+    def command(
+        args: Annotated[list[str], typer.Argument()] = [],
+        param: Annotated[list[str] | None, typer.Option("--param")] = None,
+        data: Annotated[
+            str | None,
+            typer.Option("--data", help="JSON file path or inline JSON body."),
+        ] = None,
+        file: Annotated[
+            Path | None,
+            typer.Option("--file", help="File to upload (multipart operations only)."),
+        ] = None,
+        save: Annotated[
+            Path | None,
+            typer.Option("--save", help="Write a binary response to this path."),
+        ] = None,
+        profile: Annotated[str, typer.Option("--profile")] = "default",
+        output: Annotated[str, typer.Option("--output", "-o")] = "json",
+        apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,
+        yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+    ) -> None:
+        # Usage guards run before anything else: a wrong shape must never reach
+        # the network or even load a profile.
+        if len(args) != len(op.args):
+            expected = ", ".join(op.args)
+            expected_part = f": {expected}" if expected else ""
+            raise typer.BadParameter(
+                f"{op.name} expects {len(op.args)} path argument(s){expected_part}; "
+                f"got {len(args)}"
+            )
+        if not op.write and data is not None:
+            raise typer.BadParameter("--data is only valid for write operations")
+        if file is not None and not op.multipart:
+            raise typer.BadParameter("--file is only valid for multipart operations")
+        if file is not None and not file.is_file():
+            raise typer.BadParameter(f"--file does not exist or is not a file: {file}")
+        if not op.write and (apply or yes):
+            raise typer.BadParameter("apply/yes are only valid for write operations")
+        if save is not None and save.is_dir():
+            raise typer.BadParameter(f"--save must be a file path, not a directory: {save}")
+
+        params = _parse_params(param or [])
+        path = _build_operation_path(op, args)
+
+        if op.write:
+            execute = _resolve_apply(apply, yes)
+        else:
+            # Reads never take confirmation flags (rejected above) and always run.
+            execute = True
+        if op.multipart and execute and file is None:
+            raise typer.BadParameter("--file is required to apply this multipart operation")
+        if op.write and op.body and data is None:
+            raise typer.BadParameter(f"{op.name} requires --data (JSON body).")
+        body = _load_operation_body(data) if op.write else None
+
+        if op.write and not execute:
+            # Preview: zero network calls, so no profile/client is needed.
+            render(
+                {
+                    "ok": True,
+                    "apply": False,
+                    "resource": resource.name,
+                    "operation": op.name,
+                    "method": op.method,
+                    "endpoint": path,
+                    "params": params,
+                    "body": body,
+                    "file": _file_preview(file),
+                    "verification": op.verification,
+                },
+                output=output,
+            )
+            return
+
+        _run(
+            _run_operation(
+                resource=resource,
+                op=op,
+                path=path,
+                params=params,
+                body=body,
+                file=file,
+                save=save,
+                profile=profile,
+                output=output,
+            )
+        )
+
+    return command
+
+
 def _resource_command(resource: HaloResource):
     resource_app = typer.Typer(help=f"{resource.name.title()} commands.")
 
@@ -257,6 +363,11 @@ def _resource_command(resource: HaloResource):
                 )
             )
             _finish_write(result, output=output)
+
+    for operation in resource.operations:
+        resource_app.command(operation.name, help=_operation_help(operation))(
+            _operation_command(resource, operation)
+        )
 
     return resource_app
 
@@ -625,6 +736,116 @@ def _finish_write(result: dict, *, output: str) -> None:
     render(result, output=output)
     if not result.get("ok"):
         raise typer.Exit(1)
+
+
+def _build_operation_path(op: ResourceOperation, values: list[str]) -> str:
+    """Fill the operation's `{name}` placeholders with `values`, in template order.
+
+    Each value is percent-encoded with an empty safe set so a path argument can
+    never inject `/`, `?` or `#` into the request path. The leftover-placeholder
+    check is defensive: a template that still contains braces means arity and
+    template drifted apart, which must be a usage error, not a broken request.
+    """
+    path = op.path
+    for name, value in zip(op.args, values):
+        path = path.replace("{" + name + "}", quote(value, safe=""))
+    if "{" in path or "}" in path:
+        raise typer.BadParameter(
+            f"Could not substitute every path placeholder in {op.path!r} "
+            f"from {len(values)} path argument(s)."
+        )
+    return path
+
+
+def _file_preview(file: Path | None) -> dict[str, Any] | None:
+    """Preview metadata for `--file`: name and size, without loading the bytes."""
+    if file is None:
+        return None
+    return {"name": file.name, "size": file.stat().st_size}
+
+
+def _multipart_files(file: Path) -> dict[str, Any]:
+    """Read `file` once and shape it as Halo's `file` multipart form field."""
+    content = file.read_bytes()
+    content_type = mimetypes.guess_type(file.name)[0]
+    if content_type:
+        return {"file": (file.name, content, content_type)}
+    return {"file": (file.name, content)}
+
+
+def _load_operation_body(data: str | None) -> object:
+    """Parse `--data` for an operation (dict, list, or any other JSON value).
+
+    A body that fails to decode is a pre-network validation failure: it renders
+    through `render_error` like `raw`'s spec-validation refusals and exits 1.
+    """
+    if data is None:
+        return None
+    try:
+        return _load_body(data)
+    except (ValueError, OSError) as exc:
+        render_error(
+            {
+                "ok": False,
+                "category": "validation",
+                "status_code": None,
+                "error": f"Invalid --data: {exc}",
+            }
+        )
+        raise typer.Exit(1) from exc
+
+
+async def _run_operation(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    params: dict[str, str],
+    body: object | None,
+    file: Path | None,
+    save: Path | None,
+    profile: str,
+    output: str,
+) -> None:
+    """Execute one nested operation for real and render its result.
+
+    Previews never reach here (they render from the command itself with zero
+    network calls), so this helper always loads a profile and performs a request.
+    Halo/transport failures surface as `HaloCLIError` and are rendered by `_run`,
+    which exits 1. A `bytes` response is either written to `--save` or reported by
+    length — raw bytes are never dumped into the JSON output.
+    """
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        kwargs: dict[str, Any] = {"params": params}
+        if body is not None:
+            kwargs["json_body"] = body
+        if op.multipart:
+            assert file is not None  # guarded in _operation_command before this call
+            kwargs["files"] = _multipart_files(file)
+        result = await client.request(op.method, path, **kwargs)
+    payload: dict[str, Any] = {
+        "ok": True,
+        "resource": resource.name,
+        "operation": op.name,
+        "method": op.method,
+        "endpoint": path,
+    }
+    if isinstance(result, bytes):
+        if save is not None:
+            save.parent.mkdir(parents=True, exist_ok=True)
+            save.write_bytes(result)
+            payload["saved"] = str(save)
+            payload["bytes"] = len(result)
+        else:
+            payload["binary"] = True
+            payload["bytes"] = len(result)
+            payload["hint"] = "pass --save PATH to write the bytes to a file"
+    else:
+        if op.write:
+            payload["apply"] = True
+        payload["result"] = normalize_halo_result(result)
+    render(payload, output=output)
 
 
 async def _raw(

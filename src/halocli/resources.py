@@ -4,6 +4,41 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class ResourceOperation:
+    """A first-class command for one nested endpoint under a resource.
+
+    Example: ``halo invoices pdf 42`` → ``POST /Invoice/PDF/{id}``.
+
+    ``path`` must be the *exact* spec path template (including ``{id}`` placeholders)
+    so the coverage oracle can verify it against the vendored OpenAPI document.
+    ``args`` lists the path parameters in template order; the CLI validates arity
+    and substitutes them positionally.
+
+    ``verification`` records how much we actually know, honestly:
+
+    * ``live``             — probed against the real tenant, works
+    * ``live:403`` / ``live:500`` / ``live:404`` — probed; tenant answered that status
+    * ``route-verified``   — route existence proven (400 on a malformed id vs the
+                             known-missing control), but no live data to fetch
+    * ``spec``             — documented in the vendored spec, not probed (writes
+                             are never fired at a real tenant without an operator)
+    """
+
+    name: str
+    method: str
+    path: str
+    args: tuple[str, ...] = ()
+    body: bool = False
+    multipart: bool = False
+    summary: str = ""
+    verification: str = "spec"
+
+    @property
+    def write(self) -> bool:
+        return self.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
+
+
+@dataclass(frozen=True)
 class HaloResource:
     name: str
     endpoint: str
@@ -21,6 +56,8 @@ class HaloResource:
     supports_delete: bool = False
     # Fields shown in a dry-run preview; when empty, defaults to id + required fields.
     write_preview_fields: tuple[str, ...] = ()
+    # First-class commands for nested endpoints (see ResourceOperation).
+    operations: tuple[ResourceOperation, ...] = ()
 
     @property
     def command_names(self) -> tuple[str, ...]:
@@ -65,6 +102,56 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "summary", "client_id", "status_id", "priority_id"),
+        operations=(
+            ResourceOperation(
+                "create-object",
+                "POST",
+                "/Tickets/Object",
+                body=True,
+                summary="Create a single ticket object (spec summary empty; POST-with-id updates)",
+            ),
+            ResourceOperation(
+                "set-billable-project",
+                "POST",
+                "/Tickets/SetBillableProject",
+                summary="Set a ticket's billable project (query params; no request body per spec)",
+            ),
+            ResourceOperation(
+                "view",
+                "POST",
+                "/Tickets/View",
+                body=True,
+                summary="Run a saved ticket view (POST-as-read; still write-gated)",
+            ),
+            ResourceOperation(
+                "process-children",
+                "POST",
+                "/Tickets/processchildren",
+                body=True,
+                summary="Process a ticket's child tickets",
+            ),
+            ResourceOperation(
+                "salesmailbox",
+                "GET",
+                "/Tickets/salesmailbox",
+                summary="Sales mailbox info; this tenant answers 500 (server error)",
+                verification="live:500",
+            ),
+            ResourceOperation(
+                "vote",
+                "POST",
+                "/Tickets/vote",
+                body=True,
+                summary="Cast a vote on a ticket",
+            ),
+            ResourceOperation(
+                "zapier",
+                "GET",
+                "/Tickets/zapier",
+                summary="Zapier integration config (live-verified against the tenant)",
+                verification="live",
+            ),
+        ),
     ),
     HaloResource(
         "clients",
@@ -235,6 +322,43 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Invoice",
         aliases=("invoice",),
         table_fields=("id", "invoice_number", "client_name", "total"),
+        operations=(
+            ResourceOperation(
+                "pdf",
+                "POST",
+                "/Invoice/PDF/{id}",
+                args=("id",),
+                summary="Render an invoice PDF (binary response; use --save)",
+            ),
+            ResourceOperation(
+                "view",
+                "POST",
+                "/Invoice/View",
+                body=True,
+                summary="Run a saved invoice view (POST-as-read; still write-gated)",
+            ),
+            ResourceOperation(
+                "lines",
+                "GET",
+                "/Invoice/lines",
+                summary="Invoice line items; 403 without billing permission",
+                verification="live:403",
+            ),
+            ResourceOperation(
+                "update-lines",
+                "POST",
+                "/Invoice/updatelines",
+                body=True,
+                summary="Update invoice line items from a JSON body",
+            ),
+            ResourceOperation(
+                "void",
+                "POST",
+                "/Invoice/{id}/void",
+                args=("id",),
+                summary="Void an invoice (destructive; write-gated)",
+            ),
+        ),
     ),
     HaloResource(
         "opportunities",
@@ -310,6 +434,86 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Attachment",
         aliases=("attachment",),
         table_fields=("id", "filename", "ticket_id"),
+        # Nested routes verified against the live tenant (2026-09-28): a malformed
+        # id answers 400 (route matched, id failed validation) while the known-missing
+        # control also answers 400 via the {id} template — literal routes (e.g.
+        # /Attachment/image) answer 404 when no record matches. The tenant has zero
+        # attachments, so {id} reads are route-verified but data-unverified.
+        operations=(
+            ResourceOperation(
+                "get-document",
+                "GET",
+                "/Attachment/document/{id}",
+                args=("id",),
+                summary="Fetch a document attachment by id",
+                verification="route-verified",
+            ),
+            ResourceOperation(
+                "delete-document",
+                "DELETE",
+                "/Attachment/document/{id}",
+                args=("id",),
+                summary="Delete a document attachment by id",
+            ),
+            ResourceOperation(
+                "list-images",
+                "GET",
+                "/Attachment/image",
+                summary="List image attachments; 404 when the tenant has none",
+                verification="live:404",
+            ),
+            ResourceOperation(
+                "upload-image",
+                "POST",
+                "/Attachment/image",
+                multipart=True,
+                summary="Upload an image (multipart form field 'file' per spec)",
+            ),
+            ResourceOperation(
+                "get-image",
+                "GET",
+                "/Attachment/image/{id}",
+                args=("id",),
+                summary="Fetch an image attachment by id",
+                verification="route-verified",
+            ),
+            ResourceOperation(
+                "delete-image",
+                "DELETE",
+                "/Attachment/image/{id}",
+                args=("id",),
+                summary="Delete an image attachment by id",
+            ),
+            ResourceOperation(
+                "get-nhserver",
+                "GET",
+                "/Attachment/nhserver/{id}",
+                args=("id",),
+                summary="Fetch an nhserver attachment by id",
+                verification="route-verified",
+            ),
+            ResourceOperation(
+                "presign-url",
+                "POST",
+                "/Attachment/GetS3PresignedURL",
+                body=True,
+                summary="Request an S3 presigned upload URL",
+            ),
+            ResourceOperation(
+                "presign-complete",
+                "POST",
+                "/Attachment/PresignedURLUploadComplete",
+                body=True,
+                summary="Mark a presigned upload as complete",
+            ),
+            ResourceOperation(
+                "create-document",
+                "POST",
+                "/Attachment/document",
+                body=True,
+                summary="Create a document attachment from a JSON body",
+            ),
+        ),
     ),
 )
 

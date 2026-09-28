@@ -151,6 +151,33 @@ halocli <resource> list --param key=value --max-records 25
 halocli <resource> get ID
 ```
 
+Resources with nested endpoints also expose them as first-class commands
+(`halocli <resource> --help` lists them with method, path and summary):
+
+```powershell
+halocli tickets zapier                        # GET /Tickets/zapier
+halocli invoices lines                        # GET /Invoice/lines
+halocli invoices pdf 42 --save invoice.pdf    # POST /Invoice/PDF/{id}, binary -> file
+halocli attachments get-image 7 --save img    # GET /Attachment/image/{id}
+halocli attachments upload-image --file pic.png --apply --yes
+```
+
+These are generated from `ResourceOperation` metadata, so every path and
+method is verified against the vendored spec by the coverage oracle.
+Behaviour worth knowing:
+
+- **Path arguments are arity-checked** — a missing or extra positional fails
+  with usage (exit 2) before anything is sent.
+- **Reads never take `--apply`/`--yes`**; writes preview by default (zero
+  network, no profile needed) and require `--apply --yes` to execute.
+- **Binary responses** (PDFs, images) are never dumped into JSON: pass
+  `--save PATH` to write them to a file, otherwise you get byte counts.
+- **Verification provenance** appears in `--help` per operation: `live`,
+  `live:403`/`live:500`/`live:404` (probed against the real tenant),
+  `route-verified` (route confirmed, no live data), or `spec`
+  (spec-documented, not probed — writes are never fired at a tenant
+  without an operator).
+
 Nine resources (tickets, actions, clients, sites, assets, agents,
 appointments, statuses, priorities) also have write metadata and
 first-class write commands. `contracts` stays read-only: the vendored spec

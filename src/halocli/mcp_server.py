@@ -24,7 +24,7 @@ from typing import Any, Awaitable, Callable, TextIO
 from halocli.client import HaloClient
 from halocli.config import load_profile
 from halocli.errors import HaloCLIError
-from halocli.resources import RESOURCES, HaloResource
+from halocli.resources import RESOURCES, HaloResource, ResourceOperation
 
 JSONRPC_VERSION = "2.0"
 LATEST_PROTOCOL_VERSION = "2025-06-18"
@@ -85,9 +85,10 @@ _SEARCH_DESCRIPTION = (
     "\n"
     "Searches two sources and returns ranked JSON results: (1) the HaloCLI resource "
     "registry - all first-class resources with their names, aliases, endpoint paths, "
-    "capabilities and table columns; (2) the vendored HaloPSA OpenAPI specification, "
+    "capabilities, table columns and declared nested operations; (2) the vendored "
+    "HaloPSA OpenAPI specification, "
     "when that module is available. Ranking prefers exact name matches, then aliases, "
-    "then endpoint and column matches.\n"
+    "then endpoint, column and nested-operation (name/path/summary) matches.\n"
     "\n"
     "Arguments:\n"
     "  query (required): free-text terms, case-insensitive. Examples: 'tickets', "
@@ -95,9 +96,15 @@ _SEARCH_DESCRIPTION = (
     "  limit (optional): maximum results to return; default 10, capped at 50.\n"
     "\n"
     "Result shape: {ok, query, count, results: [{name, endpoint, aliases, "
-    "capabilities, table_fields, verbs, score, source}], hint}. Each result's endpoint "
-    "is exactly what you pass as 'path' to halo_execute: it is relative to the API "
-    "root, so never add '/api' or the tenant host. If search finds nothing, call "
+    "capabilities, table_fields, verbs, operations, score, source}], hint}. Each "
+    "result's endpoint is exactly what you pass as 'path' to halo_execute: it is "
+    "relative to the API root, so never add '/api' or the tenant host. Results whose "
+    "nested operations matched the query also carry 'matched_operations' (the "
+    "matching operation names). Resources may declare nested operations - entries of "
+    "{name, method, path, write} such as invoices 'pdf' -> POST /Invoice/PDF/{id} - "
+    "and those are executable via halo_execute too: pass the operation's path as "
+    "'path' (substituting any {id} placeholder) and its method as 'method'; write "
+    "operations still require apply: true. If search finds nothing, call "
     "halo_resources to enumerate the full catalog."
 )
 
@@ -139,12 +146,17 @@ _EXECUTE_DESCRIPTION = (
 _RESOURCES_DESCRIPTION = (
     f"Dump the complete HaloCLI resource catalog: all {len(RESOURCES)} first-class "
     "HaloPSA resources with name, endpoint, aliases, table_fields (columns that make "
-    "good table output), capabilities and verbs. Takes no arguments; call it when "
-    "halo_search misses or when you want to enumerate everything this server knows.\n"
+    "good table output), capabilities, verbs and any declared nested operations. "
+    "Takes no arguments; call it when halo_search misses or when you want to "
+    "enumerate everything this server knows.\n"
     "\n"
     "Result shape: {ok, count, resources: [{name, endpoint, aliases, table_fields, "
-    "capabilities, verbs}], hint}. Pass an entry's endpoint as 'path' to halo_execute "
-    "(no '/api' prefix, no tenant host)."
+    "capabilities, verbs, operations}], hint}. Pass an entry's endpoint as 'path' to "
+    "halo_execute (no '/api' prefix, no tenant host). 'operations' is a list of "
+    "{name, method, path, write} entries (empty when the resource declares none); "
+    "each is executable via halo_execute by passing its path as 'path' (substituting "
+    "any {id} placeholder) and its method as 'method', with writes still requiring "
+    "apply: true."
 )
 
 # MCP tool annotations. Hosts read these: Codex's `writes` approval mode prompts
@@ -268,6 +280,15 @@ def _verbs(resource: HaloResource) -> list[str]:
     return verbs
 
 
+def _operation_entry(operation: ResourceOperation) -> dict[str, Any]:
+    return {
+        "name": operation.name,
+        "method": operation.method,
+        "path": operation.path,
+        "write": operation.write,
+    }
+
+
 def _resource_entry(resource: HaloResource) -> dict[str, Any]:
     return {
         "name": resource.name,
@@ -276,7 +297,60 @@ def _resource_entry(resource: HaloResource) -> dict[str, Any]:
         "table_fields": list(resource.table_fields),
         "capabilities": _capability_summary(resource),
         "verbs": _verbs(resource),
+        # Declared nested operations (e.g. invoices 'pdf' -> POST /Invoice/PDF/{id});
+        # empty for resources that have none.
+        "operations": [_operation_entry(op) for op in resource.operations],
     }
+
+
+def _op_specific_segments(resource: HaloResource, operation: ResourceOperation) -> list[str]:
+    """Operation path segments after stripping the resource endpoint's own prefix.
+
+    ``/Invoice/{id}/void`` on the ``invoices`` resource (endpoint ``/Invoice``) yields
+    ``['{id}', 'void']`` so operation scoring reflects op-specific routes instead of
+    re-scoring the endpoint the resource already matched on.
+    """
+    segments = [segment for segment in operation.path.lower().split("/") if segment]
+    base = [segment for segment in resource.endpoint.lower().split("/") if segment]
+    if segments[: len(base)] == base:
+        return segments[len(base) :]
+    return segments
+
+
+def _score_operations(resource: HaloResource, terms: list[str]) -> tuple[int, list[str]]:
+    """Score declared nested operations against the query terms.
+
+    Mirrors the resource-level style: exact match > prefix > substring, with the
+    same trailing-'s' stem handling; path segments and summaries score lower. Returns
+    the points earned plus the names of the operations that matched anything (so
+    callers can surface ``matched_operations`` without changing entry shapes for
+    queries that only hit resource-level terms).
+    """
+    points_total = 0
+    matched: list[str] = []
+    for operation in resource.operations:
+        op_name = operation.name.lower()
+        segments = _op_specific_segments(resource, operation)
+        summary = operation.summary.lower()
+        points = 0
+        for term in terms:
+            stem = term[:-1] if term.endswith("s") and len(term) > 3 else term
+            if op_name == term or op_name == stem:
+                points += 70
+            elif op_name.startswith(term) or (stem != term and op_name.startswith(stem)):
+                points += 50
+            elif term in op_name or stem in op_name:
+                points += 40
+            elif any(term == segment or stem == segment for segment in segments):
+                points += 35
+            elif any(term in segment or stem in segment for segment in segments):
+                points += 25
+            elif term in summary or stem in summary:
+                points += 10
+        if points:
+            points_total += points
+            matched.append(operation.name)
+    return points_total, matched
 
 
 # --------------------------------------------------------------------------------------
@@ -286,7 +360,7 @@ def _search_registry(query: str, limit: int) -> list[dict[str, Any]]:
     terms = [term for term in re.split(r"\s+", query.strip().lower()) if term]
     if not terms:
         return []
-    scored: list[tuple[int, str, HaloResource]] = []
+    scored: list[tuple[int, str, HaloResource, list[str]]] = []
     for resource in RESOURCES:
         name = resource.name.lower()
         endpoint = resource.endpoint.lower()
@@ -310,14 +384,20 @@ def _search_registry(query: str, limit: int) -> list[dict[str, Any]]:
                 score += 20
             if term in summary:
                 score += 10
+        op_points, matched_ops = _score_operations(resource, terms)
+        score += op_points
         if score > 0:
-            scored.append((score, resource.name, resource))
+            scored.append((score, resource.name, resource, matched_ops))
     scored.sort(key=lambda item: (-item[0], item[1]))
     results: list[dict[str, Any]] = []
-    for score, _, resource in scored[:limit]:
+    for score, _, resource, matched_ops in scored[:limit]:
         entry = _resource_entry(resource)
         entry["score"] = score
         entry["source"] = "registry"
+        if matched_ops:
+            # Present only when operation terms matched, so entry shapes for
+            # resource-level-only queries stay exactly as before.
+            entry["matched_operations"] = matched_ops
         results.append(entry)
     return results
 
@@ -472,7 +552,9 @@ async def _tool_halo_search(args: dict[str, Any]) -> tuple[dict[str, Any], bool]
         "results": results,
         "hint": (
             "Pass a result's endpoint as `path` to halo_execute (GET needs no apply; "
-            "writes need apply: true). Call halo_resources if search missed."
+            "writes need apply: true). Declared operations work the same way: pass the "
+            "operation's path as `path` and its method as `method` (writes still need "
+            "apply: true). Call halo_resources if search missed."
         ),
     }
     return payload, False
@@ -485,8 +567,9 @@ async def _tool_halo_resources(args: dict[str, Any]) -> tuple[dict[str, Any], bo
         "count": len(entries),
         "resources": entries,
         "hint": (
-            "Pass an entry's endpoint as `path` to halo_execute; use halo_search for "
-            "keyword lookup across names, aliases, endpoints and OpenAPI operations."
+            "Pass an entry's endpoint as `path` to halo_execute, or a declared "
+            "operation's path as `path` plus its `method`; use halo_search for "
+            "keyword lookup across names, aliases, endpoints, operations and OpenAPI."
         ),
     }
     return payload, False
