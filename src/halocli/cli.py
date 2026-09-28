@@ -208,6 +208,8 @@ def _operation_command(resource: HaloResource, op: ResourceOperation):
             raise typer.BadParameter(f"--file does not exist or is not a file: {file}")
         if not op.write and (apply or yes):
             raise typer.BadParameter("apply/yes are only valid for write operations")
+        if save is not None and save.is_dir():
+            raise typer.BadParameter(f"--save must be a file path, not a directory: {save}")
 
         params = _parse_params(param or [])
         path = _build_operation_path(op, args)

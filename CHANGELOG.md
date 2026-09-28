@@ -20,7 +20,7 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
 - Multipart operations (e.g. `attachments upload-image`) accept `--file` and
   send the spec-declared `multipart/form-data` field `file`.
 - Every operation carries honest verification provenance (`live`,
-  `live:403`, `live:500`, `route-verified`, `spec`) shown in `--help`,
+  `live:403`, `live:404`, `live:500`, `route-verified`, `spec`) shown in `--help`,
   recorded from probing the real tenant on 2026-09-28 — writes are never
   fired at a tenant without an operator.
 - The coverage oracle gained an `operation` classification (declared

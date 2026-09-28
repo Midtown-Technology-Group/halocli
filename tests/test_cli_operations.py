@@ -355,6 +355,27 @@ def test_binary_response_without_save_is_never_dumped(monkeypatch: Any) -> None:
     assert "%PDF" not in result.output
 
 
+def test_save_rejects_a_directory_before_any_request(monkeypatch: Any, tmp_path: Path) -> None:
+    """A directory --save must fail as usage BEFORE the request is dispatched.
+
+    Otherwise the write to disk fails after a successful network call and the
+    CLI reports failure for an operation that actually executed.
+    """
+    save_default_profile()
+    FakeClient, state = fake_client(PDF_BYTES)
+    monkeypatch.setattr("halocli.cli.HaloClient", FakeClient)
+
+    result = runner.invoke(
+        app,
+        ["invoices", "pdf", "42", "--apply", "--yes", "--save", str(tmp_path)],
+    )
+
+    assert result.exit_code == 2, result.output
+    assert "--save must be a file path" in result.output.replace("\x1b", "")
+    # zero requests: the guard fires before the client is built
+    assert state["calls"] == []
+
+
 def test_apply_flags_are_rejected_on_read_operations() -> None:
     for flags in (["--apply"], ["--yes"], ["--apply", "--yes"]):
         result = runner.invoke(app, ["tickets", "zapier", *flags])
