@@ -106,7 +106,16 @@ jobs:
         shell: pwsh
         run: |
           $sha = (Get-FileHash dist/halocli.msi -Algorithm SHA256).Hash.ToLower()
-          $productCode = ./scripts/get_msi_product_code.ps1 -Path dist/halocli.msi
+          # Select-Object -Last 1 plus Trim: get_msi_product_code.ps1 used to
+          # emit an empty string alongside the GUID, and interpolating that
+          # array produced " {C664...}" -- a ProductCode with a leading space,
+          # which is what the first machine-generated winget manifest shipped.
+          # Validate as a bare GUID so a regression fails here instead of at
+          # winget publish time.
+          $productCode = ((./scripts/get_msi_product_code.ps1 -Path dist/halocli.msi) | Select-Object -Last 1).ToString().Trim()
+          if ($productCode -notmatch '^\{[0-9A-Fa-f-]{36}\}$') {
+            throw "ProductCode is not a bare GUID: '$productCode'"
+          }
           "sha256=$sha" >> $env:GITHUB_OUTPUT
           "product_code=$productCode" >> $env:GITHUB_OUTPUT
 
