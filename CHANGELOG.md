@@ -50,12 +50,33 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   resource whose only write is an operation (`reports clone`, `invoices pdf`)
   was advertised as "writes only via raw", telling agents a real subcommand did
   not exist.
-- The suite grows 289 -> 312 tests, chiefly `tests/test_reports_commands.py`
+- **Review on PR #18 caught three defects before merge**, each verified rather
+  than taken on trust:
+  - **Critical — a regression I had just introduced.** Passing
+    `timeout=None` to httpx unconditionally is *not* "use the client default";
+    it sets connect/read/write/pool all to `None`, i.e. **no timeout at all**.
+    Every request that did not supply one (list, get, raw, search, MCP, todo)
+    had silently lost the profile-wide timeout. Neither the suite nor a live
+    smoke test could see it — MockTransport ignores timeouts and nothing in
+    those runs stalled. The argument is now forwarded only when supplied, and
+    a test pins it (verified to fail against the buggy form with
+    `{'connect': None, ...}`).
+  - A failed verification read after a successful clone POST hid the new id,
+    so an operator who retried would create a second copy. It now reports the
+    id, `verification: skipped`, and a warning not to retry blindly — on
+    stdout, matching `_finish_write`, because losing that id to a stderr
+    redirect is exactly what causes the duplicate.
+  - An empty result reported no columns, though Halo echoes them in
+    `availablefields` (verified present in the execution response for reports
+    5/143/146, matching row keys exactly there), so `--output table` rendered
+    nothing for a zero-row run.
+- The suite grows 289 -> 315 tests, chiefly `tests/test_reports_commands.py`
   (both commands, their failure modes, and the contract/help registration),
-  plus timeout-classification tests in `test_utils.py` and a guard in
-  `test_packaging.py` that the suite imports `src/` rather than a
-  non-editable snapshot in site-packages — twice this release cycle a stray
-  `pip install .` left tests passing against a stale copy of the tree.
+  timeout-classification tests in `test_utils.py`, the timeout-forwarding test
+  in `test_client.py`, and a guard in `test_packaging.py` that the suite
+  imports `src/` rather than a non-editable snapshot in site-packages — twice
+  this release cycle a stray `pip install .` left tests passing against a
+  stale copy of the tree.
 
 ## 0.9.0 - 2026-09-29
 

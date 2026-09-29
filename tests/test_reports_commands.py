@@ -467,6 +467,78 @@ def test_clone_posts_an_array_and_verifies(monkeypatch: pytest.MonkeyPatch) -> N
     assert paths.count("/api/Report/600") == 1, "created record read back"
 
 
+def test_run_reports_columns_for_an_empty_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A zero-row run still has a defined shape, and Halo echoes it.
+
+    `availablefields` was verified present in the execution response for
+    reports 5/143/146, matching row keys exactly there. Without the fallback a
+    empty result reported no columns at all, so --output table rendered nothing.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(
+            200,
+            json={
+                "id": 9,
+                "name": "No matches",
+                "availablefields": "Ticket ID\nSubject\nStatus",
+                "report": {"loaded": True, "rows": []},
+            },
+        )
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(app, ["reports", "run", "9"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["row_count"] == 0
+    assert payload["count"] == 0
+    assert payload["columns"] == ["Ticket ID", "Subject", "Status"]
+    assert payload["items"] == []
+
+
+def test_clone_verification_failure_still_reports_the_new_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Once the POST succeeds a copy exists: a bare error invites a duplicate.
+
+    The verification reads can fail on a 401/5xx/timeout. Swallowing that into
+    a generic error would hide the new id, and an operator who retries would
+    create a second report. Found by review on PR #18.
+    """
+    source, created = _clone_fixture()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        if request.method == "POST":
+            created["name"] = "Copy of closed"
+            return httpx.Response(201, json=created)
+        if request.url.path.endswith("/Report/600"):
+            return httpx.Response(403, text="")  # verification read fails
+        return httpx.Response(200, json=source)
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(
+        app, ["reports", "clone", "147", "--name", "Copy of closed", "--apply", "--yes"]
+    )
+
+    assert result.exit_code == 1, "a failed verification must not report success"
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    # The id is the whole point: without it a retry duplicates the clone.
+    assert payload["id"] == 600
+    assert payload["category"] == "permission"
+    assert payload["status_code"] == 403
+    assert payload["verification"] == "skipped"
+    assert "WAS created" in payload["hint"] and "second copy" in payload["hint"]
+    # Permission failures keep their actionable diagnostic.
+    assert "diagnostic" in payload and payload["diagnostic"]
+
+
 def test_clone_reports_source_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
     """If the source changes under us, say so instead of reporting success."""
     source, created = _clone_fixture()

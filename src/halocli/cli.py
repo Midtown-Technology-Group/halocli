@@ -530,6 +530,15 @@ async def _run_report(
         return payload
 
     columns = list(rows[0].keys()) if rows and isinstance(rows[0], dict) else []
+    if not columns:
+        # An empty result still has a defined shape, and Halo echoes it in the
+        # envelope as `availablefields` (verified present in the execution
+        # response for reports 5, 143 and 146, matching row keys exactly there).
+        # Without this a zero-row run reports no columns at all, so
+        # `--output table` renders nothing.
+        available = body.get("availablefields")
+        if isinstance(available, str):
+            columns = [line.strip() for line in available.splitlines() if line.strip()]
     payload.update(
         id=body.get("id"),
         name=body.get("name"),
@@ -609,10 +618,12 @@ def _report_clone_command(resource: HaloResource, op: ResourceOperation):
                 profile=profile,
             )
         )
-        if not result.get("ok"):
-            render_error(result)
-            raise typer.Exit(1)
+        # Write payloads render to stdout even when they fail, matching
+        # _finish_write: the failure above can carry the *new* report id, and
+        # losing that to a stderr redirect is what invites a duplicate clone.
         render(result, output=output)
+        if not result.get("ok"):
+            raise typer.Exit(1)
 
     return command
 
@@ -664,12 +675,41 @@ async def _run_report_clone(
             payload.update(
                 ok=False, category="validation",
                 error="POST did not return the created report (no id)",
+                hint=(
+                    "Halo answered without returning the new record, so a copy "
+                    "may still exist under a different id. List reports and "
+                    "check before retrying -- retrying creates a second copy."
+                ),
             )
             return payload
 
         new_id = str(created["id"])
-        after_source = await client.request("GET", source_path)
-        verified = await client.request("GET", f"{path}/{quote(new_id, safe='')}")
+        # The copy exists from this point on. If a verification read fails, the
+        # operator still needs its id: a generic error that omits it invites a
+        # retry, and a retry creates a *second* copy. Catch and report instead
+        # of letting _run render a bare exception.
+        try:
+            after_source = await client.request("GET", source_path)
+            verified = await client.request("GET", f"{path}/{quote(new_id, safe='')}")
+        except Exception as exc:  # noqa: BLE001
+            err = exc if isinstance(exc, HaloCLIError) else classify_error(exc)
+            payload.update(
+                id=created["id"],
+                ok=False,
+                category=err.category,
+                status_code=err.status_code,
+                error=str(exc) or str(err),
+                verification="skipped",
+                hint=(
+                    f"The copy WAS created (id {created['id']}), but the "
+                    "verification reads failed, so its state is unverified. "
+                    "Inspect it before retrying -- retrying creates a second copy."
+                ),
+            )
+            diagnostic = diagnose_permission_failure(err)
+            if diagnostic:
+                payload["diagnostic"] = diagnostic
+            return payload
 
     payload["id"] = created["id"]
     payload["new_guid_differs"] = (

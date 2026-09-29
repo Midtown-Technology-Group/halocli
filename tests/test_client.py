@@ -60,3 +60,44 @@ async def test_client_uses_retry_after_for_rate_limit(monkeypatch) -> None:
 
     assert result == {"ok": True}
     assert sleeps == [4]
+
+
+@pytest.mark.asyncio
+async def test_request_keeps_profile_timeout_unless_one_is_given() -> None:
+    """An omitted timeout must not become ``timeout=None``.
+
+    httpx treats those differently: omitting it uses the client default
+    (``{'connect': 30.0, ...}`` for a 30s profile) while passing ``None`` sets
+    every phase to ``None`` — i.e. no timeout at all. Supplying the parameter
+    unconditionally therefore silently dropped the profile-wide timeout from
+    every request that does not pass one (list, get, raw, search, MCP, todo),
+    and neither the test suite nor a live smoke test can see it: MockTransport
+    ignores timeouts and no request in those runs happened to stall. Caught by
+    review on PR #18.
+    """
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen[request.url.path] = request.extensions.get("timeout")
+        if request.url.path == "/auth/token":
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(200, json={"ok": True})
+
+    profile = HaloProfile(
+        tenant_url="https://halo.example.com",
+        client_id="id",
+        client_secret="secret",
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), timeout=profile.timeout
+    ) as http:
+        client = HaloClient(profile, http=http)
+        await client.request("GET", "/Client")  # no timeout argument
+        await client.request("GET", "/Report/1", timeout=120.0)  # explicit
+
+    default_ext = seen["/api/Client"]
+    assert default_ext is not None, "profile timeout was dropped for an ordinary request"
+    assert default_ext["connect"] == profile.timeout, default_ext
+
+    explicit_ext = seen["/api/Report/1"]
+    assert explicit_ext["connect"] == 120.0, explicit_ext
