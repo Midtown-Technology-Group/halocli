@@ -5,7 +5,7 @@ param(
 
 # $ErrorActionPreference = "Stop" deliberately: it guards the cmdlet calls
 # below (Remove-Item, Test-Path failures should abort). Native tools are
-# invoked through Invoke-Native so their *logging* cannot abort the build —
+# invoked through Invoke-Native so their *logging* cannot abort the build:
 # PyInstaller writes INFO lines to stderr, which Windows PowerShell 5.1 turns
 # into terminating errors if the caller pipes 2>&1 (CI uses pwsh 7, where that
 # does not happen; the failure showed up in a local 5.1 session).
@@ -92,9 +92,16 @@ $smokeOut = (& $exePath --version | Out-String)
 if ($smokeExit -ne 0) {
     throw "Smoke test failed: halocli.exe --version exited $smokeExit (frozen entry point unresolved?)."
 }
-if ($smokeOut -notmatch [regex]::Escape("halocli $Version")) {
-    throw "Smoke test failed: expected 'halocli $Version', got: $smokeOut"
+# Exact line match, not substring: a substring test for "halocli 0.8.1" would
+# also accept "halocli 0.8.10" and publish an MSI whose binary version differs
+# from the requested one.
+$versionLine = ""
+foreach ($line in ($smokeOut -split "`r?`n")) {
+    if ($line.Trim() -ne "") { $versionLine = $line.Trim(); break }
 }
-Write-Host "Smoke test passed: $($smokeOut.Trim())"
+if ($versionLine -ne "halocli $Version") {
+    throw "Smoke test failed: expected first output line 'halocli $Version', got: $smokeOut"
+}
+Write-Host "Smoke test passed: $versionLine"
 
 Write-Host "Built halocli.msi $Version ($([math]::Round((Get-Item $msiPath).Length / 1MB, 1)) MB)"

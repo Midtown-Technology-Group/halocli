@@ -9,6 +9,7 @@ require local package-upload tokens.
 ```powershell
 $env:PYTHONPATH = "$PWD\src"
 python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e ".[dev]"
 python -m pytest -q
 Remove-Item -Recurse -Force dist, build -ErrorAction SilentlyContinue
 python -m build
@@ -16,6 +17,10 @@ python -m twine check dist/*.tar.gz dist/*.whl
 pip-audit --progress-spinner off --skip-editable .
 cyclonedx-py environment --output-format JSON --output-file dist/halocli-sbom.cdx.json
 ```
+
+The editable install is not optional: the packaging tests read the installed
+distribution metadata (`importlib.metadata`), which a source-tree-only run
+cannot see.
 
 Also run a console smoke test from an installed package:
 
@@ -76,10 +81,15 @@ Building it locally requires the same tools CI uses (PyInstaller is installed
 by the workflow, not by `pip install .`):
 
 ```powershell
-python -m pip install pyinstaller
+python -m pip install . pyinstaller
 dotnet tool install --global wix --version 4.*
 ./packaging/windows/build-msi.ps1 -Version 0.8.1
 ```
+
+Install the project as well as PyInstaller — the build reads
+`halocli-*.dist-info` from the environment (that is what `copy_metadata`
+bundles), so `halocli.exe --version` cannot pass otherwise. This mirrors what
+CI runs.
 
 `build-msi.ps1` is safe under both PowerShell 5.1 and pwsh 7: native tools
 (PyInstaller, WiX) are invoked through a wrapper that keeps their stderr

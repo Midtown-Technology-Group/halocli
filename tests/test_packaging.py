@@ -30,6 +30,9 @@ def test_console_script_entry_point_is_discoverable() -> None:
     assert "halocli" in names, (
         "importlib.metadata cannot see a 'halocli' console script; the frozen "
         "launcher would exit 1 with 'Console script entry point not found'. "
+        "This test reads installed distribution metadata, so the project must "
+        "be installed first (RELEASE.md's preflight does "
+        '`pip install -e ".[dev]"`). '
         f"Found: {sorted(names)}"
     )
 
@@ -78,4 +81,14 @@ def test_msi_build_smoke_tests_the_binary() -> None:
     assert "--version" in script, "build-msi.ps1 must run halocli.exe --version"
     assert "Smoke test failed" in script, (
         "build-msi.ps1 must fail the build when the smoke test fails"
+    )
+    # Exact comparison against the full expected line: a substring test would
+    # accept "halocli 0.8.10" for a requested 0.8.1 and publish an MSI whose
+    # binary version differs from the release it is attached to.
+    assert '-ne "halocli $Version"' in script, (
+        "build-msi.ps1 must compare the version line exactly, not as a substring"
+    )
+    assert "-notmatch" not in script, (
+        "substring matching on the version line would let 'halocli 0.8.10' "
+        "satisfy a 'halocli 0.8.1' check"
     )
