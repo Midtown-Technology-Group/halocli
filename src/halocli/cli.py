@@ -688,8 +688,9 @@ async def _auth_whoami(*, profile: str, output: str, check: list[str]) -> None:
         payload["scope_note"] = (
             "Granted scope differs from the profile's requested scope. Halo narrows "
             "the grant to what the API application's Permissions tab allows; a 403 "
-            "means an endpoint needs a scope that was not granted. Run again with "
-            "--check <path> to test a specific endpoint."
+            "means an endpoint needs a scope that was not granted. Probe one with "
+            "`halocli auth whoami --check /Invoice` (substitute the endpoint you "
+            "called)."
         )
     if probes:
         payload["checks"] = probes
