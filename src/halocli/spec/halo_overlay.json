@@ -3,7 +3,7 @@
   "info": {
     "title": "halocli surfaced-operations enrichment",
     "version": "1.0.0",
-    "description": "Curated summary/description prose for the operations HaloCLI surfaces (registry list/get/create/update/delete plus nested write operations). Applied by scripts/vendor_halo_spec.py with fill-if-missing semantics: upstream text is never overwritten. operationIds are NOT in this file — they are synthesized deterministically by the vendor script. When the resource registry grows, add actions here until the surfaced-operations test passes."
+    "description": "Curated prose for the operations HaloCLI surfaces (registry list/get/create/update/delete plus nested write operations) plus targeted corrections learned from live API testing: POST /Report's array body and failure modes, the loadreport execution parameter, and AnalyzerProfile.sql execution constraints. Applied by scripts/vendor_halo_spec.py with fill-if-missing semantics: upstream text is never overwritten. Target shapes: $.paths[...].<method>.summary|description, $.paths[...].<method>.parameters[?@.name=='<name>'].description, and $.components.schemas.<Schema>.properties.<prop>.description. All three are standard JSONPath (verified against jsonpath-ng in tests), so external overlay runners resolve every action rather than silently skipping some. operationIds are NOT in this file -- they are synthesized deterministically by the vendor script. When the resource registry grows, add actions here until the surfaced-operations test passes."
   },
   "actions": [
     {
@@ -410,6 +410,26 @@
       "target": "$.paths['/Attachment/document'].post.description",
       "description": "curated description for a surfaced operation",
       "update": "Create a document attachment from a JSON body"
+    },
+    {
+      "target": "$.paths['/Report'].post.summary",
+      "description": "folded from live report-interface testing (issue for reports commands)",
+      "update": "Create or update reports (array body; id present updates, absent creates)"
+    },
+    {
+      "target": "$.paths['/Report'].post.description",
+      "description": "folded from live report-interface testing",
+      "update": "The body must be a JSON array of AnalyzerProfile: a bare object returns 400 and a non-JSON Content-Type returns 415. Omit id to create a report, include it to update; the stored report is returned."
+    },
+    {
+      "target": "$.paths['/Report/{id}'].get.parameters[?@.name=='loadreport'].description",
+      "description": "folded from live report-interface testing",
+      "update": "Execute the report and return the result set under report.rows (read-only GET). Halo returns at most 50,000 rows, so a report over more rows is silently truncated -- bound large reports by date."
+    },
+    {
+      "target": "$.components.schemas.AnalyzerProfile.properties.sql.description",
+      "description": "folded from live report-interface testing",
+      "update": "Raw T-SQL for a user-authored (type 1) report. Halo executes it inside a derived table, so a trailing ORDER BY is rejected unless the SELECT also specifies TOP or OFFSET (or FOR XML)."
     }
   ]
 }

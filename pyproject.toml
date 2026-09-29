@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "halocli"
-version = "0.8.1"
+version = "0.8.2"
 description = "Standalone HaloPSA CLI for safe operator and automation workflows"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -32,6 +32,10 @@ classifiers = [
 dev = [
     "build>=1.0.0",
     "fastapi>=0.111.0",
+    # Pins the overlay's interop claim: every target in halo_overlay.json must
+    # parse as standard JSONPath and resolve, so external runners (Forge et al)
+    # applying the same file do not silently skip actions ours applies.
+    "jsonpath-ng>=1.6.0",
     "pytest>=7.0.0",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.1.0",

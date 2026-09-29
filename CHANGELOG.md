@@ -6,6 +6,51 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.8.2 - 2026-09-29
+
+- **Folded four findings from live report-interface testing into the spec**,
+  so the next person does not have to rediscover them by trial and error
+  (cost: several 28 MB report executions and a few 400s/415s):
+  - `POST /Report` now has a `summary` and a `description` documenting that
+    the body must be a **JSON array** of `AnalyzerProfile` (a bare object
+    returns 400, a non-JSON `Content-Type` returns 415), that omitting `id`
+    creates while including it updates, and that the stored report is
+    returned. *Correction to my own earlier claim: the array schema itself
+    was already correct upstream — my first probe only looked for a
+    top-level `$ref` and reported a gap that did not exist. What was missing
+    was prose, not schema.*
+  - `loadreport` on `GET /Report/{id}` is now documented as the execution
+    path: it returns `report.rows` and **Halo caps results at 50,000 rows** —
+    measured against 135,148 closed tickets, i.e. the report silently
+    returned 37% of the data.
+  - `AnalyzerProfile.properties.sql` is now documented: Halo runs report SQL
+    **inside a derived table**, so a trailing `ORDER BY` is rejected unless
+    the `SELECT` also specifies `TOP`/`OFFSET`/`FOR XML`.
+- **The overlay applier accepts two new target shapes** (the vendor script
+  itself stays stdlib-only): `$.paths[...].<method>.parameters[?@.name=='<name>'].description`
+  and `$.components.schemas.<Schema>.properties.<prop>.description`, both
+  with the same fill-if-missing semantics. Parameters are addressed by a
+  JSONPath filter on *name*, so they survive upstream re-ordering and -- unlike
+  a positional index -- remain applyable by external overlay runners.
+- **The overlay's JSONPath portability claim is now proved, not commented.**
+  `test_overlay_targets_are_standard_jsonpath` parses all 85 targets with
+  `jsonpath-ng` (new dev-only dependency) and asserts each resolves to exactly
+  one node holding its update. This matters: a target that parses but resolves
+  to zero nodes would let an external runner silently skip that action while
+  applying the rest, with the run still reporting success.
+- `resolve_overlay_target()` was split out of `apply_overlay()` so tests can
+  assert every overlay target resolves against the committed spec **without
+  mutating it** - `schema.load_spec()` caches process-wide, so a mutating
+  check would leak into later tests.
+- Four new tests: the two new shapes fill and skip correctly, unknown
+  parameter/property/schema targets fail loudly,
+  `test_report_interface_prose_documented` pins all four findings (plus the
+  array schema) so they cannot silently drift out of the spec, and the
+  JSONPath interop test above.
+- Filed #15 for the commands these findings argue for: `reports run`
+  (row count, cap warning, and surfacing `report.load_error`, which Halo
+  returns with HTTP 200) and `reports clone`.
+
 ## 0.8.1 - 2026-09-29
 
 - **Fixed every MSI ever shipped (0.5.0 – 0.8.0).** The frozen `halocli.exe`

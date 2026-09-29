@@ -263,9 +263,12 @@ for 1455 operations):
 
 - missing `operationId`s are synthesized deterministically as
   `{method}_{path}` (e.g. `get_invoice_pdf_id`); upstream IDs are kept;
-- `src/halocli/spec/halo_overlay.json` (OpenAPI Overlay 1.0.0) fills
-  `summary`/`description` for every operation the registry surfaces, applied
-  with fill-if-missing semantics so upstream improvements survive refreshes.
+- `src/halocli/spec/halo_overlay.json` (OpenAPI Overlay 1.0.0) fills prose the
+  upstream spec omits: `summary`/`description` for every operation the registry
+  surfaces, query-parameter descriptions (e.g. `loadreport`), and schema-property
+  descriptions (e.g. `AnalyzerProfile.sql`) for behaviours learned by live API
+  testing. Applied with
+  fill-if-missing semantics so upstream improvements survive refreshes.
   When the registry grows, `tests/test_spec_enrichment.py` fails until the
   overlay is extended — edit the overlay JSON directly.
 
