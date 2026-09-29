@@ -6,6 +6,36 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.9.0 - 2026-09-29
+
+- **Python support is now 3.12 – 3.14** (`requires-python = ">=3.12"`); 3.10
+  and 3.11 are dropped, and the CI matrix runs 3.12/3.13/3.14 instead of
+  3.10/3.11/3.12. Reasons, since dropping interpreters is a real cost:
+  - **Python 3.10 reaches EOL on 2026-10-31** (per the PSF devguide it is
+    already in security-only status), so keeping it would mean supporting a
+    dead version within weeks;
+  - the floor was set to 3.12 (EOL 2028-10) rather than 3.11 (EOL 2027-10) so
+    the supported range has years of security coverage left;
+  - **the floor is enforced, not aspirational** -- verified: installing into a
+    3.11 venv fails with `Package 'halocli' requires a different Python:
+    3.11.9 not in '>=3.12'`.
+  - Users pinned to 3.10/3.11 should stay on **0.8.2**.
+- **The MSI now embeds Python 3.14 instead of 3.10** (`release-msi.yml`).
+  This is the most consequential line in this release: PyInstaller bundles the
+  interpreter into `halocli.exe`, so building on 3.10 meant every per-machine
+  install shipped a runtime that goes EOL on 2026-10-31. 3.14 is current
+  stable (bugfix through 2030-10). PyInstaller 6.22.3 declares support for
+  3.8-3.15, so this is within its supported range.
+- Verified locally before changing anything: **289 tests pass on 3.13 and on
+  3.14** (and on 3.11, the version being dropped), and the **MSI builds and
+  smoke-tests on both 3.13 and 3.14** -- the 3.14 build producing a working
+  `halocli.exe` that reported `0.8.2` under the existing smoke test.
+- RELEASE.md now warns that **building the MSI from a dev environment bundles
+  dev-only dependencies** into the installer: `todo_web.py` imports fastapi
+  when it is installed, so a venv with `.[dev]` produces an exe containing
+  fastapi/starlette/uvicorn/pytest (20.3 MB locally) while CI's clean
+  `pip install . pyinstaller` produces 13.7 MB. Release artifacts come from CI.
+
 ## 0.8.2 - 2026-09-29
 
 - **Folded four findings from live report-interface testing into the spec**,
