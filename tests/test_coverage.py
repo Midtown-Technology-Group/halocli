@@ -209,6 +209,31 @@ def test_read_mismatch_skips_item_route_when_get_unsupported() -> None:
     assert coverage.find_read_mismatches(spec, resources) == []
 
 
+def test_read_mismatch_flags_item_path_without_get_operation() -> None:
+    """Path membership alone is not enough: a DELETE-only item path cannot serve
+    the registered `get`, and spec validation would refuse it (CodeRabbit review
+    on PR #10). The gate must check the operation, as find_write_mismatches does."""
+    spec = {"paths": {"/Known": {"get": {}}, "/Known/{id}": {"delete": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    mismatches = coverage.find_read_mismatches(spec, resources)
+    assert [m["path"] for m in mismatches] == ["/Known/{id}"]
+    assert "no get operation" in mismatches[0]["spec_path"]
+
+
+def test_read_mismatch_accepts_item_path_with_get_among_other_methods() -> None:
+    """A busy item path (get + delete) satisfies the read promise."""
+    spec = {"paths": {"/Known": {"get": {}}, "/Known/{id}": {"get": {}, "delete": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    assert coverage.find_read_mismatches(spec, resources) == []
+
+
+def test_read_mismatch_trailing_slash_collection_still_counts() -> None:
+    """Some spec spellings use a trailing slash for the collection route."""
+    spec = {"paths": {"/Known/": {"get": {}}, "/Known/{id}": {"get": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    assert coverage.find_read_mismatches(spec, resources) == []
+
+
 def test_read_mismatches_empty_after_live_verification() -> None:
     """Every registry read endpoint must be spec-documented.
 
