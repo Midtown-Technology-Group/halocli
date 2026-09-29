@@ -26,19 +26,27 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   - `AnalyzerProfile.properties.sql` is now documented: Halo runs report SQL
     **inside a derived table**, so a trailing `ORDER BY` is rejected unless
     the `SELECT` also specifies `TOP`/`OFFSET`/`FOR XML`.
-- **The overlay applier accepts two new target shapes** (stdlib-only, still
-  no JSONPath dependency): `$.paths[...].<method>.parameters['<name>'].description`
+- **The overlay applier accepts two new target shapes** (the vendor script
+  itself stays stdlib-only): `$.paths[...].<method>.parameters[?@.name=='<name>'].description`
   and `$.components.schemas.<Schema>.properties.<prop>.description`, both
-  with the same fill-if-missing semantics. Targets are addressed by parameter
-  *name* rather than index so they survive upstream re-ordering.
+  with the same fill-if-missing semantics. Parameters are addressed by a
+  JSONPath filter on *name*, so they survive upstream re-ordering and -- unlike
+  a positional index -- remain applyable by external overlay runners.
+- **The overlay's JSONPath portability claim is now proved, not commented.**
+  `test_overlay_targets_are_standard_jsonpath` parses all 85 targets with
+  `jsonpath-ng` (new dev-only dependency) and asserts each resolves to exactly
+  one node holding its update. This matters: a target that parses but resolves
+  to zero nodes would let an external runner silently skip that action while
+  applying the rest, with the run still reporting success.
 - `resolve_overlay_target()` was split out of `apply_overlay()` so tests can
   assert every overlay target resolves against the committed spec **without
-  mutating it** — `schema.load_spec()` caches process-wide, so a mutating
+  mutating it** - `schema.load_spec()` caches process-wide, so a mutating
   check would leak into later tests.
-- Three new tests: the two new shapes fill and skip correctly, unknown
-  parameter/property/schema targets fail loudly, and
+- Four new tests: the two new shapes fill and skip correctly, unknown
+  parameter/property/schema targets fail loudly,
   `test_report_interface_prose_documented` pins all four findings (plus the
-  array schema) so they cannot silently drift out of the spec.
+  array schema) so they cannot silently drift out of the spec, and the
+  JSONPath interop test above.
 - Filed #15 for the commands these findings argue for: `reports run`
   (row count, cap warning, and surfacing `report.load_error`, which Halo
   returns with HTTP 200) and `reports clone`.
