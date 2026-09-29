@@ -6,6 +6,32 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.8.0 - 2026-09-29
+
+- **`halocli <resource> list` now stops at 500 records by default** and reports
+  it honestly: the payload carries `"truncated": true`, `"total_available"`
+  and a `hint` telling you to pass `--all`. A complete result never carries
+  those keys. This is a behavior change from unbounded paging — on our own
+  tenant `/Tickets` holds 137,329 records, and a bare `halocli tickets list`
+  previously paged for ~18 minutes (measured 0.8s/page) with no output. It now
+  returns in ~4s. Opt back into the old behavior with `--all`, or set
+  `--max-records`/`--max-pages` explicitly; `--all` cannot be combined with
+  those flags.
+- **New `halocli auth whoami`** — reports the identity the token acts as
+  (`/Agent/me`) and the scope Halo actually *granted*, read from the local
+  token cache rather than the profile's requested scope. Scope is fixed at
+  token issuance (a refresh grant never widens it), so this is the
+  authoritative answer for the token in use.
+- **`auth whoami --check PATH`** (repeatable) probes endpoints with a
+  read-only `GET take=1` and reports reachability, classifying failures the
+  same way the CLI does. `checks_all_reachable` summarizes the batch.
+- The 403 `diagnostic` now points at `auth whoami --check`, and a new README
+  section documents Halo's two-layer model (application scopes **and** agent
+  role, combined as AND — scopes only narrow, never widen).
+- `list_all` now reports truncation explicitly through an optional caller-owned
+  `stats` dict (`record_count`, `returned`, `truncated`); stopping at a limit
+  is only truncation when Halo says more records exist.
+
 ## 0.7.2 - 2026-09-29
 
 - **Removed `halocli expenses get`** — it could only ever 404. Probing the live

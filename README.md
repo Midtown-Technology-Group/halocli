@@ -119,12 +119,40 @@ not expose delegated API tokens for CLI use, managed-device identity will need a
 separate Entra-backed broker rather than pretending the Intune enrollment is
 itself a Halo API credential.
 
+## Diagnosing 403s
+
+Halo gates API access on **two independent layers, both of which must pass**:
+
+1. the **API application's Permissions tab** (OAuth scopes — these are fixed at
+   token issuance, so a refresh never widens them; re-run `halocli auth login`
+   after changing them);
+2. the **logging-in agent's role** and its module access levels.
+
+Scopes only ever *narrow* further — they never grant beyond the agent's role.
+Because of that, being a full admin in the Halo UI does not imply an API call
+will succeed: the application may simply lack the scope for that endpoint.
+
+`auth whoami` reports the identity the token acts as and the scope Halo
+actually granted (read from the local token cache, not the profile's requested
+scope), and `--check` probes endpoints read-only:
+
+```powershell
+halocli auth whoami --profile thomas
+halocli auth whoami --profile thomas --check /Invoice --check /Tickets
+```
+
+A 403 response includes a `diagnostic` pointing at this command. `--check`
+performs a `GET` with `take=1` — it never issues a write.
+
 ## Examples
 
 ```powershell
 halocli auth test
+halocli auth whoami                          # identity + granted OAuth scope
+halocli auth whoami --check /Invoice         # is this endpoint reachable now?
 halocli auth discover --tenant-url https://yourtenant.halopsa.com
 halocli tickets list --open --max-records 25
+halocli tickets list --all                   # every record (no ceiling)
 halocli clients list --param search=Example
 halocli sites get 123
 halocli assets list --param client_id=42 --output table
@@ -150,6 +178,14 @@ Each resource supports:
 halocli <resource> list --param key=value --max-records 25
 halocli <resource> get ID
 ```
+
+`list` stops at **500 records** by default and says so: HaloPSA tenants can be
+large (`/Tickets` on our own instance holds 137k records — an unbounded fetch
+would take ~18 minutes and look like a hang). When the ceiling is hit the
+payload carries `"truncated": true`, `"total_available"`, and a `hint`; a
+complete result never carries them. Pass `--all` to fetch every record, or set
+`--max-records`/`--max-pages` explicitly. `--all` cannot be combined with those
+two flags.
 
 Resources with nested endpoints also expose them as first-class commands
 (`halocli <resource> --help` lists them with method, path and summary):

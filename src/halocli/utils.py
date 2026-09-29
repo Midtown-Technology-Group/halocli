@@ -6,6 +6,11 @@ from typing import Any, Awaitable, Callable
 
 MAX_PAGE_SIZE = 100
 
+# Default record ceiling for `halocli <resource> list`. Halo's /Tickets alone holds
+# 137k records (~18 min of paging at 0.8s/page), so an unbounded default would make
+# a bare `list` invocation appear to hang. Operators opt into the full fetch with --all.
+DEFAULT_LIST_LIMIT = 500
+
 
 @dataclass
 class PageResult:
@@ -68,30 +73,54 @@ async def list_all(
     max_pages: int | None = None,
     max_records: int | None = None,
     list_key: str | None = None,
+    stats: dict[str, Any] | None = None,
     **params: Any,
 ) -> list[dict]:
+    """Fetch pages until exhausted or a limit is hit.
+
+    ``stats`` (optional, caller-owned) is populated with ``record_count`` (what
+    Halo reports as the total), ``returned`` and ``truncated``. Truncation is
+    reported rather than implied: a caller that stopped at a limit must be able
+    to tell "these are all the records" from "these are the first N".
+    """
     rows: list[dict] = []
     safe_page_size = clamp_page_size(page_size)
     page_no = 1
+    record_count: int | None = None
+    stopped_at_limit = False
     while True:
         if max_pages is not None and page_no > max_pages:
+            stopped_at_limit = True
             break
         page = parse_page_result(
             await fetch(pageinate=True, page_no=page_no, page_size=safe_page_size, **params),
             list_key=list_key,
         )
+        if page.record_count is not None:
+            record_count = page.record_count
         if not page.items:
             break
         for item in page.items:
             rows.append(item)
             if max_records is not None and len(rows) >= max_records:
-                return rows
-        if page.record_count is not None:
-            if len(rows) >= page.record_count:
+                stopped_at_limit = True
+                break
+        if stopped_at_limit:
+            break
+        if record_count is not None:
+            if len(rows) >= record_count:
                 break
         elif len(page.items) < safe_page_size:
             break
         page_no += 1
+    if stats is not None:
+        stats["record_count"] = record_count
+        stats["returned"] = len(rows)
+        # Stopping at a limit only counts as truncation when Halo says there is
+        # more to fetch; hitting max_records exactly at the total is a full read.
+        stats["truncated"] = stopped_at_limit and (
+            record_count is None or len(rows) < record_count
+        )
     return rows
 
 
