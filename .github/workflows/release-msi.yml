@@ -8,7 +8,7 @@ on:
       version:
         description: Version to package
         required: true
-        default: 0.5.0
+        default: 0.8.1
 
 jobs:
   build-msi:
@@ -16,8 +16,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
+      # Resolved before checkout so the tag can drive it: a manual dispatch
+      # would otherwise build whatever branch the run was triggered from (the
+      # default branch), and attach those bits to an older release. String
+      # manipulation only -- no repo files needed yet.
       - name: Set package version
         id: version
         shell: pwsh
@@ -34,6 +36,46 @@ jobs:
             "tag=v$version" >> $env:GITHUB_OUTPUT
           }
           "value=$version" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Build exactly what the tag points at. A tag that does not exist yet
+          # fails here, which is correct: an MSI for untagged code has no
+          # release to attach to and no reproducible source.
+          ref: ${{ steps.version.outputs.tag }}
+
+      # Tag-vs-release: decide from whether a release EXISTS for this tag, not
+      # from how the run was triggered. Releases are created by the Release
+      # workflow using GITHUB_TOKEN, and token-created releases do not fire
+      # `release: published` -- so gating on github.event_name meant every
+      # manually-dispatched MSI run skipped the upload and the winget notify.
+      # That left 0.7.0 through 0.8.0 with no MSI on the release page and
+      # mtg-winget frozen at 0.5.0.
+      - name: Check whether a release exists for this tag
+        id: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $ErrorActionPreference = "Continue"
+          $output = (gh release view "$tag" --json tagName 2>&1 | Out-String).Trim()
+          $code = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
+          # Only a confirmed "not found" means absence. An auth failure, an API
+          # outage or a network error must fail the run: silently recording
+          # exists=false would skip the upload and the winget notify even though
+          # the release is sitting there waiting for its MSI.
+          if ($code -eq 0) {
+            "exists=true" >> $env:GITHUB_OUTPUT
+            Write-Host "Release $tag exists."
+          } elseif ($output -match "release not found") {
+            "exists=false" >> $env:GITHUB_OUTPUT
+            Write-Host "No release for $tag yet; MSI goes to the workflow artifact only."
+          } else {
+            throw "Failed to determine whether release $tag exists (exit ${code}): $output"
+          }
+          exit 0
 
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -69,21 +111,22 @@ jobs:
           "product_code=$productCode" >> $env:GITHUB_OUTPUT
 
       - name: Upload MSI to release
-        if: github.event_name == 'release'
+        if: steps.release.outputs.exists == 'true'
         shell: pwsh
-        run: gh release upload "${{ github.event.release.tag_name }}" dist/halocli.msi --clobber
+        run: gh release upload "${{ steps.version.outputs.tag }}" dist/halocli.msi --clobber
         env:
           GH_TOKEN: ${{ github.token }}
 
+      # Always publish the artifact: it is the only way to fetch an MSI for a
+      # tag that has no release yet, and it expires on its own.
       - name: Upload workflow artifact
-        if: github.event_name != 'release'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: halocli-msi
           path: dist/halocli.msi
 
       - name: Notify mtg-winget
-        if: github.event_name == 'release'
+        if: steps.release.outputs.exists == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.MTG_WINGET_DISPATCH_TOKEN }}
