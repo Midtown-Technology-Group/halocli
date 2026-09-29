@@ -83,8 +83,18 @@ by the workflow, not by `pip install .`):
 ```powershell
 python -m pip install . pyinstaller
 dotnet tool install --global wix --version 4.*
-./packaging/windows/build-msi.ps1 -Version 0.8.1
+./packaging/windows/build-msi.ps1 -Version 0.9.0
 ```
+
+The version **must match `pyproject.toml`** — the smoke test enforces it, and
+`copy_metadata()` bundles whatever `halocli-*.dist-info` the environment has,
+so a stale install fails the build rather than shipping a mismatched binary.
+
+**Build from an environment without dev extras.** `todo_web.py` imports
+fastapi whenever it is installed, so a venv with `.[dev]` produces an exe
+around 20 MB with fastapi/starlette/uvicorn/pytest frozen inside it, while
+CI's clean `pip install . pyinstaller` produces 13.7 MB. Release artifacts
+always come from CI for that reason.
 
 Install the project as well as PyInstaller — the build reads
 `halocli-*.dist-info` from the environment (that is what `copy_metadata`

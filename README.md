@@ -38,6 +38,14 @@ For development:
 python -m pip install -e ".[dev]"
 ```
 
+Supported Python versions are **3.12 – 3.14** (`requires-python = ">=3.12"`).
+Python 3.10 reaches end-of-life on 2026-10-31 and 3.11 is security-only
+until 2027-10, so both were dropped rather than tested into retirement —
+install `0.8.2` if you are pinned to either. The Windows MSI takes no Python
+at all: it bundles its own interpreter (Python 3.14 as of 0.9.0), which is
+why the MSI build's Python version is a security-relevant choice rather than
+a build detail.
+
 Release packaging is documented in `RELEASE.md`. GitHub Releases include the
 wheel, source distribution, and a CycloneDX SBOM.
 
