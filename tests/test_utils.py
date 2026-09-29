@@ -67,3 +67,37 @@ def test_permission_diagnostic_mentions_feature_access_for_client_403() -> None:
     err = classify_error(StatusError(403, "Forbidden"), endpoint="/api/Client")
 
     assert "feature-access" in diagnose_permission_failure(err)
+
+
+def test_timeout_exceptions_classify_even_without_a_message() -> None:
+    """Timeouts can reach us with an empty message, and that must not matter.
+
+    Live evidence: a 30s profile timeout against a multi-megabyte report
+    rendered as {"category": "unknown", "error": ""} because text matching on
+    str(exc) never sees the word "timeout". (httpx.ReadTimeout itself cannot be
+    constructed without a message — the empty shape arrives from httpcore,
+    mapped through httpx.)
+    """
+
+    class ReadTimeout(Exception):
+        pass  # name matches httpx.ReadTimeout; message deliberately empty
+
+    builtin = classify_error(TimeoutError())
+    named = classify_error(ReadTimeout())
+    control = classify_error(RuntimeError(""))
+
+    assert builtin.category == "timeout"
+    assert named.category == "timeout"
+    assert "ReadTimeout" in str(named), named
+    # A message-less non-timeout still classifies as unknown, not timeout...
+    assert control.category == "unknown"
+    # ...but its message is never empty: it falls back to the exception type.
+    assert str(control)
+
+
+def test_timeout_message_keeps_exception_detail() -> None:
+    err = classify_error(TimeoutError("connect timeout"), endpoint="/api/Report/1")
+
+    assert err.category == "timeout"
+    assert "connect timeout" in str(err)
+    assert "(timeout)" not in str(err)  # no HTTP status: none is claimed

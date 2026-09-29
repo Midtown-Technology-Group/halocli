@@ -12,12 +12,18 @@ Two independent checks:
   (the thing ``halocli_launcher.py`` looks up at runtime);
 * the PyInstaller spec still bundles ``halocli-*.dist-info`` via
   ``copy_metadata``, without which the lookup cannot succeed in a frozen exe.
+
+A third check guards the test suite itself: it must import ``src/``, not a
+non-editable snapshot in site-packages (see
+``test_suite_exercises_source_not_a_stale_install``).
 """
 
 from __future__ import annotations
 
 from importlib.metadata import entry_points
 from pathlib import Path
+
+import halocli
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SPEC_PATH = REPO_ROOT / "packaging" / "windows" / "halocli.spec"
@@ -91,4 +97,24 @@ def test_msi_build_smoke_tests_the_binary() -> None:
     assert "-notmatch" not in script, (
         "substring matching on the version line would let 'halocli 0.8.10' "
         "satisfy a 'halocli 0.8.1' check"
+    )
+
+
+def test_suite_exercises_source_not_a_stale_install() -> None:
+    """The suite must import ``src/``, never a snapshot in site-packages.
+
+    Guarding a mistake that cost real time twice in one session: a
+    ``pip install .`` (no ``-e``) run during preflight silently replaced the
+    editable install, after which tests kept passing while reading a snapshot
+    that predated the change under test - once hiding a freshly regenerated
+    spec, once hiding newly declared ``reports`` commands. CI installs with
+    ``pip install -e .``, so this passes there; a failure means the venv holds
+    a snapshot and the suite is testing a copy of the tree instead of the tree.
+    """
+    installed = Path(halocli.__file__).resolve().parent
+    source = (REPO_ROOT / "src" / "halocli").resolve()
+    assert installed == source, (
+        f"halocli resolves to {installed}, not {source}. The venv holds a "
+        'non-editable snapshot: reinstall with pip install -e ".[dev]" so tests '
+        "exercise the working tree rather than a stale copy of it."
     )

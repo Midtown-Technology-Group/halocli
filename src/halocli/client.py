@@ -51,6 +51,7 @@ class HaloClient:
         files: Any = None,
         data: Any = None,
         as_bytes: bool = False,
+        timeout: float | None = None,
     ) -> Any:
         """Send an authenticated HaloPSA request.
 
@@ -80,12 +81,20 @@ class HaloClient:
         body_kwargs = _body_kwargs(json_body, _buffer_files(files), data)
 
         last_response: httpx.Response | None = None
+        # Only forward timeout when the caller supplied one. Passing None is NOT
+        # "use the client default" in httpx: it means connect/read/write/pool
+        # all become None, i.e. no timeout at all, which would silently drop the
+        # profile-wide timeout from every request that omits the argument.
+        timeout_kwargs: dict[str, Any] = {} if timeout is None else {"timeout": timeout}
         for attempt in range(self.profile.max_retries + 1):
             response = await self._http.request(
                 method.upper(),
                 url,
                 params=params,
                 headers=headers,
+                # Report execution passes a larger timeout: it waits on a
+                # multi-megabyte result set instead of the profile default.
+                **timeout_kwargs,
                 **body_kwargs,
             )
             last_response = response
