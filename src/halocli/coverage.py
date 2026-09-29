@@ -227,6 +227,11 @@ def find_read_mismatches(
     resource reads `/Contract`, which the official spec does not contain. Such reads
     may still work at runtime (undocumented endpoint) but the CLI promises more than
     the spec verifies.
+
+    The same promise applies to the item route: a resource with ``supports_get``
+    exposes `GET {endpoint}/{id}`, so a missing `{endpoint}/{id}` path is reported
+    too (this is how a registry over-promise like expenses' `get` gets caught —
+    Halo has no `/Expense/{id}` at all).
     """
     spec_paths = spec.get("paths", {})
     mismatches: list[dict[str, Any]] = []
@@ -238,6 +243,14 @@ def find_read_mismatches(
                     "path": endpoint,
                     "resource": resource.name,
                     "spec_path": f"{endpoint} not present in spec",
+                }
+            )
+        if resource.supports_get and f"{endpoint}/{{id}}" not in spec_paths:
+            mismatches.append(
+                {
+                    "path": f"{endpoint}/{{id}}",
+                    "resource": resource.name,
+                    "spec_path": f"{endpoint}/{{id}} not present in spec",
                 }
             )
     return mismatches

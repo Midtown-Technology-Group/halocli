@@ -287,13 +287,15 @@ def _resource_command(resource: HaloResource):
             )
         )
 
-    @resource_app.command("get")
-    def get_command(
-        item_id: str,
-        profile: Annotated[str, typer.Option("--profile")] = "default",
-        output: Annotated[str, typer.Option("--output", "-o")] = "json",
-    ) -> None:
-        _run(_get_resource(resource=resource, item_id=item_id, profile=profile, output=output))
+    if resource.supports_get:
+
+        @resource_app.command("get")
+        def get_command(
+            item_id: str,
+            profile: Annotated[str, typer.Option("--profile")] = "default",
+            output: Annotated[str, typer.Option("--output", "-o")] = "json",
+        ) -> None:
+            _run(_get_resource(resource=resource, item_id=item_id, profile=profile, output=output))
 
     if resource.supports_create:
 

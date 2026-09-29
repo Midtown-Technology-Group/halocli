@@ -272,7 +272,11 @@ def _capability_summary(resource: HaloResource) -> str:
 
 
 def _verbs(resource: HaloResource) -> list[str]:
-    verbs = ["GET"] if resource.supports_get else []
+    # GET is always available: every resource exposes `list` (the collection
+    # route). supports_get only gates the *item* route, which _capability_summary
+    # reports as "list/get" vs "list" — an agent reading verbs must still be
+    # allowed to GET the collection (e.g. expenses: GET /Expense works).
+    verbs = ["GET"]
     if resource.supports_write:
         verbs.append("POST")
     if resource.supports_delete:

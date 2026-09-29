@@ -59,7 +59,8 @@ def surfaced_pairs() -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
     for resource in RESOURCES:
         pairs.append((resource.endpoint, "get"))
-        pairs.append((f"{resource.endpoint}/{{id}}", "get"))
+        if resource.supports_get:
+            pairs.append((f"{resource.endpoint}/{{id}}", "get"))
         if resource.create_endpoint:
             pairs.append((resource.create_endpoint, "post"))
         if resource.update_endpoint and resource.update_endpoint != resource.create_endpoint:
@@ -126,19 +127,17 @@ def test_synthesized_operation_ids_follow_the_rule(spec: dict[str, Any]) -> None
 def test_surfaced_operations_have_prose(spec: dict[str, Any]) -> None:
     """Registry growth must be accompanied by overlay prose.
 
-    Pairs absent from the spec entirely are tolerated only if the endpoint
-    itself is also absent (``read_mismatches`` owns that invariant); the one
-    known case is the ``{endpoint}/{id}`` get for expenses, which the Halo spec
-    does not document.
+    Every pair here is a route the registry promises (``supports_get`` gates the
+    item route), so each must exist in the spec with id + summary + description —
+    no exceptions. A missing pair means either the registry over-promises (fix
+    the flag) or the overlay is stale (extend it).
     """
-    absent_ok = {("/Expense/{id}", "get")}
     incomplete: list[str] = []
     for path, method in surfaced_pairs():
         item = spec["paths"].get(path)
         op = item.get(method) if isinstance(item, dict) else None
         if not isinstance(op, dict):
-            if (path, method) not in absent_ok:
-                incomplete.append(f"{method.upper()} {path} (missing from spec)")
+            incomplete.append(f"{method.upper()} {path} (missing from spec)")
             continue
         for field in ("operationId", "summary", "description"):
             if not str(op.get(field) or "").strip():
