@@ -233,7 +233,9 @@ def test_spec_meta_records_enrichment(spec: dict[str, Any]) -> None:
     assert meta["operation_ids_upstream"] == 3
     overlay_meta = meta["overlay"]
     assert overlay_meta["file"] == "halo_overlay.json"
-    assert overlay_meta["filled"] == overlay_meta["actions"]
+    # fill-if-missing: an action targeting prose upstream now provides lands in
+    # already_present, so the sum (not filled alone) must account for all actions.
+    assert overlay_meta["filled"] + overlay_meta["already_present"] == overlay_meta["actions"]
     assert meta["vendor_script"] == "scripts/vendor_halo_spec.py"
 
 
