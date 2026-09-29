@@ -8,7 +8,7 @@ on:
       version:
         description: Version to package
         required: true
-        default: 0.5.0
+        default: 0.8.1
 
 jobs:
   build-msi:
@@ -59,6 +59,28 @@ jobs:
         shell: pwsh
         run: ./packaging/windows/build-msi.ps1 -Version "${{ steps.version.outputs.value }}"
 
+      # Tag-vs-release: decide from whether a release EXISTS for this tag, not
+      # from how the run was triggered. Releases are created by the Release
+      # workflow using GITHUB_TOKEN, and token-created releases do not fire
+      # `release: published` -- so gating on github.event_name meant every
+      # manually-dispatched MSI run skipped the upload and the winget notify.
+      # That left 0.7.0 through 0.8.0 with no MSI on the release page and
+      # mtg-winget frozen at 0.5.0.
+      - name: Check whether a release exists for this tag
+        id: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $ErrorActionPreference = "Continue"
+          gh release view "$tag" --json tagName 2>&1 | Out-Null
+          $exists = $LASTEXITCODE -eq 0
+          $ErrorActionPreference = "Stop"
+          "exists=$($exists.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          Write-Host "Release $tag exists: $exists"
+          exit 0
+
       - name: Get MSI metadata
         id: msi
         shell: pwsh
@@ -69,21 +91,22 @@ jobs:
           "product_code=$productCode" >> $env:GITHUB_OUTPUT
 
       - name: Upload MSI to release
-        if: github.event_name == 'release'
+        if: steps.release.outputs.exists == 'true'
         shell: pwsh
-        run: gh release upload "${{ github.event.release.tag_name }}" dist/halocli.msi --clobber
+        run: gh release upload "${{ steps.version.outputs.tag }}" dist/halocli.msi --clobber
         env:
           GH_TOKEN: ${{ github.token }}
 
+      # Always publish the artifact: it is the only way to fetch an MSI for a
+      # tag that has no release yet, and it expires on its own.
       - name: Upload workflow artifact
-        if: github.event_name != 'release'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: halocli-msi
           path: dist/halocli.msi
 
       - name: Notify mtg-winget
-        if: github.event_name == 'release'
+        if: steps.release.outputs.exists == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.MTG_WINGET_DISPATCH_TOKEN }}

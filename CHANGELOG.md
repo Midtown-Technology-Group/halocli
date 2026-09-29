@@ -6,6 +6,41 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.8.1 - 2026-09-29
+
+- **Fixed every MSI ever shipped (0.5.0 – 0.8.0).** The frozen `halocli.exe`
+  exited 1 with `Console script entry point not found: halocli` on every
+  command. `halocli_launcher.py` resolves the console script through
+  `importlib.metadata.entry_points()`, which reads `halocli-*.dist-info`, but
+  the PyInstaller spec only bundled data via `collect_data_files()` — which
+  does **not** include dist-info. PyInstaller only *WARNs* for the missing
+  data, so the build exited 0 and shipped a dead binary every time. The spec
+  now calls `copy_metadata("halocli")`. Verified by rebuilding, extracting the
+  MSI, and running the exe with `PATH` stripped to `System32` (no Python
+  present): `halocli 0.8.1`.
+- **`build-msi.ps1` smoke-tests the binary it produced** — `halocli.exe
+  --version` must print the expected version or the build fails. Negative-
+  tested: reverting the fix makes the build exit 1 with the launcher's error
+  instead of publishing. Four new tests in `tests/test_packaging.py` fail PR
+  CI if the fix is removed, commented out, or the smoke test is deleted.
+- **MSI releases are gated tag-vs-release instead of by event name.** Releases
+  are created by the Release workflow with `GITHUB_TOKEN`, and token-created
+  releases do not fire `release: published`. Every manually-dispatched run
+  therefore skipped `gh release upload` and the mtg-winget notify, leaving
+  0.7.0 – 0.8.0 with **no MSI on the release page** and mtg-winget frozen at
+  0.5.0. The workflow now asks whether a release *exists* for the tag: if yes
+  it attaches `halocli.msi` and dispatches mtg-winget; if no it uploads the
+  workflow artifact (now uploaded on every run, so a MSI is always fetchable).
+- **`build-msi.ps1` no longer breaks under Windows PowerShell 5.1** when the
+  caller pipes `2>&1`: PyInstaller logs to stderr, and PS 5.1 turns redirected
+  native stderr into terminating errors under `$ErrorActionPreference='Stop'`.
+  Native tools now run through an `Invoke-Native` wrapper. (CI uses pwsh 7,
+  where this never manifested — so this only affected local builds.)
+- **RELEASE.md now documents the MSI**: how it is packaged (PyInstaller
+  onefile — no Python runtime, no venv, no `pip` needed on the target),
+  the tag-vs-release gating, the smoke test, and how to dispatch and build it
+  locally.
+
 ## 0.8.0 - 2026-09-29
 
 - **`halocli <resource> list` now stops at 500 records by default** and reports
