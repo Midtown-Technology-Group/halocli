@@ -32,7 +32,7 @@ from halocli.todo import (
     import_tasks,
     preview_import,
 )
-from halocli.utils import list_all, normalize_halo_result
+from halocli.utils import DEFAULT_LIST_LIMIT, list_all, normalize_halo_result
 
 
 app = typer.Typer(help="HaloPSA CLI for safe operator and automation workflows.")
@@ -107,6 +107,22 @@ def auth_test(
     output: Annotated[str, typer.Option("--output", "-o")] = "json",
 ) -> None:
     _run(_auth_test(profile=profile, output=output))
+
+
+@auth_app.command("whoami")
+def auth_whoami(
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    check: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--check",
+            help="Probe an endpoint (GET, read-only) and report whether it is "
+            "reachable with the current token. Repeatable.",
+        ),
+    ] = None,
+) -> None:
+    _run(_auth_whoami(profile=profile, output=output, check=check or []))
 
 
 @auth_app.command("discover")
@@ -272,8 +288,18 @@ def _resource_command(resource: HaloResource):
         page_size: Annotated[int, typer.Option("--page-size")] = 100,
         max_pages: Annotated[int | None, typer.Option("--max-pages")] = None,
         max_records: Annotated[int | None, typer.Option("--max-records")] = None,
+        fetch_all: Annotated[
+            bool,
+            typer.Option(
+                "--all",
+                help="Fetch every record. Without it, results stop at 500 records "
+                "(reporting truncation) so a large tenant cannot make `list` hang.",
+            ),
+        ] = False,
         param: Annotated[list[str] | None, typer.Option("--param")] = None,
     ) -> None:
+        if fetch_all and (max_records is not None or max_pages is not None):
+            raise typer.BadParameter("--all cannot be combined with --max-records/--max-pages.")
         _run(
             _list_resource(
                 resource=resource,
@@ -283,6 +309,7 @@ def _resource_command(resource: HaloResource):
                 page_size=page_size,
                 max_pages=max_pages,
                 max_records=max_records,
+                fetch_all=fetch_all,
                 params=_parse_params(param or []),
             )
         )
@@ -564,6 +591,114 @@ async def _auth_test(*, profile: str, output: str) -> None:
     render({"ok": True, "profile": profile, "result": normalize_halo_result(result)}, output=output)
 
 
+def _granted_scope(profile: str) -> dict[str, Any]:
+    """Read the scope Halo actually granted, from whichever cache holds the token.
+
+    Scope is fixed at token issuance (a refresh grant never widens it), so this
+    is the authoritative answer for the token in use -- not the profile's
+    requested scope.
+    """
+    payload: dict[str, Any] | None = None
+    source = "keyring"
+    try:
+        payload = KeyringTokenCache().load(profile)
+    except Exception:  # noqa: BLE001 - store unavailable: fall through to file cache
+        payload = None
+    if not payload:
+        source = "file"
+        try:
+            payload = TokenCache(allow_file_cache=True).load(profile)
+        except Exception:  # noqa: BLE001
+            payload = None
+    if not payload:
+        return {"present": False, "source": None, "scope": [], "scope_text": None}
+    raw = payload.get("scope")
+    if isinstance(raw, str):
+        scopes = sorted(set(raw.split()))
+    elif isinstance(raw, list):
+        scopes = sorted({str(item) for item in raw})
+    else:
+        scopes = []
+    return {
+        "present": True,
+        "source": source,
+        "scope": scopes,
+        "scope_text": " ".join(scopes) or None,
+        "expires_at": payload.get("expires_at"),
+        "token_type": payload.get("token_type"),
+    }
+
+
+async def _auth_whoami(*, profile: str, output: str, check: list[str]) -> None:
+    halo_profile = load_profile(profile)
+    scope_info = _granted_scope(profile)
+
+    identity: dict[str, Any] | None = None
+    probes: list[dict[str, Any]] = []
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        try:
+            me = normalize_halo_result(await client.test_auth())
+            if isinstance(me, dict):
+                identity = {
+                    "id": me.get("id"),
+                    "name": me.get("name"),
+                    "email": me.get("email"),
+                    "team": me.get("team"),
+                    "jobtitle": me.get("jobtitle"),
+                    "is_agent": me.get("is_agent"),
+                }
+        except Exception as exc:  # noqa: BLE001 - identity is best-effort below
+            identity = {"error": str(exc)}
+
+        for path in check:
+            clean = path.strip()
+            if not clean.startswith("/"):
+                clean = f"/{clean}"
+            entry: dict[str, Any] = {"endpoint": clean, "method": "GET"}
+            try:
+                # Read-only probe with a one-record page; never a write.
+                result = await client.raw("GET", clean, params={"take": 1})
+                entry["reachable"] = True
+                entry["sample"] = normalize_halo_result(result)
+            except HaloCLIError as exc:
+                entry["reachable"] = False
+                entry["category"] = exc.category
+                entry["status_code"] = exc.status_code
+                entry["error"] = str(exc)
+                if exc.category == "permission":
+                    entry["diagnostic"] = diagnose_permission_failure(exc)
+            except Exception as exc:  # noqa: BLE001
+                entry["reachable"] = False
+                entry["category"] = classify_error(exc).category
+                entry["error"] = str(exc)
+            probes.append(entry)
+
+    requested = halo_profile.scope
+    payload: dict[str, Any] = {
+        "ok": True,
+        "profile": profile,
+        "tenant_url": halo_profile.tenant_url,
+        "auth_mode": halo_profile.auth_mode,
+        "client_id": halo_profile.client_id,
+        "requested_scope": requested,
+        "granted_scope": scope_info,
+        "identity": identity,
+    }
+    if scope_info.get("present") and requested and scope_info.get("scope_text") != requested:
+        payload["scope_note"] = (
+            "Granted scope differs from the profile's requested scope. Halo narrows "
+            "the grant to what the API application's Permissions tab allows; a 403 "
+            "means an endpoint needs a scope that was not granted. Run again with "
+            "--check <path> to test a specific endpoint."
+        )
+    if probes:
+        payload["checks"] = probes
+        payload["checks_all_reachable"] = all(
+            entry.get("reachable") for entry in probes
+        )
+    render(payload, output=output)
+
+
 async def _auth_discover(*, tenant_url: str, profile: str | None, save: bool, output: str) -> None:
     result = await discover_auth(tenant_url)
     saved = False
@@ -643,25 +778,38 @@ async def _list_resource(
     page_size: int,
     max_pages: int | None,
     max_records: int | None,
+    fetch_all: bool,
     params: dict[str, str],
 ) -> None:
     if resource.name == "tickets" and open_only:
         params["open_only"] = "true"
+    # --all opts out of the default record ceiling; explicit --max-* always wins.
+    effective_max_records = max_records
+    if not fetch_all and effective_max_records is None and max_pages is None:
+        effective_max_records = DEFAULT_LIST_LIMIT
     halo_profile = load_profile(profile)
+    stats: dict[str, Any] = {}
     async with HaloClient(halo_profile, profile_name=profile) as client:
         rows = await list_all(
             lambda **kwargs: client.list_resource(resource.name, **kwargs),
             page_size=page_size,
             max_pages=max_pages,
-            max_records=max_records,
+            max_records=effective_max_records,
             list_key=resource.list_key,
+            stats=stats,
             **params,
         )
-    render(
-        {"resource": resource.name, "count": len(rows), "items": rows},
-        output=output,
-        table_fields=resource.table_fields,
-    )
+    payload: dict[str, Any] = {"resource": resource.name, "count": len(rows), "items": rows}
+    if stats.get("truncated"):
+        # Say so plainly: a truncated payload must never read as a complete one.
+        payload["truncated"] = True
+        payload["total_available"] = stats.get("record_count")
+        payload["hint"] = (
+            f"Stopped at {len(rows)} of "
+            f"{stats.get('record_count') or 'unknown'} records. "
+            "Pass --all to fetch every record."
+        )
+    render(payload, output=output, table_fields=resource.table_fields)
 
 
 async def _get_resource(

@@ -65,11 +65,14 @@ def diagnose_permission_failure(error: HaloCLIError) -> str:
         return (
             "Halo returned 403 for Client access. Check application scopes, the "
             "login-as API-only agent, the agent role, and Halo UI feature-access "
-            "permissions for that API-only agent."
+            "permissions for that API-only agent. Run `halocli auth whoami --check "
+            "<path>` to see the granted scope and whether the endpoint is reachable."
         )
     return (
         "Halo returned 403. Check application scopes, login-as agent, agent role, "
-        "and endpoint-specific feature-access permissions."
+        "and endpoint-specific feature-access permissions. Run `halocli auth whoami "
+        "--check <path>` to see the granted scope and whether the endpoint is "
+        "reachable."
     )
 
 
