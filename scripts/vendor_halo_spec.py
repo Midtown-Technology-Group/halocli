@@ -216,26 +216,93 @@ def synthesize_operation_ids(spec: dict[str, Any]) -> tuple[int, int]:
     return synthesized, upstream
 
 
-# Overlay targets we support: one scalar field on one operation.
-# Deliberately a constrained JSONPath subset (stdlib-only vendor script); the
-# emitted targets are valid JSONPath, so external runners (e.g. Forge's
-# applyForgeOverlays) can apply the same file.
+# Overlay targets we support -- a deliberately constrained JSONPath subset
+# (stdlib-only vendor script, no JSONPath dependency). Three shapes:
+#
+#   $.paths['<path>'].<method>.summary|description
+#   $.paths['<path>'].<method>.parameters['<name>'].description
+#   $.components.schemas.<Schema>.properties.<prop>.description
+#
+# The emitted targets are valid JSONPath, so external runners (e.g. Forge's
+# applyForgeOverlays) can apply the same file. Parameters are addressed by
+# name rather than index so a target survives upstream re-ordering.
 _OVERLAY_TARGET = re.compile(
     r"^\$\.paths\['(?P<path>[^']+)'\]\.(?P<method>[a-z]+)\.(?P<field>summary|description)$"
 )
+_OVERLAY_PARAM_TARGET = re.compile(
+    r"^\$\.paths\['(?P<path>[^']+)'\]\.(?P<method>[a-z]+)"
+    r"\.parameters\['(?P<name>[^']+)'\]\.description$"
+)
+_OVERLAY_SCHEMA_TARGET = re.compile(
+    r"^\$\.components\.schemas\.(?P<schema>[A-Za-z0-9_]+)"
+    r"\.properties\.(?P<prop>[A-Za-z0-9_]+)\.description$"
+)
+
+
+def _overlay_operation(
+    spec: dict[str, Any], path: str, method: str, target: str
+) -> dict[str, Any]:
+    item = spec.get("paths", {}).get(path)
+    operation = item.get(method) if isinstance(item, dict) else None
+    if not isinstance(operation, dict):
+        raise ValueError(f"overlay target path/method not in spec: {target!r}")
+    return operation
+
+
+def resolve_overlay_target(spec: dict[str, Any], target: Any) -> tuple[dict[str, Any], str]:
+    """Locate the ``(container, field)`` an overlay target points at.
+
+    Split out of apply_overlay so tests can assert that every target in the
+    overlay resolves against the committed spec *without* mutating it --
+    schema.load_spec() caches process-wide, so a mutating check would leak
+    into later tests.
+    """
+    text = str(target)
+
+    match = _OVERLAY_TARGET.match(text)
+    if match:
+        return _overlay_operation(spec, match["path"], match["method"], text), match["field"]
+
+    match = _OVERLAY_PARAM_TARGET.match(text)
+    if match:
+        operation = _overlay_operation(spec, match["path"], match["method"], text)
+        parameters = operation.get("parameters")
+        if not isinstance(parameters, list):
+            raise ValueError(f"overlay target operation declares no parameters: {text!r}")
+        for parameter in parameters:
+            if isinstance(parameter, dict) and parameter.get("name") == match["name"]:
+                return parameter, "description"
+        raise ValueError(f"overlay target parameter not in spec: {text!r}")
+
+    match = _OVERLAY_SCHEMA_TARGET.match(text)
+    if match:
+        schema = spec.get("components", {}).get("schemas", {}).get(match["schema"])
+        properties = schema.get("properties") if isinstance(schema, dict) else None
+        prop = properties.get(match["prop"]) if isinstance(properties, dict) else None
+        if not isinstance(prop, dict):
+            raise ValueError(f"overlay target schema property not in spec: {text!r}")
+        return prop, "description"
+
+    raise ValueError(
+        "unsupported overlay target (expected $.paths['...'].<method>.summary|description, "
+        "$.paths['...'].<method>.parameters['<name>'].description, or "
+        "$.components.schemas.<Schema>.properties.<prop>.description): "
+        f"{text!r}"
+    )
 
 
 def apply_overlay(spec: dict[str, Any], overlay: dict[str, Any]) -> tuple[int, int]:
     """Apply curated prose from an OpenAPI Overlay document to the spec.
 
-    Supports ``$.paths['...'].<method>.summary|description`` targets with string
-    ``update`` values. Semantics are **fill-if-missing**: an action never
+    Supports three target shapes (see resolve_overlay_target), each taking a
+    string ``update``. Semantics are **fill-if-missing**: an action never
     overwrites text the upstream spec already provides, so spec refreshes keep
     upstream improvements (documented in the overlay's info.description — a
     standard overlay runner would overwrite instead).
 
-    Returns ``(filled, already_present)``. Raises ValueError on a target shape
-    we do not support (loud, rather than silently skipping prose).
+    Returns ``(filled, already_present)``. Raises ValueError when a target
+    names something the spec does not contain, or has a shape we do not
+    support (loud, rather than silently skipping prose).
     """
     if overlay.get("overlay") not in ("1.0.0", "1.1.0"):
         raise ValueError(f"unsupported overlay version: {overlay.get('overlay')!r}")
@@ -244,7 +311,6 @@ def apply_overlay(spec: dict[str, Any], overlay: dict[str, Any]) -> tuple[int, i
         raise ValueError("overlay has no 'actions' list")
 
     filled = already_present = 0
-    paths = spec.get("paths", {})
     for i, action in enumerate(actions):
         if not isinstance(action, dict) or "update" not in action:
             raise ValueError(f"overlay action #{i} needs a target and an update")
@@ -252,23 +318,12 @@ def apply_overlay(spec: dict[str, Any], overlay: dict[str, Any]) -> tuple[int, i
         update = action["update"]
         if not isinstance(update, str) or not update.strip():
             raise ValueError(f"overlay action #{i} has a non-text update")
-        match = _OVERLAY_TARGET.match(str(target))
-        if match is None:
-            raise ValueError(
-                f"unsupported overlay target (expected "
-                f"$.paths['...'].<method>.summary|description): {target!r}"
-            )
-        item = paths.get(match["path"])
-        operation = None
-        if isinstance(item, dict):
-            operation = item.get(match["method"])
-        if not isinstance(operation, dict):
-            raise ValueError(f"overlay target path/method not in spec: {target!r}")
-        current = operation.get(match["field"])
+        container, field = resolve_overlay_target(spec, target)
+        current = container.get(field)
         if isinstance(current, str) and current.strip():
             already_present += 1
             continue
-        operation[match["field"]] = update
+        container[field] = update
         filled += 1
     return filled, already_present
 

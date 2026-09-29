@@ -155,22 +155,31 @@ def test_overlay_file_shape() -> None:
     actions = overlay["actions"]
     assert isinstance(actions, list) and actions, "overlay must carry actions"
     for action in actions:
-        assert action["target"].startswith("$.paths["), action["target"]
-        assert action["target"].endswith((".summary", ".description")), action["target"]
+        target = action["target"]
+        # Supported shapes: $.paths[...].<method>[.parameters['x']].
+        # summary|description, or $.components.schemas.X.properties.y.description
+        on_path = target.startswith("$.paths[") and target.endswith(
+            (".summary", ".description")
+        )
+        on_schema = target.startswith("$.components.schemas.") and target.endswith(
+            ".description"
+        )
+        assert on_path or on_schema, f"unrecognised overlay target: {target}"
         assert isinstance(action["update"], str) and action["update"].strip()
 
 
-def test_overlay_targets_exist_in_spec(spec: dict[str, Any]) -> None:
-    """A stale target (path renamed upstream) must fail loudly, not no-op."""
+def test_overlay_targets_exist_in_spec(spec: dict[str, Any], vendor_mod: Any) -> None:
+    """A stale target (path, parameter or property renamed upstream) must fail
+    loudly rather than silently no-op.
+
+    Resolution is non-mutating on purpose: schema.load_spec() caches the spec
+    process-wide, so applying the overlay here would leak into later tests.
+    """
     overlay = json.loads(OVERLAY_PATH.read_text(encoding="utf-8"))
     for action in overlay["actions"]:
-        target = action["target"]
-        # $.paths['/X'].get.summary
-        path = target.split("['", 1)[1].split("']", 1)[0]
-        method = target.rsplit(".", 2)[-2]
-        item = spec["paths"].get(path)
-        assert isinstance(item, dict), f"overlay target path not in spec: {path}"
-        assert method in item, f"overlay target method not in spec: {method} {path}"
+        container, field = vendor_mod.resolve_overlay_target(spec, action["target"])
+        assert isinstance(container, dict), action["target"]
+        assert field in ("summary", "description"), action["target"]
 
 
 def test_apply_overlay_fill_if_missing(vendor_mod: Any) -> None:
@@ -205,6 +214,122 @@ def test_apply_overlay_rejects_bad_targets(vendor_mod: Any) -> None:
         vendor_mod.apply_overlay(mini, {"overlay": "1.0.0", "actions": [{"target": "$.paths['/Nope'].get.summary", "update": "x"}]})
     with pytest.raises(ValueError, match="overlay version"):
         vendor_mod.apply_overlay(mini, {"overlay": "9.9.9", "actions": []})
+
+
+def test_apply_overlay_fills_parameter_and_property_descriptions(vendor_mod: Any) -> None:
+    """The two shapes added for the report-interface findings: a query parameter
+    on an operation, and a property inside a component schema."""
+    mini = {
+        "paths": {
+            "/Report/{id}": {
+                "get": {
+                    "parameters": [
+                        {"name": "loadreport", "in": "query", "schema": {"type": "boolean"}},
+                        {"name": "includedetails", "in": "query", "description": "upstream text",
+                         "schema": {"type": "boolean"}},
+                    ]
+                }
+            }
+        },
+        "components": {
+            "schemas": {
+                "AnalyzerProfile": {
+                    "properties": {
+                        "sql": {"type": "string", "nullable": True},
+                        "name": {"type": "string", "description": "upstream text"},
+                    }
+                }
+            }
+        },
+    }
+    doc = {
+        "overlay": "1.0.0",
+        "info": {"title": "t"},
+        "actions": [
+            {"target": "$.paths['/Report/{id}'].get.parameters['loadreport'].description",
+             "update": "execute the report"},
+            {"target": "$.paths['/Report/{id}'].get.parameters['includedetails'].description",
+             "update": "must not overwrite upstream"},
+            {"target": "$.components.schemas.AnalyzerProfile.properties.sql.description",
+             "update": "raw T-SQL"},
+            {"target": "$.components.schemas.AnalyzerProfile.properties.name.description",
+             "update": "must not overwrite upstream"},
+        ],
+    }
+
+    filled, already = vendor_mod.apply_overlay(mini, doc)
+
+    assert filled == 2
+    assert already == 2  # fill-if-missing applies to the new shapes too
+    params = {p["name"]: p for p in mini["paths"]["/Report/{id}"]["get"]["parameters"]}
+    assert params["loadreport"]["description"] == "execute the report"
+    assert params["includedetails"]["description"] == "upstream text"
+    props = mini["components"]["schemas"]["AnalyzerProfile"]["properties"]
+    assert props["sql"]["description"] == "raw T-SQL"
+    assert props["name"]["description"] == "upstream text"
+
+
+def test_apply_overlay_rejects_unknown_parameter_and_property(vendor_mod: Any) -> None:
+    """A parameter or property that no longer exists must fail loudly."""
+    mini = {
+        "paths": {"/Report/{id}": {"get": {"parameters": [{"name": "loadreport"}]}}},
+        "components": {"schemas": {"AnalyzerProfile": {"properties": {"sql": {}}}}},
+    }
+    with pytest.raises(ValueError, match="parameter not in spec"):
+        vendor_mod.apply_overlay(
+            mini,
+            {"overlay": "1.0.0",
+             "actions": [{"target": "$.paths['/Report/{id}'].get.parameters['gone'].description",
+                          "update": "x"}]},
+        )
+    with pytest.raises(ValueError, match="schema property not in spec"):
+        vendor_mod.apply_overlay(
+            mini,
+            {"overlay": "1.0.0",
+             "actions": [{"target": "$.components.schemas.AnalyzerProfile.properties.gone.description",
+                          "update": "x"}]},
+        )
+    with pytest.raises(ValueError, match="schema property not in spec"):
+        vendor_mod.apply_overlay(
+            mini,
+            {"overlay": "1.0.0",
+             "actions": [{"target": "$.components.schemas.Missing.properties.x.description",
+                          "update": "x"}]},
+        )
+
+
+def test_report_interface_prose_documented(spec: dict[str, Any]) -> None:
+    """Prose learned by live-testing the report interface must stay in the spec.
+
+    Each item cost a real round-trip against the tenant to discover: the array
+    body and its two failure modes (400 object, 415 content type), loadreport
+    being the execution path with a 50k row cap, and Halo wrapping report SQL
+    in a derived table (so a trailing ORDER BY needs TOP/OFFSET).
+    """
+    post = spec["paths"]["/Report"]["post"]
+    summary = post.get("summary") or ""
+    description = post.get("description") or ""
+    assert "array" in summary.lower(), "POST /Report summary should mention the array body"
+    assert "JSON array" in description and "400" in description and "415" in description
+
+    get_one = spec["paths"]["/Report/{id}"]["get"]
+    loadreport = next(
+        (p for p in get_one.get("parameters", []) if p.get("name") == "loadreport"),
+        None,
+    )
+    assert loadreport is not None, "loadreport query parameter missing from spec"
+    loadreport_desc = loadreport.get("description") or ""
+    assert "report.rows" in loadreport_desc and "50,000" in loadreport_desc
+
+    sql = spec["components"]["schemas"]["AnalyzerProfile"]["properties"]["sql"]
+    sql_desc = sql.get("description") or ""
+    assert "derived table" in sql_desc and "ORDER BY" in sql_desc
+
+    # The array schema itself must stay intact -- the prose documents it, it
+    # does not replace it.
+    schema = post["requestBody"]["content"]["application/json"]["schema"]
+    assert schema["type"] == "array"
+    assert schema["items"]["$ref"] == "#/components/schemas/AnalyzerProfile"
 
 
 def test_synthesize_operation_ids_rule(vendor_mod: Any) -> None:
