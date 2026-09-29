@@ -6,6 +6,32 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.7.1 - 2026-09-28
+
+- Enriched the vendored spec so typed consumers can actually load it.
+  Upstream Halo ships 3 operationIds for 1455 operations, which made Cloudflare
+  Forge resolve only 3 of 1455; after this release it resolves **1455 of 1455**
+  (verified against Forge's `init()`). Two layers, both applied by
+  `scripts/vendor_halo_spec.py`:
+  - missing `operationId`s are synthesized deterministically as
+    `{method}_{path}` (e.g. `post_invoice_pdf_id`); the 3 upstream IDs are
+    preserved, IDs are unique across all 1455 operations, and re-running the
+    refresh is a no-op;
+  - new committed overlay `src/halocli/spec/halo_overlay.json`
+    (OpenAPI Overlay 1.0.0, 81 actions) fills `summary`/`description` for
+    every surfaced operation, applied fill-if-missing so upstream prose is
+    never overwritten. 1041 -> 1001 operations missing descriptions; all
+    operations reachable from the resource registry are complete.
+- `halocli search` results now carry synthesized `operationId`s and curated
+  summaries (e.g. `POST /Invoice/PDF/{id}` -> `post_invoice_pdf_id`,
+  "Render an invoice as a PDF"), so the operation payloads agents see in
+  `halo_search` / `halocli search` are self-describing.
+- New enforcement in `tests/test_spec_enrichment.py` (10 tests): every
+  operation has a unique rule-conforming operationId, every surfaced
+  operation has id + summary + description, overlay targets exist in the
+  spec, and fill-if-missing / loud-failure semantics are pinned. Registry
+  growth now fails CI until the overlay is extended.
+
 ## 0.7.0 - 2026-09-28
 
 - Added first-class commands for 22 nested operations across three resources

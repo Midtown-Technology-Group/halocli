@@ -220,6 +220,19 @@ Refresh the vendored spec whenever Halo revs its API:
 python scripts/vendor_halo_spec.py
 ```
 
+The refresh is not a plain copy: the vendor script also **enriches** the spec
+so it is usable by typed consumers (Forge, Fern, OpenAPI tooling), which
+otherwise choke on Halo's near-empty metadata (upstream ships 3 operationIds
+for 1455 operations):
+
+- missing `operationId`s are synthesized deterministically as
+  `{method}_{path}` (e.g. `get_invoice_pdf_id`); upstream IDs are kept;
+- `src/halocli/spec/halo_overlay.json` (OpenAPI Overlay 1.0.0) fills
+  `summary`/`description` for every operation the registry surfaces, applied
+  with fill-if-missing semantics so upstream improvements survive refreshes.
+  When the registry grows, `tests/test_spec_enrichment.py` fails until the
+  overlay is extended — edit the overlay JSON directly.
+
 Then re-run the coverage oracle to see what the new spec adds:
 
 ```powershell
