@@ -195,6 +195,21 @@ complete result never carries them. Pass `--all` to fetch every record, or set
 `--max-records`/`--max-pages` explicitly. `--all` cannot be combined with those
 two flags.
 
+The `reports` resource also declares two nested operations, both verified live
+against the tenant:
+
+```powershell
+halocli reports run 147 --limit 20                  # execute; row_count/columns/items
+halocli reports clone 147 --name "A copy"           # preview (zero network)
+halocli reports clone 147 --name "A copy" --apply --yes   # create it
+```
+
+`reports run` exits non-zero when Halo cannot execute the query — note that
+Halo reports SQL failures with **HTTP 200** and the error buried in the
+payload — and warns when the result reaches Halo's 50,000-row cap. Execution
+is deliberately not retried: Halo's gateway answers 504 at roughly 60s, so a
+retry would re-run the same expensive query instead of failing fast.
+
 Resources with nested endpoints also expose them as first-class commands
 (`halocli <resource> --help` lists them with method, path and summary):
 

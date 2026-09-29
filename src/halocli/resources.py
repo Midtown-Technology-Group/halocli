@@ -32,6 +32,14 @@ class ResourceOperation:
     multipart: bool = False
     summary: str = ""
     verification: str = "spec"
+    # Name of a custom CLI implementation registered in cli.py. Empty means the
+    # generic dispatcher (preview/apply, --data/--file/--save) is used. Set it
+    # when an operation needs behaviour the generic path cannot express, e.g.
+    # `reports run` (execute a report and shape its result set) or
+    # `reports clone` (derive the body from another report). Kept on the
+    # declaration, not in a cli.py lookup table, so renaming the operation
+    # cannot silently fall back to the generic implementation.
+    handler: str = ""
 
     @property
     def write(self) -> bool:
@@ -401,7 +409,34 @@ RESOURCES: tuple[HaloResource, ...] = (
         aliases=("release",),
         table_fields=("id", "name", "status_name"),
     ),
-    HaloResource("reports", "/Report", aliases=("report",), table_fields=("id", "name", "type")),
+    HaloResource(
+        "reports",
+        "/Report",
+        aliases=("report",),
+        table_fields=("id", "name", "type"),
+        operations=(
+            # Both verified live against the tenant while building issue #15:
+            # run executes via GET /Report/{id}?loadreport=true; clone POSTs an
+            # array copy. See tests/test_reports_commands.py.
+            ResourceOperation(
+                name="run",
+                method="GET",
+                path="/Report/{id}",
+                args=("id",),
+                summary="Execute the report; rows under report.rows (Halo caps at 50,000)",
+                verification="live",
+                handler="report_run",
+            ),
+            ResourceOperation(
+                name="clone",
+                method="POST",
+                path="/Report",
+                summary="Copy a report to a new id, stripping identity fields",
+                verification="live",
+                handler="report_clone",
+            ),
+        ),
+    ),
     HaloResource("webhooks", "/Webhook", aliases=("webhook",), table_fields=("id", "name", "url")),
     HaloResource("workdays", "/Workday", aliases=("workday",), table_fields=("id", "name")),
     HaloResource(

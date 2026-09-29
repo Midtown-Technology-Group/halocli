@@ -277,6 +277,438 @@ def _operation_command(resource: HaloResource, op: ResourceOperation):
     return command
 
 
+# --- Report-specific operations (issue #15) ---------------------------------
+#
+# `reports run` and `reports clone` are declared like any other ResourceOperation
+# -- so the coverage oracle verifies them against the vendored spec and
+# `halocli reports --help` lists them with method/path/summary -- but each needs
+# behaviour the generic dispatcher cannot express: run shapes a multi-megabyte
+# execution response (and must surface Halo's row cap and load_error), clone
+# derives its body from another report rather than taking `--data`.
+
+# Fields identifying a stored report rather than describing it. POST /Report
+# upserts on `id`, so a clone must drop every one of them or Halo would update
+# the source instead of creating a copy. Derived from a hand-built clone whose
+# creation was verified live (new id, distinct guid, source unchanged after).
+REPORT_IDENTITY_FIELDS = frozenset(
+    {
+        "_canupdate", "alreadyconverted", "apiquery_id", "builtinid",
+        "created_by", "csv_attachment_id", "csv_attachment_link", "date_created",
+        "guid", "id", "is_onlinerepository_report", "is_published",
+        "json_attachment_id", "json_attachment_link", "last_updated",
+        "last_updated_by", "local_library_id", "online_datasource_id", "online_id",
+        "pdf_attachment_id", "published_id", "systemreportid",
+        "xls_attachment_id", "xls_attachment_link",
+    }
+)
+
+# Fields compared before/after the clone to prove the source was not modified.
+REPORT_SOURCE_FIELDS = (
+    "guid", "name", "sql", "description", "availablefields",
+    "is_published", "published_id",
+)
+
+# Halo's execution wrapper returns at most this many rows (measured: 50,000
+# returned from a 135,148-row table). The response carries no cap indicator, so
+# a full row count is the only signal available -- warn rather than let a
+# truncated set read as complete.
+REPORT_ROW_CAP = 50_000
+
+
+def _report_run_command(resource: HaloResource, op: ResourceOperation):
+    """`halocli reports run <id>`: execute a report and shape its result set."""
+
+    def command(
+        args: Annotated[list[str], typer.Argument()] = [],
+        param: Annotated[list[str] | None, typer.Option("--param")] = None,
+        limit: Annotated[
+            int,
+            typer.Option(
+                "--limit",
+                help=(
+                    "Rows to include in the output. Halo still sends every row it "
+                    f"has (up to {REPORT_ROW_CAP:,}), so a small limit keeps the "
+                    "payload readable without a second request."
+                ),
+            ),
+        ] = 20,
+        timeout: Annotated[
+            float,
+            typer.Option(
+                "--timeout",
+                help=(
+                    "Seconds to wait for Halo to execute the report. Default 120 "
+                    "because execution loads every row (up to 50,000) and Halo's "
+                    "own gateway answers 504 at roughly 60s -- a value below that "
+                    "just trades a server error for a client one."
+                ),
+            ),
+        ] = 120.0,
+        profile: Annotated[str, typer.Option("--profile")] = "default",
+        output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    ) -> None:
+        if len(args) != len(op.args):
+            expected = ", ".join(op.args)
+            expected_part = f": {expected}" if expected else ""
+            raise typer.BadParameter(
+                f"{op.name} expects {len(op.args)} path argument(s){expected_part}; "
+                f"got {len(args)}"
+            )
+        if limit < 1:
+            raise typer.BadParameter("--limit must be at least 1")
+        if timeout <= 0:
+            raise typer.BadParameter("--timeout must be greater than 0")
+        params = _parse_params(param or [])
+        # `run` means "execute": force the load flag last so a stray
+        # `--param loadreport=false` cannot turn this into a definition fetch.
+        params["loadreport"] = "true"
+        path = _build_operation_path(op, args)
+
+        result = _run(
+            _run_report(
+                resource=resource,
+                op=op,
+                path=path,
+                params=params,
+                limit=limit,
+                timeout=timeout,
+                profile=profile,
+            )
+        )
+        if not result.get("ok"):
+            # A failed query still returns HTTP 200 from Halo, so this is the
+            # only place it can surface; send it to stderr and exit non-zero
+            # rather than rendering a payload that looks successful.
+            render_error(result)
+            raise typer.Exit(1)
+        render(result, output=output, table_fields=result.get("columns"))
+
+    return command
+
+
+def _execution_failure(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    category: str,
+    status_code: int | None,
+    error: str,
+    detail: str | None = None,
+    diagnostic: str = "",
+) -> dict[str, Any]:
+    """Shape a failed execution so the caller can render it and exit 1.
+
+    Three distinct failures arrive here and all of them would otherwise look
+    identical or empty: Halo's 504 (its own gateway gives up at ~60s), a client
+    timeout (httpx exceptions stringify to ``""``), and permission denials.
+    """
+    payload: dict[str, Any] = {
+        "ok": False,
+        "resource": resource.name,
+        "operation": op.name,
+        "method": op.method,
+        "endpoint": path,
+        "category": category,
+        "status_code": status_code,
+        "error": error,
+    }
+    if detail:
+        payload["hint"] = detail
+    if diagnostic:
+        payload["diagnostic"] = diagnostic
+    return payload
+
+
+def _execution_hint(status_code: int | None, category: str) -> str | None:
+    """Actionable next step for the two slow-execution failure modes."""
+    if status_code == 504:
+        return (
+            "Halo's gateway timed out executing this report (measured: ~60s before "
+            f"it answers 504, and results cap at {REPORT_ROW_CAP:,} rows). Narrow "
+            "the report by date or filters, or split it into smaller reports."
+        )
+    if category == "timeout":
+        return (
+            f"The client stopped waiting for Halo. Execution loads every row Halo "
+            f"has (up to {REPORT_ROW_CAP:,}); raise --timeout, or narrow the report."
+        )
+    return None
+
+
+async def _run_report(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    params: dict[str, str],
+    limit: int,
+    timeout: float,
+    profile: str,
+) -> dict[str, Any]:
+    halo_profile = load_profile(profile)
+    # Fail fast on execution: Halo's 504 is a gateway deadline on a heavy query,
+    # not a transient blip (measured: ~60s to 504, repeatably). Retrying would
+    # re-run the same multi-second query up to max_retries times, turning a
+    # clear one-minute failure into a four-minute hang.
+    exec_profile = halo_profile.model_copy(update={"max_retries": 0})
+    try:
+        async with HaloClient(exec_profile, profile_name=profile) as client:
+            body = await client.request("GET", path, params=params, timeout=timeout)
+    except HaloCLIError as exc:
+        # Includes Halo's own 504: its gateway gives up at ~60s on a large
+        # report, which is a server limit no client timeout can fix.
+        return _execution_failure(
+            resource=resource,
+            op=op,
+            path=path,
+            category=exc.category,
+            status_code=exc.status_code,
+            error=str(exc) or type(exc).__name__,
+            detail=_execution_hint(exc.status_code, exc.category),
+            diagnostic=diagnose_permission_failure(exc),
+        )
+    except Exception as exc:  # httpx timeouts stringify to ""
+        err = classify_error(exc)
+        return _execution_failure(
+            resource=resource,
+            op=op,
+            path=path,
+            category=err.category,
+            status_code=err.status_code,
+            error=str(exc) or str(err),
+            detail=_execution_hint(err.status_code, err.category),
+        )
+
+    payload: dict[str, Any] = {
+        "ok": True,
+        "resource": resource.name,
+        "operation": op.name,
+        "method": op.method,
+        "endpoint": path,
+    }
+    if not isinstance(body, dict):
+        payload.update(
+            ok=False,
+            category="validation",
+            error=f"Unexpected response shape from Halo: expected an object, got {type(body).__name__}",
+        )
+        return payload
+
+    report = body.get("report")
+    if not isinstance(report, dict):
+        payload.update(
+            ok=False,
+            category="validation",
+            error="Response has no 'report' object; Halo did not execute this report",
+        )
+        return payload
+    if report.get("load_error"):
+        # Halo reports query failures with HTTP 200, so nothing else would flag it.
+        payload.update(
+            ok=False,
+            category="validation",
+            status_code=200,
+            error=f"Halo could not execute this report: {report['load_error']}",
+        )
+        return payload
+
+    rows = report.get("rows")
+    if rows is None:
+        payload.update(
+            ok=False,
+            category="validation",
+            error="Report executed but returned no 'rows' and no load_error",
+        )
+        return payload
+    if not isinstance(rows, list):
+        payload.update(
+            ok=False,
+            category="validation",
+            error=f"Unexpected rows shape: {type(rows).__name__}",
+        )
+        return payload
+
+    columns = list(rows[0].keys()) if rows and isinstance(rows[0], dict) else []
+    payload.update(
+        id=body.get("id"),
+        name=body.get("name"),
+        row_count=len(rows),
+        count=min(limit, len(rows)),
+        columns=columns,
+        items=rows[:limit],
+    )
+    if len(rows) >= REPORT_ROW_CAP:
+        payload["capped"] = True
+        payload["hint"] = (
+            f"Halo returned {len(rows):,} rows, which is its maximum: this report "
+            "may hold more. Narrow it (date range, filters, fewer columns) to see "
+            "everything, and note that a repeated run may return a different "
+            "window if the underlying data grows."
+        )
+    elif len(rows) > limit:
+        payload["hint"] = (
+            f"Showing {limit} of {len(rows):,} rows; pass --limit {len(rows)} for all."
+        )
+    return payload
+
+
+def _report_clone_command(resource: HaloResource, op: ResourceOperation):
+    """`halocli reports clone <id> --name ...`: copy a report to a new record."""
+
+    def command(
+        source: Annotated[str, typer.Argument(help="ID of the report to copy.")],
+        name: Annotated[str, typer.Option("--name", help="Name for the new report.")],
+        profile: Annotated[str, typer.Option("--profile")] = "default",
+        output: Annotated[str, typer.Option("--output", "-o")] = "json",
+        apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,  # noqa: A002
+        yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+    ) -> None:
+        if not name.strip():
+            raise typer.BadParameter("--name must not be empty")
+        path = _build_operation_path(op, [])
+        execute = _resolve_apply(apply, yes)
+        if not execute:
+            # Preview is zero-network by design: the body is derived from the
+            # source at apply time, so nothing can be shown yet and no profile
+            # is needed to describe the plan.
+            render(
+                {
+                    "ok": True,
+                    "apply": False,
+                    "resource": resource.name,
+                    "operation": op.name,
+                    "method": op.method,
+                    "endpoint": path,
+                    "preview": {
+                        "source_id": source,
+                        "name": name,
+                        "stripped_fields": sorted(REPORT_IDENTITY_FIELDS),
+                        "steps": [
+                            f"GET {path}/{source} (read the source report)",
+                            "drop identity fields so Halo creates a new record",
+                            f"set name to {name!r}",
+                            f"POST {path} with a one-element array body",
+                            "read the new record back to verify it",
+                            "re-read the source to verify it is unchanged",
+                        ],
+                    },
+                    "verification": op.verification,
+                },
+                output=output,
+            )
+            return
+
+        result = _run(
+            _run_report_clone(
+                resource=resource,
+                op=op,
+                path=path,
+                source=source,
+                name=name,
+                profile=profile,
+            )
+        )
+        if not result.get("ok"):
+            render_error(result)
+            raise typer.Exit(1)
+        render(result, output=output)
+
+    return command
+
+
+async def _run_report_clone(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    source: str,
+    name: str,
+    profile: str,
+) -> dict[str, Any]:
+    """GET source -> POST an identity-stripped copy -> verify both sides.
+
+    Verification reads back rather than trusting the POST's status code: a 201
+    that silently updated the source would otherwise look identical to a clone.
+    """
+    halo_profile = load_profile(profile)
+    source_path = f"{path}/{quote(source, safe='')}"
+    payload: dict[str, Any] = {
+        "ok": True,
+        "apply": True,
+        "resource": resource.name,
+        "operation": op.name,
+        "method": op.method,
+        "endpoint": path,
+        "source_id": source,
+        "name": name,
+    }
+
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        before = await client.request("GET", source_path)
+        if not isinstance(before, dict):
+            payload.update(
+                ok=False, category="validation",
+                error=f"GET {source_path} did not return a report object",
+            )
+            return payload
+
+        copy = {k: v for k, v in before.items() if k not in REPORT_IDENTITY_FIELDS}
+        copy["name"] = name
+        # Halo deserializes AnalyzerProfile[] here: an object returns 400 and a
+        # missing JSON content type returns 415 (both hit while building this).
+        created = await client.request("POST", path, json_body=[copy])
+        if isinstance(created, list):
+            created = created[0] if created else {}
+        if not isinstance(created, dict) or created.get("id") is None:
+            payload.update(
+                ok=False, category="validation",
+                error="POST did not return the created report (no id)",
+            )
+            return payload
+
+        new_id = str(created["id"])
+        after_source = await client.request("GET", source_path)
+        verified = await client.request("GET", f"{path}/{quote(new_id, safe='')}")
+
+    payload["id"] = created["id"]
+    payload["new_guid_differs"] = (
+        isinstance(after_source, dict)
+        and isinstance(verified, dict)
+        and verified.get("guid") != after_source.get("guid")
+    )
+    changed = []
+    if isinstance(after_source, dict):
+        changed = [
+            f for f in REPORT_SOURCE_FIELDS
+            if after_source.get(f) != before.get(f)
+        ]
+    else:
+        changed = ["<source re-read failed>"]
+    payload["source_unchanged"] = not changed
+    if changed:
+        payload["source_changed_fields"] = changed
+    copied_sql = isinstance(verified, dict) and verified.get("sql") == before.get("sql")
+    payload["sql_copied"] = copied_sql
+    payload["applied_name"] = (
+        isinstance(verified, dict) and verified.get("name") == name
+    )
+
+    if not payload["source_unchanged"] or not copied_sql or not payload["applied_name"]:
+        payload.update(
+            ok=False,
+            category="validation",
+            error="Clone verification failed; inspect the flags before trusting this result",
+        )
+    return payload
+
+
+_OPERATION_HANDLERS = {
+    "report_run": _report_run_command,
+    "report_clone": _report_clone_command,
+}
+
+
 def _resource_command(resource: HaloResource):
     resource_app = typer.Typer(help=f"{resource.name.title()} commands.")
 
@@ -394,9 +826,17 @@ def _resource_command(resource: HaloResource):
             _finish_write(result, output=output)
 
     for operation in resource.operations:
-        resource_app.command(operation.name, help=_operation_help(operation))(
-            _operation_command(resource, operation)
-        )
+        # A declared handler means the generic dispatcher cannot express this
+        # operation; an unknown name is a config error, not a licence to fall
+        # back to generic behaviour that would silently do the wrong thing.
+        handler = _OPERATION_HANDLERS.get(operation.handler)
+        if operation.handler and handler is None:
+            raise ValueError(
+                f"operation {resource.name}.{operation.name} names unknown handler "
+                f"{operation.handler!r} (known: {sorted(_OPERATION_HANDLERS)})"
+            )
+        callback = handler(resource, operation) if handler else _operation_command(resource, operation)
+        resource_app.command(operation.name, help=_operation_help(operation))(callback)
 
     return resource_app
 
@@ -1146,7 +1586,9 @@ def _run(coro):
                 "ok": False,
                 "category": err.category,
                 "status_code": err.status_code,
-                "error": str(exc),
+                # A message-less exception (httpx.ReadTimeout()) must not render
+                # as an empty string: fall back to the classified message.
+                "error": str(exc) or str(err),
                 "diagnostic": diagnose_permission_failure(err),
             }
         )

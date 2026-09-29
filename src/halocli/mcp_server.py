@@ -259,6 +259,12 @@ _TOOL_DEFINITIONS: list[dict[str, Any]] = [
 
 def _capability_summary(resource: HaloResource) -> str:
     read = "list/get" if resource.supports_get else "list"
+    # Declared operations are first-class commands too. Without this, a resource
+    # whose only write is an operation (reports clone) or an otherwise
+    # read-only resource carrying POST operations (invoices pdf/void) would be
+    # advertised as "writes only via raw", telling an agent a real subcommand
+    # does not exist.
+    op_writes = sorted({op.name for op in resource.operations if op.write})
     if resource.supports_write:
         write = []
         if resource.supports_create:
@@ -267,20 +273,29 @@ def _capability_summary(resource: HaloResource) -> str:
             write.append("update")
         if resource.supports_delete:
             write.append("delete")
+        write.extend(op_writes)
         return f"{read} via GET; {'/'.join(write)} via POST/PUT/PATCH/DELETE (apply:true)"
+    if op_writes:
+        return f"{read} via GET; {'/'.join(op_writes)} via POST (apply:true)"
     return f"{read} via GET; writes only via raw with apply:true"
 
 
 def _verbs(resource: HaloResource) -> list[str]:
     # GET is always available: every resource exposes `list` (the collection
     # route). supports_get only gates the *item* route, which _capability_summary
-    # reports as "list/get" vs "list" — an agent reading verbs must still be
+    # reports as "list/get" vs "list" - an agent reading verbs must still be
     # allowed to GET the collection (e.g. expenses: GET /Expense works).
     verbs = ["GET"]
     if resource.supports_write:
         verbs.append("POST")
     if resource.supports_delete:
         verbs.append("DELETE")
+    # Declared operations may use methods the write metadata does not (reports
+    # clone is a POST on a resource with no create/update endpoints).
+    for op in resource.operations:
+        method = op.method.upper()
+        if method not in verbs:
+            verbs.append(method)
     return verbs
 
 

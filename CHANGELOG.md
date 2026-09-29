@@ -6,6 +6,57 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.10.0 - 2026-09-29
+
+- **New `halocli reports run <id>`** (closes #15): executes a report and prints
+  `row_count`, `count`, `columns` and `items`, instead of the raw 28 MB Halo
+  envelope. `--limit` (default 20) bounds the rows rendered — Halo sends every
+  row regardless — and the output says when the CLI trimmed it. `--timeout`
+  (default 120s) bounds the wait.
+  - **`report.load_error` is now a failure**, not a silent success: Halo
+    returns HTTP 200 with the SQL error buried in the payload, so a broken
+    query previously looked like a healthy run. It now exits 1 with
+    `category: validation` and Halo's own message.
+  - **The 50,000-row cap is surfaced.** Measured against 135,148 rows of real
+    data: the CLI warns that a full result is not being shown rather than
+    letting a truncated set read as complete.
+  - Execution failures carry an actionable `hint` for the two slow modes:
+    Halo's own gateway 504s at ~60s, and a client timeout. Both were live
+    failures first — a 30s profile timeout against this report rendered as
+    `{"category": "unknown", "error": ""}`, which says nothing.
+  - **Execution does not retry.** Halo's 504 is a gateway deadline on a heavy
+    query, not a transient blip (measured ~60s to 504, repeatably); with the
+    default 3 retries that clear one-minute failure became a four-minute hang.
+    Verified live: one attempt, 61.5s, `category: server` with the hint.
+- **New `halocli reports clone <id> --name ...`**: GETs a report, strips the
+  identity fields (`id`, `guid`, `published_id`, …) so Halo creates a copy
+  instead of upserting over the source, POSTs it as a one-element array, then
+  **verifies by reading back** — new id/guid, SQL copied, name applied, and the
+  source re-read to prove it was untouched. Verification failures exit 1
+  rather than reporting success. Preview is the default and takes zero network
+  calls (no profile needed); `--apply --yes` executes, matching every other
+  write command.
+- Both are declared as `ResourceOperation`s (so `reports --help` lists them in
+  the contract format and the coverage oracle verifies them against the vendored
+  spec) but carry a `handler`, because the generic dispatcher cannot express
+  them. An unknown handler name fails registration loudly rather than falling
+  back to generic behaviour that would silently do the wrong thing.
+- `HaloClient.request()` accepts a per-request `timeout`, and
+  `classify_error()` now recognises timeouts **by exception type**, not only by
+  text — httpcore timeouts stringify to `""`, which is why the live failure
+  rendered as an empty `unknown` error. Errors with no message fall back to the
+  classified message instead of rendering `""`.
+- `_capability_summary()`/`_verbs()` now account for declared operations: a
+  resource whose only write is an operation (`reports clone`, `invoices pdf`)
+  was advertised as "writes only via raw", telling agents a real subcommand did
+  not exist.
+- The suite grows 289 -> 312 tests, chiefly `tests/test_reports_commands.py`
+  (both commands, their failure modes, and the contract/help registration),
+  plus timeout-classification tests in `test_utils.py` and a guard in
+  `test_packaging.py` that the suite imports `src/` rather than a
+  non-editable snapshot in site-packages — twice this release cycle a stray
+  `pip install .` left tests passing against a stale copy of the tree.
+
 ## 0.9.0 - 2026-09-29
 
 - **Python support is now 3.12 – 3.14** (`requires-python = ">=3.12"`); 3.10

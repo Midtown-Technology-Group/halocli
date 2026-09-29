@@ -51,6 +51,7 @@ class HaloClient:
         files: Any = None,
         data: Any = None,
         as_bytes: bool = False,
+        timeout: float | None = None,
     ) -> Any:
         """Send an authenticated HaloPSA request.
 
@@ -86,6 +87,9 @@ class HaloClient:
                 url,
                 params=params,
                 headers=headers,
+                # None keeps the profile-wide timeout; report execution passes a
+                # larger one because it waits on a multi-megabyte result set.
+                timeout=timeout,
                 **body_kwargs,
             )
             last_response = response

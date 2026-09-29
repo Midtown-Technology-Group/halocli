@@ -40,13 +40,18 @@ def classify_error(exc: BaseException, *, endpoint: str | None = None) -> HaloCL
     body = _body(exc)
     retry_after = _retry_after(exc)
     category = _category(status_code, str(exc))
+    if category == "unknown" and _is_timeout(exc):
+        # Timeouts (httpx/httpcore/asyncio) carry no message, so text matching
+        # on str(exc) always misses them and the caller sees an empty "unknown".
+        category = "timeout"
     message = f"HaloPSA {category} error"
     if status_code is not None:
         message += f" ({status_code})"
     if endpoint:
         message += f" on {endpoint}"
-    if body:
-        message += f": {body[:300]}"
+    detail = body or str(exc) or type(exc).__name__
+    if detail:
+        message += f": {detail[:300]}"
     return HaloCLIError(
         message,
         category=category,
@@ -55,6 +60,17 @@ def classify_error(exc: BaseException, *, endpoint: str | None = None) -> HaloCL
         retry_after=retry_after,
         endpoint=endpoint,
     )
+
+
+def _is_timeout(exc: BaseException) -> bool:
+    """Timeout exceptions frequently stringify to ``""`` (httpx.ReadTimeout()).
+
+    Match on the class name as well as the built-in so a message-less timeout
+    still classifies as ``timeout`` rather than ``unknown``.
+    """
+    if isinstance(exc, TimeoutError):
+        return True
+    return "timeout" in type(exc).__name__.lower()
 
 
 def diagnose_permission_failure(error: HaloCLIError) -> str:
