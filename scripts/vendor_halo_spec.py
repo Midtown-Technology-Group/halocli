@@ -224,14 +224,20 @@ def synthesize_operation_ids(spec: dict[str, Any]) -> tuple[int, int]:
 #   $.components.schemas.<Schema>.properties.<prop>.description
 #
 # The emitted targets are valid JSONPath, so external runners (e.g. Forge's
-# applyForgeOverlays) can apply the same file. Parameters are addressed by
-# name rather than index so a target survives upstream re-ordering.
+# applyForgeOverlays) can apply the same file -- tests pin that claim against
+# jsonpath-ng rather than trusting it. Parameters are addressed by a JSONPath
+# filter on name (not a positional index, and not the pseudo-path
+# parameters['name'], which jsonpath-ng parses but resolves to zero nodes --
+# an external runner would silently skip the action while applying the rest).
+# The compound form parameters[?@.name=='x' && @.in=='y'] is deliberately NOT
+# supported: jsonpath-ng rejects it at parse time, so supporting it here would
+# reintroduce the split-brain this avoids.
 _OVERLAY_TARGET = re.compile(
     r"^\$\.paths\['(?P<path>[^']+)'\]\.(?P<method>[a-z]+)\.(?P<field>summary|description)$"
 )
 _OVERLAY_PARAM_TARGET = re.compile(
     r"^\$\.paths\['(?P<path>[^']+)'\]\.(?P<method>[a-z]+)"
-    r"\.parameters\['(?P<name>[^']+)'\]\.description$"
+    r"\.parameters\[\?@\.name=='(?P<name>[^']+)'\]\.description$"
 )
 _OVERLAY_SCHEMA_TARGET = re.compile(
     r"^\$\.components\.schemas\.(?P<schema>[A-Za-z0-9_]+)"
@@ -285,7 +291,7 @@ def resolve_overlay_target(spec: dict[str, Any], target: Any) -> tuple[dict[str,
 
     raise ValueError(
         "unsupported overlay target (expected $.paths['...'].<method>.summary|description, "
-        "$.paths['...'].<method>.parameters['<name>'].description, or "
+        "$.paths['...'].<method>.parameters[?@.name=='<name>'].description, or "
         "$.components.schemas.<Schema>.properties.<prop>.description): "
         f"{text!r}"
     )

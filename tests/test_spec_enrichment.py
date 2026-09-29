@@ -156,8 +156,10 @@ def test_overlay_file_shape() -> None:
     assert isinstance(actions, list) and actions, "overlay must carry actions"
     for action in actions:
         target = action["target"]
-        # Supported shapes: $.paths[...].<method>[.parameters['x']].
-        # summary|description, or $.components.schemas.X.properties.y.description
+        # Supported shapes: $.paths[...].<method>.summary|description,
+        # $.paths[...].<method>.parameters[?@.name=='x'].description, and
+        # $.components.schemas.X.properties.y.description (all standard JSONPath;
+        # test_overlay_targets_are_standard_jsonpath proves it).
         on_path = target.startswith("$.paths[") and target.endswith(
             (".summary", ".description")
         )
@@ -180,6 +182,32 @@ def test_overlay_targets_exist_in_spec(spec: dict[str, Any], vendor_mod: Any) ->
         container, field = vendor_mod.resolve_overlay_target(spec, action["target"])
         assert isinstance(container, dict), action["target"]
         assert field in ("summary", "description"), action["target"]
+
+
+def test_overlay_targets_are_standard_jsonpath(spec: dict[str, Any]) -> None:
+    """Prove the overlay's portability claim instead of asserting it in a comment.
+
+    vendor_halo_spec.py promises every target is valid JSONPath so external
+    runners (Forge et al) can apply the same file. That claim was false for
+    the parameter shape: ``parameters['loadreport']`` parses under jsonpath-ng
+    but resolves to ZERO nodes, so an external runner would silently skip that
+    action while applying the rest -- the worst failure mode, because the run
+    still looks successful. Caught by CodeRabbit on PR #16.
+
+    jsonpath-ng is imported directly rather than via importorskip: dropping the
+    dev dependency must fail this test loudly, not skip it.
+    """
+    from jsonpath_ng.ext import parse
+
+    overlay = json.loads(OVERLAY_PATH.read_text(encoding="utf-8"))
+    for action in overlay["actions"]:
+        target = action["target"]
+        matches = parse(target).find(spec)
+        assert len(matches) == 1, (
+            f"target {target!r} resolved to {len(matches)} nodes under standard "
+            "JSONPath; an external overlay runner would skip or mis-apply it"
+        )
+        assert matches[0].value == action["update"], target
 
 
 def test_apply_overlay_fill_if_missing(vendor_mod: Any) -> None:
@@ -246,9 +274,9 @@ def test_apply_overlay_fills_parameter_and_property_descriptions(vendor_mod: Any
         "overlay": "1.0.0",
         "info": {"title": "t"},
         "actions": [
-            {"target": "$.paths['/Report/{id}'].get.parameters['loadreport'].description",
+            {"target": "$.paths['/Report/{id}'].get.parameters[?@.name=='loadreport'].description",
              "update": "execute the report"},
-            {"target": "$.paths['/Report/{id}'].get.parameters['includedetails'].description",
+            {"target": "$.paths['/Report/{id}'].get.parameters[?@.name=='includedetails'].description",
              "update": "must not overwrite upstream"},
             {"target": "$.components.schemas.AnalyzerProfile.properties.sql.description",
              "update": "raw T-SQL"},
@@ -279,7 +307,7 @@ def test_apply_overlay_rejects_unknown_parameter_and_property(vendor_mod: Any) -
         vendor_mod.apply_overlay(
             mini,
             {"overlay": "1.0.0",
-             "actions": [{"target": "$.paths['/Report/{id}'].get.parameters['gone'].description",
+             "actions": [{"target": "$.paths['/Report/{id}'].get.parameters[?@.name=='gone'].description",
                           "update": "x"}]},
         )
     with pytest.raises(ValueError, match="schema property not in spec"):
