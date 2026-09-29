@@ -1,0 +1,415 @@
+{
+  "overlay": "1.0.0",
+  "info": {
+    "title": "halocli surfaced-operations enrichment",
+    "version": "1.0.0",
+    "description": "Curated summary/description prose for the operations HaloCLI surfaces (registry list/get/create/update/delete plus nested write operations). Applied by scripts/vendor_halo_spec.py with fill-if-missing semantics: upstream text is never overwritten. operationIds are NOT in this file — they are synthesized deterministically by the vendor script. When the resource registry grows, add actions here until the surfaced-operations test passes."
+  },
+  "actions": [
+    {
+      "target": "$.paths['/Tickets'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a ticket"
+    },
+    {
+      "target": "$.paths['/Tickets'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update a ticket"
+    },
+    {
+      "target": "$.paths['/Tickets/Object'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create a single ticket object, or update it when id is set"
+    },
+    {
+      "target": "$.paths['/Tickets/Object'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create a single ticket object, or update it when id is set"
+    },
+    {
+      "target": "$.paths['/Tickets/SetBillableProject'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Set a ticket's billable project"
+    },
+    {
+      "target": "$.paths['/Tickets/SetBillableProject'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Set a ticket's billable project. The spec takes query parameters and declares no request body."
+    },
+    {
+      "target": "$.paths['/Tickets/View'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Run a saved ticket view"
+    },
+    {
+      "target": "$.paths['/Tickets/View'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Run a saved ticket view"
+    },
+    {
+      "target": "$.paths['/Tickets/processchildren'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Process a ticket's child tickets"
+    },
+    {
+      "target": "$.paths['/Tickets/processchildren'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Process a ticket's child tickets"
+    },
+    {
+      "target": "$.paths['/Tickets/salesmailbox'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get sales mailbox information"
+    },
+    {
+      "target": "$.paths['/Tickets/salesmailbox'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Get sales mailbox information"
+    },
+    {
+      "target": "$.paths['/Tickets/vote'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Cast a vote on a ticket"
+    },
+    {
+      "target": "$.paths['/Tickets/vote'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Cast a vote on a ticket"
+    },
+    {
+      "target": "$.paths['/Tickets/zapier'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get Zapier integration configuration"
+    },
+    {
+      "target": "$.paths['/Tickets/zapier'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Get Zapier integration configuration"
+    },
+    {
+      "target": "$.paths['/Client'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a client"
+    },
+    {
+      "target": "$.paths['/Client'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update a client"
+    },
+    {
+      "target": "$.paths['/Client/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a client by id"
+    },
+    {
+      "target": "$.paths['/Client/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete a client by id"
+    },
+    {
+      "target": "$.paths['/Agent'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an agent"
+    },
+    {
+      "target": "$.paths['/Agent'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update an agent"
+    },
+    {
+      "target": "$.paths['/Agent/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an agent by id"
+    },
+    {
+      "target": "$.paths['/Agent/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete an agent by id"
+    },
+    {
+      "target": "$.paths['/Site'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a site"
+    },
+    {
+      "target": "$.paths['/Site'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update a site"
+    },
+    {
+      "target": "$.paths['/Site/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a site by id"
+    },
+    {
+      "target": "$.paths['/Site/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete a site by id"
+    },
+    {
+      "target": "$.paths['/Asset'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an asset"
+    },
+    {
+      "target": "$.paths['/Asset'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update an asset"
+    },
+    {
+      "target": "$.paths['/Asset/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an asset by id"
+    },
+    {
+      "target": "$.paths['/Asset/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete an asset by id"
+    },
+    {
+      "target": "$.paths['/Actions'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a ticket action"
+    },
+    {
+      "target": "$.paths['/Actions'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update a ticket action"
+    },
+    {
+      "target": "$.paths['/Actions/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a ticket action by id"
+    },
+    {
+      "target": "$.paths['/Actions/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete a ticket action by id"
+    },
+    {
+      "target": "$.paths['/Status'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a status"
+    },
+    {
+      "target": "$.paths['/Status'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update a status"
+    },
+    {
+      "target": "$.paths['/Status/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a status by id"
+    },
+    {
+      "target": "$.paths['/Status/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete a status by id"
+    },
+    {
+      "target": "$.paths['/Priority'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a priority"
+    },
+    {
+      "target": "$.paths['/Priority'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update a priority"
+    },
+    {
+      "target": "$.paths['/Priority/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a priority by id"
+    },
+    {
+      "target": "$.paths['/Priority/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete a priority by id"
+    },
+    {
+      "target": "$.paths['/Appointment'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an appointment"
+    },
+    {
+      "target": "$.paths['/Appointment'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create or update an appointment"
+    },
+    {
+      "target": "$.paths['/Invoice/PDF/{id}'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Render an invoice as a PDF"
+    },
+    {
+      "target": "$.paths['/Invoice/PDF/{id}'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Render an invoice as a PDF. The response is a binary PDF."
+    },
+    {
+      "target": "$.paths['/Invoice/View'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Run a saved invoice view"
+    },
+    {
+      "target": "$.paths['/Invoice/View'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Run a saved invoice view"
+    },
+    {
+      "target": "$.paths['/Invoice/lines'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List invoice line items"
+    },
+    {
+      "target": "$.paths['/Invoice/lines'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "List invoice line items"
+    },
+    {
+      "target": "$.paths['/Invoice/updatelines'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Update invoice line items"
+    },
+    {
+      "target": "$.paths['/Invoice/updatelines'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Update invoice line items"
+    },
+    {
+      "target": "$.paths['/Invoice/{id}/void'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Void an invoice"
+    },
+    {
+      "target": "$.paths['/Invoice/{id}/void'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Void an invoice"
+    },
+    {
+      "target": "$.paths['/Release'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List releases"
+    },
+    {
+      "target": "$.paths['/Expense'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List expenses"
+    },
+    {
+      "target": "$.paths['/Expense'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "List expenses"
+    },
+    {
+      "target": "$.paths['/Timesheet'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List timesheets"
+    },
+    {
+      "target": "$.paths['/Timesheet'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "List timesheets"
+    },
+    {
+      "target": "$.paths['/Attachment/document/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get a document attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/document/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Get a document attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/document/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a document attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/document/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete a document attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/image'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List image attachments"
+    },
+    {
+      "target": "$.paths['/Attachment/image'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "List image attachments"
+    },
+    {
+      "target": "$.paths['/Attachment/image'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Upload an image attachment"
+    },
+    {
+      "target": "$.paths['/Attachment/image'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Upload an image attachment. The spec declares a multipart/form-data request body with a 'file' field."
+    },
+    {
+      "target": "$.paths['/Attachment/image/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get an image attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/image/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Get an image attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/image/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an image attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/image/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete an image attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/nhserver/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get an nhserver attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/nhserver/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Get an nhserver attachment by id"
+    },
+    {
+      "target": "$.paths['/Attachment/GetS3PresignedURL'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Request an S3 presigned upload URL"
+    },
+    {
+      "target": "$.paths['/Attachment/GetS3PresignedURL'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Request an S3 presigned upload URL"
+    },
+    {
+      "target": "$.paths['/Attachment/PresignedURLUploadComplete'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Mark a presigned upload as complete"
+    },
+    {
+      "target": "$.paths['/Attachment/PresignedURLUploadComplete'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Mark a presigned upload as complete"
+    },
+    {
+      "target": "$.paths['/Attachment/document'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create a document attachment from a JSON body"
+    },
+    {
+      "target": "$.paths['/Attachment/document'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Create a document attachment from a JSON body"
+    }
+  ]
+}

@@ -12,9 +12,20 @@ Discovered via the DTC Inc. HaloPSA API Reference:
     https://kb.dtctoday.com/books/halopsa-api-reference/page/halopsa-rest-api-v2-swagger-spec
 
 Usage:
-    python scripts/vendor_halo_spec.py                     # download + trim + write
+    python scripts/vendor_halo_spec.py                     # download + trim + enrich + write
     python scripts/vendor_halo_spec.py --source raw.json   # trim a local raw copy (offline)
+    python scripts/vendor_halo_spec.py --no-overlay        # skip curated prose enrichment
     python scripts/vendor_halo_spec.py --url https://host/api/swagger/v2/swagger.json
+
+Enrichment (both steps are deterministic and re-runnable):
+
+* missing ``operationId`` values are synthesized as ``{method}_{path}``
+  (e.g. ``get_invoice_pdf_id``) — upstream IDs are never overwritten;
+* ``halo_overlay.json`` (committed next to the spec) fills ``summary`` /
+  ``description`` for the operations HaloCLI surfaces. Fill-if-missing semantics:
+  upstream text is never overwritten, so spec refreshes keep upstream improvements.
+  When the registry grows, the surfaced-operations test fails until the overlay
+  is extended — edit the overlay JSON directly.
 
 The script is idempotent: re-running it against an unchanged upstream spec produces the same
 output apart from the ``vendored_at`` timestamp in ``_meta``.
@@ -26,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.request
 from collections import deque
@@ -41,6 +53,7 @@ DISCOVERED_VIA = (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = REPO_ROOT / "src" / "halocli" / "spec" / "halo_openapi.json"
+DEFAULT_OVERLAY = REPO_ROOT / "src" / "halocli" / "spec" / "halo_overlay.json"
 
 MAX_DESCRIPTION = 200
 DROP_KEYS = frozenset({"example", "examples"})
@@ -162,8 +175,111 @@ def _count_operations(spec: dict[str, Any]) -> int:
     return total
 
 
-def vendor(url: str, source_file: Path | None, out_path: Path) -> dict[str, Any]:
-    """Fetch (or read), trim, and write the vendored spec. Returns the written spec."""
+def synthesize_operation_ids(spec: dict[str, Any]) -> tuple[int, int]:
+    """Fill missing ``operationId`` values with a deterministic ``{method}_{path}`` rule.
+
+    Halo's spec ships almost no operationIds (3/1455), but typed consumers
+    (Forge, Fern, OpenAPI tooling) key everything on them — a spec without IDs
+    resolves to ~nothing (measured: 3/1455 in Forge). The rule is mechanical and
+    stable: ``GET /Invoice/PDF/{id}`` -> ``get_invoice_pdf_id``. Upstream IDs are
+    never overwritten; collisions get a ``_2`` suffix in stable iteration order.
+
+    Returns ``(synthesized, upstream_kept)``.
+    """
+    taken = {
+        op["operationId"]
+        for item in spec.get("paths", {}).values()
+        if isinstance(item, dict)
+        for method, op in item.items()
+        if method in HTTP_METHODS and isinstance(op, dict) and op.get("operationId")
+    }
+    upstream = len(taken)
+    synthesized = 0
+    for path, item in spec.get("paths", {}).items():
+        if not isinstance(item, dict):
+            continue
+        for method, op in item.items():
+            if method not in HTTP_METHODS or not isinstance(op, dict):
+                continue
+            if op.get("operationId"):
+                continue
+            base = re.sub(r"[^0-9A-Za-z]+", "_", f"{method}_{path}").strip("_").lower()
+            candidate = base or f"{method}_op"
+            if candidate in taken:
+                suffix = 2
+                while f"{base}_{suffix}" in taken:
+                    suffix += 1
+                candidate = f"{base}_{suffix}"
+            taken.add(candidate)
+            op["operationId"] = candidate
+            synthesized += 1
+    return synthesized, upstream
+
+
+# Overlay targets we support: one scalar field on one operation.
+# Deliberately a constrained JSONPath subset (stdlib-only vendor script); the
+# emitted targets are valid JSONPath, so external runners (e.g. Forge's
+# applyForgeOverlays) can apply the same file.
+_OVERLAY_TARGET = re.compile(
+    r"^\$\.paths\['(?P<path>[^']+)'\]\.(?P<method>[a-z]+)\.(?P<field>summary|description)$"
+)
+
+
+def apply_overlay(spec: dict[str, Any], overlay: dict[str, Any]) -> tuple[int, int]:
+    """Apply curated prose from an OpenAPI Overlay document to the spec.
+
+    Supports ``$.paths['...'].<method>.summary|description`` targets with string
+    ``update`` values. Semantics are **fill-if-missing**: an action never
+    overwrites text the upstream spec already provides, so spec refreshes keep
+    upstream improvements (documented in the overlay's info.description — a
+    standard overlay runner would overwrite instead).
+
+    Returns ``(filled, already_present)``. Raises ValueError on a target shape
+    we do not support (loud, rather than silently skipping prose).
+    """
+    if overlay.get("overlay") not in ("1.0.0", "1.1.0"):
+        raise ValueError(f"unsupported overlay version: {overlay.get('overlay')!r}")
+    actions = overlay.get("actions")
+    if not isinstance(actions, list):
+        raise ValueError("overlay has no 'actions' list")
+
+    filled = already_present = 0
+    paths = spec.get("paths", {})
+    for i, action in enumerate(actions):
+        if not isinstance(action, dict) or "update" not in action:
+            raise ValueError(f"overlay action #{i} needs a target and an update")
+        target = action.get("target")
+        update = action["update"]
+        if not isinstance(update, str) or not update.strip():
+            raise ValueError(f"overlay action #{i} has a non-text update")
+        match = _OVERLAY_TARGET.match(str(target))
+        if match is None:
+            raise ValueError(
+                f"unsupported overlay target (expected "
+                f"$.paths['...'].<method>.summary|description): {target!r}"
+            )
+        item = paths.get(match["path"])
+        operation = None
+        if isinstance(item, dict):
+            operation = item.get(match["method"])
+        if not isinstance(operation, dict):
+            raise ValueError(f"overlay target path/method not in spec: {target!r}")
+        current = operation.get(match["field"])
+        if isinstance(current, str) and current.strip():
+            already_present += 1
+            continue
+        operation[match["field"]] = update
+        filled += 1
+    return filled, already_present
+
+
+def vendor(
+    url: str,
+    source_file: Path | None,
+    out_path: Path,
+    overlay_path: Path | None = DEFAULT_OVERLAY,
+) -> dict[str, Any]:
+    """Fetch (or read), trim, enrich, and write the vendored spec. Returns the written spec."""
     raw_bytes: bytes | None
     if source_file is not None:
         raw_bytes = source_file.read_bytes()
@@ -177,9 +293,38 @@ def vendor(url: str, source_file: Path | None, out_path: Path) -> dict[str, Any]
 
     spec = trim(spec)
     schemas_before, schemas_after = prune_components(spec)
+    operation_ids_synthesized, operation_ids_upstream = synthesize_operation_ids(spec)
+
+    overlay_stats: dict[str, Any] | None = None
+    if overlay_path is not None:
+        if not overlay_path.is_file():
+            raise ValueError(
+                f"overlay not found: {overlay_path} "
+                "(committed next to the spec; pass --no-overlay to skip)"
+            )
+        overlay = json.loads(overlay_path.read_text(encoding="utf-8"))
+        if not isinstance(overlay, dict):
+            raise ValueError(f"{overlay_path} is not an overlay document")
+        filled, already_present = apply_overlay(spec, overlay)
+        overlay_stats = {
+            "file": overlay_path.name,
+            "version": overlay.get("overlay"),
+            "actions": len(overlay.get("actions") or []),
+            "filled": filled,
+            "already_present": already_present,
+        }
 
     path_count = len(spec.get("paths", {}))
     operation_count = _count_operations(spec)
+    missing_descriptions = sum(
+        1
+        for item in spec.get("paths", {}).values()
+        if isinstance(item, dict)
+        for method, op in item.items()
+        if method in HTTP_METHODS
+        and isinstance(op, dict)
+        and not (op.get("description") or "").strip()
+    )
     meta = {
         "$schema_source": source_label,
         "origin": "official",
@@ -194,11 +339,18 @@ def vendor(url: str, source_file: Path | None, out_path: Path) -> dict[str, Any]
         "operation_count": operation_count,
         "schema_count_before": schemas_before,
         "schema_count_after": schemas_after,
+        "operation_ids_synthesized": operation_ids_synthesized,
+        "operation_ids_upstream": operation_ids_upstream,
+        "overlay": overlay_stats,
+        "missing_descriptions": missing_descriptions,
         "trim_notes": [
             "x-* vendor extensions removed",
             "example/examples removed",
             "descriptions/summaries collapsed and clipped to 200 chars",
             "component schemas unreachable from paths removed (transitive)",
+            "missing operationIds synthesized as {method}_{path} (upstream IDs kept)",
+            "curated overlay fills summary/description for surfaced operations "
+            "(fill-if-missing: never overwrites upstream text)",
         ],
     }
     spec["_meta"] = meta
@@ -221,10 +373,26 @@ def main(argv: list[str] | None = None) -> int:
         help="trim a local raw spec file instead of downloading (offline mode)",
     )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output path")
+    parser.add_argument(
+        "--overlay",
+        type=Path,
+        default=DEFAULT_OVERLAY,
+        help="curated overlay document (fill-if-missing prose for surfaced operations)",
+    )
+    parser.add_argument(
+        "--no-overlay",
+        action="store_true",
+        help="skip overlay application (spec only; surfaced operations may lack prose)",
+    )
     args = parser.parse_args(argv)
 
     try:
-        spec = vendor(args.url, args.source, args.out)
+        spec = vendor(
+            args.url,
+            args.source,
+            args.out,
+            overlay_path=None if args.no_overlay else args.overlay,
+        )
     except (OSError, ValueError) as exc:
         print(f"error: failed to vendor HaloPSA spec: {exc}", file=sys.stderr)
         print(
@@ -235,11 +403,22 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     meta = spec["_meta"]
+    overlay = meta.get("overlay")
+    overlay_note = (
+        f"  overlay: {overlay['file']} — {overlay['filled']} filled, "
+        f"{overlay['already_present']} already present\n"
+        if overlay
+        else "  overlay: skipped (--no-overlay)\n"
+    )
     print(f"wrote {args.out}")
     print(
         f"  source: {meta['$schema_source']}\n"
         f"  paths: {meta['path_count']}  operations: {meta['operation_count']}  "
         f"schemas: {meta['schema_count_before']} -> {meta['schema_count_after']}\n"
+        f"  operationIds: {meta['operation_ids_synthesized']} synthesized, "
+        f"{meta['operation_ids_upstream']} upstream\n"
+        f"{overlay_note}"
+        f"  missing descriptions: {meta['missing_descriptions']}\n"
         f"  size: {meta['trimmed_bytes']:,} bytes"
     )
     return 0
