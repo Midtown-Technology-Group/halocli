@@ -178,15 +178,60 @@ def test_operation_mismatches_empty_for_real_registry() -> None:
 
 
 def test_read_mismatch_detects_undocumented_endpoint() -> None:
-    spec = {"paths": {"/Known": {"get": {}}}}
+    spec = {"paths": {"/Known": {"get": {}}, "/Known/{id}": {"get": {}}}}
     resources = (
         HaloResource("known", "/Known"),
         HaloResource("ghost", "/Ghost"),
     )
     mismatches = coverage.find_read_mismatches(spec, resources)
-    assert len(mismatches) == 1
+    assert len(mismatches) == 2  # /Ghost and /Ghost/{id}, both promised by supports_get
     assert mismatches[0]["path"] == "/Ghost"
     assert mismatches[0]["resource"] == "ghost"
+
+
+def test_read_mismatch_detects_missing_item_route() -> None:
+    """A `get` promise requires `{endpoint}/{id}` in the spec, not just the collection.
+
+    This is the expenses class of bug: the collection reads fine but the item
+    route does not exist, so the generated `get` subcommand could only 404.
+    """
+    spec = {"paths": {"/Known": {"get": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    mismatches = coverage.find_read_mismatches(spec, resources)
+    assert [m["path"] for m in mismatches] == ["/Known/{id}"]
+    assert mismatches[0]["resource"] == "known"
+
+
+def test_read_mismatch_skips_item_route_when_get_unsupported() -> None:
+    """supports_get=False means no item route is promised, so none is required."""
+    spec = {"paths": {"/Known": {"get": {}}}}
+    resources = (HaloResource("known", "/Known", supports_get=False),)
+    assert coverage.find_read_mismatches(spec, resources) == []
+
+
+def test_read_mismatch_flags_item_path_without_get_operation() -> None:
+    """Path membership alone is not enough: a DELETE-only item path cannot serve
+    the registered `get`, and spec validation would refuse it (CodeRabbit review
+    on PR #10). The gate must check the operation, as find_write_mismatches does."""
+    spec = {"paths": {"/Known": {"get": {}}, "/Known/{id}": {"delete": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    mismatches = coverage.find_read_mismatches(spec, resources)
+    assert [m["path"] for m in mismatches] == ["/Known/{id}"]
+    assert "no get operation" in mismatches[0]["spec_path"]
+
+
+def test_read_mismatch_accepts_item_path_with_get_among_other_methods() -> None:
+    """A busy item path (get + delete) satisfies the read promise."""
+    spec = {"paths": {"/Known": {"get": {}}, "/Known/{id}": {"get": {}, "delete": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    assert coverage.find_read_mismatches(spec, resources) == []
+
+
+def test_read_mismatch_trailing_slash_collection_still_counts() -> None:
+    """Some spec spellings use a trailing slash for the collection route."""
+    spec = {"paths": {"/Known/": {"get": {}}, "/Known/{id}": {"get": {}}}}
+    resources = (HaloResource("known", "/Known"),)
+    assert coverage.find_read_mismatches(spec, resources) == []
 
 
 def test_read_mismatches_empty_after_live_verification() -> None:

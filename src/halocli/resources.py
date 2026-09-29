@@ -422,6 +422,10 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Expense",
         aliases=("expense",),
         table_fields=("id", "agent_name", "date", "value"),
+        # No item route: Halo has no GET /Expense/{id} (probed 2026-09-29 — /Expense/1
+        # and /Expense/0 both 404 while /Expense answers 403, and the official spec
+        # documents only the collection). A `get` subcommand could only 404.
+        supports_get=False,
     ),
     HaloResource(
         "timesheets",

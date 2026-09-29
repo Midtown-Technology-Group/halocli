@@ -227,19 +227,56 @@ def find_read_mismatches(
     resource reads `/Contract`, which the official spec does not contain. Such reads
     may still work at runtime (undocumented endpoint) but the CLI promises more than
     the spec verifies.
+
+    The same promise applies to the item route: a resource with ``supports_get``
+    exposes `GET {endpoint}/{id}`, so a path without a `get` operation is reported
+    too (this is how a registry over-promise like expenses' `get` gets caught —
+    Halo has no `/Expense/{id}` at all). Both checks require the `get` *operation*,
+    not merely the path: a path carrying only DELETE does not satisfy a registered
+    read, which is exactly what spec validation would then refuse.
     """
     spec_paths = spec.get("paths", {})
+
+    def _get_status(path: str) -> str:
+        """'', 'missing' (no such path), or 'no-get' (path exists without GET)."""
+        item = spec_paths.get(path)
+        if not isinstance(item, dict):
+            return "missing"
+        has_get = any(str(method).lower() == "get" for method in item)
+        return "" if has_get else "no-get"
+
     mismatches: list[dict[str, Any]] = []
     for resource in resources:
         endpoint = _endpoint(resource)
-        if endpoint not in spec_paths and f"{endpoint}/" not in spec_paths:
+        collection = _get_status(endpoint)
+        if collection == "missing":
+            collection = _get_status(f"{endpoint}/")  # spec may spell it with a slash
+        if collection:
             mismatches.append(
                 {
                     "path": endpoint,
                     "resource": resource.name,
-                    "spec_path": f"{endpoint} not present in spec",
+                    "spec_path": (
+                        f"{endpoint} not present in spec"
+                        if collection == "missing"
+                        else f"{endpoint} present in spec but has no get operation"
+                    ),
                 }
             )
+        if resource.supports_get:
+            item_status = _get_status(f"{endpoint}/{{id}}")
+            if item_status:
+                mismatches.append(
+                    {
+                        "path": f"{endpoint}/{{id}}",
+                        "resource": resource.name,
+                        "spec_path": (
+                            f"{endpoint}/{{id}} not present in spec"
+                            if item_status == "missing"
+                            else f"{endpoint}/{{id}} present in spec but has no get operation"
+                        ),
+                    }
+                )
     return mismatches
 
 

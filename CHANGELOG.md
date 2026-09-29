@@ -6,6 +6,29 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.7.2 - 2026-09-29
+
+- **Removed `halocli expenses get`** — it could only ever 404. Probing the live
+  tenant (read-only, 2026-09-29) showed Halo has no `GET /Expense/{id}`:
+  `/Expense/1` and `/Expense/0` both answer 404 while the collection
+  `/Expense` answers 403 (permission), and the official spec documents only
+  the collection. The registry now sets `supports_get=False` for expenses,
+  and `cli.py` honors that flag instead of registering `get` unconditionally.
+  `expenses list` is unaffected (the collection route exists).
+- The coverage oracle's `read_mismatches` gate now also checks
+  `{endpoint}/{id}` whenever a resource promises `supports_get`, so a
+  registry over-promise of this class fails CI instead of shipping a
+  always-404 subcommand. All three gates remain empty.
+- Fixed a latent MCP bug the above exposed: `_verbs` treated
+  `supports_get=False` as "no GET at all", which would have told agents the
+  expenses resource is unreadable. Every resource exposes `list`, so `GET`
+  stays in `verbs`; the flag only switches the capability string between
+  `list/get` and `list`.
+- Tests: the enrichment suite's surfaced-pair helper now respects
+  `supports_get`, letting the previous `/Expense/{id}` exception be deleted
+  (no special cases); new pins cover the missing `get` command, the
+  item-route oracle check, and the list-still-advertises-GET contract.
+
 ## 0.7.1 - 2026-09-28
 
 - Enriched the vendored spec so typed consumers can actually load it.

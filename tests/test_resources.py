@@ -144,7 +144,35 @@ def test_ticket_and_action_write_shapes() -> None:
 @pytest.mark.parametrize("resource", RESOURCES)
 def test_generated_resource_commands_load(resource) -> None:
     assert runner.invoke(app, [resource.name, "list", "--help"]).exit_code == 0
-    assert runner.invoke(app, [resource.name, "get", "--help"]).exit_code == 0
+    # `get` exists only when the registry promises an item route.
+    get_help = runner.invoke(app, [resource.name, "get", "--help"]).exit_code
+    if resource.supports_get:
+        assert get_help == 0
+    else:
+        assert get_help != 0  # no such command
+
+
+def test_expenses_exposes_no_get_command() -> None:
+    """Halo has no GET /Expense/{id} (probed 404 on 2026-09-29), so `expenses get`
+    must not exist — a promise the API cannot keep would always 404."""
+    expenses = get_resource("expenses")
+    assert expenses.supports_get is False
+    result = runner.invoke(app, ["expenses", "get", "1"])
+    assert result.exit_code != 0  # no such command
+    assert runner.invoke(app, ["expenses", "list", "--help"]).exit_code == 0
+
+
+def test_list_only_resource_still_advertises_get_for_the_collection() -> None:
+    """supports_get=False gates the item route only. The collection route still
+    works (GET /Expense answers 403 = permission, not missing), so the MCP
+    capability string must stay list-capable and verbs must still offer GET —
+    otherwise an agent would wrongly conclude the resource is unreadable."""
+    from halocli.mcp_server import _capability_summary, _verbs
+
+    expenses = get_resource("expenses")
+    assert "list" in _capability_summary(expenses)
+    assert "list/get" not in _capability_summary(expenses)  # no item route claimed
+    assert "GET" in _verbs(expenses)
 
 
 def test_known_aliases_resolve_to_canonical_resources() -> None:
