@@ -165,3 +165,16 @@ def test_todo_api_reads_time_entry_history() -> None:
     payload = response.json()
     assert payload["count"] == 1
     assert payload["items"][0]["note"] == "Reviewed alert context."
+
+
+def test_root_reports_service_and_static_ui_is_gone() -> None:
+    """/ used to serve the SPA shell; it now points clients at the API."""
+    client = TestClient(create_todo_api(lambda: FakeTodoRepository()))
+
+    root = client.get("/")
+    assert root.status_code == 200
+    assert root.json() == {"service": "halocli-todo-api", "api": "/api/todos", "docs": "/docs"}
+
+    # The removed front end's assets must not be routable any more.
+    assert client.get("/assets/index-0elXQOnn.css").status_code == 404
+    assert client.get("/index.html").status_code == 404

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import date, datetime
-from importlib import resources
-from pathlib import Path
 from typing import Any
 
 from halocli.client import HaloClient
@@ -12,11 +10,9 @@ from halocli.todo import HaloTodoRepository
 
 try:
     from fastapi import Depends, FastAPI, HTTPException
-    from fastapi.responses import FileResponse
-    from fastapi.staticfiles import StaticFiles
     from pydantic import BaseModel
 except ModuleNotFoundError:  # pragma: no cover
-    Depends = FastAPI = HTTPException = FileResponse = StaticFiles = BaseModel = None  # type: ignore[assignment]
+    Depends = FastAPI = HTTPException = BaseModel = None  # type: ignore[assignment]
 
 
 if BaseModel is not None:
@@ -178,15 +174,13 @@ def create_todo_api(repository_factory: Callable[[], Any]):
         items = await repo.list_time_entries(todo_id)
         return {"count": len(items), "items": items}
 
-    static_dir = web_static_dir()
-    if static_dir.exists():
-        assets = static_dir / "assets"
-        if assets.exists():
-            app.mount("/assets", StaticFiles(directory=assets), name="assets")
-
-        @app.get("/{path:path}", include_in_schema=False)
-        async def index(path: str = ""):
-            return FileResponse(static_dir / "index.html")
+    @app.get("/", include_in_schema=False)
+    async def root():
+        return {
+            "service": "halocli-todo-api",
+            "api": "/api/todos",
+            "docs": "/docs",
+        }
 
     return app
 
@@ -245,7 +239,3 @@ class ManagedHaloTodoRepository(HaloTodoRepository):
 
     async def me(self) -> dict[str, Any]:
         return await self._run("me")
-
-
-def web_static_dir() -> Path:
-    return Path(str(resources.files("halocli") / "web_static"))

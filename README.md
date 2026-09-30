@@ -381,19 +381,18 @@ Create a lightweight Halo Todo backed by Halo's `Appointment` API:
 halocli todo add "Independent todo list front end for HaloPSA" --owner 37 --due 2026-04-26 --tag microsoft-todo --tag halo-todo
 ```
 
-Run the local-first Todo web UI from the same HaloCLI profile:
+Run the local-first Todo HTTP API from the same HaloCLI profile:
 
 ```powershell
 python -m pip install -e ".[web]"
 halocli todo web --profile midtown --host 127.0.0.1 --port 8766
 ```
 
-The web UI serves a compact three-pane task triage surface over Halo appointment
-tasks: quick capture, Inbox/Today/Upcoming/Blocked/Completed views, search,
-keyboard selection, completion, detail editing, customer/ticket pickers, work
-logs backed by Halo time entries, and source metadata for
-imported Microsoft To Do items. HaloPSA remains the system of record; the UI API
-returns normalized Todo JSON and does not create a local database.
+The server exposes normalized Todo JSON over Halo appointment tasks —
+`/api/todos`, `/api/clients`, `/api/tickets` and `/api/me` — with interactive
+docs at `/docs`. HaloPSA remains system of record; the API does not create a
+local database. HaloCLI no longer bundles a browser UI (removed in 0.11.0):
+`/` returns service info so any external front end can discover the endpoints.
 
 Todo priority is currently stored as HaloCLI metadata in the backing
 appointment `note_html`; it is not mapped to Halo ticket priority or a native
