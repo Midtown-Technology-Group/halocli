@@ -1060,7 +1060,7 @@ def todo_web(
 
     from halocli.todo_web import create_halo_todo_api
 
-    typer.echo(f"Starting Halo Todo web UI at http://{host}:{port}")
+    typer.echo(f"Starting Halo Todo API at http://{host}:{port} (docs at http://{host}:{port}/docs)")
     uvicorn.run(create_halo_todo_api(profile=profile), host=host, port=port, reload=reload)
 
 

@@ -6,6 +6,28 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.11.0 - 2026-09-29
+
+- **The bundled web front end is removed** (#19). Gone from the repository and
+  the wheel: `frontend/` (React source + vitest suite), `index.html`,
+  `vite.config.ts`, `tsconfig.json`, `package.json`, `package-lock.json`, and
+  the committed `src/halocli/web_static/` build output. Package data is now
+  just `spec/*.json`.
+  - **Why:** CI has no Node step, so nothing ever ran the 6 vitest tests or
+    the build — dependabot #7 bumped `vitest` ^4 → ^5 (a major) plus six other
+    packages, clearing 8 lockfile vulnerabilities (4 high), with every check
+    green and not one JS test executed. Removing the front end removes an
+    unguarded, drifting build artifact instead of adding toolchain to police it.
+  - **The Todo HTTP API is unchanged.** `halocli todo web` still serves
+    `/api/todos`, `/api/clients`, `/api/tickets` and `/api/me`, docs at
+    `/docs`; only static-file hosting was dropped. `/` now returns service info
+    instead of the SPA shell, and the startup line says "Halo Todo API" with
+    the docs URL. The API's 6 Python tests are untouched and still run in CI.
+  - The shipped bundle was checked before deletion: no `nanoid`, `postcss` or
+    `browserslist` code was present, so #7's advisory fixes never applied to
+    anything users ran — they were dev-toolchain only.
+  - The `web` extra (`fastapi`, `uvicorn`) is still required for `todo web`.
+
 ## 0.10.0 - 2026-09-29
 
 - **New `halocli reports run <id>`** (closes #15): executes a report and prints
