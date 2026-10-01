@@ -6,6 +6,17 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.1.1 - 2026-10-01
+
+- **Fixed: malformed `--data` crashed with a raw traceback** on resource
+  `create`/`update` and on `raw` — those paths called the unguarded JSON
+  parser directly, so a typo'd inline body (or a bad file path) surfaced an
+  uncaught `JSONDecodeError` on stderr. All `--data` paths now share the
+  guarded loader: a structured `{"category": "validation", "error":
+  "Invalid --data: …"}` on stderr and exit 1. Found live on the installed
+  1.1.0 while verifying the `users update` MFA command; regression test
+  covers all three commands.
+
 ## 1.1.0 - 2026-10-01
 
 - **`users` becomes write-capable** — promoted from `raw` after a live
