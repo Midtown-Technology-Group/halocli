@@ -6,6 +6,22 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.13.0 - 2026-10-01
+
+- **`crm-notes` becomes write-capable** (promoted from `raw`): `halocli crm-notes
+  create`, `update` and `delete` now exist with zero-network preview and the
+  usual `--apply --yes` gate. `required_create_fields=("note",)` only — the
+  spec declares no required fields and the anchor is polymorphic (client,
+  supplier, quote, invoice, ticket), so demanding `client_id` would wrongly
+  block supplier/quote notes. Verification `spec`: writes never fired at the
+  tenant.
+  - Live evidence 2026-09-30: envelope `{"actions": [...]}`, `GET
+    /CRMNote/14630` → 200; `list_key="actions"` declared explicitly; table
+    columns corrected (`datetime`, not the dead `date`).
+  - Known read quirk documented in the declaration: Halo ignores `page_no`
+    on `/CRMNote`, so `list` can duplicate rows when the result exceeds one
+    page (`--param count=<n>` fetches in one page). Tracked as its own issue.
+
 ## 0.12.0 - 2026-10-01
 
 - **`kb` becomes write-capable** (promoted from `raw`): `halocli kb create`,
