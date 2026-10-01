@@ -240,7 +240,7 @@ def _operation_command(resource: HaloResource, op: ResourceOperation):
             raise typer.BadParameter("--file is required to apply this multipart operation")
         if op.write and op.body and data is None:
             raise typer.BadParameter(f"{op.name} requires --data (JSON body).")
-        body = _load_operation_body(data) if op.write else None
+        body = _load_data_argument(data) if op.write else None
 
         if op.write and not execute:
             # Preview: zero network calls, so no profile/client is needed.
@@ -808,7 +808,7 @@ def _resource_command(resource: HaloResource):
             yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
         ) -> None:
             execute = _resolve_apply(apply, yes)
-            payload = _require_payload(_load_body(data))
+            payload = _require_payload(_load_data_argument(data))
             result = _run(
                 _write_resource(
                     resource=resource,
@@ -832,7 +832,7 @@ def _resource_command(resource: HaloResource):
             yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
         ) -> None:
             execute = _resolve_apply(apply, yes)
-            payload = dict(_require_payload(_load_body(data)))
+            payload = dict(_require_payload(_load_data_argument(data)))
             payload["id"] = int(item_id) if item_id.isdigit() else item_id
             result = _run(
                 _write_resource(
@@ -935,7 +935,7 @@ def raw(
     method = method.upper()
     if method in {"POST", "PUT", "PATCH", "DELETE"} and not (apply and yes):
         raise typer.BadParameter(f"Refusing {method} {path} without --apply --yes.")
-    body = _load_body(data)
+    body = _load_data_argument(data)
     warnings: list[str] = []
     if validate:
         problems = validate_schema_request(method, path, body)
@@ -1604,11 +1604,14 @@ def _multipart_files(file: Path) -> dict[str, Any]:
     return {"file": (file.name, content)}
 
 
-def _load_operation_body(data: str | None) -> object:
-    """Parse `--data` for an operation (dict, list, or any other JSON value).
+def _load_data_argument(data: str | None) -> object:
+    """Parse `--data` for a command (dict, list, or any other JSON value).
 
-    A body that fails to decode is a pre-network validation failure: it renders
-    through `render_error` like `raw`'s spec-validation refusals and exits 1.
+    A file path is read as-is; anything else must decode as JSON. A body that
+    fails to decode is a pre-network validation failure: it renders through
+    `render_error` like `raw`'s spec-validation refusals and exits 1 instead
+    of raising a raw JSONDecodeError traceback (which is what the resource
+    create/update paths did before this was unified).
     """
     if data is None:
         return None

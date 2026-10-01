@@ -235,3 +235,26 @@ def test_users_update_masks_password_in_preview_output() -> None:
     payload = json.loads(result.output)
     assert payload["payload"]["new_password"] == "***"
     assert payload["payload"]["id"] == 4266
+
+
+def test_malformed_data_on_write_paths_is_a_clean_error() -> None:
+    """Bad --data renders a validation payload instead of a raw traceback.
+
+    Found on the installed 1.1.0: resource create/update (and raw) called
+    _load_body directly, so a malformed inline body raised JSONDecodeError
+    uncaught (full traceback on stderr). All --data paths now share the
+    guarded loader; json.loads succeeding here proves the output is the
+    structured error, not a crash dump.
+    """
+    for argv in (
+        ["users", "update", "4266", "--data", "{not json"],
+        ["users", "create", "--data", "{not json"],
+        ["raw", "POST", "/Users", "--data", "{not json", "--apply", "--yes"],
+    ):
+        result = runner.invoke(app, argv)
+
+        assert result.exit_code == 1, argv
+        payload = json.loads(result.output)
+        assert payload["ok"] is False, argv
+        assert payload["category"] == "validation", argv
+        assert "Invalid --data" in payload["error"], argv
