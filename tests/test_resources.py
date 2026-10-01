@@ -173,6 +173,36 @@ def test_kb_write_shape_matches_live_evidence() -> None:
     assert "patch" not in spec["paths"]["/KBArticle"]
 
 
+def test_quotation_operations_are_declared_and_spec_backed() -> None:
+    """Quotation nested ops, pinned to the 2026-09-30 live read probes.
+
+    Live: list -> 200 (223 rows under "quotes"); GET /Quotation/79 -> 200.
+    The three POSTs are spec-documented bare arrays, never fired (no write
+    authorization), so verification stays "spec".
+    """
+    quotations = get_resource("quotations")
+    assert quotations.list_key == "quotes"
+    # quote_number exists in neither the spec's QuotationHeader nor the
+    # tenant; total only appears on the detail record, never on list rows.
+    assert "quote_number" not in quotations.table_fields
+    assert "total" not in quotations.table_fields
+
+    ops = {(op.method, op.path): op for op in quotations.operations}
+    assert set(ops) == {
+        ("POST", "/Quotation/Lines"),
+        ("POST", "/Quotation/Approval"),
+        ("POST", "/Quotation/View"),
+    }
+    spec = load_spec()
+    assert spec is not None
+    for (method, path), op in ops.items():
+        assert op.body is True
+        assert op.args == ()
+        assert op.verification == "spec"
+        assert str(op.summary).strip()
+        assert method.lower() in spec["paths"][path]
+
+
 @pytest.mark.parametrize("resource", RESOURCES)
 def test_generated_resource_commands_load(resource) -> None:
     assert runner.invoke(app, [resource.name, "list", "--help"]).exit_code == 0

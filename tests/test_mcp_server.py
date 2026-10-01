@@ -255,10 +255,19 @@ def test_halo_search_surfaces_operations_via_matched_terms() -> None:
 
 def test_halo_search_omits_matched_operations_for_resource_level_matches() -> None:
     # Queries with no operation-term hits keep the old entry shape (no new key).
+    # The fixture must be a resource without declared operations: `quotations`
+    # used to serve here, but its new lines/approval/view summaries contain
+    # "quotation" and now legitimately match via the summary-stem path.
+    _, payload = call_tool("halo_search", {"query": "suppliers"})
+    top = payload["results"][0]
+    assert top["name"] == "suppliers"
+    assert "matched_operations" not in top
+
+    # The flip side, pinned: when op summaries do match, the key appears.
     _, payload = call_tool("halo_search", {"query": "quotations"})
     top = payload["results"][0]
     assert top["name"] == "quotations"
-    assert "matched_operations" not in top
+    assert set(top["matched_operations"]) == {"lines", "approval", "view"}
 
 
 # --------------------------------------------------------------------------------------

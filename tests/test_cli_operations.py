@@ -115,13 +115,21 @@ def test_attachments_help_lists_operations() -> None:
         assert name in result.output
 
 
+def test_quotations_help_lists_operations() -> None:
+    result = runner.invoke(app, ["quotations", "--help"])
+
+    assert result.exit_code == 0
+    for name in ("lines", "approval", "view"):
+        assert name in result.output
+
+
 def test_registered_help_matches_contract_format() -> None:
     # The raw ``help=`` string is contract-frozen: "METHOD PATH — summary [verification]".
     # (Rich parses help as markup when rendering, which is a display concern; the
     # registered value must still be the exact one-line string.)
     click_app = get_command(app)
     checked = 0
-    for resource_name in ("tickets", "invoices", "attachments"):
+    for resource_name in ("tickets", "invoices", "attachments", "quotations"):
         group = click_app.commands[resource_name]
         for op in RESOURCE_BY_COMMAND[resource_name].operations:
             assert (
@@ -129,7 +137,7 @@ def test_registered_help_matches_contract_format() -> None:
                 == f"{op.method} {op.path} — {op.summary} [{op.verification}]"
             )
             checked += 1
-    assert checked == 22
+    assert checked == 25
 
 
 def test_operation_help_shows_method_and_summary() -> None:
@@ -225,6 +233,44 @@ def test_write_execute_accepts_array_bodies(monkeypatch: Any) -> None:
 
     assert result.exit_code == 0, result.output
     assert state["calls"][0]["json_body"] == [{"summary": "x"}]
+
+
+def test_quotations_lines_sends_the_array_verbatim(monkeypatch: Any) -> None:
+    # Quotation bodies are spec-declared arrays. Resource create wraps the
+    # payload in execute_write (json_body=[payload]); operations must instead
+    # pass --data through untouched so the operator controls the array shape.
+    save_default_profile()
+    FakeClient, state = fake_client({"ok": True})
+    monkeypatch.setattr("halocli.cli.HaloClient", FakeClient)
+
+    body = [{"quotation_id": 79, "description": "line"}]
+    result = runner.invoke(
+        app,
+        ["quotations", "lines", "--data", json.dumps(body), "--apply", "--yes"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert state["calls"][0]["method"] == "POST"
+    assert state["calls"][0]["path"] == "/Quotation/Lines"
+    assert state["calls"][0]["json_body"] == body
+
+
+def test_quotations_approval_preview_is_profile_free(monkeypatch: Any) -> None:
+    # No profile exists in the isolated config and any client construction
+    # explodes: a successful preview proves neither was touched.
+    monkeypatch.setattr("halocli.cli.HaloClient", ExplodingHaloClient)
+
+    result = runner.invoke(app, ["quotations", "approval", "--data", json.dumps([{"id": 79}])])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["apply"] is False
+    assert payload["resource"] == "quotations"
+    assert payload["operation"] == "approval"
+    assert payload["endpoint"] == "/Quotation/Approval"
+    assert payload["body"] == [{"id": 79}]
+    assert payload["verification"] == "spec"
 
 
 def test_invalid_data_json_is_a_validation_error() -> None:

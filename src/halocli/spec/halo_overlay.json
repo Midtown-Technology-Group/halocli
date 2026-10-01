@@ -450,6 +450,36 @@
       "target": "$.paths['/KBArticle/{id}'].delete.description",
       "description": "curated description for a surfaced operation",
       "update": "Delete the knowledge base article with the given id. The spec documents no restore route, so treat the delete as permanent."
+    },
+    {
+      "target": "$.paths['/Quotation/Lines'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Add or replace quotation lines"
+    },
+    {
+      "target": "$.paths['/Quotation/Lines'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of quotation line objects (no required fields declared). Halo replaces the quotation's line set from the posted array; include the quotation id on each line to anchor it."
+    },
+    {
+      "target": "$.paths['/Quotation/Approval'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Record a quotation approval decision"
+    },
+    {
+      "target": "$.paths['/Quotation/Approval'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of approval records: id, result, token and signature carry the decision, with optional ponumber, message and approvalname/approvalemailaddress. No required fields are declared."
+    },
+    {
+      "target": "$.paths['/Quotation/View'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Record a quotation view event"
+    },
+    {
+      "target": "$.paths['/Quotation/View'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "POST-as-read that records a view event against a quotation: the array elements carry id, viewers and changeseq. Still a POST, so the CLI previews it and gates execution behind --apply --yes."
     }
   ]
 }
