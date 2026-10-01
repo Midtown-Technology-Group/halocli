@@ -320,10 +320,13 @@ def test_timesheet_events_shape_matches_live_quirks() -> None:
     """timesheet-events metadata, pinned to the 2026-10-01 live probes.
 
     Live: BARE array whose count/page params are ignored (full dump per call,
-    issue #24 - agent_id/ISO-date filters are the only real bound); every
-    list row carries id=0, so ids must come from the POST response; /mine
-    answers 403 for this agent. The spec declares no required fields -
-    subject + timetaken mirror todo.py's proven-working payload.
+    issue #24 - agent_id/ISO-date filters are the only real bound); the API
+    view exposes id=0 on every row (real TSEeventid never surfaced);
+    create-without-id -> 515, id=0 -> 515, unknown nonzero id -> "Record not
+    found"; /mine -> 403. The create contract mirrors the workspace-proven
+    QuickTime recipe (bifrost-workspace timeentry.py: subject + start/end,
+    duration derived - no timetaken), whose richer shape lives in
+    write_preview_fields.
     """
     tse = get_resource("timesheet-events")
 
@@ -340,10 +343,15 @@ def test_timesheet_events_shape_matches_live_quirks() -> None:
     assert tse.create_endpoint == tse.endpoint
     assert tse.update_endpoint == tse.endpoint
     assert tse.supports_delete is True
-    assert tse.required_create_fields == ("subject", "timetaken")
+    # QuickTime core: Halo derives duration from start/end (production payload
+    # sends no timetaken), so the old (subject, timetaken) set would block it.
+    assert tse.required_create_fields == ("subject", "start_date", "end_date")
     assert "id" in tse.required_update_fields
     assert tse.effective_write_preview_fields[0] == "id"
     assert set(tse.required_create_fields) <= set(tse.effective_write_preview_fields)
+    # The QuickTime shape shows in preview without pass-through warnings.
+    for field in ("note", "event_type", "lognewticket", "charge_rate", "agents", "break_note"):
+        assert field in tse.write_preview_fields, field
 
     mine = {op.name: op for op in tse.operations}["mine"]
     assert (mine.method, mine.path) == ("GET", "/TimesheetEvent/mine")
@@ -356,6 +364,32 @@ def test_timesheet_events_shape_matches_live_quirks() -> None:
     assert "delete" in spec["paths"]["/TimesheetEvent/{id}"]
     assert "get" in spec["paths"]["/TimesheetEvent/mine"]
     assert "put" not in spec["paths"]["/TimesheetEvent"]
+
+
+def test_appointments_completion_recipe_is_in_write_shape() -> None:
+    """The appointment-completion recipe (workspace timeentry.py) previews clean.
+
+    Live-exercised 2026-10-01: upserting an existing appointment with
+    complete_* fields + full echo fields marks dispatch done and logs actual
+    time. Every field of that recipe must sit in write_preview_fields so the
+    preview shows it instead of firing a pass-through warning for each.
+    """
+    appts = get_resource("appointments")
+    recipe = {
+        "id", "subject", "start_date", "end_date",
+        "allday", "is_private", "agents", "user_id", "ticket_id",
+        "reminderminutes", "agent_status", "note_html", "is_task",
+        "appointment_type_id", "shift_type_id",
+        "followup_start_date", "followup_end_date", "followup_allday",
+        "followup_is_private", "followup_user_id", "followup_reminderminutes",
+        "followup_agent_status", "followup_note_html", "followup_agent_id",
+        "complete_status", "chargerate", "complete_date", "complete_timetaken",
+        "complete_notehtml", "complete_agent_id", "utcoffset",
+        "apfaultidremoved", "agent_id",
+    }
+    missing = recipe - set(appts.write_preview_fields)
+    assert not missing, f"completion fields missing from appointments write shape: {sorted(missing)}"
+    assert "complete_timetaken" in appts.write_preview_fields
 
 
 def test_billing_read_resources_stay_read_only() -> None:
