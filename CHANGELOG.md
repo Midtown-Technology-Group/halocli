@@ -17,6 +17,16 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   never fired at the tenant — writes stay `verification: spec`.
   - Table columns corrected: live rows carry `name`, never the old `title`.
   - `list_key` declared as `articles` (previously found only by fallback).
+- **`quotations` gains three write-gated operations** (promoted from `raw`):
+  `lines`, `approval` and `view` (`POST /Quotation/Lines`, `/Approval`,
+  `/View`). All three are spec-documented bare-array POSTs routed through the
+  generic dispatcher: zero-network preview, `--data` passes through verbatim,
+  execution requires `--apply --yes`, verification `spec` (never fired at the
+  tenant). Live reads 2026-09-30: list 200 (223 quotes), `GET /Quotation/79`
+  200.
+  - Table columns corrected: `quote_number` exists in neither the spec nor
+    this tenant and `total` is detail-only; the projection now uses live list
+    fields (`title`, `status`, `date`). `list_key="quotes"` declared.
 - **README contract rationale corrected**: the old text justified `contracts`
   being read-only with "the spec documents no `POST /Contract`" — true but
   about a path the resource does not use. It now states the real decision:

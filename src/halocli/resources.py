@@ -420,7 +420,41 @@ RESOURCES: tuple[HaloResource, ...] = (
         "quotations",
         "/Quotation",
         aliases=("quotation", "quotes", "quote"),
-        table_fields=("id", "quote_number", "client_name", "total"),
+        # Live-verified 2026-09-30: list -> 200 (223 rows under "quotes");
+        # GET /Quotation/79 -> 200 (total/lines present on the detail record
+        # only). `quote_number` exists in neither the spec's QuotationHeader
+        # nor this tenant, and `total` never appears on list rows - both
+        # dropped from the table projection.
+        table_fields=("id", "title", "client_name", "status", "date"),
+        list_key="quotes",
+        operations=(
+            # All three are spec-documented bare-array POSTs with no path args
+            # and no query params -> generic dispatcher (zero-network preview,
+            # execution requires both --apply and --yes; --data passes through
+            # verbatim, so supply the array). Never fired at the tenant (no
+            # write authorization) -> verification: spec.
+            ResourceOperation(
+                name="lines",
+                method="POST",
+                path="/Quotation/Lines",
+                body=True,
+                summary="Add or replace quotation lines",
+            ),
+            ResourceOperation(
+                name="approval",
+                method="POST",
+                path="/Quotation/Approval",
+                body=True,
+                summary="Record a quotation approval decision (id, result, token, signature)",
+            ),
+            ResourceOperation(
+                name="view",
+                method="POST",
+                path="/Quotation/View",
+                body=True,
+                summary="Record a quotation view event (POST-as-read; still write-gated)",
+            ),
+        ),
     ),
     HaloResource(
         "releases",

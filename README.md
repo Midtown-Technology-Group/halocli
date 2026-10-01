@@ -217,6 +217,7 @@ Resources with nested endpoints also expose them as first-class commands
 halocli tickets zapier                        # GET /Tickets/zapier
 halocli invoices lines                        # GET /Invoice/lines
 halocli invoices pdf 42 --save invoice.pdf    # POST /Invoice/PDF/{id}, binary -> file
+halocli quotations lines --data lines.json --apply --yes   # POST /Quotation/Lines (array body)
 halocli attachments get-image 7 --save img    # GET /Attachment/image/{id}
 halocli attachments upload-image --file pic.png --apply --yes
 ```
