@@ -941,12 +941,12 @@ def raw(
 
 
 @app.command()
-def search(
+def catalog(
     query: str,
     limit: Annotated[int, typer.Option("--limit", min=1, max=50)] = 10,
     output: Annotated[str, typer.Option("--output", "-o")] = "json",
 ) -> None:
-    """Discover Halo resources and OpenAPI operations for a free-text query."""
+    """Discover Halo resources and OpenAPI operations offline (no tenant calls)."""
     from halocli import mcp_server
 
     results = mcp_server.search_catalog(query, limit)
@@ -963,6 +963,150 @@ def search(
         },
         output=output,
     )
+
+
+@app.command()
+def search(
+    terms: Annotated[
+        list[str],
+        typer.Argument(
+            metavar="TERM",
+            help=(
+                "One free-text term to find across tickets, articles, clients, "
+                "users, assets and services."
+            ),
+        ),
+    ],
+    count_per_entity: Annotated[
+        int,
+        typer.Option(
+            "--count-per-entity",
+            min=1,
+            max=100,
+            help="Per-entity cap sent to Halo (the server default is about 5).",
+        ),
+    ] = 5,
+    limit: Annotated[
+        int,
+        typer.Option(
+            "--limit",
+            min=1,
+            help=(
+                "Rows to include in the output. Halo still returns every "
+                "entity's matches (observed up to ~160 KB at 50 per entity), "
+                "so a small limit keeps the payload readable."
+            ),
+        ),
+    ] = 20,
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Search the live Halo tenant across tickets, articles, clients, users, assets and services."""
+    # 1.0.0 breaking rename: this name used to mean offline catalog discovery.
+    # Old multi-word invocations cannot be a live-search term, so fail loudly
+    # with the migration path instead of silently querying the tenant.
+    if len(terms) != 1:
+        raise typer.BadParameter(
+            "search now queries the LIVE Halo tenant with a single term; offline "
+            "catalog discovery moved to `halocli catalog` (formerly `halocli search`)."
+        )
+    term = terms[0].strip()
+    if not term:
+        raise typer.BadParameter("search term must be non-empty")
+
+    result = _run(
+        _run_search_live(
+            term=term,
+            count_per_entity=count_per_entity,
+            limit=limit,
+            profile=profile,
+        )
+    )
+    if not result.get("ok"):
+        render_error(result)
+        raise typer.Exit(1)
+    render(
+        result,
+        output=output,
+        table_fields=("use", "id", "name", "summary", "client_name"),
+    )
+
+
+async def _run_search_live(
+    *,
+    term: str,
+    count_per_entity: int,
+    limit: int,
+    profile: str,
+) -> dict[str, Any]:
+    """GET /Search and shape the bare array by the `use` discriminator."""
+    halo_profile = load_profile(profile)
+    path = "/Search"
+    params = {"search": term, "count_per_entity": str(count_per_entity)}
+    try:
+        async with HaloClient(halo_profile, profile_name=profile) as client:
+            body = await client.request("GET", path, params=params)
+    except HaloCLIError as exc:
+        return {
+            "ok": False,
+            "command": "search",
+            "method": "GET",
+            "endpoint": path,
+            "category": exc.category,
+            "status_code": exc.status_code,
+            "error": str(exc) or type(exc).__name__,
+            "diagnostic": diagnose_permission_failure(exc),
+        }
+    except Exception as exc:  # httpx timeouts stringify to ""
+        err = classify_error(exc)
+        return {
+            "ok": False,
+            "command": "search",
+            "method": "GET",
+            "endpoint": path,
+            "category": err.category,
+            "status_code": err.status_code,
+            "error": str(exc) or str(err),
+        }
+
+    payload: dict[str, Any] = {
+        "ok": True,
+        "command": "search",
+        "method": "GET",
+        "endpoint": path,
+        "query": term,
+        "count_per_entity": count_per_entity,
+    }
+    if not isinstance(body, list):
+        # The spec declares no response schema for /Search; this is the shape
+        # the tenant has always answered with, so a deviation is a failure.
+        payload.update(
+            ok=False,
+            category="validation",
+            error=(
+                "Unexpected response shape from Halo: expected an array, got "
+                f"{type(body).__name__}"
+            ),
+        )
+        return payload
+
+    # `use` is the stable entity key (`table` is absent on service rows).
+    entity_counts: dict[str, int] = {}
+    for item in body:
+        if isinstance(item, dict):
+            key = str(item.get("use") or "unknown")
+            entity_counts[key] = entity_counts.get(key, 0) + 1
+    payload.update(
+        row_count=len(body),
+        count=min(limit, len(body)),
+        entity_counts=entity_counts,
+        items=body[:limit],
+    )
+    if len(body) > limit:
+        payload["hint"] = f"Showing {limit} of {len(body)} matches; pass --limit {len(body)} for all."
+    elif not body:
+        payload["hint"] = "No matches. Broaden the term or check the spelling."
+    return payload
 
 
 @app.command()

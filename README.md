@@ -178,7 +178,7 @@ priorities, categories, ticket-types, slas, appointments, contracts, invoices,
 invoice-payments, invoice-statuses, recurring-invoices, opportunities,
 projects, suppliers, items, quotations, releases, reports,
 webhooks, workdays, software-licences, crm-notes, top-levels, expenses,
-timesheets, attachments
+timesheets, attachments, searches
 ```
 
 Each resource supports:
@@ -271,13 +271,23 @@ as `spec_warnings` either way).
 
 ## Endpoint Discovery
 
-Find the right endpoint without leaving the terminal. This searches both the
-resource registry and the vendored HaloPSA OpenAPI spec (927 paths) offline:
+Two kinds of search, split at 1.0.0:
 
 ```powershell
-halocli search invoice
-halocli search "site" --limit 5
+halocli search backup                    # LIVE tenant search: tickets, articles,
+                                         # clients, users, assets, services
+halocli search server --limit 10         # shape the output (row_count/entity_counts)
+halocli search server --count-per-entity 20   # per-entity cap (server default ~5)
+
+halocli catalog invoice                  # OFFLINE: registry + vendored spec discovery
+halocli catalog "site" --limit 5
 ```
+
+**Breaking in 1.0.0:** `halocli search` used to mean offline discovery — that
+is now `halocli catalog`. A live-search invocation with more than one term
+fails with this migration hint rather than querying the tenant. `catalog`
+searches both the resource registry and the vendored HaloPSA OpenAPI spec
+(927 paths) offline:
 
 Refresh the vendored spec whenever Halo revs its API:
 

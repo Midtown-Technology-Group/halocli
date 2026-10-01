@@ -24,8 +24,8 @@ def plain(output: str) -> str:
     return _ANSI_RE.sub("", output)
 
 
-def test_search_returns_ranked_registry_results() -> None:
-    result = runner.invoke(app, ["search", "tickets"])
+def test_catalog_returns_ranked_registry_results() -> None:
+    result = runner.invoke(app, ["catalog", "tickets"])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -35,8 +35,8 @@ def test_search_returns_ranked_registry_results() -> None:
     assert payload["results"][0]["source"] == "registry"
 
 
-def test_search_limit_is_honored() -> None:
-    result = runner.invoke(app, ["search", "ticket", "--limit", "2"])
+def test_catalog_limit_is_honored() -> None:
+    result = runner.invoke(app, ["catalog", "ticket", "--limit", "2"])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)

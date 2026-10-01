@@ -532,6 +532,17 @@ RESOURCES: tuple[HaloResource, ...] = (
             ),
         ),
     ),
+    HaloResource(
+        "searches",
+        "/Search",
+        # /Search/{id} does not exist in the spec (same class as expenses), so
+        # supports_get stays False. The registry entry buys coverage and a
+        # list command; the shaped UX is the top-level `halocli search <term>`
+        # command - `searches list` sends GET /Search without a term and Halo
+        # answers an empty array. Read-only: /Search is GET-only in the spec.
+        supports_get=False,
+        table_fields=("use", "id", "name", "summary", "client_name"),
+    ),
     HaloResource("webhooks", "/Webhook", aliases=("webhook",), table_fields=("id", "name", "url")),
     HaloResource("workdays", "/Workday", aliases=("workday",), table_fields=("id", "name")),
     HaloResource(
