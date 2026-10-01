@@ -572,6 +572,53 @@ RESOURCES: tuple[HaloResource, ...] = (
         ),
     ),
     HaloResource(
+        "timesheet-events",
+        "/TimesheetEvent",
+        aliases=("timesheet-event", "time-events"),
+        # Live-verified 2026-10-01: response is a BARE array and count/page
+        # params are IGNORED - each list call dumps everything (~1,573 rows,
+        # ~1.1 MB; the paging machinery cannot bound it, issue #24), so pass
+        # --param agent_id=N or ISO start_date/end_date to bound the fetch
+        # (agent_id filter works; ISO datetime ranges work; date-only values
+        # silently mis-filter). EVERY list row carries id=0, so get/update/
+        # delete cannot be driven from list output - ids come from the POST
+        # response (route-verified: malformed id -> 400, missing -> 404).
+        # GET /TimesheetEvent/mine answers 403 for this agent (live:403).
+        # POST is a spec bare array; execute_write's json_body=[payload]
+        # matches, and todo.py's time logging already drives exactly this
+        # route (subject/note/timetaken/start_date/end_date/client_id).
+        # Writes never fired at the tenant: verification spec.
+        table_fields=("start_date", "end_date", "agent_id", "ticket_id", "timetaken", "subject"),
+        create_endpoint="/TimesheetEvent",
+        update_endpoint="/TimesheetEvent",
+        # The spec declares NO required fields. Assumption: subject +
+        # timetaken are the enforced minimum - both are always present in
+        # todo.py's proven-working payload (which also sends start_date,
+        # end_date and client_id on every call).
+        required_create_fields=("subject", "timetaken"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=(
+            "id",
+            "subject",
+            "start_date",
+            "end_date",
+            "timetaken",
+            "agent_id",
+            "ticket_id",
+            "client_id",
+        ),
+        operations=(
+            ResourceOperation(
+                name="mine",
+                method="GET",
+                path="/TimesheetEvent/mine",
+                summary="The signed-in agent's own timesheet events",
+                verification="live:403",
+            ),
+        ),
+    ),
+    HaloResource(
         "canned-text",
         "/CannedText",
         aliases=("canned-texts", "cannedtext", "canned"),
