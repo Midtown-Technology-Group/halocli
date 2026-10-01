@@ -129,7 +129,7 @@ def test_registered_help_matches_contract_format() -> None:
     # registered value must still be the exact one-line string.)
     click_app = get_command(app)
     checked = 0
-    for resource_name in ("tickets", "invoices", "attachments", "quotations"):
+    for resource_name in ("tickets", "invoices", "attachments", "quotations", "canned-text"):
         group = click_app.commands[resource_name]
         for op in RESOURCE_BY_COMMAND[resource_name].operations:
             assert (
@@ -137,7 +137,7 @@ def test_registered_help_matches_contract_format() -> None:
                 == f"{op.method} {op.path} — {op.summary} [{op.verification}]"
             )
             checked += 1
-    assert checked == 25
+    assert checked == 26
 
 
 def test_operation_help_shows_method_and_summary() -> None:

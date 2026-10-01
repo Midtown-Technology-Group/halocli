@@ -6,6 +6,17 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.2.0 - 2026-10-01
+
+- **New `canned-text` resource** (promoted from `raw`, slice ⑥): `list`/`get`
+  plus first-class `create`/`update`/`delete` (preview-first) and a
+  `favourite` operation (`POST /CannedText/favourite`). Live reads
+  2026-10-01: bare-array list (5 rows — `list_key` deliberately None),
+  detail 200 with `text`/`html`/`_canupdate`. `required_create_fields` =
+  `name` + `text` (spec declares none; live rows always carry both).
+  Registry: 37; write resources: 13. Six overlay actions fill the missing
+  POST/DELETE/favourite prose.
+
 ## 1.1.1 - 2026-10-01
 
 - **Fixed: malformed `--data` crashed with a raw traceback** on resource

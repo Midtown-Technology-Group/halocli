@@ -540,6 +540,36 @@
       "target": "$.paths['/Users/{id}'].delete.description",
       "description": "curated description for a surfaced operation",
       "update": "Delete the user with the given id. The spec documents no restore route, so treat the delete as permanent."
+    },
+    {
+      "target": "$.paths['/CannedText'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a canned text"
+    },
+    {
+      "target": "$.paths['/CannedText'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of CannedText (Halo's POST-with-id upsert: omit id to create, include it to update). No required fields are declared; name and text are the practical minimum. Restriction scoping rides group_id/agent_id/team_id/department_id."
+    },
+    {
+      "target": "$.paths['/CannedText/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a canned text"
+    },
+    {
+      "target": "$.paths['/CannedText/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete the canned text with the given id. The spec documents no restore route, so treat the delete as permanent."
+    },
+    {
+      "target": "$.paths['/CannedText/favourite'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Mark a canned text as favourite"
+    },
+    {
+      "target": "$.paths['/CannedText/favourite'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of {id, ctid, unum} records toggling the favourite flag for the signed-in user."
     }
   ]
 }

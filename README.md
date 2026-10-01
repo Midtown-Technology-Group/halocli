@@ -178,7 +178,7 @@ priorities, categories, ticket-types, slas, appointments, contracts, invoices,
 invoice-payments, invoice-statuses, recurring-invoices, opportunities,
 projects, suppliers, items, quotations, releases, reports,
 webhooks, workdays, software-licences, crm-notes, top-levels, expenses,
-timesheets, attachments, searches
+timesheets, attachments, searches, canned-text
 ```
 
 Each resource supports:
@@ -239,10 +239,11 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Eleven resources (tickets, actions, clients, sites, assets, agents,
-appointments, statuses, priorities, kb, crm-notes) also have write metadata and
-first-class write commands. `users` joins them at 1.1.0 with the live-proven
-create set plus account actions — including the end-user MFA reset:
+Thirteen resources (tickets, actions, clients, sites, assets, agents,
+appointments, statuses, priorities, kb, crm-notes, users, canned-text) have
+write metadata and first-class write commands. `users` carries the
+live-proven create set plus account actions — including the end-user MFA
+reset:
 
 ```powershell
 halocli users update <id> --data '{"_revoke_authenticatorapp": true}' --apply --yes
