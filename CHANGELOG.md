@@ -6,6 +6,27 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.0.0 - 2026-10-01
+
+- **BREAKING: `halocli search` renamed to `halocli catalog`** (offline
+  registry + vendored-spec discovery), per the versioning policy — majors are
+  reserved for breaking CLI behavior. `search` now means **live tenant
+  search**. A legacy multi-term invocation fails with the migration hint
+  ("offline catalog discovery moved to `halocli catalog`") instead of
+  silently querying the tenant; single-term legacy calls resolve to live
+  search, which is why this is a major, not a minor.
+- **New `halocli search <term>`**: shaped cross-entity search over
+  `GET /Search` (tickets, articles, clients, users, assets, services —
+  grouped by the stable `use` key, since `table` is absent on service rows).
+  Flags: `--count-per-entity` (1–100, server default ~5), `--limit` (output
+  rows; Halo still returns everything — observed ~160 KB at 50/entity).
+  Output carries `row_count`, `count`, `entity_counts`, `items[:limit]` and
+  a `hint`; non-array bodies fail as `validation`, permission failures exit 1
+  with a diagnostic. Verified live 2026-10-01 across 8 read-only probes.
+- **New `searches` resource** (`/Search`) for registry coverage — reads are
+  GET-only in the spec; `supports_get` is false because `/Search/{id}` does
+  not exist. Registry total: 36.
+
 ## 0.14.0 - 2026-10-01
 
 - **Three billing resources join the registry, read-only by design** (slice ④):
