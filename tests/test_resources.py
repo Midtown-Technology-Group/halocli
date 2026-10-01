@@ -28,6 +28,7 @@ WRITE_RESOURCES = (
     "priorities",
     "kb",
     "crm-notes",
+    "users",
 )
 
 
@@ -63,7 +64,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
-    assert len(WRITE_RESOURCES) == 11
+    assert len(WRITE_RESOURCES) == 12
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -234,6 +235,45 @@ def test_crm_notes_write_shape_matches_live_evidence() -> None:
     assert "delete" in spec["paths"]["/CRMNote/{id}"]
     assert "put" not in spec["paths"]["/CRMNote"]
     assert "patch" not in spec["paths"]["/CRMNote"]
+
+
+def test_users_write_shape_is_live_proven() -> None:
+    """users write metadata, pinned to the 2026-10-01 live chain (issue #28).
+
+    Live: created test user 4266 under client 625 with exactly this create
+    set (Halo's sequential 400s named `name` and `site_id` explicitly);
+    password set via update against the tenant policy; MFA reset via
+    {"id": N, "_revoke_authenticatorapp": true} returned 200 even for an
+    unenrolled user (write-only flag, not echoed).
+    """
+    users = get_resource("users")
+
+    assert users.endpoint == "/Users"
+    assert users.create_endpoint == users.endpoint
+    assert users.update_endpoint == users.endpoint
+    assert users.supports_delete is True
+    assert users.required_create_fields == (
+        "firstname",
+        "surname",
+        "name",
+        "emailaddress",
+        "client_id",
+        "site_id",
+    )
+    assert "id" in users.required_update_fields
+    assert users.effective_write_preview_fields[0] == "id"
+    assert set(users.required_create_fields) <= set(users.effective_write_preview_fields)
+
+    spec = load_spec()
+    assert spec is not None
+    assert "post" in spec["paths"]["/Users"]
+    assert "delete" in spec["paths"]["/Users/{id}"]
+    assert "put" not in spec["paths"]["/Users"]
+    assert "patch" not in spec["paths"]["/Users"]
+    # The MFA action flag lives on the schema the upsert sends.
+    users_schema = spec["components"]["schemas"]["Users"]["properties"]
+    assert "_revoke_authenticatorapp" in users_schema
+    assert "resetpassword" in users_schema
 
 
 def test_billing_read_resources_stay_read_only() -> None:

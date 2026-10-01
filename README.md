@@ -241,7 +241,15 @@ Behaviour worth knowing:
 
 Eleven resources (tickets, actions, clients, sites, assets, agents,
 appointments, statuses, priorities, kb, crm-notes) also have write metadata and
-first-class write commands. `contracts` stays read-only by deliberate
+first-class write commands. `users` joins them at 1.1.0 with the live-proven
+create set plus account actions — including the end-user MFA reset:
+
+```powershell
+halocli users update 4266 --data '{"_revoke_authenticatorapp": true}' --apply --yes
+halocli users update 4266 --data '{"resetpassword": true}' --apply --yes
+halocli users create --data user.json              # firstname, surname, name,
+                                                  # emailaddress, client_id, site_id
+``` `contracts` stays read-only by deliberate
 choice, not a missing route: the spec does document `POST /ClientContract`
 (standard Halo upsert), but client contracts carry billing machinery and
 the semantics would narrow to *client* contracts only (`POST

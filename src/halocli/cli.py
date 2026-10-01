@@ -885,6 +885,20 @@ for _resource in RESOURCES:
     app.add_typer(_resource_command(_resource), name=_resource.name)
 
 
+def _split_spec_problems(problems: list[str]) -> tuple[list[str], list[str]]:
+    """Split validator problems into ``(warnings, fatal)``.
+
+    Array-body problems arrive path-prefixed (``body[0]: warning: ...``) while
+    dict-body problems do not, so the marker must be searched anywhere in the
+    string: the old ``startswith("warning: ")`` check silently promoted every
+    array-body warning to fatal, breaking the documented spec_warnings flow
+    (found while probing MFA fields through raw; issue #28).
+    """
+    warnings = [problem for problem in problems if "warning: " in problem]
+    fatal = [problem for problem in problems if "warning: " not in problem]
+    return warnings, fatal
+
+
 @app.command()
 def raw(
     method: str,
@@ -910,8 +924,7 @@ def raw(
     warnings: list[str] = []
     if validate:
         problems = validate_schema_request(method, path, body)
-        warnings = [problem for problem in problems if problem.startswith("warning: ")]
-        fatal = [problem for problem in problems if not problem.startswith("warning: ")]
+        warnings, fatal = _split_spec_problems(problems)
         if fatal:
             render_error(
                 {
