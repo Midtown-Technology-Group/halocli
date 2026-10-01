@@ -30,6 +30,7 @@ WRITE_RESOURCES = (
     "crm-notes",
     "users",
     "canned-text",
+    "timesheet-events",
 )
 
 
@@ -53,7 +54,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 37
+    assert len(RESOURCES) == 38
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -67,7 +68,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 13
+    assert len(WRITE_RESOURCES) == 14
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -313,6 +314,48 @@ def test_canned_text_shape_matches_live_evidence() -> None:
     assert "post" in spec["paths"]["/CannedText"]
     assert "delete" in spec["paths"]["/CannedText/{id}"]
     assert "post" in spec["paths"]["/CannedText/favourite"]
+
+
+def test_timesheet_events_shape_matches_live_quirks() -> None:
+    """timesheet-events metadata, pinned to the 2026-10-01 live probes.
+
+    Live: BARE array whose count/page params are ignored (full dump per call,
+    issue #24 - agent_id/ISO-date filters are the only real bound); every
+    list row carries id=0, so ids must come from the POST response; /mine
+    answers 403 for this agent. The spec declares no required fields -
+    subject + timetaken mirror todo.py's proven-working payload.
+    """
+    tse = get_resource("timesheet-events")
+
+    assert tse.endpoint == "/TimesheetEvent"
+    assert tse.list_key is None  # bare array, not an envelope
+    assert tse.table_fields == (
+        "start_date",
+        "end_date",
+        "agent_id",
+        "ticket_id",
+        "timetaken",
+        "subject",
+    )
+    assert tse.create_endpoint == tse.endpoint
+    assert tse.update_endpoint == tse.endpoint
+    assert tse.supports_delete is True
+    assert tse.required_create_fields == ("subject", "timetaken")
+    assert "id" in tse.required_update_fields
+    assert tse.effective_write_preview_fields[0] == "id"
+    assert set(tse.required_create_fields) <= set(tse.effective_write_preview_fields)
+
+    mine = {op.name: op for op in tse.operations}["mine"]
+    assert (mine.method, mine.path) == ("GET", "/TimesheetEvent/mine")
+    assert mine.verification == "live:403"
+    assert not mine.write
+
+    spec = load_spec()
+    assert spec is not None
+    assert "post" in spec["paths"]["/TimesheetEvent"]
+    assert "delete" in spec["paths"]["/TimesheetEvent/{id}"]
+    assert "get" in spec["paths"]["/TimesheetEvent/mine"]
+    assert "put" not in spec["paths"]["/TimesheetEvent"]
 
 
 def test_billing_read_resources_stay_read_only() -> None:

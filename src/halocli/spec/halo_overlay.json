@@ -570,6 +570,36 @@
       "target": "$.paths['/CannedText/favourite'].post.description",
       "description": "curated description for a surfaced operation",
       "update": "The spec body is a JSON array of {id, ctid, unum} records toggling the favourite flag for the signed-in user."
+    },
+    {
+      "target": "$.paths['/TimesheetEvent'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a timesheet event"
+    },
+    {
+      "target": "$.paths['/TimesheetEvent'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of TimesheetEvent entries (Halo's POST-with-id upsert). No required fields are declared; subject and timetaken are the practical minimum - the tenant's own time-logging flow sends subject, note, timetaken (hours as a decimal), start_date, end_date and client_id, plus ticket_id/agent_id when anchored to work."
+    },
+    {
+      "target": "$.paths['/TimesheetEvent/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a timesheet event"
+    },
+    {
+      "target": "$.paths['/TimesheetEvent/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete the timesheet event with the given id. The spec documents no restore route, so treat the delete as permanent."
+    },
+    {
+      "target": "$.paths['/TimesheetEvent/mine'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List the signed-in agent's own timesheet events"
+    },
+    {
+      "target": "$.paths['/TimesheetEvent/mine'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Returns the authenticated agent's own events. Probing this tenant answers 403 for the API agent (time-module permission), so the route is verified only as far as the status code."
     }
   ]
 }

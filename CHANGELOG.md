@@ -6,6 +6,20 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.3.0 - 2026-10-01
+
+- **New `timesheet-events` resource** (promoted from `raw`, slice ⑦): `list`/
+  `get`/`create`/`update`/`delete` plus a `mine` operation (`GET
+  /TimesheetEvent/mine`, `live:403` on this tenant). The declaration carries
+  every measured quirk: the response is a **bare array whose count/page
+  params are ignored** (full dump per call — bound it with `--param
+  agent_id=N` or ISO `start_date`/`end_date`; date-only values mis-filter,
+  #24), and **every list row carries `id: 0`**, so ids must come from the
+  POST response rather than list output. `required_create_fields` =
+  `subject` + `timetaken`, mirroring `todo.py`'s proven-working time-log
+  payload (spec declares none). Registry: 38; write resources: 14; six
+  overlay actions fill POST/DELETE/mine prose.
+
 ## 1.2.0 - 2026-10-01
 
 - **New `canned-text` resource** (promoted from `raw`, slice ⑥): `list`/`get`
