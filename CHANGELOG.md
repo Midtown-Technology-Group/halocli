@@ -6,6 +6,29 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.3.1 - 2026-10-01
+
+- **Declarations now describe the proven Quick Time workflow** (both learned
+  from the live booking session + the workspace's production recipe,
+  `bifrost-workspace shared/halopsa/tools/timeentry.py`):
+  - `appointments`: `write_preview_fields` extended to the full
+    completion recipe (`complete_status/date/timetaken/notehtml/agent_id`,
+    `chargerate`, `utcoffset`, `apfaultidremoved`, `agents`, `note_html`,
+    `followup_*` mirrors…) — completing an existing appointment marks it
+    done on dispatch **and** logs actual time (which may differ from the
+    scheduled window). Previously all 28 of those fields fired
+    pass-through warnings on every completion preview.
+  - `timesheet-events`: corrected against live probes — the API view
+    exposes `id: 0` on every row (the old "ids come from the POST
+    response" claim was wrong), minimal creates die as
+    515/`Record not found`, and the create contract now mirrors the
+    workspace-proven **QuickTime recipe** (`subject` + `start_date` +
+    `end_date` required; Halo derives duration — their production payload
+    sends no `timetaken`, so the old `(subject, timetaken)` set would have
+    blocked it). `note`/`event_type`/`lognewticket`/`charge_rate`/`agents`/
+    `break_*` joined the preview shape (the `note` warning that prompted
+    this is gone).
+
 ## 1.3.0 - 2026-10-01
 
 - **New `timesheet-events` resource** (promoted from `raw`, slice ⑦): `list`/

@@ -357,12 +357,60 @@ RESOURCES: tuple[HaloResource, ...] = (
         # POST /Appointment creates or updates by id; DELETE /Appointment/{id} exists.
         # Assumption: subject + start_date + end_date are required; agent_id defaults to
         # the authenticated agent when omitted.
+        #
+        # Completion workflow (recipe proven in the workspace's
+        # shared/halopsa/tools/timeentry.py::complete_appointment and exercised
+        # live 2026-10-01): upserting an EXISTING appointment with
+        # complete_status="0", complete_date, complete_timetaken (hours),
+        # complete_notehtml and complete_agent_id marks it done on dispatch AND
+        # logs the actual time (which may differ from the scheduled window -
+        # that is the intended use: "a 30-min meeting that ran 2 hours").
+        # Echo fields must ride along: agents=[{id,name,use}], user_id/ticket_id
+        # (-1 when absent), note_html (invite HTML), followup_* mirrors,
+        # agent_status, chargerate ("0" = no charge), utcoffset (240 = US/Eastern
+        # minutes), apfaultidremoved (true when ticket_id is None/-1).
+        # write_preview_fields covers that whole recipe so the preview shows it
+        # and no pass-through warnings fire for it.
         create_endpoint="/Appointment",
         update_endpoint="/Appointment",
         required_create_fields=("subject", "start_date", "end_date"),
         required_update_fields=("id",),
         supports_delete=True,
-        write_preview_fields=("id", "subject", "agent_id", "start_date", "end_date"),
+        write_preview_fields=(
+            "id",
+            "subject",
+            "agent_id",
+            "start_date",
+            "end_date",
+            "allday",
+            "is_private",
+            "agents",
+            "user_id",
+            "ticket_id",
+            "reminderminutes",
+            "agent_status",
+            "note_html",
+            "is_task",
+            "appointment_type_id",
+            "shift_type_id",
+            "followup_start_date",
+            "followup_end_date",
+            "followup_allday",
+            "followup_is_private",
+            "followup_user_id",
+            "followup_reminderminutes",
+            "followup_agent_status",
+            "followup_note_html",
+            "followup_agent_id",
+            "complete_status",
+            "chargerate",
+            "complete_date",
+            "complete_timetaken",
+            "complete_notehtml",
+            "complete_agent_id",
+            "utcoffset",
+            "apfaultidremoved",
+        ),
     ),
     HaloResource(
         "contracts",
@@ -576,26 +624,41 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/TimesheetEvent",
         aliases=("timesheet-event", "time-events"),
         # Live-verified 2026-10-01: response is a BARE array and count/page
-        # params are IGNORED - each list call dumps everything (~1,573 rows,
+        # params are IGNORED - each list call dumps everything (~1,567 rows,
         # ~1.1 MB; the paging machinery cannot bound it, issue #24), so pass
         # --param agent_id=N or ISO start_date/end_date to bound the fetch
         # (agent_id filter works; ISO datetime ranges work; date-only values
-        # silently mis-filter). EVERY list row carries id=0, so get/update/
-        # delete cannot be driven from list output - ids come from the POST
-        # response (route-verified: malformed id -> 400, missing -> 404).
+        # silently mis-filter).
+        #
+        # id semantics (all three write branches probed live, authorized):
+        # - the API view exposes id=0 on EVERY row - the real TSEeventid is
+        #   never surfaced, so get/update/delete cannot be driven from list
+        #   output (route probes: malformed id -> 400, missing -> 404)
+        # - create with no id -> 515 "Cannot insert NULL into TSEeventid";
+        #   id=0 -> same 515; nonzero unknown id -> "Record not found"
+        #   (POST-with-id is a strict update; the INSERT path never
+        #   auto-assigns). Minimal creates are dead end-to-end.
+        # - 1,557 of 1,567 rows carry action_number+ticket_id: ticket time is
+        #   derived from POST /Actions, not created here.
+        #
+        # The WORKSPACE-PROVEN create recipe is QuickTime
+        # (bifrost-workspace shared/halopsa/tools/timeentry.py::log_quicktime,
+        # a production tool): {start_date, end_date, subject, note,
+        # ticket_id: null, tickettype_id: null, lognewticket, client_id,
+        # agent_id as STRING, agents: [{id, name}], event_type (0=work,
+        # 1=break with break_type/break_note), charge_rate} - Halo then
+        # auto-creates AND closes a lightweight ticket per entry (that is why
+        # tickets titled "Quick Time - <agent> - <datetime>" exist). NOT fired
+        # from halocli this session -> verification stays spec.
         # GET /TimesheetEvent/mine answers 403 for this agent (live:403).
-        # POST is a spec bare array; execute_write's json_body=[payload]
-        # matches, and todo.py's time logging already drives exactly this
-        # route (subject/note/timetaken/start_date/end_date/client_id).
-        # Writes never fired at the tenant: verification spec.
         table_fields=("start_date", "end_date", "agent_id", "ticket_id", "timetaken", "subject"),
         create_endpoint="/TimesheetEvent",
         update_endpoint="/TimesheetEvent",
-        # The spec declares NO required fields. Assumption: subject +
-        # timetaken are the enforced minimum - both are always present in
-        # todo.py's proven-working payload (which also sends start_date,
-        # end_date and client_id on every call).
-        required_create_fields=("subject", "timetaken"),
+        # Spec declares NO required fields. Required = the QuickTime recipe's
+        # always-present core: Halo derives duration from start/end (their
+        # production payload sends no timetaken at all), so requiring
+        # timetaken would block the proven workflow.
+        required_create_fields=("subject", "start_date", "end_date"),
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=(
@@ -604,7 +667,14 @@ RESOURCES: tuple[HaloResource, ...] = (
             "start_date",
             "end_date",
             "timetaken",
+            "note",
+            "event_type",
+            "break_type",
+            "break_note",
+            "lognewticket",
+            "charge_rate",
             "agent_id",
+            "agents",
             "ticket_id",
             "client_id",
         ),
