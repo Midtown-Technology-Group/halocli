@@ -6,6 +6,23 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.12.0 - 2026-10-01
+
+- **`kb` becomes write-capable** (promoted from `raw`): `halocli kb create`,
+  `update` and `delete` now exist with zero-network preview and the usual
+  `--apply --yes` gate. Verified live 2026-09-30: list envelope is
+  `{"articles": [...]}` with real pagination and `GET /KBArticle/{id}` returns
+  200; the spec declares no required fields, so `name` + `description` are a
+  documented assumption (per the `agents` precedent). `POST`/`DELETE` were
+  never fired at the tenant — writes stay `verification: spec`.
+  - Table columns corrected: live rows carry `name`, never the old `title`.
+  - `list_key` declared as `articles` (previously found only by fallback).
+- **README contract rationale corrected**: the old text justified `contracts`
+  being read-only with "the spec documents no `POST /Contract`" — true but
+  about a path the resource does not use. It now states the real decision:
+  `POST /ClientContract` exists (standard upsert), but billing-bearing client
+  contracts need an explicit operator promotion decision.
+
 ## 0.11.0 - 2026-09-29
 
 - **The bundled web front end is removed** (#19). Gone from the repository and

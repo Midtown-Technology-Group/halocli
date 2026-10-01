@@ -237,10 +237,14 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Nine resources (tickets, actions, clients, sites, assets, agents,
-appointments, statuses, priorities) also have write metadata and
-first-class write commands. `contracts` stays read-only: the vendored spec
-documents no `POST /Contract`, so no write route is enabled for it. Writes
+Ten resources (tickets, actions, clients, sites, assets, agents,
+appointments, statuses, priorities, kb) also have write metadata and
+first-class write commands. `contracts` stays read-only by deliberate
+choice, not a missing route: the spec does document `POST /ClientContract`
+(standard Halo upsert), but client contracts carry billing machinery and
+the semantics would narrow to *client* contracts only (`POST
+/SupplierContract` is a different, permission-gated entity), so promotion
+waits for an explicit operator decision. Writes
 are **preview by default**: without flags
 they validate the payload and print what would be sent, with zero network
 calls. Executing requires both `--apply` and `--yes`:

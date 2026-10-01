@@ -26,6 +26,7 @@ WRITE_RESOURCES = (
     "appointments",
     "statuses",
     "priorities",
+    "kb",
 )
 
 
@@ -61,7 +62,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
-    assert len(WRITE_RESOURCES) == 9
+    assert len(WRITE_RESOURCES) == 10
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -139,6 +140,37 @@ def test_ticket_and_action_write_shapes() -> None:
     actions = get_resource("actions")
     assert actions.required_create_fields == ("ticket_id", "note")
     assert "note" in actions.write_preview_fields
+
+
+def test_kb_write_shape_matches_live_evidence() -> None:
+    """kb write metadata, pinned to the 2026-09-30 live probes.
+
+    Live: list -> {"articles": [...], "record_count": N} with real pagination;
+    GET /KBArticle/391 -> 200; rows carry `name` but never `title`. The spec
+    declares no required fields on POST, so the create set is a documented
+    assumption. POST/DELETE were never fired (no write authorization).
+    """
+    kb = get_resource("kb")
+
+    assert kb.endpoint == "/KBArticle"
+    assert kb.list_key == "articles"
+    assert kb.table_fields == ("id", "name", "type", "inactive", "date_edited")
+    assert kb.create_endpoint == kb.endpoint
+    assert kb.update_endpoint == kb.endpoint
+    assert kb.supports_delete is True
+    assert kb.required_create_fields == ("name", "description")
+    assert "id" in kb.required_update_fields
+    assert kb.effective_write_preview_fields[0] == "id"
+    assert set(kb.required_create_fields) <= set(kb.effective_write_preview_fields)
+
+    # Every write route exists in the vendored spec (coverage-oracle ally).
+    spec = load_spec()
+    assert spec is not None
+    assert "post" in spec["paths"]["/KBArticle"]
+    assert "delete" in spec["paths"]["/KBArticle/{id}"]
+    # No PUT/PATCH: Halo's upsert convention is POST-with-id only.
+    assert "put" not in spec["paths"]["/KBArticle"]
+    assert "patch" not in spec["paths"]["/KBArticle"]
 
 
 @pytest.mark.parametrize("resource", RESOURCES)
