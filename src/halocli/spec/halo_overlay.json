@@ -500,6 +500,26 @@
       "target": "$.paths['/CRMNote/{id}'].delete.description",
       "description": "curated description for a surfaced operation",
       "update": "Delete the CRM note with the given id. The spec documents no restore route, so treat the delete as permanent."
+    },
+    {
+      "target": "$.paths['/InvoiceStatus'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List invoice status definitions"
+    },
+    {
+      "target": "$.paths['/InvoiceStatus'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Invoice status definitions that classify invoice lifecycle (status_name, type, plus system/sync flags). This route takes no query parameters; the tenant answers with a data envelope."
+    },
+    {
+      "target": "$.paths['/InvoiceStatus/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one invoice status definition"
+    },
+    {
+      "target": "$.paths['/InvoiceStatus/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Fetch a single invoice status definition by id."
     }
   ]
 }

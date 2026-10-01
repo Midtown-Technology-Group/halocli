@@ -6,6 +6,23 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 0.14.0 - 2026-10-01
+
+- **Three billing resources join the registry, read-only by design** (slice ④):
+  `invoice-payments` (`/InvoicePayment`), `invoice-statuses`
+  (`/InvoiceStatus`) and `recurring-invoices` (`/RecurringInvoice`) — each
+  with `list`/`get`, live-verified envelopes and table columns taken from real
+  list rows (payments: `client_name`/`amount`/`date`; statuses: `status_name`
+  under the unusual `data` envelope; recurring: `total`/`nextcreationdate`,
+  negative ids observed on this tenant).
+  - **Deliberately no write metadata**: recording payments and the
+    `POST /RecurringInvoice/process` bulk-invoice generator are the
+    highest-stakes writes in the endpoint recon — they stay `raw` until
+    read-back verification handlers exist. `invoice-statuses` config writes
+    can join the preview-first surface later.
+  - `/InvoiceStatus` was missing summary/description upstream — filled from
+    `halo_overlay.json` (4 actions), applied offline (no refetch).
+
 ## 0.13.0 - 2026-10-01
 
 - **`crm-notes` becomes write-capable** (promoted from `raw`): `halocli crm-notes

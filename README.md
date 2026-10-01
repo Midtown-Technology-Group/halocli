@@ -175,7 +175,8 @@ HaloCLI has registry-driven read commands for common HaloPSA resources:
 ```text
 tickets, clients, agents, teams, users, kb, sites, assets, actions, statuses,
 priorities, categories, ticket-types, slas, appointments, contracts, invoices,
-opportunities, projects, suppliers, items, quotations, releases, reports,
+invoice-payments, invoice-statuses, recurring-invoices, opportunities,
+projects, suppliers, items, quotations, releases, reports,
 webhooks, workdays, software-licences, crm-notes, top-levels, expenses,
 timesheets, attachments
 ```

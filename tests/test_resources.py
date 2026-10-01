@@ -50,7 +50,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 
 def test_registry_still_constructs_all_resources() -> None:
-    assert len(RESOURCES) == 32
+    assert len(RESOURCES) == 35
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -234,6 +234,49 @@ def test_crm_notes_write_shape_matches_live_evidence() -> None:
     assert "delete" in spec["paths"]["/CRMNote/{id}"]
     assert "put" not in spec["paths"]["/CRMNote"]
     assert "patch" not in spec["paths"]["/CRMNote"]
+
+
+def test_billing_read_resources_stay_read_only() -> None:
+    """Slice ④: money-adjacent reads ship first; writes stay raw by design.
+
+    Live-verified 2026-10-01 (all read-only probes, profile thomas):
+    invoice-payments -> envelope "payments" (client_name/amount/date on list
+    rows); invoice-statuses -> envelope "data" (8 rows, no query params);
+    recurring-invoices -> envelope "invoices" (client_name/total/
+    nextcreationdate on list rows, negative ids observed). POST/DELETE on all
+    three are spec-documented but were never fired: no write authorization,
+    and bulk invoice generation / payment recording need read-back
+    verification handlers first.
+    """
+    spec = load_spec()
+    assert spec is not None
+    for name, endpoint, list_key, fields in (
+        (
+            "invoice-payments",
+            "/InvoicePayment",
+            "payments",
+            ("id", "invoice_id", "client_name", "amount", "date"),
+        ),
+        ("invoice-statuses", "/InvoiceStatus", "data", ("id", "status_name", "type")),
+        (
+            "recurring-invoices",
+            "/RecurringInvoice",
+            "invoices",
+            ("id", "client_name", "total", "nextcreationdate"),
+        ),
+    ):
+        resource = get_resource(name)
+        assert resource.endpoint == endpoint, name
+        assert resource.list_key == list_key, name
+        assert resource.table_fields == fields, name
+        # The deliberate slice-④ stance: reads only, no write metadata.
+        assert resource.create_endpoint is None, name
+        assert resource.update_endpoint is None, name
+        assert resource.supports_delete is False, name
+        assert not resource.supports_write, name
+        # Both read routes exist in the vendored spec (prose gate ally).
+        assert "get" in spec["paths"][endpoint], name
+        assert "get" in spec["paths"][f"{endpoint}/{{id}}"], name
 
 
 @pytest.mark.parametrize("resource", RESOURCES)
