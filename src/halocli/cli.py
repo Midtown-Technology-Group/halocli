@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import mimetypes
+import re
 import time
 import webbrowser
 from datetime import date
@@ -885,6 +886,33 @@ for _resource in RESOURCES:
     app.add_typer(_resource_command(_resource), name=_resource.name)
 
 
+# The validator prefixes array-element problems with `body[N]: `; that prefix is
+# code-generated, so stripping exactly it (and nothing caller-shaped) before the
+# startswith check keeps path text containing "warning: " from downgrading an
+# unknown-endpoint diagnostic to advisory (CodeRabbit review, PR #29).
+_SPEC_BODY_PREFIX = re.compile(r"^body\[\d+\]: ")
+
+
+def _split_spec_problems(problems: list[str]) -> tuple[list[str], list[str]]:
+    """Split validator problems into ``(warnings, fatal)``.
+
+    Array-body problems arrive path-prefixed (``body[0]: warning: ...``) while
+    dict-body problems do not, so classification strips the validator's own
+    ``body[N]: `` prefix before the ``warning: `` startswith check. A bare
+    substring search would let a caller-crafted *path* containing "warning: "
+    silence an unknown-endpoint refusal (CodeRabbit review, PR #29); the old
+    startswith-only version refused every array-body warning instead, breaking
+    the documented spec_warnings flow (issue #28).
+    """
+    def is_warning(problem: str) -> bool:
+        stripped = _SPEC_BODY_PREFIX.sub("", problem, count=1)
+        return stripped.startswith("warning: ")
+
+    warnings = [problem for problem in problems if is_warning(problem)]
+    fatal = [problem for problem in problems if not is_warning(problem)]
+    return warnings, fatal
+
+
 @app.command()
 def raw(
     method: str,
@@ -903,6 +931,7 @@ def raw(
         ),
     ] = True,
 ) -> None:
+    """Send a spec-validated request to Halo; writes require --apply --yes."""
     method = method.upper()
     if method in {"POST", "PUT", "PATCH", "DELETE"} and not (apply and yes):
         raise typer.BadParameter(f"Refusing {method} {path} without --apply --yes.")
@@ -910,8 +939,7 @@ def raw(
     warnings: list[str] = []
     if validate:
         problems = validate_schema_request(method, path, body)
-        warnings = [problem for problem in problems if problem.startswith("warning: ")]
-        fatal = [problem for problem in problems if not problem.startswith("warning: ")]
+        warnings, fatal = _split_spec_problems(problems)
         if fatal:
             render_error(
                 {
@@ -1507,8 +1535,36 @@ async def _delete_command(
         return await delete_resource(client, resource, item_id, apply=True)
 
 
+def _mask_sensitive(value: Any) -> Any:
+    """Deep-copy ``value`` with credential-shaped fields masked for display.
+
+    Rendered write payloads are echoed to stdout (preview and post-apply), and
+    `users update --data '{"new_password": ...}'` would print the submitted
+    credential into terminals and CI logs (CodeRabbit Medium, PR #29). Only
+    the display copy is masked - the wire payload is untouched. Keys are
+    masked when they look credential-shaped (password/secret/verifier/token);
+    values keep their JSON type so the preview shape stays readable.
+    """
+    if isinstance(value, dict):
+        masked: dict[str, Any] = {}
+        for key, item in value.items():
+            if re.search(r"password|secret|code_verifier|_token$|^token$", str(key), re.I):
+                masked[key] = "***"
+            else:
+                masked[key] = _mask_sensitive(item)
+        return masked
+    if isinstance(value, list):
+        return [_mask_sensitive(item) for item in value]
+    return value
+
+
 def _finish_write(result: dict, *, output: str) -> None:
-    render(result, output=output)
+    """Render a resource write result (preview or apply) and exit 1 on failure.
+
+    Credentials in the echoed payload are masked on the way to stdout
+    (_mask_sensitive); nothing about the request actually sent changes.
+    """
+    render(_mask_sensitive(result), output=output)
     if not result.get("ok"):
         raise typer.Exit(1)
 

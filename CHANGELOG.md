@@ -6,6 +6,42 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.1.0 - 2026-10-01
+
+- **`users` becomes write-capable** — promoted from `raw` after a live
+  end-to-end MFA chain (issue #28, test user 4266 under client 625,
+  authorized): `halocli users create/update/delete` with zero-network preview
+  and the `--apply --yes` gate.
+  - **End-user MFA reset, first-class:**
+    `halocli users update <id> --data '{"_revoke_authenticatorapp": true}'
+    --apply --yes` — verified live: returns 200 even for unenrolled users
+    (write-only flag, not echoed). Also exposed: `resetpassword`,
+    `new_password` (tenant policy: >=16 chars, <=2 identical in a row,
+    lower+upper+number+special), `locked`.
+  - `required_create_fields` = the **live-proven set** (firstname, surname,
+    name, emailaddress, client_id, site_id) — Halo's sequential 400s named
+    `name` ("Username must be entered") and `site_id` ("A Site must be
+    selected") explicitly; the spec itself declares zero required fields.
+  - Findings from the chain: there is **no admin-side MFA enable**
+    (`twofactor_enabled`/`authenticatorapp_configured` silently ignored, no
+    POST embeds `Uname`, portal is Entra SSO-fronted) and MFA state is not
+    readable on this scope (`authenticatorapp_configured` never returned,
+    0/9 users). Full evidence in issue #28.
+- **Fixed: `raw` treated array-body spec warnings as fatal.** Validator
+  warnings inside array bodies arrive path-prefixed
+  (`body[0]: warning: ...`), which missed the `startswith("warning: ")`
+  split, so unknown properties were refused instead of surfacing as
+  `spec_warnings` (the documented behavior). Classification now strips the
+  validator's own `body[N]: ` prefix before the check
+  (`_split_spec_problems`), with unit + regression tests — including
+  CodeRabbit's follow-up: path text containing `warning: ` can no longer
+  downgrade an unknown-endpoint refusal.
+- **Review fixes from CodeRabbit (PR #29):** credential values
+  (`new_password` et al.) are masked as `***` in all rendered write
+  payloads — preview and post-apply — while the wire request is untouched;
+  README examples use `<id>` placeholders instead of the real test-user id;
+  docstrings added to touched test helpers and `raw`.
+
 ## 1.0.0 - 2026-10-01
 
 - **BREAKING: `halocli search` renamed to `halocli catalog`** (offline

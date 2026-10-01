@@ -9,7 +9,7 @@ import re
 from typer.testing import CliRunner
 
 from halocli import mcp_server
-from halocli.cli import app
+from halocli.cli import _split_spec_problems, app
 from halocli.resources import RESOURCE_BY_COMMAND
 
 runner = CliRunner()
@@ -154,3 +154,84 @@ def test_raw_write_gate_still_applies_before_spec_check() -> None:
 
     assert result.exit_code != 0
     assert "--apply --yes" in plain(result.output)
+
+
+def test_split_spec_problems_classifies_path_prefixed_warnings() -> None:
+    """Array-body problems are path-prefixed; dict-body problems are not.
+
+    The old startswith("warning: ") split treated every array-body warning as
+    fatal (issue #28: the documented spec_warnings flow never happened for
+    `POST /Users` array probes until --no-validate).
+    """
+    warnings, fatal = _split_spec_problems(
+        [
+            "body[0]: warning: unknown request-body property: twofactor_enabled",
+            "warning: unknown request-body property: legacy_field",
+            "missing required request-body property: name",
+            "unknown endpoint: POST /Nope",
+        ]
+    )
+    assert warnings == [
+        "body[0]: warning: unknown request-body property: twofactor_enabled",
+        "warning: unknown request-body property: legacy_field",
+    ]
+    assert fatal == [
+        "missing required request-body property: name",
+        "unknown endpoint: POST /Nope",
+    ]
+
+
+def test_raw_array_body_warning_is_not_fatal() -> None:
+    """Regression: an unknown property inside an ARRAY body warns, not refuses.
+
+    The command must clear spec validation (reaching the profile stage, like
+    the --no-validate precedent) instead of exiting with
+    "spec validation failed".
+    """
+    data = json.dumps([{"id": 1, "twofactor_enabled": True}])
+    result = runner.invoke(
+        app,
+        ["raw", "POST", "/Users", "--data", data, "--apply", "--yes"],
+    )
+
+    assert result.exit_code == 1
+    output = plain(result.output)
+    assert "spec validation failed" not in output
+    assert "unknown endpoint" not in output
+    assert "profile" in output.lower()  # validation passed; config load is next
+
+
+def test_raw_path_containing_warning_marker_stays_fatal() -> None:
+    """A caller-crafted path must not downgrade unknown-endpoint to advisory.
+
+    CodeRabbit review on PR #29: substring-based classification let path
+    text containing "warning: " silence the refusal, letting an unspecced
+    request proceed under default validation. Only the validator's own
+    body[N] prefix is stripped before the warning check.
+    """
+    result = runner.invoke(app, ["raw", "GET", "/nope/warning: bypass"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["category"] == "validation"
+    assert any("unknown endpoint" in problem for problem in payload["problems"])
+
+
+def test_users_update_masks_password_in_preview_output() -> None:
+    """Credential values never reach stdout; the request shape stays readable.
+
+    CodeRabbit Medium on PR #29: `users update --data '{"new_password":…}'`
+    echoed the submitted password in preview and post-apply output.
+    """
+    secret = "S3cret!value99"
+    result = runner.invoke(
+        app,
+        ["users", "update", "4266", "--data", json.dumps({"new_password": secret})],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert secret not in result.output
+    payload = json.loads(result.output)
+    assert payload["payload"]["new_password"] == "***"
+    assert payload["payload"]["id"] == 4266

@@ -520,6 +520,26 @@
       "target": "$.paths['/InvoiceStatus/{id}'].get.description",
       "description": "curated description for a surfaced operation",
       "update": "Fetch a single invoice status definition by id."
+    },
+    {
+      "target": "$.paths['/Users'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a user"
+    },
+    {
+      "target": "$.paths['/Users'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of Users (Halo's POST-with-id upsert: omit id to create, include it to update). The spec declares no required fields, but a live create needs at least a username (name), emailaddress, client_id and site_id. Account actions ride the same upsert: resetpassword and new_password for credentials (tenant password policy applies), locked for lockout, and _revoke_authenticatorapp to reset end-user MFA."
+    },
+    {
+      "target": "$.paths['/Users/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a user"
+    },
+    {
+      "target": "$.paths['/Users/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete the user with the given id. The spec documents no restore route, so treat the delete as permanent."
     }
   ]
 }

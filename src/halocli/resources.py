@@ -194,7 +194,46 @@ RESOURCES: tuple[HaloResource, ...] = (
         "users",
         "/Users",
         aliases=("user",),
+        # Live-verified 2026-10-01 (test user 4266, client 625, profile
+        # thomas; full evidence trail in issue #28): creation succeeds with
+        # firstname/surname/name/emailaddress/client_id/site_id - Halo
+        # validates one error at a time ("Username must be entered" -> "A Site
+        # must be selected"). `new_password` follows the tenant policy (>=16
+        # chars, <=2 identical in a row, lower+upper+number+special) and sets
+        # cleanly via update. Flagship use: POST with
+        # {"id": N, "_revoke_authenticatorapp": true} resets end-user MFA - it
+        # returns 200 even for unenrolled users (write-only flag, not echoed).
+        # MFA state is NOT readable on this scope (authenticatorapp_configured
+        # never returned, 0/9 users sampled) and there is no admin-side
+        # enable: twofactor_enabled/authenticatorapp_configured are silently
+        # ignored, and the portal is Entra SSO-fronted.
         table_fields=("id", "name", "client_name", "emailaddress"),
+        create_endpoint="/Users",
+        update_endpoint="/Users",
+        # The spec declares ZERO required fields; this is the live-proven
+        # create set. Halo's two hard errors named `name` and `site_id`
+        # explicitly; firstname/surname/client_id/emailaddress were in the
+        # payload that worked and stay required until a minimal create proves
+        # otherwise.
+        required_create_fields=(
+            "firstname",
+            "surname",
+            "name",
+            "emailaddress",
+            "client_id",
+            "site_id",
+        ),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=(
+            "id",
+            "name",
+            "firstname",
+            "surname",
+            "emailaddress",
+            "client_id",
+            "site_id",
+        ),
     ),
     HaloResource(
         "kb",
