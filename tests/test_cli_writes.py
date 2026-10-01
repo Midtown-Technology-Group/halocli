@@ -199,3 +199,39 @@ def test_raw_array_body_warning_is_not_fatal() -> None:
     assert "spec validation failed" not in output
     assert "unknown endpoint" not in output
     assert "profile" in output.lower()  # validation passed; config load is next
+
+
+def test_raw_path_containing_warning_marker_stays_fatal() -> None:
+    """A caller-crafted path must not downgrade unknown-endpoint to advisory.
+
+    CodeRabbit review on PR #29: substring-based classification let path
+    text containing "warning: " silence the refusal, letting an unspecced
+    request proceed under default validation. Only the validator's own
+    body[N] prefix is stripped before the warning check.
+    """
+    result = runner.invoke(app, ["raw", "GET", "/nope/warning: bypass"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["category"] == "validation"
+    assert any("unknown endpoint" in problem for problem in payload["problems"])
+
+
+def test_users_update_masks_password_in_preview_output() -> None:
+    """Credential values never reach stdout; the request shape stays readable.
+
+    CodeRabbit Medium on PR #29: `users update --data '{"new_password":…}'`
+    echoed the submitted password in preview and post-apply output.
+    """
+    secret = "S3cret!value99"
+    result = runner.invoke(
+        app,
+        ["users", "update", "4266", "--data", json.dumps({"new_password": secret})],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert secret not in result.output
+    payload = json.loads(result.output)
+    assert payload["payload"]["new_password"] == "***"
+    assert payload["payload"]["id"] == 4266

@@ -31,9 +31,16 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
   warnings inside array bodies arrive path-prefixed
   (`body[0]: warning: ...`), which missed the `startswith("warning: ")`
   split, so unknown properties were refused instead of surfacing as
-  `spec_warnings` (the documented behavior). Classification now searches
-  for the marker anywhere (`_split_spec_problems`), with unit + regression
-  tests.
+  `spec_warnings` (the documented behavior). Classification now strips the
+  validator's own `body[N]: ` prefix before the check
+  (`_split_spec_problems`), with unit + regression tests — including
+  CodeRabbit's follow-up: path text containing `warning: ` can no longer
+  downgrade an unknown-endpoint refusal.
+- **Review fixes from CodeRabbit (PR #29):** credential values
+  (`new_password` et al.) are masked as `***` in all rendered write
+  payloads — preview and post-apply — while the wire request is untouched;
+  README examples use `<id>` placeholders instead of the real test-user id;
+  docstrings added to touched test helpers and `raw`.
 
 ## 1.0.0 - 2026-10-01
 

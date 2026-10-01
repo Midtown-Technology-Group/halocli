@@ -51,6 +51,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 
 def test_registry_still_constructs_all_resources() -> None:
+    """The registry size is pinned; a new resource must update this deliberately."""
     assert len(RESOURCES) == 36
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
@@ -64,6 +65,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
+    """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
     assert len(WRITE_RESOURCES) == 12
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
