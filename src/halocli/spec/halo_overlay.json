@@ -430,6 +430,26 @@
       "target": "$.components.schemas.AnalyzerProfile.properties.sql.description",
       "description": "folded from live report-interface testing",
       "update": "Raw T-SQL for a user-authored (type 1) report. Halo executes it inside a derived table, so a trailing ORDER BY is rejected unless the SELECT also specifies TOP or OFFSET (or FOR XML)."
+    },
+    {
+      "target": "$.paths['/KBArticle'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a knowledge base article"
+    },
+    {
+      "target": "$.paths['/KBArticle'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of KBEntry; omit id to create an article and include it to update (Halo's POST-with-id upsert convention). Halo documents 201 on create. Required fields are not declared in the spec - name and description are the practical minimum."
+    },
+    {
+      "target": "$.paths['/KBArticle/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a knowledge base article"
+    },
+    {
+      "target": "$.paths['/KBArticle/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete the knowledge base article with the given id. The spec documents no restore route, so treat the delete as permanent."
     }
   ]
 }

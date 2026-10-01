@@ -200,7 +200,26 @@ RESOURCES: tuple[HaloResource, ...] = (
         "kb",
         "/KBArticle",
         aliases=("kb-articles", "kb-article"),
-        table_fields=("id", "name", "title"),
+        # Live-verified 2026-09-30: list -> 200 with envelope
+        # {"articles": [...], "record_count": N} and real pagination (298
+        # distinct rows across pages); GET /KBArticle/391 -> 200; malformed id
+        # -> 400 validation (route-verified). table_fields corrected: live rows
+        # carry `name` but never `title`. POST is a spec-declared bare array
+        # (returns 201); execute_write's json_body=[payload] matches it, so no
+        # custom handler is needed. POST/DELETE are never fired at the tenant
+        # (no write authorization) -> writes stay verification: spec.
+        table_fields=("id", "name", "type", "inactive", "date_edited"),
+        list_key="articles",
+        create_endpoint="/KBArticle",
+        update_endpoint="/KBArticle",
+        # The spec declares NO required fields on POST /KBArticle (requestBody,
+        # schema and items all omit "required"). Assumption, per the `agents`
+        # precedent: name (title) + description (body) are the minimum for a
+        # useful article; Halo may accept less.
+        required_create_fields=("name", "description"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "description", "resolution", "type", "inactive"),
     ),
     HaloResource(
         "sites",
