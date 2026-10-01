@@ -480,6 +480,26 @@
       "target": "$.paths['/Quotation/View'].post.description",
       "description": "curated description for a surfaced operation",
       "update": "POST-as-read that records a view event against a quotation: the array elements carry id, viewers and changeseq. Still a POST, so the CLI previews it and gates execution behind --apply --yes."
+    },
+    {
+      "target": "$.paths['/CRMNote'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a CRM note"
+    },
+    {
+      "target": "$.paths['/CRMNote'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "The spec body is a JSON array of AreaNote entries; no required fields are declared. The anchor is polymorphic - client_id, supplier_id, quote_id, invoice_id or ticketid say what the note hangs off - and an id present updates the note (Halo's POST-with-id upsert convention)."
+    },
+    {
+      "target": "$.paths['/CRMNote/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a CRM note"
+    },
+    {
+      "target": "$.paths['/CRMNote/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delete the CRM note with the given id. The spec documents no restore route, so treat the delete as permanent."
     }
   ]
 }

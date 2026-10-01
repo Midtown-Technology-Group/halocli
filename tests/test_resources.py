@@ -27,6 +27,7 @@ WRITE_RESOURCES = (
     "statuses",
     "priorities",
     "kb",
+    "crm-notes",
 )
 
 
@@ -62,7 +63,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
-    assert len(WRITE_RESOURCES) == 10
+    assert len(WRITE_RESOURCES) == 11
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -201,6 +202,38 @@ def test_quotation_operations_are_declared_and_spec_backed() -> None:
         assert op.verification == "spec"
         assert str(op.summary).strip()
         assert method.lower() in spec["paths"][path]
+
+
+def test_crm_notes_write_shape_matches_live_evidence() -> None:
+    """crm-notes write metadata, pinned to the 2026-09-30 live read probes.
+
+    Live: envelope {"actions": [...], "record_count": N}; GET /CRMNote/14630
+    -> 200; unfiltered list returns 0 records (scope filter required); rows
+    carry `datetime`, never the old dead `date` column. The spec declares no
+    required fields, so `note` alone is the documented assumption - the anchor
+    is polymorphic, so requiring client_id would block supplier/quote notes.
+    POST/DELETE were never fired (no write authorization).
+    """
+    crm = get_resource("crm-notes")
+
+    assert crm.endpoint == "/CRMNote"
+    assert crm.list_key == "actions"
+    assert crm.table_fields == ("id", "client_id", "datetime", "who_agentid", "note")
+    assert "date" not in crm.table_fields
+    assert crm.create_endpoint == crm.endpoint
+    assert crm.update_endpoint == crm.endpoint
+    assert crm.supports_delete is True
+    assert crm.required_create_fields == ("note",)
+    assert "id" in crm.required_update_fields
+    assert crm.effective_write_preview_fields[0] == "id"
+    assert set(crm.required_create_fields) <= set(crm.effective_write_preview_fields)
+
+    spec = load_spec()
+    assert spec is not None
+    assert "post" in spec["paths"]["/CRMNote"]
+    assert "delete" in spec["paths"]["/CRMNote/{id}"]
+    assert "put" not in spec["paths"]["/CRMNote"]
+    assert "patch" not in spec["paths"]["/CRMNote"]
 
 
 @pytest.mark.parametrize("resource", RESOURCES)

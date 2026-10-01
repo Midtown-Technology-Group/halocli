@@ -238,8 +238,8 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Ten resources (tickets, actions, clients, sites, assets, agents,
-appointments, statuses, priorities, kb) also have write metadata and
+Eleven resources (tickets, actions, clients, sites, assets, agents,
+appointments, statuses, priorities, kb, crm-notes) also have write metadata and
 first-class write commands. `contracts` stays read-only by deliberate
 choice, not a missing route: the spec does document `POST /ClientContract`
 (standard Halo upsert), but client contracts carry billing machinery and

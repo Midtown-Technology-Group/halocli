@@ -502,7 +502,29 @@ RESOURCES: tuple[HaloResource, ...] = (
         "crm-notes",
         "/CRMNote",
         aliases=("crm-note",),
-        table_fields=("id", "client_id", "date", "note"),
+        # Live-verified 2026-09-30: envelope {"actions": [...], "record_count": N};
+        # GET /CRMNote/14630 -> 200. Unfiltered list returns 0 records (a scope
+        # filter such as toplevel_id is required); `count` is honored (default
+        # 50) but page_no/pageinate/page_size are IGNORED by Halo - the generic
+        # list loop therefore duplicates rows whenever record_count exceeds the
+        # per-page count (workaround: --param count=<record_count> for a
+        # one-page fetch; tracked separately as a list-machinery issue).
+        # table_fields corrected: live rows carry `datetime`, never `date`.
+        # POST/DELETE are never fired at the tenant (no write authorization)
+        # -> writes stay verification: spec.
+        table_fields=("id", "client_id", "datetime", "who_agentid", "note"),
+        list_key="actions",
+        create_endpoint="/CRMNote",
+        update_endpoint="/CRMNote",
+        # The spec declares NO required fields (AreaNote schema has no
+        # `required`). Only the content is enforced: the anchor is polymorphic
+        # (client_id, supplier_id, quote_id, invoice_id, ...), so requiring
+        # client_id would wrongly block supplier/quote notes - same semantic-
+        # narrowing concern documented on `contracts`.
+        required_create_fields=("note",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "client_id", "supplier_id", "datetime", "who", "note"),
     ),
     HaloResource("top-levels", "/TopLevel", aliases=("top-level",), table_fields=("id", "name")),
     HaloResource(
