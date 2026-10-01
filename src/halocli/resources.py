@@ -388,6 +388,48 @@ RESOURCES: tuple[HaloResource, ...] = (
         ),
     ),
     HaloResource(
+        "invoice-payments",
+        "/InvoicePayment",
+        aliases=("invoice-payment",),
+        # Live-verified 2026-10-01: list -> 200, envelope
+        # {"payments": [...], "record_count": N}; client_name/amount/date all
+        # present on list rows. Read-only BY DESIGN (slice ④): recording a
+        # payment is money-adjacent with no idempotency key in the schema, so
+        # POST /InvoicePayment stays raw until a handler can pre-flight the
+        # invoice and read the write back (recon risk rank: high).
+        table_fields=("id", "invoice_id", "client_name", "amount", "date"),
+        list_key="payments",
+    ),
+    HaloResource(
+        "invoice-statuses",
+        "/InvoiceStatus",
+        aliases=("invoice-status",),
+        # Live-verified 2026-10-01: list -> 200, envelope {"data": [...]}
+        # (8 rows); the route takes no query parameters. GET prose (summary +
+        # description) was missing upstream and is filled from
+        # halo_overlay.json. Read-only for now: POST/DELETE are spec-
+        # documented config writes, never fired (no write authorization) -
+        # they can join the preview-first surface later without new risk
+        # beyond status configuration.
+        table_fields=("id", "status_name", "type"),
+        list_key="data",
+    ),
+    HaloResource(
+        "recurring-invoices",
+        "/RecurringInvoice",
+        aliases=("recurring-invoice",),
+        # Live-verified 2026-10-01: list -> 200, envelope
+        # {"invoices": [...], "page_size", "record_count"}; client_name,
+        # total and nextcreationdate all present on list rows. Ids are
+        # negative on this tenant (observed -240, -237). Read-only BY DESIGN
+        # (slice ④): schedules mint real invoices, so POST
+        # /RecurringInvoice/process (bulk-generates invoices from an id array)
+        # and the upsert stay raw - the highest-stakes write in the recon
+        # needs a preview that GETs each id and shows client/total/dates first.
+        table_fields=("id", "client_name", "total", "nextcreationdate"),
+        list_key="invoices",
+    ),
+    HaloResource(
         "opportunities",
         # Verified against the live tenant (2026-09-28): GET /Opportunity is 404;
         # the spec documents /Opportunities (GET/POST), which this agent gets 403
