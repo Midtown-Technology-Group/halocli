@@ -1,0 +1,2629 @@
+{
+  "_comment": "Segment-level classification feeding scripts/build_coverage_ledger.py. Dispositions: covered (must match the registry - validated), first-class-candidate, needs-live-probe (both -> ledger backlog with reason), deliberately-raw, junk-or-dead. Spec-reading pass by scout sub 2026-10-01 (mechanically validated: 374 segments = 927 paths), plus per-endpoint overrides from live sessions.",
+  "segments": {
+    "AISuggestion": {
+      "disposition": "deliberately-raw",
+      "reason": "AI suggestion CRUD (no summaries); AI plumbing",
+      "evidence": "no summaries; schema []AiSuggestion",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AWSDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AWSDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Actions": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Actions",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "AddigyDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AddigyDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Address": {
+      "disposition": "first-class-candidate",
+      "reason": "contact/site addresses; full CRUD with filters (site_id,user_id)",
+      "evidence": "List of AddressStore",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Addressbook": {
+      "disposition": "first-class-candidate",
+      "reason": "address book entity (16p) full CRUD; contact-like",
+      "evidence": "no summaries; schema ->Addressbook",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AdobeAcrobatDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AdobeAcrobatDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AdobeCommerceDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AdobeCommerceDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Agent": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Uname",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "AgentCheckIn": {
+      "disposition": "needs-live-probe",
+      "reason": "agent check-ins (5p, agent_id/date filters); purpose unclear; probe",
+      "evidence": "'List of AgentCheckIn' params agent_id,start_date,end_date",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "AgentEventSubscription": {
+      "disposition": "deliberately-raw",
+      "reason": "agent event subscriptions CRUD; presence plumbing",
+      "evidence": "no summaries; schema []UnameEventSubscription",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AgentImage": {
+      "disposition": "deliberately-raw",
+      "reason": "avatar fetch aliased to Uname schema; image plumbing",
+      "evidence": "GET /AgentImage/{id} summary 'Get one Uname', 13 params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "AgentPresenceRule": {
+      "disposition": "deliberately-raw",
+      "reason": "agent presence rules (undocumented GET); presence plumbing",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "AgentPresenceSubscription": {
+      "disposition": "deliberately-raw",
+      "reason": "presence subscriptions CRUD; presence plumbing",
+      "evidence": "no summaries; schema []UnamePresenceSubscription",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AmazonSellerDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AmazonSellerDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Application": {
+      "disposition": "deliberately-raw",
+      "reason": "SSO app config (68p) + /federatedcredentials; identity/security surface",
+      "evidence": "POST /Application/federatedcredentials body [FederatedCredential(7p)]",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "Appointment": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Appointment",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "ApprovalProcess": {
+      "disposition": "first-class-candidate",
+      "reason": "approval workflow config; list has summary+filters",
+      "evidence": "List of ApprovalProcess",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ApprovalProcessRule": {
+      "disposition": "first-class-candidate",
+      "reason": "approval workflow rules (process_id/step_id filters); config read",
+      "evidence": "List of ApprovalProcessRule",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AreaAzureTenant": {
+      "disposition": "deliberately-raw",
+      "reason": "Azure tenant-to-area mapping; integration plumbing (GET-only)",
+      "evidence": "List of AreaAzureTenant",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "AreaRequestType": {
+      "disposition": "first-class-candidate",
+      "reason": "area-to-request-type mapping (GET-only); ticket config read",
+      "evidence": "Get one AreaRequestType",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "ArmisDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []ArmisDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ArrowSphereDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []ArrowSphereDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Asset": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Device",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "AssetChange": {
+      "disposition": "first-class-candidate",
+      "reason": "asset change history (DeviceChange); asset audit read",
+      "evidence": "List of DeviceChange",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "AssetGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "asset grouping (tree read, istree); asset config",
+      "evidence": "List of Generic",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AssetSoftware": {
+      "disposition": "first-class-candidate",
+      "reason": "installed software per device (device_id filters); inventory/monitoring read",
+      "evidence": "List of DeviceApplications",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "AssetType": {
+      "disposition": "first-class-candidate",
+      "reason": "asset type config (Xtype 201p) full CRUD; asset config",
+      "evidence": "List of Xtype",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AssetTypeInfo": {
+      "disposition": "deliberately-raw",
+      "reason": "duplicate alias: identical summary+params as GET /AssetType",
+      "evidence": "'List of Xtype' with same params as /AssetType",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "AssetTypeMappings": {
+      "disposition": "deliberately-raw",
+      "reason": "asset type mappings (GET-only, no summaries); mapping plumbing",
+      "evidence": "Get one XTypeMapping",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "AssetbotsDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AssetbotsDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Attachment": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Attachment",
+      "ops": 14,
+      "methods": "DELETE,GET,POST"
+    },
+    "Audit": {
+      "disposition": "first-class-candidate",
+      "reason": "audit records CRUD; compliance/audit read",
+      "evidence": "Get one Audit",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AuthInfo": {
+      "disposition": "deliberately-raw",
+      "reason": "auth system info; single undocumented GET",
+      "evidence": "GET /AuthInfo: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Automation": {
+      "disposition": "first-class-candidate",
+      "reason": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+      "evidence": "GET /Automation/{runbookId} -> Automation(49p); POST /Automation/{runbookId}",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "AvalaraDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []AvalaraDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AzureDelta": {
+      "disposition": "deliberately-raw",
+      "reason": "Entra sync delta; integration plumbing",
+      "evidence": "no summaries; schema []AzureDelta",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "AzureDevOpsDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "Get one AzureDevOpsDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "BackgroundTask": {
+      "disposition": "deliberately-raw",
+      "reason": "internal background-task status (GET /{id}); system task engine",
+      "evidence": "no summaries; params id",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "BillingTemplate": {
+      "disposition": "first-class-candidate",
+      "reason": "billing/contract templates (ContractTemplateHeader); billing config",
+      "evidence": "Get one ContractTemplateHeader",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "BookingType": {
+      "disposition": "first-class-candidate",
+      "reason": "booking types (GET-only); scheduling config read",
+      "evidence": "List of BookingType",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Bookmark": {
+      "disposition": "needs-live-probe",
+      "reason": "agent bookmarks, non-array POST body (Bookmark 5p), no summaries; probe",
+      "evidence": "POST /Bookmark body=Bookmark(5p) (not an array)",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "BudgetType": {
+      "disposition": "needs-live-probe",
+      "reason": "budget types keyed by ticket_id (5p); purpose unclear",
+      "evidence": "'List of BudgetType' params ticket_id",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "BulkEmail": {
+      "disposition": "needs-live-probe",
+      "reason": "bulk email GET-only; list op undocumented (no summary/schema); probe",
+      "evidence": "GET /BulkEmail: no summary/response schema",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "BusinessCentralDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of BusinessCentralDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CAB": {
+      "disposition": "first-class-candidate",
+      "reason": "change advisory board records (CabHeader 31p); change management",
+      "evidence": "List of CabHeader",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CABMember": {
+      "disposition": "needs-live-probe",
+      "reason": "CAB members, undocumented single GET; CAB child, probe",
+      "evidence": "GET /CABMember: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "CABRole": {
+      "disposition": "needs-live-probe",
+      "reason": "CAB roles, undocumented single GET; CAB child, probe",
+      "evidence": "GET /CABRole: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "CRMNote": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of AreaNote",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CRMNoteReply": {
+      "disposition": "first-class-candidate",
+      "reason": "CRM note replies; sibling of covered crm-notes",
+      "evidence": "Get one AreaNote",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CSPConsumptionData": {
+      "disposition": "first-class-candidate",
+      "reason": "CSP consumption billing-read; POST manage/DELETE Parent money-risky, raw",
+      "evidence": "POST /CSPConsumptionData/manage body CSPConsumptionData(77p)",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "CSPSubscriptionPricing": {
+      "disposition": "deliberately-raw",
+      "reason": "CSP pricing management write-only (/manage); billing-risk write",
+      "evidence": "single POST /CSPSubscriptionPricing/manage",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "CSVTemplate": {
+      "disposition": "needs-live-probe",
+      "reason": "CSV template CRUD (14p); import-vs-export purpose unclear",
+      "evidence": "Get one CSVTemplate",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CallEvent": {
+      "disposition": "needs-live-probe",
+      "reason": "telephony event CRUD, all summaries empty; vs CallLog purpose unclear",
+      "evidence": "POST /CallEvent body [CallEvent(12p)], no summaries",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "CallLog": {
+      "disposition": "first-class-candidate",
+      "reason": "phone call history (CallLog 55p); communications read",
+      "evidence": "List of CallLog",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "CallScript": {
+      "disposition": "first-class-candidate",
+      "reason": "call script templates (ScriptHeader); telephony config read",
+      "evidence": "Get one ScriptHeader",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CannedText": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of CannedText",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "Category": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of CategoryDetail",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Certificate": {
+      "disposition": "first-class-candidate",
+      "reason": "certificate inventory (9p CRUD); expiry-monitoring value",
+      "evidence": "Get one Certificate",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ChangeCalendar": {
+      "disposition": "needs-live-probe",
+      "reason": "change calendar undocumented single GET; shape unknown, probe",
+      "evidence": "GET /ChangeCalendar: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "ChargeRate": {
+      "disposition": "first-class-candidate",
+      "reason": "billing charge rates (client_id,contract_id filters); billing config",
+      "evidence": "List of ChargeRate",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "Chat": {
+      "disposition": "deliberately-raw",
+      "reason": "live-chat sessions (portal realtime plumbing); raw",
+      "evidence": "List of LiveChatHeader",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "ChatFlow": {
+      "disposition": "junk-or-dead",
+      "reason": "POST-only 4p, no summary; chat bot plumbing, vestigial",
+      "evidence": "POST /ChatFlow body [ChatFlowProcess(4p)], no summary",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "ChatMatchingData": {
+      "disposition": "junk-or-dead",
+      "reason": "POST-only 3p, no summary; vestigial",
+      "evidence": "POST /ChatMatchingData body [ChatMatchingData(3p)]",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "ChatMessage": {
+      "disposition": "deliberately-raw",
+      "reason": "live-chat messaging (+IsTyping); portal plumbing, raw",
+      "evidence": "POST /ChatMessage/IsTyping body LiveChatIsTyping(4p)",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "ChatProfile": {
+      "disposition": "deliberately-raw",
+      "reason": "chat channel config (81p); chat plumbing family, raw",
+      "evidence": "List of ChatProfile",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Client": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Area",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "ClientCache": {
+      "disposition": "junk-or-dead",
+      "reason": "undocumented GET cache dump; vestigial-looking",
+      "evidence": "GET /ClientCache: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "ClientContract": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of ContractHeader",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "ClientPrepay": {
+      "disposition": "first-class-candidate",
+      "reason": "prepay history billing-read (client_id,billing_date filters)",
+      "evidence": "List of PrepayHistory",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Cluster": {
+      "disposition": "deliberately-raw",
+      "reason": "instance cluster topology (GET-only); system admin",
+      "evidence": "no summaries; params id",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "ConfigCommit": {
+      "disposition": "deliberately-raw",
+      "reason": "config versioning with rollback_commit; system/admin surface",
+      "evidence": "List of ConfigCommit",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ConfirmClosure": {
+      "disposition": "needs-live-probe",
+      "reason": "closure-confirm config, mostly undocumented CRUD; purpose unclear",
+      "evidence": "GET/POST/DELETE summaries empty; ConfirmClosure(11p)",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ConfluenceDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []ConfluenceDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ConnectedInstance": {
+      "disposition": "deliberately-raw",
+      "reason": "connected-instance registry; multi-instance plumbing",
+      "evidence": "Get one ConnectedInstance",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Consignment": {
+      "disposition": "first-class-candidate",
+      "reason": "stock consignment orders; procurement-adjacent CRUD",
+      "evidence": "List of ConsignmentHeader",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Contactgroup": {
+      "disposition": "first-class-candidate",
+      "reason": "contact groups; full CRUD; contact-like",
+      "evidence": "no summaries; schema []Contactgroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Contactgroupcontact": {
+      "disposition": "first-class-candidate",
+      "reason": "group-to-contact link; contact family",
+      "evidence": "no summaries; schema []Contactgroupcontacts",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ContractRule": {
+      "disposition": "first-class-candidate",
+      "reason": "contract rule config (15p); contract config read",
+      "evidence": "no summaries; schema []ContractRule",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ContractSchedule": {
+      "disposition": "first-class-candidate",
+      "reason": "contract visit schedules; contract config read",
+      "evidence": "Get one ContractSchedule",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ContractSchedulePlan": {
+      "disposition": "first-class-candidate",
+      "reason": "contract schedule plans; contract config read",
+      "evidence": "Get one ContractSchedulePlan",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Control": {
+      "disposition": "deliberately-raw",
+      "reason": "instance config mega-schema + ClearCache/UpdateEnc/setup; system surface",
+      "evidence": "GET/POST Control(4246p); POST /Control/ClearCache, /UpdateEnc, /setup",
+      "ops": 6,
+      "methods": "GET,POST"
+    },
+    "CostCentres": {
+      "disposition": "first-class-candidate",
+      "reason": "cost centre config CRUD; billing config read",
+      "evidence": "Get one Costcentres",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CriteriaGroup": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET, no params; vestigial-looking",
+      "evidence": "GET /CriteriaGroup: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Currency": {
+      "disposition": "first-class-candidate",
+      "reason": "currency config CRUD; billing config read",
+      "evidence": "Get one Currency",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CustomButton": {
+      "disposition": "first-class-candidate",
+      "reason": "custom button config (24p); UI action config read",
+      "evidence": "List of CustomButton",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CustomButtonAudit": {
+      "disposition": "junk-or-dead",
+      "reason": "POST-only, no summary; audit sink, vestigial-looking",
+      "evidence": "POST /CustomButtonAudit body CustomButtonAudit(6p)",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "CustomIntegration": {
+      "disposition": "deliberately-raw",
+      "reason": "outbound integration definitions (59p); integration plumbing",
+      "evidence": "Get one OutboundIntegration",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CustomIntegrationMethod": {
+      "disposition": "deliberately-raw",
+      "reason": "outbound integration methods; integration plumbing",
+      "evidence": "List of OutboundIntegrationMethod",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CustomIntegrationMethodValue": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET under integration family; vestigial",
+      "evidence": "GET /CustomIntegrationMethodValue: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "CustomIntegrationRepository": {
+      "disposition": "deliberately-raw",
+      "reason": "GET-only duplicate of /CustomIntegration (same schema/summaries)",
+      "evidence": "'Get one OutboundIntegration' — same as /CustomIntegration/{id}",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "CustomQuery": {
+      "disposition": "needs-live-probe",
+      "reason": "custom query CRUD undocumented; query semantics unclear; probe",
+      "evidence": "POST /CustomQuery body [CustomQuery(8p)], no summaries",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CustomTable": {
+      "disposition": "first-class-candidate",
+      "reason": "custom tables (62p, isconfig); admin config read",
+      "evidence": "List of CustomTable",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "CustomTableCSV": {
+      "disposition": "needs-live-probe",
+      "reason": "custom table CSV export (single GET /{id), undocumented; probe",
+      "evidence": "GET /CustomTableCSV/{id}: no summary",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "DashboardLinks": {
+      "disposition": "first-class-candidate",
+      "reason": "dashboard links (45p) with user filters; dashboard config read",
+      "evidence": "List of DashboardLinks",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "DashboardLinksRepository": {
+      "disposition": "deliberately-raw",
+      "reason": "GET-only duplicate of /DashboardLinks (same summaries)",
+      "evidence": "'List of DashboardLinks' identical to /DashboardLinks",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "DatabaseLookup": {
+      "disposition": "needs-live-probe",
+      "reason": "parts lookup with POST /run (execution side effects); probe",
+      "evidence": "POST /DatabaseLookup/run body [PartsLookup(70p)]",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "DatabaseLookupConfirmation": {
+      "disposition": "needs-live-probe",
+      "reason": "lookup confirmation helper, undocumented; probe",
+      "evidence": "GET/POST /DatabaseLookupConfirmation: no summaries",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "DattoCommerceDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of DattoCommerceDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "DattoRmmDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []DattoRmmDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "DeviceLicence": {
+      "disposition": "needs-live-probe",
+      "reason": "device licence GET-only, undocumented; plausible read, probe first",
+      "evidence": "GET /DeviceLicence: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "DistributionLists": {
+      "disposition": "first-class-candidate",
+      "reason": "distribution list config (46p) CRUD; mail config read",
+      "evidence": "no summaries; schema []DistributionLists",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "DistributionListsLog": {
+      "disposition": "needs-live-probe",
+      "reason": "distribution list log, undocumented CRUD; purpose unclear",
+      "evidence": "GET /DistributionListsLog: no summary",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "DocumentCreation": {
+      "disposition": "junk-or-dead",
+      "reason": "empty POST (no body/summary/schema); vestigial",
+      "evidence": "POST /DocumentCreation: no summary/body/response schema",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "Downtime": {
+      "disposition": "first-class-candidate",
+      "reason": "downtime records + /DowntimeCalendar; monitoring read",
+      "evidence": "GET /Downtime/DowntimeCalendar",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "Draft": {
+      "disposition": "junk-or-dead",
+      "reason": "POST-only 4p ticket draft, no summary; vestigial-looking",
+      "evidence": "POST /Draft body [FaultDraft(4p)]",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "Dynamics365CRMDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []Dynamics365CRMDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "DynatraceDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []DynatraceDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "EcommerceOrder": {
+      "disposition": "deliberately-raw",
+      "reason": "e-commerce order feed; integration plumbing (CRUD, no summaries)",
+      "evidence": "no summaries; schema []EcommerceOrder",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "EmailAddressBook": {
+      "disposition": "first-class-candidate",
+      "reason": "user address book with rich filters (client_id,site_id); contact-like",
+      "evidence": "List of Users",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "EmailRule": {
+      "disposition": "first-class-candidate",
+      "reason": "inbound email rules (EmailRule 76p); mail routing config",
+      "evidence": "List of EmailRule",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "EmailStore": {
+      "disposition": "needs-live-probe",
+      "reason": "mail store config (48p), list op undocumented; purpose unclear",
+      "evidence": "GET /EmailStore: no summary",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "EmailTemplate": {
+      "disposition": "first-class-candidate",
+      "reason": "email/notification templates (+/preview); admins edit these",
+      "evidence": "List of MessageContent",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "EmailTemplateVariable": {
+      "disposition": "first-class-candidate",
+      "reason": "template variables (MessageContentVariable); template config child",
+      "evidence": "no summaries; schema []MessageContentVariable",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "EracentDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []EracentDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Event": {
+      "disposition": "needs-live-probe",
+      "reason": "bare CRUD with [integer] create body; event entity purpose unclear",
+      "evidence": "POST /Event body=[integer], all summaries empty",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "EventRule": {
+      "disposition": "first-class-candidate",
+      "reason": "event rule config (47p) full CRUD; read-first, writes gated",
+      "evidence": "no summaries; schema []EventRule",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ExactDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of ExactDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Expense": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List expenses",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "ExternalChatMessage": {
+      "disposition": "deliberately-raw",
+      "reason": "Teams chat message CRUD; chat plumbing, raw",
+      "evidence": "no summaries; schema []TeamsChatMessage_List",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ExternalLink": {
+      "disposition": "deliberately-raw",
+      "reason": "third-party deep links (+POST /Generate); integration plumbing",
+      "evidence": "List of ExternalLink",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "FAQLists": {
+      "disposition": "first-class-candidate",
+      "reason": "FAQ list structure (FAQListHead 42p); KB-adjacent config read",
+      "evidence": "List of FAQListHead",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "FacebookDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of FacebookDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "FaultViewLog": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET; vestigial-looking",
+      "evidence": "GET /FaultViewLog: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "FaultsForecasting": {
+      "disposition": "needs-live-probe",
+      "reason": "no list route (POST + GET/{id} only); forecasting shape odd",
+      "evidence": "POST /FaultsForecasting + GET /{id}; no GET collection",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "Features": {
+      "disposition": "deliberately-raw",
+      "reason": "module setup toggles; system admin surface",
+      "evidence": "List of ModuleSetup",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "Feed": {
+      "disposition": "first-class-candidate",
+      "reason": "activity feed with client/site/user filters; operations read",
+      "evidence": "List of Feed",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Feedback": {
+      "disposition": "first-class-candidate",
+      "reason": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+      "evidence": "Get one Feedback",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "Field": {
+      "disposition": "first-class-candidate",
+      "reason": "custom field config (Field 68p); form config read",
+      "evidence": "List of Field",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "FieldGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "field groups (isconfig filter); form config read",
+      "evidence": "List of FieldGroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "FieldInfo": {
+      "disposition": "first-class-candidate",
+      "reason": "field metadata (151p) with rich filters; form config read",
+      "evidence": "List of FieldInfo",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ForecastDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "sales forecast config child; generic no-summary CRUD, not operator-facing",
+      "evidence": "POST /ForecastDetails body [ForecastDetails(44p)], no summaries",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ForethoughtDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []ForethoughtDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "FortnoxDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []FortnoxDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "GWorkspaceDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []GWorkspaceDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "GoogleBusinessDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []GoogleBusinessDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "HaloDeviceInfo": {
+      "disposition": "deliberately-raw",
+      "reason": "device registration for Halo agents; no list route, plumbing",
+      "evidence": "no summaries; schema []NHD_DeviceInfo",
+      "ops": 3,
+      "methods": "DELETE,GET,POST"
+    },
+    "HaloField": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET; vestigial-looking",
+      "evidence": "GET /HaloField: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "HaloIntegration": {
+      "disposition": "deliberately-raw",
+      "reason": "integration entry point CreateTicket/CreateAction; plumbing",
+      "evidence": "POST /HaloIntegration/CreateTicket body Faults(1020p)",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "HaloNews": {
+      "disposition": "deliberately-raw",
+      "reason": "vendor news feed (+POST /read); system surface",
+      "evidence": "Get one HaloNews",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "Health": {
+      "disposition": "deliberately-raw",
+      "reason": "instance health probes; system surface",
+      "evidence": "no summaries in any op",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "HistoricalTicketVolumes": {
+      "disposition": "needs-live-probe",
+      "reason": "ticket volume stats with full CRUD incl DELETE; shape odd",
+      "evidence": "POST/DELETE exist on stats-like entity, summaries empty",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Holiday": {
+      "disposition": "first-class-candidate",
+      "reason": "holiday/leave records (agent_id,approved_only); workforce read",
+      "evidence": "List of Holidays",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ImpersonationRequest": {
+      "disposition": "deliberately-raw",
+      "reason": "agent impersonation requests; security surface",
+      "evidence": "no summaries; schema ImpersonationRequest",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "ImportCSV": {
+      "disposition": "deliberately-raw",
+      "reason": "CSV import config (bulk data loads); destructive-risk plumbing, raw",
+      "evidence": "List of ImportCsv",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IncomingEvent": {
+      "disposition": "deliberately-raw",
+      "reason": "inbound event queue (+POST /Process); plumbing",
+      "evidence": "no summaries; schema []IncomingEvent",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "IncomingWebhook": {
+      "disposition": "deliberately-raw",
+      "reason": "inbound webhook config (+POST /Process); sibling of covered /Webhook",
+      "evidence": "no summaries; schema []IncomingWebhook",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "IncomingWebhookAttempt": {
+      "disposition": "needs-live-probe",
+      "reason": "webhook attempt log, undocumented single GET; purpose unclear",
+      "evidence": "GET /IncomingWebhookAttempt: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "IngramMicroDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "Get one IngramMicroDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IngramMicroResellerDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []IngramMicroResellerDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Instance": {
+      "disposition": "deliberately-raw",
+      "reason": "multi-instance registry (POST creates instance); system admin",
+      "evidence": "List of Instance",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "InstanceInfo": {
+      "disposition": "deliberately-raw",
+      "reason": "instance system info; undocumented GET",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "IntegrationConfiguration": {
+      "disposition": "deliberately-raw",
+      "reason": "integration config plumbing; CRUD, no operator value",
+      "evidence": "Get one IntegrationConfiguration",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "IntegrationCursor": {
+      "disposition": "deliberately-raw",
+      "reason": "integration sync cursor; plumbing state",
+      "evidence": "no summaries; schema []IntegrationCursor",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IntegrationData": {
+      "disposition": "deliberately-raw",
+      "reason": "156-op per-vendor sync tree (Get/Import/Send/Link); integration plumbing, raw",
+      "evidence": "e.g. GET /IntegrationData/Get/Xero, POST .../Send/Xero, POST .../AdjustQty/Pax8",
+      "ops": 156,
+      "methods": "GET,POST"
+    },
+    "IntegrationDelta": {
+      "disposition": "deliberately-raw",
+      "reason": "integration delta records; sync plumbing",
+      "evidence": "no summaries; schema []IntegrationDelta",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IntegrationError": {
+      "disposition": "deliberately-raw",
+      "reason": "integration error log; integrator diagnostics, not operator surface",
+      "evidence": "List of IntegrationError",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IntegrationExport": {
+      "disposition": "deliberately-raw",
+      "reason": "integration export queue; sync plumbing",
+      "evidence": "List of IntegrationExport",
+      "ops": 3,
+      "methods": "DELETE,GET,POST"
+    },
+    "IntegrationFieldData": {
+      "disposition": "deliberately-raw",
+      "reason": "integration field payloads; plumbing",
+      "evidence": "no summaries; schema []IntegrationFieldData",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IntegrationFieldMapping": {
+      "disposition": "deliberately-raw",
+      "reason": "integration field mapping (GET-only); plumbing",
+      "evidence": "List of IntegrationFieldMapping",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "IntegrationRequest": {
+      "disposition": "deliberately-raw",
+      "reason": "integration request log; integrator plumbing",
+      "evidence": "List of IntegrationRequest",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "IntegrationRunbookVariableGroup": {
+      "disposition": "deliberately-raw",
+      "reason": "runbook variable mapping (GET-only); plumbing",
+      "evidence": "List of IntegrationRunbookVariableGroup",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "IntegrationSiteMapping": {
+      "disposition": "deliberately-raw",
+      "reason": "site mapping for integrations (GET-only); plumbing",
+      "evidence": "List of IntegrationSiteMapping",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "IntegratorLog": {
+      "disposition": "deliberately-raw",
+      "reason": "integrator log (GET-only); sync diagnostics",
+      "evidence": "List of IntegratorLog",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "IntegratorSchedule": {
+      "disposition": "deliberately-raw",
+      "reason": "integrator schedule (GET-only); sync plumbing",
+      "evidence": "List of IntegratorSchedule",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "IntegratorTrace": {
+      "disposition": "deliberately-raw",
+      "reason": "integrator trace (GET-only); sync plumbing",
+      "evidence": "no summaries; params id",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "IntermediaDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []IntermediaDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Invoice": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of InvoiceHeader",
+      "ops": 9,
+      "methods": "DELETE,GET,POST"
+    },
+    "InvoiceChange": {
+      "disposition": "first-class-candidate",
+      "reason": "invoice change audit (invoice_id,line_id filters); billing-read",
+      "evidence": "List of InvoiceChange",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "InvoiceDetailProRata": {
+      "disposition": "needs-live-probe",
+      "reason": "prorated invoice detail, undocumented GET no params; billing-ish, probe",
+      "evidence": "GET /InvoiceDetailProRata: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "InvoicePayment": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of InvoicePayment",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "InvoiceStatus": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List invoice status definitions",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Item": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Item",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "ItemAccountsLink": {
+      "disposition": "deliberately-raw",
+      "reason": "item-to-accounts accounting link (+Migrate op); integration plumbing",
+      "evidence": "no summaries; schema []ItemAccountsLink",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "ItemGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "item grouping; product catalog config",
+      "evidence": "Get one ItemGroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ItemStock": {
+      "disposition": "first-class-candidate",
+      "reason": "stock levels (item_id,stockbin_id filters); inventory read",
+      "evidence": "List of ItemStock",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ItemStockHistory": {
+      "disposition": "first-class-candidate",
+      "reason": "stock movement history; inventory audit read",
+      "evidence": "List of ItemStockHistory",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "JamfDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []JamfDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "JiraDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []JiraDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Journey": {
+      "disposition": "needs-live-probe",
+      "reason": "journey CRUD (20p), purpose unclear from spec; probe",
+      "evidence": "POST /Journey body [Journey(20p)]",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "KBArticle": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of KBEntry",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "KBArticleAnon": {
+      "disposition": "deliberately-raw",
+      "reason": "anonymous KB read by slug; portal plumbing, undocumented",
+      "evidence": "no summaries; params slug",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "KandjiDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []KandjiDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "KaseyaVSAXDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []KaseyaVSAXDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "KashflowDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of KashflowDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "KeyVault": {
+      "disposition": "deliberately-raw",
+      "reason": "secrets vault CRUD; secrets surface",
+      "evidence": "no summaries; schema []KeyVault",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "LDAPConnection": {
+      "disposition": "deliberately-raw",
+      "reason": "LDAP bind config (55p, credentials); identity plumbing, raw",
+      "evidence": "List of LDAPConnection",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Languages": {
+      "disposition": "deliberately-raw",
+      "reason": "language pack config; UI admin surface, not operator workflow",
+      "evidence": "List of LanguagePack",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "LicenceChange": {
+      "disposition": "first-class-candidate",
+      "reason": "licence change history (licence_id filters); billing audit read",
+      "evidence": "List of LicenceChange",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "LicenseInfo": {
+      "disposition": "deliberately-raw",
+      "reason": "licence info + GET /password route; secrets-adjacent, raw",
+      "evidence": "GET /LicenseInfo/password",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "LoginToken": {
+      "disposition": "deliberately-raw",
+      "reason": "auth token creation; security surface",
+      "evidence": "no summaries; schema LoginToken",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "Lookup": {
+      "disposition": "first-class-candidate",
+      "reason": "lookup tables (55p, istree filters); config read",
+      "evidence": "List of Lookup",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "MCPConnection": {
+      "disposition": "deliberately-raw",
+      "reason": "MCP connection config; system surface",
+      "evidence": "no summaries; schema []MCPConnection",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MO": {
+      "disposition": "junk-or-dead",
+      "reason": "marketing click-tracking with 1-letter routes (/MO/b, /MO/r); nonsensical",
+      "evidence": "GET /MO/b, GET /MO/r; POST body MarketingOpen(13p)",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "MYOBdetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []MYOBDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Mail": {
+      "disposition": "deliberately-raw",
+      "reason": "outbound mail send plumbing (Azure/Google/IMAP/Pop3, ProcessMail); raw",
+      "evidence": "no summaries; schema GmailMessage",
+      "ops": 6,
+      "methods": "POST"
+    },
+    "MailCampaign": {
+      "disposition": "deliberately-raw",
+      "reason": "mail campaign config (93p); bulk-send surface, raw",
+      "evidence": "no summaries; schema []MailCampaign",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MailCampaignEmail": {
+      "disposition": "deliberately-raw",
+      "reason": "campaign recipients; bulk-send family, raw",
+      "evidence": "no summaries; schema []MailCampaignEmail",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MailCampaignLog": {
+      "disposition": "needs-live-probe",
+      "reason": "campaign log GET-only, undocumented; depends on campaign module",
+      "evidence": "GET /MailCampaignLog: no summary",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "Mailbox": {
+      "disposition": "first-class-candidate",
+      "reason": "mailboxes (124p) with dept/team filters; mail config read",
+      "evidence": "List of Mailbox",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "MailboxCredential": {
+      "disposition": "deliberately-raw",
+      "reason": "mailbox credentials CRUD; secrets surface",
+      "evidence": "no summaries; schema []MailboxCredential",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ManageEngineDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []ManageEngineDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MarketingUnsubscribe": {
+      "disposition": "deliberately-raw",
+      "reason": "unsubscribe records CRUD; marketing/compliance surface, raw",
+      "evidence": "no summaries; schema []MarketingUnsubscribe",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MattermostChannelDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw (GET-only)",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "MattermostDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []MattermostDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MeterReading": {
+      "disposition": "first-class-candidate",
+      "reason": "meter readings feeding recurring invoices; billing-read",
+      "evidence": "List of DeviceMeterReading",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "MicrosoftSubscriptionMapping": {
+      "disposition": "deliberately-raw",
+      "reason": "CSP subscription mapping; integration plumbing",
+      "evidence": "no summaries; schema []MicrosoftSubscriptionMapping",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "MicrosoftTeamsMapping": {
+      "disposition": "deliberately-raw",
+      "reason": "Teams mapping; integration plumbing",
+      "evidence": "no summaries; schema []MicrosoftTeamsMapping",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Milestone": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET; vestigial-looking",
+      "evidence": "GET /Milestone: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "NCentralDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of NCentralDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Nhserverconfig": {
+      "disposition": "deliberately-raw",
+      "reason": "NH server config (67p); system/server config surface, raw",
+      "evidence": "Get one NHServerConfig",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Notification": {
+      "disposition": "first-class-candidate",
+      "reason": "per-agent notification rules (71p); alert config read",
+      "evidence": "List of UnameNotification",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "NotificationLog": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET, no params; vestigial-looking",
+      "evidence": "GET /NotificationLog: no summary/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "NotificationMessage": {
+      "disposition": "first-class-candidate",
+      "reason": "notification message templates; alert config read",
+      "evidence": "Get one NotificationContent",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Notifications": {
+      "disposition": "needs-live-probe",
+      "reason": "EscMsg list mixes integrator/version params; purpose ambiguous",
+      "evidence": "GET /Notifications params checknhserver,clientversion,update_shown",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "ObjectMappingProfile": {
+      "disposition": "deliberately-raw",
+      "reason": "object mapping profile (integration config, undocumented GET)",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "OnlineStatus": {
+      "disposition": "deliberately-raw",
+      "reason": "agent presence writes (POST sets status); realtime plumbing",
+      "evidence": "no summaries; schema []OnlineStatus",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "Opportunities": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Faults",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "OrderLine": {
+      "disposition": "junk-or-dead",
+      "reason": "single undocumented GET, no params/schema; vestigial",
+      "evidence": "GET /OrderLine: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Organisation": {
+      "disposition": "first-class-candidate",
+      "reason": "organisation (parent company) CRUD; contact-like",
+      "evidence": "Get one Organisation",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Outcome": {
+      "disposition": "first-class-candidate",
+      "reason": "ticket outcomes/actions (TOutcome 285p); admins tune these",
+      "evidence": "List of TOutcome",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Outgoing": {
+      "disposition": "first-class-candidate",
+      "reason": "outbound mail queue (mailbox_id/status filters); mail diagnostics read",
+      "evidence": "List of Outgoing",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "OutgoingAttempt": {
+      "disposition": "first-class-candidate",
+      "reason": "outbound delivery attempts; mail diagnostics read",
+      "evidence": "List of OutgoingAttempt",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "Outgoingemail": {
+      "disposition": "deliberately-raw",
+      "reason": "POST queues outbound mail (send surface); raw, overlaps /Outgoing",
+      "evidence": "POST /Outgoingemail; no GET /{id} detail route",
+      "ops": 3,
+      "methods": "DELETE,GET,POST"
+    },
+    "PRTGDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []PRTGDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "PasswordField": {
+      "disposition": "deliberately-raw",
+      "reason": "audit password fields; secrets surface",
+      "evidence": "Get one AuditPasswordField",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "Pax8Details": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []Pax8Details",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "PdfTemplate": {
+      "disposition": "first-class-candidate",
+      "reason": "PDF templates for invoices/quotes; billing-adjacent config",
+      "evidence": "List of PdfTemplate",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "PdfTemplateRepository": {
+      "disposition": "deliberately-raw",
+      "reason": "GET-only duplicate of /PdfTemplate (same summaries)",
+      "evidence": "'List of PdfTemplate' identical to /PdfTemplate",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "PopupNote": {
+      "disposition": "first-class-candidate",
+      "reason": "popup notes read (client/site/user filters); CRM read",
+      "evidence": "List of AreaPopup",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "PowerShellScript": {
+      "disposition": "first-class-candidate",
+      "reason": "script library (PowerShellScript 19p); MSP admins manage scripts",
+      "evidence": "List of PowerShellScript",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "PowerShellScriptCriteria": {
+      "disposition": "first-class-candidate",
+      "reason": "script criteria (when scripts run); script family read",
+      "evidence": "List of PowerShellScriptCriteria",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "PowerShellScriptProcessing": {
+      "disposition": "first-class-candidate",
+      "reason": "script execution queue (outstandingonly); ops monitoring read",
+      "evidence": "List of PowerShellScriptProcessing",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Priority": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Policy",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Product": {
+      "disposition": "first-class-candidate",
+      "reason": "release products (ReleaseProduct); release config read (low priority)",
+      "evidence": "List of ReleaseProduct",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ProductBranch": {
+      "disposition": "first-class-candidate",
+      "reason": "release branches (GET-only); release config read (low priority)",
+      "evidence": "List of ReleaseBranch",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "ProductComponent": {
+      "disposition": "first-class-candidate",
+      "reason": "release components; release config read (low priority)",
+      "evidence": "List of ReleaseComponent",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ProjectSetupLines": {
+      "disposition": "deliberately-raw",
+      "reason": "POST-only project setup lines, undocumented bulk write; raw",
+      "evidence": "POST /ProjectSetupLines body [ProjectSetupLines(20p)], no summary",
+      "ops": 1,
+      "methods": "POST"
+    },
+    "Projects": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Faults",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "PublishProfiles": {
+      "disposition": "needs-live-probe",
+      "reason": "publish profile CRUD, all summaries empty; publish target unknown",
+      "evidence": "GET/POST /PublishProfiles: no summaries",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "PurchaseOrder": {
+      "disposition": "first-class-candidate",
+      "reason": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+      "evidence": "'List of SupplierOrderHeader' params awaiting_approval,supplier_id,salesorder_id",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "Qualification": {
+      "disposition": "first-class-candidate",
+      "reason": "agent qualifications (skill matrix); config read",
+      "evidence": "List of Qualification",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "QuickBooksDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of QuickBooksDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Quotation": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of QuotationHeader",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "RaynetDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []RaynetDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "RecurringInvoice": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of InvoiceHeader",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "RecurringItem": {
+      "disposition": "first-class-candidate",
+      "reason": "recurring billing items (pending_recurring_invoice filter); billing-read",
+      "evidence": "List of AreaItem",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Release": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List releases",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ReleaseNoteGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "release note groups; release config read (low priority)",
+      "evidence": "Get one ReleaseNoteGroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ReleasePipeline": {
+      "disposition": "first-class-candidate",
+      "reason": "release pipelines; release config read (low priority)",
+      "evidence": "no summaries; schema []ReleasePipeline",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ReleaseType": {
+      "disposition": "first-class-candidate",
+      "reason": "release types; release config read (low priority)",
+      "evidence": "Get one ReleaseType",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "RemoteSession": {
+      "disposition": "first-class-candidate",
+      "reason": "remote-control session audit (agent/username filters); security/monitoring read",
+      "evidence": "List of RemoteSessionData",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "RemoteSessionTeams": {
+      "disposition": "deliberately-raw",
+      "reason": "Teams remote-session mapping (GET-only, msid); integration config",
+      "evidence": "List of RemoteSessionTeams",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Report": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of AnalyzerProfile",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "ReportData": {
+      "disposition": "first-class-candidate",
+      "reason": "published report data by id; reporting read",
+      "evidence": "GET /ReportData/{publishedid}",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "ReportRepository": {
+      "disposition": "needs-live-probe",
+      "reason": "AnalyzerProfile repository may alias covered /Report; probe before promoting",
+      "evidence": "'List of AnalyzerProfile'; GET /{id} params loadreport,report_access_token",
+      "ops": 3,
+      "methods": "GET"
+    },
+    "ResourceType": {
+      "disposition": "needs-live-probe",
+      "reason": "resource types, undocumented GETs (no params/summaries); probe",
+      "evidence": "GET /ResourceType and /{id}: no summaries",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "Roadmap": {
+      "disposition": "deliberately-raw",
+      "reason": "Halo product roadmap (vendor content); system surface",
+      "evidence": ".<br> Requires authentication.",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Roles": {
+      "disposition": "first-class-candidate",
+      "reason": "role/permission definitions (NHD_Roles 98p); admin read, writes gated",
+      "evidence": "List of NHD_Roles",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SFTPDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SFTPDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SLA": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of SlaHead",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SQLImport": {
+      "disposition": "deliberately-raw",
+      "reason": "SQL import config (bulk data loads); destructive-risk plumbing, raw",
+      "evidence": "List of SQLImport",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SageBusinessCloudDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of SageBusinessCloudDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SailPointDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SailPointDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SailPointRoleMapping": {
+      "disposition": "deliberately-raw",
+      "reason": "SailPoint role mapping (GET-only); integration plumbing",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "SailPointUserMapping": {
+      "disposition": "deliberately-raw",
+      "reason": "SailPoint user mapping (GET-only); integration plumbing",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "SalesMailbox": {
+      "disposition": "first-class-candidate",
+      "reason": "sales mailbox CRUD; mail config read (sibling of tickets salesmailbox)",
+      "evidence": "Get one SalesMailbox",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SalesMailboxDetail": {
+      "disposition": "needs-live-probe",
+      "reason": "SalesMailbox child, undocumented GET/POST; purpose unclear",
+      "evidence": "GET/POST /SalesMailboxDetail: no summaries",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "SalesOrder": {
+      "disposition": "first-class-candidate",
+      "reason": "sales orders (OrderHead 152p); orders/procurement read",
+      "evidence": "List of OrderHead",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "SavedForecast": {
+      "disposition": "first-class-candidate",
+      "reason": "saved forecast views; sales view config (low priority)",
+      "evidence": "no summaries; schema []SavedForecast",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Schedule": {
+      "disposition": "needs-live-probe",
+      "reason": "schedule entity (type/primaryid params), purpose ambiguous; probe",
+      "evidence": "GET /Schedule params type,primaryid",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "ScheduleOccurrence": {
+      "disposition": "needs-live-probe",
+      "reason": "schedule occurrences, [integer] create body; purpose unclear",
+      "evidence": "POST /ScheduleOccurrence body=[integer]",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "ScreenLayout": {
+      "disposition": "deliberately-raw",
+      "reason": "screen layout designer (63p); UI chrome, raw",
+      "evidence": "List of ScreenLayout",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Search": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Search",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "SeatGeekDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SeatGeekDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SecureSecretLink": {
+      "disposition": "deliberately-raw",
+      "reason": "secret-sharing links (validate needs token+passphrase); secrets surface",
+      "evidence": "no summaries; schema []SecureSecretLink",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "SecurityCheck": {
+      "disposition": "deliberately-raw",
+      "reason": "security posture probes (+/oldencryption); system surface",
+      "evidence": "no summaries in any op",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "SecurityQuestion": {
+      "disposition": "deliberately-raw",
+      "reason": "portal security questions; auth surface",
+      "evidence": "Get one SecurityQuestion",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SecurityQuestionValidate": {
+      "disposition": "deliberately-raw",
+      "reason": "auth validation flow (POST /Call); security surface",
+      "evidence": "no summaries; schema []NPR_Result",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "SentinelOneDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SentinelOneDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Service": {
+      "disposition": "first-class-candidate",
+      "reason": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
+      "evidence": "List of ServSite",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "ServiceAvailability": {
+      "disposition": "first-class-candidate",
+      "reason": "service availability records; monitoring read",
+      "evidence": "no summaries; schema []ServiceAvailability",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ServiceCategory": {
+      "disposition": "first-class-candidate",
+      "reason": "service categories; service catalog config",
+      "evidence": "List of ServiceCategory",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ServiceRequestDetails": {
+      "disposition": "first-class-candidate",
+      "reason": "service request options (GET-only, service_id); catalog read",
+      "evidence": "List of ServiceRequestDetails",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "ServiceRestriction": {
+      "disposition": "first-class-candidate",
+      "reason": "client/service visibility restrictions (GET-only); admin read",
+      "evidence": "List of ServiceRestriction",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "ServiceStatus": {
+      "disposition": "first-class-candidate",
+      "reason": "service status entries (+/Subscribe); monitoring read",
+      "evidence": "List of ServStatus",
+      "ops": 6,
+      "methods": "DELETE,GET,POST"
+    },
+    "SetupTab": {
+      "disposition": "deliberately-raw",
+      "reason": "UI setup tabs; admin chrome, raw",
+      "evidence": "Get one SetupTab",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "SetupTabGroup": {
+      "disposition": "deliberately-raw",
+      "reason": "UI setup tab groups (GET-only); admin chrome, raw",
+      "evidence": "Get one SetupTabGroup",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "ShopifyDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []ShopifyDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SingleSignOnApplication": {
+      "disposition": "deliberately-raw",
+      "reason": "SSO application config CRUD; identity/security surface",
+      "evidence": "no summaries; schema []SingleSignOnApplication",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SingleSignOnAttempt": {
+      "disposition": "first-class-candidate",
+      "reason": "SSO attempt audit (GET/DELETE only); security monitoring read",
+      "evidence": "no summaries; params id",
+      "ops": 3,
+      "methods": "DELETE,GET"
+    },
+    "Site": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Site",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "SlackChatApp": {
+      "disposition": "deliberately-raw",
+      "reason": "Slack chat app config; integration plumbing, raw",
+      "evidence": "no summaries; schema []SlackChatApp",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SlackDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of SlackDetails",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "SnipeITDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SnipeITDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SnowDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SnowDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SoftwareLicence": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Licence",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SoftwareLicenceRole": {
+      "disposition": "first-class-candidate",
+      "reason": "licence roles (GET-only, softwarelicence_id); licence config read",
+      "evidence": "List of LicenceRole",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "SophosDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []SophosDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Status": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of TStatus",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "StockBin": {
+      "disposition": "first-class-candidate",
+      "reason": "stock bins/locations config; inventory family",
+      "evidence": "no summaries; schema []StockBin",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "StockTrace": {
+      "disposition": "first-class-candidate",
+      "reason": "stock movement trace (GET-only); inventory audit read",
+      "evidence": "no summaries; params id",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "StreamOneIonDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []StreamOneIonDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "StyleProfile": {
+      "disposition": "deliberately-raw",
+      "reason": "UI style profile; UI chrome, raw",
+      "evidence": "no summaries; schema []StyleProfile",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Supplier": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Company",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "SupplierContract": {
+      "disposition": "first-class-candidate",
+      "reason": "supplier contracts (Contract 35p); procurement read (registry notes 403s)",
+      "evidence": "List of Contract",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "SynnexDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); GET/{id} summary wrongly says IngramMicroDetails",
+      "evidence": "GET /SynnexDetails/{id} summary: 'Get one IngramMicroDetails'",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Tabs": {
+      "disposition": "deliberately-raw",
+      "reason": "UI tab config (Tabname); admin chrome, raw",
+      "evidence": "List of Tabname",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Tags": {
+      "disposition": "first-class-candidate",
+      "reason": "tag entity CRUD; operator tagging",
+      "evidence": "Get one Tag",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TaniumDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []TaniumDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TaskMonitorEvent": {
+      "disposition": "deliberately-raw",
+      "reason": "internal task monitor (undocumented GET); system task engine",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "TaskSchedule": {
+      "disposition": "deliberately-raw",
+      "reason": "internal task scheduler (undocumented GET/POST); system task engine",
+      "evidence": "no summaries in any op",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "TaskTrace": {
+      "disposition": "deliberately-raw",
+      "reason": "internal task trace (undocumented GETs); system task engine",
+      "evidence": "no summaries; params id",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "Tax": {
+      "disposition": "first-class-candidate",
+      "reason": "tax rates config CRUD; billing config read",
+      "evidence": "List of Tax",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TaxRule": {
+      "disposition": "first-class-candidate",
+      "reason": "tax rule config CRUD; billing config read",
+      "evidence": "no summaries; schema []TaxRule",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Team": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of SectionDetail",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "TeamImage": {
+      "disposition": "deliberately-raw",
+      "reason": "team avatar fetch (single undocumented GET); image plumbing",
+      "evidence": "no summaries; params id",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "TechDataResellerDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []TechDataResellerDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Template": {
+      "disposition": "first-class-candidate",
+      "reason": "STD request templates (StdRequest 235p); ticket config",
+      "evidence": "List of StdRequest",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TenableDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []TenableDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Tenant": {
+      "disposition": "deliberately-raw",
+      "reason": "tenant creation (POST body integer); multi-tenant system surface",
+      "evidence": "no summaries in any op",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "Test1": {
+      "disposition": "junk-or-dead",
+      "reason": "test endpoint: undocumented GET, no params/schema",
+      "evidence": "GET /Test1: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Test3": {
+      "disposition": "junk-or-dead",
+      "reason": "test endpoint: undocumented GET, no params/schema",
+      "evidence": "GET /Test3: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "Test4": {
+      "disposition": "junk-or-dead",
+      "reason": "test endpoint: undocumented GET, no params/schema",
+      "evidence": "GET /Test4: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "TestError": {
+      "disposition": "junk-or-dead",
+      "reason": "test endpoint: undocumented GET, no params/schema",
+      "evidence": "GET /TestError: no summary/description/params",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "TicketApproval": {
+      "disposition": "first-class-candidate",
+      "reason": "ticket approvals (FaultApproval 105p; mine/ticket_id); approval workflow",
+      "evidence": "List of FaultApproval",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TicketArea": {
+      "disposition": "first-class-candidate",
+      "reason": "ticket area config (48p); admin touches",
+      "evidence": "Get one TicketArea",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TicketRules": {
+      "disposition": "first-class-candidate",
+      "reason": "auto-assign ticket rules; admins audit routing (Autoassign 74p)",
+      "evidence": "List of Autoassign",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TicketType": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of RequestType",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TicketTypeField": {
+      "disposition": "first-class-candidate",
+      "reason": "request type fields (GET-only); ticket config read",
+      "evidence": "List of RequestTypeField",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "TicketTypeGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "request type groups; ticket config read",
+      "evidence": "Get one RequestTypeGroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Tickets": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Faults",
+      "ops": 11,
+      "methods": "DELETE,GET,POST"
+    },
+    "Timesheet": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List timesheets",
+      "ops": 5,
+      "methods": "GET,POST"
+    },
+    "TimesheetEvent": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of TimesheetEvent",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "Timeslot": {
+      "disposition": "first-class-candidate",
+      "reason": "scheduling timeslots (agent_id,workday_id); scheduling read",
+      "evidence": "List of Timeslot",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "ToDo": {
+      "disposition": "first-class-candidate",
+      "reason": "ticket to-dos (FaultToDo, ticket_id filter); operator tasks",
+      "evidence": "List of FaultToDo",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "ToDoGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "to-do group config; operator workflow config",
+      "evidence": "no summaries; schema []ToDoGroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TopLevel": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Tree",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TranscriptionStore": {
+      "disposition": "needs-live-probe",
+      "reason": "transcript store CRUD undocumented; purpose/shape unclear; probe",
+      "evidence": "GET/POST /TranscriptionStore: no summaries",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Translation": {
+      "disposition": "deliberately-raw",
+      "reason": "UI translation overrides; UI admin surface, raw",
+      "evidence": "no summaries; schema []LanguagePackTranslationsCustom",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "TwilioDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw (GET-only)",
+      "evidence": "no summaries in any op",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "TwilioWhatsAppDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []TwilioWhatsAppDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "TwitterDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of TwitterDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "UnsubServiceEmails": {
+      "disposition": "deliberately-raw",
+      "reason": "service-email unsubscribes CRUD; marketing surface, raw",
+      "evidence": "Get one UnsubEmailServiceUsers",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "UserChange": {
+      "disposition": "first-class-candidate",
+      "reason": "user change history (change_date filters); audit read",
+      "evidence": "List of UserChange",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "UserRoles": {
+      "disposition": "first-class-candidate",
+      "reason": "user role assignments; admin read, writes gated",
+      "evidence": "Get one UserRoles",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Users": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Users",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "VMWorkspaceDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []VMWorkspaceDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "VersionInfo": {
+      "disposition": "deliberately-raw",
+      "reason": "release notes/spotlight/integrator hash; system surface",
+      "evidence": ".<br> Requires authentication.",
+      "ops": 6,
+      "methods": "GET"
+    },
+    "ViewColumns": {
+      "disposition": "first-class-candidate",
+      "reason": "ticket view column config; admins manage saved views",
+      "evidence": "List of ViewColumns",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ViewFilter": {
+      "disposition": "first-class-candidate",
+      "reason": "ticket view filters; saved views family",
+      "evidence": "List of ViewFilter",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ViewListGroup": {
+      "disposition": "first-class-candidate",
+      "reason": "view list groups; saved views family",
+      "evidence": "List of ViewListGroup",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "ViewLists": {
+      "disposition": "first-class-candidate",
+      "reason": "saved ticket views (ViewLists 40p); saved views family",
+      "evidence": "List of ViewLists",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "VirimaDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []VirimaDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "VirtualAgent": {
+      "disposition": "deliberately-raw",
+      "reason": "AI virtual agent config + /MCP subresource; AI/system plumbing",
+      "evidence": "no summaries; schema []VirtualAgent",
+      "ops": 7,
+      "methods": "DELETE,GET,POST"
+    },
+    "Webhook": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Webhook",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "WebhookEvent": {
+      "disposition": "deliberately-raw",
+      "reason": "webhook event subscriptions; sibling of covered /Webhook",
+      "evidence": "List of WebhookEvent",
+      "ops": 3,
+      "methods": "GET,POST"
+    },
+    "WebhookRepository": {
+      "disposition": "deliberately-raw",
+      "reason": "GET-only duplicate of covered /Webhook (same 'List of Webhook')",
+      "evidence": "'List of Webhook' — same schema as /Webhook",
+      "ops": 2,
+      "methods": "GET"
+    },
+    "WordpressDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []WordpressDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "WordpressOrgDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "no summaries; schema []WordpressOrgDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Workday": {
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of Workdays",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "Workflow": {
+      "disposition": "first-class-candidate",
+      "reason": "workflow definitions (FlowHeader); read-first, writes gated",
+      "evidence": "List of FlowHeader",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "WorkflowTarget": {
+      "disposition": "first-class-candidate",
+      "reason": "workflow target config; child of Workflow family",
+      "evidence": "no summaries; schema []WorkflowTarget",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "XeroDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+      "evidence": "List of XeroDetails",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "XtypeRole": {
+      "disposition": "first-class-candidate",
+      "reason": "asset-type role permissions (GET-only); asset config read",
+      "evidence": "List of XTypeRole",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "azureadconnection": {
+      "disposition": "deliberately-raw",
+      "reason": "Entra ID connection config (172p, credentials); integration plumbing",
+      "evidence": "List of AzureADConnection",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "azureadmapping": {
+      "disposition": "deliberately-raw",
+      "reason": "Entra ID mapping (GET-only); integration plumbing",
+      "evidence": "List of AzureADMapping",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "cspinvoice": {
+      "disposition": "first-class-candidate",
+      "reason": "CSP invoice billing-read; POST creates invoices - write stays raw",
+      "evidence": "no summaries; schema []CSPInvoice",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "formattedemail": {
+      "disposition": "needs-live-probe",
+      "reason": "formatted email CRUD undocumented; render-vs-send unclear; probe",
+      "evidence": "GET/POST /formattedemail: no summaries",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "incomingemail": {
+      "disposition": "first-class-candidate",
+      "reason": "inbound email archive read (+AddToTicket); mail diagnostics",
+      "evidence": "List of IncomingEmail",
+      "ops": 5,
+      "methods": "DELETE,GET,POST"
+    },
+    "itemsupplier": {
+      "disposition": "first-class-candidate",
+      "reason": "item-to-supplier links; procurement read",
+      "evidence": "Get one ItemSupplier",
+      "ops": 4,
+      "methods": "DELETE,GET,POST"
+    },
+    "mcp": {
+      "disposition": "deliberately-raw",
+      "reason": "MCP server registry GET/POST/DELETE; system surface",
+      "evidence": "no summaries in any op",
+      "ops": 3,
+      "methods": "DELETE,GET,POST"
+    },
+    "pagerdutymapping": {
+      "disposition": "deliberately-raw",
+      "reason": "PagerDuty service mapping (GET-only); integration plumbing",
+      "evidence": "List of PagerDutyMapping",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "workflowstep": {
+      "disposition": "first-class-candidate",
+      "reason": "workflow steps (FlowDetail, GET-only); child of Workflow",
+      "evidence": "List of FlowDetail",
+      "ops": 1,
+      "methods": "GET"
+    }
+  },
+  "overrides": {
+    "Addressbook": {
+      "disposition": "dormant",
+      "reason": "live GET/GET{id} answer 500 on midtowntg (4 attempts, 2026-09-30); re-probe before promoting"
+    }
+  }
+}
