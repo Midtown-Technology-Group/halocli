@@ -572,6 +572,36 @@ RESOURCES: tuple[HaloResource, ...] = (
         ),
     ),
     HaloResource(
+        "canned-text",
+        "/CannedText",
+        aliases=("canned-texts", "cannedtext", "canned"),
+        # Live-verified 2026-10-01: GET /CannedText -> 200, BARE array (5 rows;
+        # list_key therefore stays None - the default bare-array path handles
+        # it); GET /CannedText/1 -> 200 (15 keys, _canupdate true, text/html
+        # present). The spec's list response declares no content schema even
+        # though the tenant returns JSON. POST/DELETE/favourite were never
+        # fired (no write authorization) -> verification: spec.
+        table_fields=("id", "name", "group_id", "restriction_type"),
+        create_endpoint="/CannedText",
+        update_endpoint="/CannedText",
+        # The spec declares no required fields; name + text is the usable
+        # minimum (live rows always carry both - a canned text without text
+        # would be noise).
+        required_create_fields=("name", "text"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "group_id", "text", "html"),
+        operations=(
+            ResourceOperation(
+                name="favourite",
+                method="POST",
+                path="/CannedText/favourite",
+                body=True,
+                summary="Mark a canned text as favourite (body: id, ctid, unum)",
+            ),
+        ),
+    ),
+    HaloResource(
         "searches",
         "/Search",
         # /Search/{id} does not exist in the spec (same class as expenses), so

@@ -29,6 +29,7 @@ WRITE_RESOURCES = (
     "kb",
     "crm-notes",
     "users",
+    "canned-text",
 )
 
 
@@ -52,7 +53,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 36
+    assert len(RESOURCES) == 37
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -66,7 +67,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 12
+    assert len(WRITE_RESOURCES) == 13
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -276,6 +277,42 @@ def test_users_write_shape_is_live_proven() -> None:
     users_schema = spec["components"]["schemas"]["Users"]["properties"]
     assert "_revoke_authenticatorapp" in users_schema
     assert "resetpassword" in users_schema
+
+
+def test_canned_text_shape_matches_live_evidence() -> None:
+    """canned-text write metadata, pinned to the 2026-10-01 live reads.
+
+    Live: GET /CannedText -> 200 BARE array (5 rows, so list_key stays None);
+    GET /CannedText/1 -> 200 (15 keys, text/html present, _canupdate true).
+    The spec declares no required fields; name+text is the practical
+    minimum. POST/DELETE/favourite never fired.
+    """
+    canned = get_resource("canned-text")
+
+    assert canned.endpoint == "/CannedText"
+    assert canned.list_key is None  # bare array, not an envelope
+    assert canned.table_fields == ("id", "name", "group_id", "restriction_type")
+    assert canned.create_endpoint == canned.endpoint
+    assert canned.update_endpoint == canned.endpoint
+    assert canned.supports_delete is True
+    assert canned.required_create_fields == ("name", "text")
+    assert "id" in canned.required_update_fields
+    assert canned.effective_write_preview_fields[0] == "id"
+    assert set(canned.required_create_fields) <= set(canned.effective_write_preview_fields)
+
+    favourite = {op.name: op for op in canned.operations}["favourite"]
+    assert (favourite.method, favourite.path, favourite.body) == (
+        "POST",
+        "/CannedText/favourite",
+        True,
+    )
+    assert favourite.verification == "spec"
+
+    spec = load_spec()
+    assert spec is not None
+    assert "post" in spec["paths"]["/CannedText"]
+    assert "delete" in spec["paths"]["/CannedText/{id}"]
+    assert "post" in spec["paths"]["/CannedText/favourite"]
 
 
 def test_billing_read_resources_stay_read_only() -> None:
