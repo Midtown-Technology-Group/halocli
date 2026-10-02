@@ -142,8 +142,8 @@
       "methods": "GET"
     },
     "AreaRequestType": {
-      "disposition": "first-class-candidate",
-      "reason": "area-to-request-type mapping (GET-only); ticket config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one AreaRequestType",
       "ops": 2,
       "methods": "GET"
@@ -170,8 +170,8 @@
       "methods": "DELETE,GET,POST"
     },
     "AssetChange": {
-      "disposition": "first-class-candidate",
-      "reason": "asset change history (DeviceChange); asset audit read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of DeviceChange",
       "ops": 2,
       "methods": "GET,POST"
@@ -184,8 +184,8 @@
       "methods": "DELETE,GET,POST"
     },
     "AssetSoftware": {
-      "disposition": "first-class-candidate",
-      "reason": "installed software per device (device_id filters); inventory/monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of DeviceApplications",
       "ops": 1,
       "methods": "GET"
@@ -226,8 +226,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Audit": {
-      "disposition": "first-class-candidate",
-      "reason": "audit records CRUD; compliance/audit read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one Audit",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -303,8 +303,8 @@
       "methods": "DELETE,GET,POST"
     },
     "BulkEmail": {
-      "disposition": "needs-live-probe",
-      "reason": "bulk email GET-only; list op undocumented (no summary/schema); probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /BulkEmail: no summary/response schema",
       "ops": 2,
       "methods": "GET"
@@ -324,15 +324,15 @@
       "methods": "DELETE,GET,POST"
     },
     "CABMember": {
-      "disposition": "needs-live-probe",
-      "reason": "CAB members, undocumented single GET; CAB child, probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /CABMember: no summary/params",
       "ops": 1,
       "methods": "GET"
     },
     "CABRole": {
-      "disposition": "needs-live-probe",
-      "reason": "CAB roles, undocumented single GET; CAB child, probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /CABRole: no summary/params",
       "ops": 1,
       "methods": "GET"
@@ -345,15 +345,15 @@
       "methods": "DELETE,GET,POST"
     },
     "CRMNoteReply": {
-      "disposition": "first-class-candidate",
-      "reason": "CRM note replies; sibling of covered crm-notes",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one AreaNote",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "CSPConsumptionData": {
-      "disposition": "first-class-candidate",
-      "reason": "CSP consumption billing-read; POST manage/DELETE Parent money-risky, raw",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "POST /CSPConsumptionData/manage body CSPConsumptionData(77p)",
       "ops": 6,
       "methods": "DELETE,GET,POST"
@@ -366,15 +366,15 @@
       "methods": "POST"
     },
     "CSVTemplate": {
-      "disposition": "needs-live-probe",
-      "reason": "CSV template CRUD (14p); import-vs-export purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one CSVTemplate",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "CallEvent": {
-      "disposition": "needs-live-probe",
-      "reason": "telephony event CRUD, all summaries empty; vs CallLog purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "POST /CallEvent body [CallEvent(12p)], no summaries",
       "ops": 3,
       "methods": "GET,POST"
@@ -408,15 +408,15 @@
       "methods": "DELETE,GET,POST"
     },
     "Certificate": {
-      "disposition": "first-class-candidate",
-      "reason": "certificate inventory (9p CRUD); expiry-monitoring value",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one Certificate",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ChangeCalendar": {
-      "disposition": "needs-live-probe",
-      "reason": "change calendar undocumented single GET; shape unknown, probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /ChangeCalendar: no summary/params",
       "ops": 1,
       "methods": "GET"
@@ -506,8 +506,8 @@
       "methods": "DELETE,GET,POST"
     },
     "ConfirmClosure": {
-      "disposition": "needs-live-probe",
-      "reason": "closure-confirm config, mostly undocumented CRUD; purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET/POST/DELETE summaries empty; ConfirmClosure(11p)",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -534,36 +534,36 @@
       "methods": "DELETE,GET,POST"
     },
     "Contactgroup": {
-      "disposition": "first-class-candidate",
-      "reason": "contact groups; full CRUD; contact-like",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []Contactgroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "Contactgroupcontact": {
-      "disposition": "first-class-candidate",
-      "reason": "group-to-contact link; contact family",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []Contactgroupcontacts",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ContractRule": {
-      "disposition": "first-class-candidate",
-      "reason": "contract rule config (15p); contract config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []ContractRule",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ContractSchedule": {
-      "disposition": "first-class-candidate",
-      "reason": "contract visit schedules; contract config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one ContractSchedule",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ContractSchedulePlan": {
-      "disposition": "first-class-candidate",
-      "reason": "contract schedule plans; contract config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one ContractSchedulePlan",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -702,8 +702,8 @@
       "methods": "DELETE,GET,POST"
     },
     "DeviceLicence": {
-      "disposition": "needs-live-probe",
-      "reason": "device licence GET-only, undocumented; plausible read, probe first",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /DeviceLicence: no summary/params",
       "ops": 1,
       "methods": "GET"
@@ -716,8 +716,8 @@
       "methods": "DELETE,GET,POST"
     },
     "DistributionListsLog": {
-      "disposition": "needs-live-probe",
-      "reason": "distribution list log, undocumented CRUD; purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /DistributionListsLog: no summary",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -730,8 +730,8 @@
       "methods": "POST"
     },
     "Downtime": {
-      "disposition": "first-class-candidate",
-      "reason": "downtime records + /DowntimeCalendar; monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /Downtime/DowntimeCalendar",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -793,8 +793,8 @@
       "methods": "DELETE,GET,POST"
     },
     "EmailTemplateVariable": {
-      "disposition": "first-class-candidate",
-      "reason": "template variables (MessageContentVariable); template config child",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []MessageContentVariable",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -989,8 +989,8 @@
       "methods": "GET"
     },
     "HistoricalTicketVolumes": {
-      "disposition": "needs-live-probe",
-      "reason": "ticket volume stats with full CRUD incl DELETE; shape odd",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "POST/DELETE exist on stats-like entity, summaries empty",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1185,8 +1185,8 @@
       "methods": "GET,POST"
     },
     "InvoiceDetailProRata": {
-      "disposition": "needs-live-probe",
-      "reason": "prorated invoice detail, undocumented GET no params; billing-ish, probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /InvoiceDetailProRata: no summary/params",
       "ops": 1,
       "methods": "GET"
@@ -1388,8 +1388,8 @@
       "methods": "DELETE,GET,POST"
     },
     "MailCampaignLog": {
-      "disposition": "needs-live-probe",
-      "reason": "campaign log GET-only, undocumented; depends on campaign module",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /MailCampaignLog: no summary",
       "ops": 2,
       "methods": "GET"
@@ -1437,8 +1437,8 @@
       "methods": "DELETE,GET,POST"
     },
     "MeterReading": {
-      "disposition": "first-class-candidate",
-      "reason": "meter readings feeding recurring invoices; billing-read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of DeviceMeterReading",
       "ops": 3,
       "methods": "GET,POST"
@@ -1500,8 +1500,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Notifications": {
-      "disposition": "needs-live-probe",
-      "reason": "EscMsg list mixes integrator/version params; purpose ambiguous",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /Notifications params checknhserver,clientversion,update_shown",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -1612,22 +1612,22 @@
       "methods": "GET,POST"
     },
     "PowerShellScript": {
-      "disposition": "first-class-candidate",
-      "reason": "script library (PowerShellScript 19p); MSP admins manage scripts",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of PowerShellScript",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "PowerShellScriptCriteria": {
-      "disposition": "first-class-candidate",
-      "reason": "script criteria (when scripts run); script family read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of PowerShellScriptCriteria",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "PowerShellScriptProcessing": {
-      "disposition": "first-class-candidate",
-      "reason": "script execution queue (outstandingonly); ops monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of PowerShellScriptProcessing",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1647,15 +1647,15 @@
       "methods": "DELETE,GET,POST"
     },
     "ProductBranch": {
-      "disposition": "first-class-candidate",
-      "reason": "release branches (GET-only); release config read (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of ReleaseBranch",
       "ops": 1,
       "methods": "GET"
     },
     "ProductComponent": {
-      "disposition": "first-class-candidate",
-      "reason": "release components; release config read (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of ReleaseComponent",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1675,8 +1675,8 @@
       "methods": "DELETE,GET,POST"
     },
     "PublishProfiles": {
-      "disposition": "needs-live-probe",
-      "reason": "publish profile CRUD, all summaries empty; publish target unknown",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET/POST /PublishProfiles: no summaries",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1724,8 +1724,8 @@
       "methods": "DELETE,GET,POST"
     },
     "RecurringItem": {
-      "disposition": "first-class-candidate",
-      "reason": "recurring billing items (pending_recurring_invoice filter); billing-read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of AreaItem",
       "ops": 1,
       "methods": "GET"
@@ -1738,15 +1738,15 @@
       "methods": "DELETE,GET,POST"
     },
     "ReleaseNoteGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "release note groups; release config read (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one ReleaseNoteGroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ReleasePipeline": {
-      "disposition": "first-class-candidate",
-      "reason": "release pipelines; release config read (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []ReleasePipeline",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1759,8 +1759,8 @@
       "methods": "DELETE,GET,POST"
     },
     "RemoteSession": {
-      "disposition": "first-class-candidate",
-      "reason": "remote-control session audit (agent/username filters); security/monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of RemoteSessionData",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1787,15 +1787,15 @@
       "methods": "GET"
     },
     "ReportRepository": {
-      "disposition": "needs-live-probe",
-      "reason": "AnalyzerProfile repository may alias covered /Report; probe before promoting",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "'List of AnalyzerProfile'; GET /{id} params loadreport,report_access_token",
       "ops": 3,
       "methods": "GET"
     },
     "ResourceType": {
-      "disposition": "needs-live-probe",
-      "reason": "resource types, undocumented GETs (no params/summaries); probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET /ResourceType and /{id}: no summaries",
       "ops": 2,
       "methods": "GET"
@@ -1885,8 +1885,8 @@
       "methods": "DELETE,GET,POST"
     },
     "SavedForecast": {
-      "disposition": "first-class-candidate",
-      "reason": "saved forecast views; sales view config (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []SavedForecast",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1969,8 +1969,8 @@
       "methods": "DELETE,GET,POST"
     },
     "ServiceAvailability": {
-      "disposition": "first-class-candidate",
-      "reason": "service availability records; monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []ServiceAvailability",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1997,8 +1997,8 @@
       "methods": "GET"
     },
     "ServiceStatus": {
-      "disposition": "first-class-candidate",
-      "reason": "service status entries (+/Subscribe); monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of ServStatus",
       "ops": 6,
       "methods": "DELETE,GET,POST"
@@ -2032,8 +2032,8 @@
       "methods": "DELETE,GET,POST"
     },
     "SingleSignOnAttempt": {
-      "disposition": "first-class-candidate",
-      "reason": "SSO attempt audit (GET/DELETE only); security monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; params id",
       "ops": 3,
       "methods": "DELETE,GET"
@@ -2081,8 +2081,8 @@
       "methods": "DELETE,GET,POST"
     },
     "SoftwareLicenceRole": {
-      "disposition": "first-class-candidate",
-      "reason": "licence roles (GET-only, softwarelicence_id); licence config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of LicenceRole",
       "ops": 1,
       "methods": "GET"
@@ -2137,8 +2137,8 @@
       "methods": "DELETE,GET,POST"
     },
     "SupplierContract": {
-      "disposition": "first-class-candidate",
-      "reason": "supplier contracts (Contract 35p); procurement read (registry notes 403s)",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of Contract",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -2200,8 +2200,8 @@
       "methods": "DELETE,GET,POST"
     },
     "TaxRule": {
-      "disposition": "first-class-candidate",
-      "reason": "tax rule config CRUD; billing config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []TaxRule",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2312,8 +2312,8 @@
       "methods": "GET"
     },
     "TicketTypeGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "request type groups; ticket config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one RequestTypeGroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2340,15 +2340,15 @@
       "methods": "DELETE,GET,POST"
     },
     "Timeslot": {
-      "disposition": "first-class-candidate",
-      "reason": "scheduling timeslots (agent_id,workday_id); scheduling read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of Timeslot",
       "ops": 1,
       "methods": "GET"
     },
     "ToDo": {
-      "disposition": "first-class-candidate",
-      "reason": "ticket to-dos (FaultToDo, ticket_id filter); operator tasks",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of FaultToDo",
       "ops": 2,
       "methods": "GET,POST"
@@ -2368,8 +2368,8 @@
       "methods": "DELETE,GET,POST"
     },
     "TranscriptionStore": {
-      "disposition": "needs-live-probe",
-      "reason": "transcript store CRUD undocumented; purpose/shape unclear; probe",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "GET/POST /TranscriptionStore: no summaries",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2550,8 +2550,8 @@
       "methods": "DELETE,GET,POST"
     },
     "XtypeRole": {
-      "disposition": "first-class-candidate",
-      "reason": "asset-type role permissions (GET-only); asset config read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "List of XTypeRole",
       "ops": 1,
       "methods": "GET"
@@ -2571,8 +2571,8 @@
       "methods": "GET"
     },
     "cspinvoice": {
-      "disposition": "first-class-candidate",
-      "reason": "CSP invoice billing-read; POST creates invoices - write stays raw",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "no summaries; schema []CSPInvoice",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2585,15 +2585,15 @@
       "methods": "DELETE,GET,POST"
     },
     "incomingemail": {
-      "disposition": "first-class-candidate",
-      "reason": "inbound email archive read (+AddToTicket); mail diagnostics",
+      "disposition": "needs-live-probe",
+      "reason": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
       "evidence": "List of IncomingEmail",
       "ops": 5,
       "methods": "DELETE,GET,POST"
     },
     "itemsupplier": {
-      "disposition": "first-class-candidate",
-      "reason": "item-to-supplier links; procurement read",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - route-verified read promoted 2026-10-02 from probe evidence",
       "evidence": "Get one ItemSupplier",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2657,11 +2657,19 @@
     },
     "GET /Timesheet/mine": {
       "disposition": "backlog",
-      "reason": "day-view sibling of /TimesheetEvent/mine (bifrost uses GET /Timesheet/0) | live403 for our app (GET sweep 2026-10-02) - time-module permission"
+      "reason": "live403 on midtowntg (GET sweep 2026-10-02) - permission-gated for agent37; sibling /TimesheetEvent/mine is already labeled live:403, this one stays backlog until an agent with the right scope probes it"
     },
     "GET /Client/me": {
       "disposition": "backlog",
-      "reason": "identity read candidate (Agent/me answers 200 with a claims envelope) | live401 for app-credential auth (GET sweep 2026-10-02) - may need delegated auth"
+      "reason": "live401 on midtowntg (GET sweep 2026-10-02) - identity route rejects client-credentials agents; route existence unproven, held"
+    },
+    "GET /ReportData/{publishedid}": {
+      "disposition": "backlog",
+      "reason": "live401 on midtowntg (GET sweep 2026-10-02) - published-data route auth-gated; the segment has no list route (list-less segments are not promoted, FaultsForecasting class)"
+    },
+    "GET /Mailbox/{id}/OutlookContacts": {
+      "disposition": "backlog",
+      "reason": "probe 2026-10-02 with a real mailbox id (2) -> 400 ErrorAccessDenied; permission-gated for agent37 (probe-token run answered 404) - held"
     }
   }
 }

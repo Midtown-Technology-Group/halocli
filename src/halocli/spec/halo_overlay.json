@@ -1680,6 +1680,626 @@
       "target": "$.paths['/Workday'].post.description",
       "description": "curated description for a surfaced operation",
       "update": "Working-day definition (per-weekday start/end times and inclusion flags)."
+    },
+    {
+      "target": "$.paths['/AreaRequestType'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of AreaRequestType"
+    },
+    {
+      "target": "$.paths['/AreaRequestType'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/Audit'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of Audit"
+    },
+    {
+      "target": "$.paths['/Audit'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/BulkEmail'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of BulkEmail"
+    },
+    {
+      "target": "$.paths['/BulkEmail'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CABMember'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of CABMember"
+    },
+    {
+      "target": "$.paths['/CABMember'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CABRole'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of CABRole"
+    },
+    {
+      "target": "$.paths['/CABRole'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CRMNoteReply'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of CRMNoteReply"
+    },
+    {
+      "target": "$.paths['/CRMNoteReply'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CSPConsumptionData'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of CSPConsumptionData"
+    },
+    {
+      "target": "$.paths['/CSPConsumptionData'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CSPConsumptionData/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one CSPConsumptionData"
+    },
+    {
+      "target": "$.paths['/CSPConsumptionData/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/CSVTemplate'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of CSVTemplate"
+    },
+    {
+      "target": "$.paths['/CSVTemplate'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CallEvent'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of CallEvent"
+    },
+    {
+      "target": "$.paths['/CallEvent'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/CallEvent/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one CallEvent"
+    },
+    {
+      "target": "$.paths['/CallEvent/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/Certificate'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of Certificate"
+    },
+    {
+      "target": "$.paths['/Certificate'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ChangeCalendar'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ChangeCalendar"
+    },
+    {
+      "target": "$.paths['/ChangeCalendar'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ConfirmClosure'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ConfirmClosure"
+    },
+    {
+      "target": "$.paths['/ConfirmClosure'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/Contactgroup'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of Contactgroup"
+    },
+    {
+      "target": "$.paths['/Contactgroup'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/Contactgroup/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one Contactgroup"
+    },
+    {
+      "target": "$.paths['/Contactgroup/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of Contactgroupcontact"
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one Contactgroupcontact"
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/ContractRule'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ContractRule"
+    },
+    {
+      "target": "$.paths['/ContractRule'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ContractRule/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one ContractRule"
+    },
+    {
+      "target": "$.paths['/ContractRule/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/ContractSchedule'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ContractSchedule"
+    },
+    {
+      "target": "$.paths['/ContractSchedule'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ContractSchedulePlan'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ContractSchedulePlan"
+    },
+    {
+      "target": "$.paths['/ContractSchedulePlan'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/DeviceLicence'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of DeviceLicence"
+    },
+    {
+      "target": "$.paths['/DeviceLicence'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/DistributionListsLog'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of DistributionListsLog"
+    },
+    {
+      "target": "$.paths['/DistributionListsLog'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/DistributionListsLog/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one DistributionListsLog"
+    },
+    {
+      "target": "$.paths['/DistributionListsLog/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/Downtime'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of Downtime"
+    },
+    {
+      "target": "$.paths['/Downtime'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/Downtime/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one Downtime"
+    },
+    {
+      "target": "$.paths['/Downtime/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of EmailTemplateVariable"
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one EmailTemplateVariable"
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/HistoricalTicketVolumes'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of HistoricalTicketVolumes"
+    },
+    {
+      "target": "$.paths['/HistoricalTicketVolumes'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/HistoricalTicketVolumes/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one HistoricalTicketVolumes"
+    },
+    {
+      "target": "$.paths['/HistoricalTicketVolumes/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/InvoiceDetailProRata'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of InvoiceDetailProRata"
+    },
+    {
+      "target": "$.paths['/InvoiceDetailProRata'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/MailCampaignLog'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of MailCampaignLog"
+    },
+    {
+      "target": "$.paths['/MailCampaignLog'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/MailCampaignLog/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one MailCampaignLog"
+    },
+    {
+      "target": "$.paths['/MailCampaignLog/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/PublishProfiles'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of PublishProfiles"
+    },
+    {
+      "target": "$.paths['/PublishProfiles'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/PublishProfiles/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one PublishProfiles"
+    },
+    {
+      "target": "$.paths['/PublishProfiles/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/ReleaseNoteGroup'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ReleaseNoteGroup"
+    },
+    {
+      "target": "$.paths['/ReleaseNoteGroup'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ReleasePipeline'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ReleasePipeline"
+    },
+    {
+      "target": "$.paths['/ReleasePipeline'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ReleasePipeline/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one ReleasePipeline"
+    },
+    {
+      "target": "$.paths['/ReleasePipeline/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/ResourceType'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ResourceType"
+    },
+    {
+      "target": "$.paths['/ResourceType'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ResourceType/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one ResourceType"
+    },
+    {
+      "target": "$.paths['/ResourceType/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (404 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/SavedForecast'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of SavedForecast"
+    },
+    {
+      "target": "$.paths['/SavedForecast'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/SavedForecast/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one SavedForecast"
+    },
+    {
+      "target": "$.paths['/SavedForecast/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/ServiceAvailability'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of ServiceAvailability"
+    },
+    {
+      "target": "$.paths['/ServiceAvailability'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/ServiceAvailability/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one ServiceAvailability"
+    },
+    {
+      "target": "$.paths['/ServiceAvailability/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/SingleSignOnAttempt'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of SingleSignOnAttempt"
+    },
+    {
+      "target": "$.paths['/SingleSignOnAttempt'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/SingleSignOnAttempt/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one SingleSignOnAttempt"
+    },
+    {
+      "target": "$.paths['/SingleSignOnAttempt/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/TaxRule'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of TaxRule"
+    },
+    {
+      "target": "$.paths['/TaxRule'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/TaxRule/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one TaxRule"
+    },
+    {
+      "target": "$.paths['/TaxRule/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/TicketTypeGroup'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of TicketTypeGroup"
+    },
+    {
+      "target": "$.paths['/TicketTypeGroup'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/TranscriptionStore'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of TranscriptionStore"
+    },
+    {
+      "target": "$.paths['/TranscriptionStore'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/TranscriptionStore/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one TranscriptionStore"
+    },
+    {
+      "target": "$.paths['/TranscriptionStore/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/cspinvoice'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of cspinvoice"
+    },
+    {
+      "target": "$.paths['/cspinvoice'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/cspinvoice/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one cspinvoice"
+    },
+    {
+      "target": "$.paths['/cspinvoice/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Detail route probed live 2026-10-02 (400 with probe token = route alive; lookup miss)."
+    },
+    {
+      "target": "$.paths['/itemsupplier'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List of itemsupplier"
+    },
+    {
+      "target": "$.paths['/itemsupplier'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Route-verified live 2026-10-02:200 across 10 parameter attempts (documented, scope, bare, count=100) with an empty envelope - the tenant holds no rows (probe_results.json)."
+    },
+    {
+      "target": "$.paths['/Agent/me'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Identity claims of the acting agent"
+    },
+    {
+      "target": "$.paths['/Agent/me'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Returns the JWT claims envelope (type/value entries) for the authenticated agent; live-probed 2026-10-02 (108 entries)."
+    },
+    {
+      "target": "$.paths['/Team/Tree'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Team tree with department nesting"
+    },
+    {
+      "target": "$.paths['/Team/Tree'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Department-nested team tree; live-probed 2026-10-02 (68 rows, bare array)."
+    },
+    {
+      "target": "$.paths['/Site/StockBins'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Stock bin rows across the tenant"
+    },
+    {
+      "target": "$.paths['/Site/StockBins'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Bare-array listing of stock bins with their table linkage; live-probed 2026-10-02 (14 rows)."
+    },
+    {
+      "target": "$.paths['/Asset/GetAllSoftwareVersions'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "All software version rows"
+    },
+    {
+      "target": "$.paths['/Asset/GetAllSoftwareVersions'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Every software version row in the instance; live-probed 2026-10-02 (18,261 rows - large payload)."
+    },
+    {
+      "target": "$.paths['/Asset/NextTag'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Next asset tag value"
+    },
+    {
+      "target": "$.paths['/Asset/NextTag'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Returns {last_tag, next_tag} for the next asset tag; live-probed 2026-10-02 (object response, no list envelope)."
+    },
+    {
+      "target": "$.paths['/Timesheet/forecasting'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Timesheet forecasting rows"
+    },
+    {
+      "target": "$.paths['/Timesheet/forecasting'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Forecast rows used for timesheet planning; live-probed 2026-10-02 (396 rows)."
+    },
+    {
+      "target": "$.paths['/Downtime/DowntimeCalendar'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Downtime calendar entries"
+    },
+    {
+      "target": "$.paths['/Downtime/DowntimeCalendar'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Downtime calendar sub-route; live-probed 2026-10-02 (200; empty on this tenant)."
     }
   ]
 }

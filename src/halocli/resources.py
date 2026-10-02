@@ -188,6 +188,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "name", "email", "use", "team"),
+        operations=(
+            ResourceOperation(
+                name="me",
+                method="GET",
+                path="/Agent/me",
+                summary="The acting agent's identity claims (JWT claims envelope; 108 entries live)",
+                verification="live",
+            ),
+        ),
     ),
     HaloResource(
         "teams", "/Team", aliases=("team",), table_fields=("id", "name"),
@@ -201,6 +210,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "name", "department_id", "inactive"),
+        operations=(
+            ResourceOperation(
+                name="tree",
+                method="GET",
+                path="/Team/Tree",
+                summary="Team tree with department nesting (bare array; 68 rows live)",
+                verification="live",
+            ),
+        ),
     ),
     HaloResource(
         "users",
@@ -284,6 +302,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "name", "client_id", "sla_id", "inactive"),
+        operations=(
+            ResourceOperation(
+                name="stock-bins",
+                method="GET",
+                path="/Site/StockBins",
+                summary="Stock bin rows across the tenant (bare array; 14 rows live)",
+                verification="live",
+            ),
+        ),
     ),
     HaloResource(
         "assets",
@@ -304,6 +331,22 @@ RESOURCES: tuple[HaloResource, ...] = (
             "assettype_id",
             "client_id",
             "site_id",
+        ),
+        operations=(
+            ResourceOperation(
+                name="all-software-versions",
+                method="GET",
+                path="/Asset/GetAllSoftwareVersions",
+                summary="Every software version row (bare array; 18,261 rows live - bounded by --max-records)",
+                verification="live",
+            ),
+            ResourceOperation(
+                name="next-tag",
+                method="GET",
+                path="/Asset/NextTag",
+                summary="Next asset tag value ({last_tag, next_tag} object; live)",
+                verification="live",
+            ),
         ),
     ),
     HaloResource(
@@ -751,6 +794,13 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/TimesheetEvent/mine",
                 summary="The signed-in agent's own timesheet events",
                 verification="live:403",
+            ),
+            ResourceOperation(
+                name="forecasting",
+                method="GET",
+                path="/Timesheet/forecasting",
+                summary="Forecast rows for timesheet planning (bare array; 396 rows live)",
+                verification="live",
             ),
         ),
     ),
@@ -1812,6 +1862,705 @@ RESOURCES: tuple[HaloResource, ...] = (
                 summary="Create a document attachment from a JSON body",
             ),
         ),
+    ),
+    HaloResource(
+        "area-request-types",
+        "/AreaRequestType",
+        aliases=("area-request-type",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "audits",
+        "/Audit",
+        aliases=("audit",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 404 (route alive).
+        table_fields=("id",),
+        list_key="audit",
+    ),
+    HaloResource(
+        "bulk-emails",
+        "/BulkEmail",
+        aliases=("bulk-email",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="results",
+    ),
+    HaloResource(
+        "cab-members",
+        "/CABMember",
+        aliases=("cab-member",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "cab-roles",
+        "/CABRole",
+        aliases=("cab-role",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "crm-note-replies",
+        "/CRMNoteReply",
+        aliases=("crm-note-reply",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "csp-consumption-data",
+        "/CSPConsumptionData",
+        aliases=("csp-consumption",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="data",
+    ),
+    HaloResource(
+        "csv-templates",
+        "/CSVTemplate",
+        aliases=("csv-template",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "call-events",
+        "/CallEvent",
+        aliases=("call-event",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="callevents",
+    ),
+    HaloResource(
+        "certificates",
+        "/Certificate",
+        aliases=("certificate",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "change-calendars",
+        "/ChangeCalendar",
+        aliases=("change-calendar",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        list_key="appointments",
+        supports_get=False,
+    ),
+    HaloResource(
+        "confirm-closures",
+        "/ConfirmClosure",
+        aliases=("confirm-closure",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "contact-groups",
+        "/Contactgroup",
+        aliases=("contact-group",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "contact-group-contacts",
+        "/Contactgroupcontact",
+        aliases=("contact-group-contact",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "contract-rules",
+        "/ContractRule",
+        aliases=("contract-rule",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "contract-schedules",
+        "/ContractSchedule",
+        aliases=("contract-schedule",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "contract-schedule-plans",
+        "/ContractSchedulePlan",
+        aliases=("contract-schedule-plan",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "device-licences",
+        "/DeviceLicence",
+        aliases=("device-licence",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "distribution-list-logs",
+        "/DistributionListsLog",
+        aliases=("distribution-list-log",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="distributionlistslog",
+    ),
+    HaloResource(
+        "downtimes",
+        "/Downtime",
+        aliases=("downtime",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="downtime",
+        operations=(
+            ResourceOperation(
+                name="downtime-calendar",
+                method="GET",
+                path="/Downtime/DowntimeCalendar",
+                summary="Downtime calendar entries (route live 200; empty on this tenant)",
+                verification="live",
+            ),
+        ),
+    ),
+    HaloResource(
+        "email-template-variables",
+        "/EmailTemplateVariable",
+        aliases=("email-template-variable",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "historical-ticket-volumes",
+        "/HistoricalTicketVolumes",
+        aliases=("historical-ticket-volume",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="historicalticketvolumes",
+    ),
+    HaloResource(
+        "invoice-detail-prorata",
+        "/InvoiceDetailProRata",
+        aliases=("prorata-invoice-detail",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        list_key="prorata",
+        supports_get=False,
+    ),
+    HaloResource(
+        "mail-campaign-logs",
+        "/MailCampaignLog",
+        aliases=("mail-campaign-log",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="mailcampaignlog",
+    ),
+    HaloResource(
+        "meter-readings",
+        "/MeterReading",
+        aliases=("meter-reading",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 12 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="readings",
+    ),
+    HaloResource(
+        "escalation-messages",
+        "/Notifications",
+        aliases=("escalation-message",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 14 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="notifications",
+    ),
+    HaloResource(
+        "powershell-scripts",
+        "/PowerShellScript",
+        aliases=("powershell-script",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 12 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "powershell-script-criteria",
+        "/PowerShellScriptCriteria",
+        aliases=("powershell-script-criterion",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 11 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "powershell-script-processing",
+        "/PowerShellScriptProcessing",
+        aliases=("powershell-script-queue",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 14 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="actions",
+    ),
+    HaloResource(
+        "product-branches",
+        "/ProductBranch",
+        aliases=("product-branch",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 11 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "product-components",
+        "/ProductComponent",
+        aliases=("product-component",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 11 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "publish-profiles",
+        "/PublishProfiles",
+        aliases=("publish-profile",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "recurring-items",
+        "/RecurringItem",
+        aliases=("recurring-item",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 12 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "release-note-groups",
+        "/ReleaseNoteGroup",
+        aliases=("release-note-group",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "release-pipelines",
+        "/ReleasePipeline",
+        aliases=("release-pipeline",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="releasepipelines",
+    ),
+    HaloResource(
+        "remote-sessions",
+        "/RemoteSession",
+        aliases=("remote-session",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 12 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="remotesessions",
+    ),
+    HaloResource(
+        "report-repositories",
+        "/ReportRepository",
+        aliases=("report-repository",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 14 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        operations=(
+            ResourceOperation(
+                name="report-categories",
+                method="GET",
+                path="/ReportRepository/ReportCategories",
+                summary="Report categories (route live 200; empty on this tenant)",
+                verification="live",
+            ),
+        ),
+    ),
+    HaloResource(
+        "resource-types",
+        "/ResourceType",
+        aliases=("resource-type",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 404 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "saved-forecasts",
+        "/SavedForecast",
+        aliases=("saved-forecast",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="savedforecasts",
+    ),
+    HaloResource(
+        "service-availabilities",
+        "/ServiceAvailability",
+        aliases=("service-availability",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="serviceavailability",
+    ),
+    HaloResource(
+        "service-statuses",
+        "/ServiceStatus",
+        aliases=("service-status",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 14 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 404 (route alive).
+        table_fields=("id",),
+        list_key="service_status",
+    ),
+    HaloResource(
+        "single-sign-on-attempts",
+        "/SingleSignOnAttempt",
+        aliases=("single-sign-on-attempt",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="attempts",
+    ),
+    HaloResource(
+        "software-licence-roles",
+        "/SoftwareLicenceRole",
+        aliases=("software-licence-role",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 11 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "supplier-contracts",
+        "/SupplierContract",
+        aliases=("supplier-contract",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 13 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="contracts",
+    ),
+    HaloResource(
+        "tax-rules",
+        "/TaxRule",
+        aliases=("tax-rule",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "ticket-type-groups",
+        "/TicketTypeGroup",
+        aliases=("ticket-type-group",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "timeslots",
+        "/Timeslot",
+        aliases=("timeslot",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 11 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "to-dos",
+        "/ToDo",
+        aliases=("to-do",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 12 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "transcription-stores",
+        "/TranscriptionStore",
+        aliases=("transcription-store",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "xtype-roles",
+        "/XtypeRole",
+        aliases=("xtype-role",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 12 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # no GET /{id} route in spec -> list-only.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
+        "csp-invoices",
+        "/cspinvoice",
+        aliases=("csp-invoice",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+        list_key="data",
+    ),
+    HaloResource(
+        "item-suppliers",
+        "/itemsupplier",
+        aliases=("item-supplier",),
+        # Route-verified 2026-10-02 (scripts/get_backlog_probes.py passes
+        # 1+2): GET answered 200 across 10 attempts (documented +
+        # scope params, truly bare, count=100) but the tenant holds no rows,
+        # and the vendored spec ships no response schema - so table_fields
+        # stays id-only until a populated tenant yields column evidence.
+        # GET /{id} -> 400 (route alive).
+        table_fields=("id",),
+    ),
+    HaloResource(
+        "asset-changes",
+        "/AssetChange",
+        aliases=("asset-change",),
+        # Live 2026-10-02 (probe pass1): envelope changehistory,
+        # 1 row(s) with asset_id=1 (a bare call returns 0 - the
+        # filter is effectively required for rows). Columns observed on that
+        # row (uncapped keys). No GET /{id} route in spec (detail probe
+        # 404 = route absent) -> list-only.
+        table_fields=("id", "asset_id", "asset_number", "asset_site", "customfield_id", "datetime", "field_desc", "field_id", "field_name", "item_id", "new_site", "new_value", "old_site", "old_value", "software_id", "software_user_id", "who", "who_id"),
+        list_key="changehistory",
+        supports_get=False,
+    ),
+    HaloResource(
+        "asset-software",
+        "/AssetSoftware",
+        aliases=("installed-software",),
+        # Live 2026-10-02 (probe pass1): envelope <bare array>,
+        # 72 row(s) with device_id=1 (a bare call returns 0 - the
+        # filter is effectively required for rows). Columns observed on that
+        # row (uncapped keys). No GET /{id} route in spec (detail probe
+        # 404 = route absent) -> list-only.
+        table_fields=("id", "bundledesc", "cost", "count", "did", "install_date", "licence_id", "licence_name", "licence_required", "moduleid", "name", "role_id", "role_name", "snowid", "user_id", "version"),
+        supports_get=False,
     ),
 )
 

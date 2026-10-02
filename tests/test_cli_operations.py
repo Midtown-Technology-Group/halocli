@@ -137,7 +137,7 @@ def test_registered_help_matches_contract_format() -> None:
                 == f"{op.method} {op.path} — {op.summary} [{op.verification}]"
             )
             checked += 1
-    assert checked == 27
+    assert checked == 28
 
 
 def test_operation_help_shows_method_and_summary() -> None:

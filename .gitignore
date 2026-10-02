@@ -17,3 +17,5 @@ scripts/*
 !scripts/get_msi_product_code.ps1
 !scripts/build_coverage_ledger.py
 !scripts/prod_get_sweep.py
+!scripts/get_backlog_probes.py
+!scripts/get_backlog_probes_pass2.py

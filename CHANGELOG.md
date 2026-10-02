@@ -6,6 +6,38 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.9.0 - 2026-10-02
+
+- **Route-verified read campaign: every backlog GET probed, the reachable
+  ones promoted** (the "mapped out, quirks understood" pass):
+  - **54 new resources**: 52 collections probed live 2026-10-02 across up to
+    15 parameter attempts each (documented spec params, known tenant scope
+    ids, truly bare, count=100) - every route answers **200 but the tenant
+    holds no rows**, and the vendored spec ships no response schemas, so
+    `table_fields` stays **id-only** until a populated tenant yields column
+    evidence (a test forbids inventing columns); `list_key` binds to the
+    sweep envelope, `supports_get` to the by-id probe verdict - plus the 2
+    row-evidenced winners **asset-changes** (changehistory envelope, rows
+    need `asset_id`) and **asset-software** (rows need `device_id`)
+  - **8 nested GET ops**: agents me, sites stock-bins, assets
+    all-software-versions + next-tag, teams tree, timesheet-events
+    forecasting (all live with row counts), downtimes downtime-calendar and
+    report-repositories report-categories (live, empty)
+  - quirks recorded instead of glossed: /incomingemail is a persistent
+    ReadTimeout (15 attempts at 15s); /Client/me and /ReportData/{id} answer
+    401 (client-credentials can't prove the route); /Timesheet/mine 403;
+    /Mailbox/{id}/OutlookContacts 400 ErrorAccessDenied with a real
+    mailbox id - all four pinned via policy op_overrides with reasons
+  - the schema shortcut was tested and REJECTED: 60/62 sampled responses
+    carry no schema in the vendored spec (and the one that resolves is the
+    paged envelope, not row props) - columns stay evidence-only
+  - evidence files committed: `probe_results.json` + two GET-only runners
+    (`scripts/get_backlog_probes*.py`, structurally write-free)
+  - Registry 126 -> **180**; policy:54 segments -> covered; README list
+    regenerated; three evidence tests added
+  - Ledger: **first-class 364 -> 467**,
+    backlog 340 -> 237
+
 ## 1.8.0 - 2026-10-02
 
 - **Issue #24 fixed: list can no longer duplicate rows when Halo ignores
