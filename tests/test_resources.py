@@ -95,7 +95,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 126
+    assert len(RESOURCES) == 180
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -770,3 +770,140 @@ def test_sweep_promoted_columns_come_from_sweep_evidence() -> None:
             assert id_evidence is None, name
             assert f"{resource.endpoint}/{{id}}" not in spec["paths"], name
         assert "get" in spec["paths"][resource.endpoint], name
+
+
+ROUTE_VERIFIED_EMPTY = (
+    "area-request-types",
+    "audits",
+    "bulk-emails",
+    "cab-members",
+    "cab-roles",
+    "call-events",
+    "certificates",
+    "change-calendars",
+    "confirm-closures",
+    "contact-group-contacts",
+    "contact-groups",
+    "contract-rules",
+    "contract-schedule-plans",
+    "contract-schedules",
+    "crm-note-replies",
+    "csp-consumption-data",
+    "csp-invoices",
+    "csv-templates",
+    "device-licences",
+    "distribution-list-logs",
+    "downtimes",
+    "email-template-variables",
+    "escalation-messages",
+    "historical-ticket-volumes",
+    "invoice-detail-prorata",
+    "item-suppliers",
+    "mail-campaign-logs",
+    "meter-readings",
+    "powershell-script-criteria",
+    "powershell-script-processing",
+    "powershell-scripts",
+    "product-branches",
+    "product-components",
+    "publish-profiles",
+    "recurring-items",
+    "release-note-groups",
+    "release-pipelines",
+    "remote-sessions",
+    "report-repositories",
+    "resource-types",
+    "saved-forecasts",
+    "service-availabilities",
+    "service-statuses",
+    "single-sign-on-attempts",
+    "software-licence-roles",
+    "supplier-contracts",
+    "tax-rules",
+    "ticket-type-groups",
+    "timeslots",
+    "to-dos",
+    "transcription-stores",
+    "xtype-roles",
+)
+
+
+def test_route_verified_empty_resources_match_probe_evidence() -> None:
+    """Route-verified reads bind to probe evidence: alive but tenant-empty.
+
+    Each resource's table_fields must stay id-only (the spec ships no response
+    schemas and the tenant holds no rows - inventing columns would be a lie),
+    its list_key must equal the sweep-observed envelope, and supports_get must
+    match the by-id probe verdict. probe_results.json records every attempt.
+    """
+    probe = json.loads((REPO_ROOT / "probe_results.json").read_text(encoding="utf-8"))
+    sweep = json.loads((REPO_ROOT / "sweep_results.json").read_text(encoding="utf-8"))
+    assert len(ROUTE_VERIFIED_EMPTY) == 52
+    for name in ROUTE_VERIFIED_EMPTY:
+        resource = get_resource(name)
+        rec = probe[f"GET {resource.endpoint}"]
+        attempts = rec.get("attempts", []) + rec.get("pass2_attempts", [])
+        assert any(a.get("status") == 200 for a in attempts), name  # route alive
+        assert not rec.get("rows"), name  # tenant holds no rows
+        assert resource.table_fields == ("id",), name  # no invented columns
+        env = (sweep.get(f"GET {resource.endpoint}") or {}).get("envelope")
+        assert resource.list_key == (None if env == "<bare array>" else env), name
+        sw_byid = sweep.get(f"GET {resource.endpoint}/{{id}}")
+        alive = bool(sw_byid and str(sw_byid.get("status")) in {"400", "404", "500"})
+        assert resource.supports_get is alive, name
+
+
+PROBE_WINNERS = (
+    "asset-changes",
+    "asset-software",
+)
+
+
+def test_probe_winners_bind_to_observed_rows() -> None:
+    """Row-evidenced promotions: columns come from the probe's live rows."""
+    probe = json.loads((REPO_ROOT / "probe_results.json").read_text(encoding="utf-8"))
+    assert len(PROBE_WINNERS) == 2
+    for name in PROBE_WINNERS:
+        resource = get_resource(name)
+        rec = probe[f"GET {resource.endpoint}"]
+        assert rec.get("rows"), name
+        assert rec.get("winner_params"), name  # rows needed a real filter
+        assert set(resource.table_fields) <= set(rec["row_keys"]), name
+        env = rec.get("envelope")
+        assert resource.list_key == (None if env == "<bare array>" else env), name
+        # no GET /{id} route in the spec for these two -> list-only
+        assert resource.supports_get is False, name
+
+
+ROUTE_VERIFIED_OPS = (
+    ("agents", "/Agent/me"),
+    ("sites", "/Site/StockBins"),
+    ("assets", "/Asset/GetAllSoftwareVersions"),
+    ("assets", "/Asset/NextTag"),
+    ("teams", "/Team/Tree"),
+    ("timesheet-events", "/Timesheet/forecasting"),
+    ("downtimes", "/Downtime/DowntimeCalendar"),
+    ("report-repositories", "/ReportRepository/ReportCategories"),
+)
+
+
+def test_route_verified_ops_are_live_declared_and_prosed() -> None:
+    """The 8 new nested GETs: declared, live-probed, spec prose present."""
+    spec = load_spec()
+    assert spec is not None
+    probe = json.loads((REPO_ROOT / "probe_results.json").read_text(encoding="utf-8"))
+    sweep = json.loads((REPO_ROOT / "sweep_results.json").read_text(encoding="utf-8"))
+    assert len(ROUTE_VERIFIED_OPS) == 8
+    for resource_name, op_path in ROUTE_VERIFIED_OPS:
+        resource = get_resource(resource_name)
+        op = next((o for o in resource.operations if o.path == op_path), None)
+        assert op is not None, (resource_name, op_path)
+        assert op.method == "GET", op_path
+        assert op.verification == "live", op_path
+        spec_op = spec["paths"].get(op_path, {}).get("get")
+        assert spec_op is not None, op_path
+        assert str(spec_op.get("summary") or "").strip(), op_path
+        assert str(spec_op.get("description") or "").strip(), op_path
+        evidence = sweep.get(f"GET {op_path}") or probe.get(f"GET {op_path}")
+        assert evidence is not None, op_path
+        assert evidence.get("status") == 200, op_path

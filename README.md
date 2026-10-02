@@ -173,37 +173,56 @@ halocli raw GET /Client --param search=Example
 HaloCLI has registry-driven read commands for common HaloPSA resources:
 
 ```text
-tickets, clients, agents, teams, users, kb, sites, assets,
-actions, statuses, priorities, categories, ticket-types, slas,
-appointments, contracts, invoices, invoice-payments,
-invoice-statuses, recurring-invoices, opportunities, projects,
-suppliers, items, quotations, releases, reports,
-timesheet-events, canned-text, searches, outgoing,
-outgoing-attempts, email-templates, tags, popup-notes, lookups,
-outcomes, call-log, mailboxes, charge-rates, address,
-agent-check-ins, approval-process, approval-process-rules,
-asset-groups, asset-types, automations, billing-templates,
-booking-types, budget-types, cabs, call-scripts,
-client-prepays, consignments, cost-centres, currencies,
-custom-buttons, custom-queries, custom-tables, dashboard-links,
-database-lookups, distribution-lists, email-address-books,
-email-rules, email-stores, events, event-rules, faq-lists,
-feeds, feedbacks, fields, field-groups, field-infos, holidays,
-incoming-webhook-attempts, invoice-changes, item-groups,
+tickets, clients, agents, teams, users, kb, sites, assets, actions,
+statuses, priorities, categories, ticket-types, slas, appointments,
+contracts, invoices, invoice-payments, invoice-statuses,
+recurring-invoices, opportunities, projects, suppliers, items,
+quotations, releases, reports, timesheet-events, canned-text, searches,
+outgoing, outgoing-attempts, email-templates, tags, popup-notes,
+lookups, outcomes, call-log, mailboxes, charge-rates, address,
+agent-check-ins, approval-process, approval-process-rules, asset-groups,
+asset-types, automations, billing-templates, booking-types,
+budget-types, cabs, call-scripts, client-prepays, consignments,
+cost-centres, currencies, custom-buttons, custom-queries, custom-tables,
+dashboard-links, database-lookups, distribution-lists,
+email-address-books, email-rules, email-stores, events, event-rules,
+faq-lists, feeds, feedbacks, fields, field-groups, field-infos,
+holidays, incoming-webhook-attempts, invoice-changes, item-groups,
 item-stocks, item-stock-histories, journeys, licence-changes,
-notifications, notification-messages, organisations,
-pdf-templates, products, purchase-orders, qualifications,
-release-types, roles, sales-mailboxes, sales-mailbox-details,
-sales-orders, schedules, schedule-occurrences, services,
-service-categories, service-request-details,
-service-restrictions, stock-bins, stock-traces, taxes,
-templates, ticket-approvals, ticket-areas, ticket-rules,
+notifications, notification-messages, organisations, pdf-templates,
+products, purchase-orders, qualifications, release-types, roles,
+sales-mailboxes, sales-mailbox-details, sales-orders, schedules,
+schedule-occurrences, services, service-categories,
+service-request-details, service-restrictions, stock-bins, stock-traces,
+taxes, templates, ticket-approvals, ticket-areas, ticket-rules,
 ticket-type-fields, to-do-groups, user-changes, user-roles,
-view-columns, view-filters, view-list-groups, view-lists,
-workflows, workflow-targets, formattedemails, workflowsteps,
-webhooks, workdays, software-licences, crm-notes, top-levels,
-expenses, timesheets, attachments
+view-columns, view-filters, view-list-groups, view-lists, workflows,
+workflow-targets, formattedemails, workflowsteps, webhooks, workdays,
+software-licences, crm-notes, top-levels, expenses, timesheets,
+attachments, area-request-types, audits, bulk-emails, cab-members,
+cab-roles, crm-note-replies, csp-consumption-data, csv-templates,
+call-events, certificates, change-calendars, confirm-closures,
+contact-groups, contact-group-contacts, contract-rules,
+contract-schedules, contract-schedule-plans, device-licences,
+distribution-list-logs, downtimes, email-template-variables,
+historical-ticket-volumes, invoice-detail-prorata, mail-campaign-logs,
+meter-readings, escalation-messages, powershell-scripts,
+powershell-script-criteria, powershell-script-processing,
+product-branches, product-components, publish-profiles, recurring-items,
+release-note-groups, release-pipelines, remote-sessions,
+report-repositories, resource-types, saved-forecasts,
+service-availabilities, service-statuses, single-sign-on-attempts,
+software-licence-roles, supplier-contracts, tax-rules,
+ticket-type-groups, timeslots, to-dos, transcription-stores,
+xtype-roles, csp-invoices, item-suppliers, asset-changes,
+asset-software
 ```
+
+54 of these are **route-verified reads whose tenant holds no rows yet**: their
+`list` returns whatever Halo returns (usually `count: 0` — every documented
+and scope parameter was probed live on 2026-10-02) and the table view shows
+`id` only until a populated tenant yields column evidence. JSON output always
+carries Halo's raw payload.
 
 Each resource supports:
 
@@ -330,8 +349,8 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 364 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 340 |
+| `first-class` | reachable as a real `halocli` command today | 467 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 237 |
 | `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 718 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 10 |
 | `junk` | vestigial/duplicate in the spec | 23 |

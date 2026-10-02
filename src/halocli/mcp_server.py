@@ -40,6 +40,10 @@ SUPPORTED_PROTOCOL_VERSIONS: frozenset[str] = frozenset(
 SERVER_NAME = "halocli"
 
 MAX_RESPONSE_CHARS = 40_000
+# The resource catalog is metadata for agent discovery, not tenant data: it
+# gets its own, much larger allowance so the dump stays complete as the
+# registry grows (180 resources serialized to ~51k chars - past the data cap).
+MAX_CATALOG_CHARS = 262_144
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
 ALLOWED_METHODS: tuple[str, ...] = ("GET", "POST", "PUT", "PATCH", "DELETE")
@@ -668,25 +672,31 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
 # --------------------------------------------------------------------------------------
 # MCP result shaping
 # --------------------------------------------------------------------------------------
-def _serialize_bounded(payload: Any) -> str:
+def _serialize_bounded(payload: Any, *, max_chars: int = MAX_RESPONSE_CHARS) -> str:
     text = json.dumps(payload, ensure_ascii=False, default=str)
-    if len(text) <= MAX_RESPONSE_CHARS:
+    if len(text) <= max_chars:
         return text
     wrapper = {
         "truncated": True,
         "total_chars": len(text),
-        "preview": text[:MAX_RESPONSE_CHARS],
+        "preview": text[:max_chars],
     }
     return json.dumps(wrapper, ensure_ascii=False)
 
 
-def _tool_result(payload: dict[str, Any], *, is_error: bool) -> dict[str, Any]:
+def _tool_result(
+    payload: dict[str, Any], *, is_error: bool, max_chars: int = MAX_RESPONSE_CHARS
+) -> dict[str, Any]:
     result: dict[str, Any] = {
-        "content": [{"type": "text", "text": _serialize_bounded(payload)}],
+        "content": [{"type": "text", "text": _serialize_bounded(payload, max_chars=max_chars)}],
     }
     if is_error:
         result["isError"] = True
     return result
+
+
+# Per-tool response ceilings; anything not listed uses MAX_RESPONSE_CHARS.
+_TOOL_CHAR_CAPS: dict[str, int] = {"halo_resources": MAX_CATALOG_CHARS}
 
 
 def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -695,7 +705,9 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         print(f"halocli-mcp: tool {name} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         payload, is_error = _failure(exc)
-    return _tool_result(payload, is_error=is_error)
+    return _tool_result(
+        payload, is_error=is_error, max_chars=_TOOL_CHAR_CAPS.get(name, MAX_RESPONSE_CHARS)
+    )
 
 
 def _initialize_result(params: dict[str, Any]) -> dict[str, Any]:
