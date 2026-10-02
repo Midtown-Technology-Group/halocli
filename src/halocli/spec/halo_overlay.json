@@ -610,6 +610,386 @@
       "target": "$.paths['/Tags'].get.description",
       "description": "curated description for a surfaced operation",
       "update": "Ticket/entity tags (id, text, type) used for filtering and automation triggers."
+    },
+    {
+      "target": "$.paths['/Automation'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List automations"
+    },
+    {
+      "target": "$.paths['/Automation'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Runbook automation records with status and schedule/execution timestamps."
+    },
+    {
+      "target": "$.paths['/Automation/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one automation"
+    },
+    {
+      "target": "$.paths['/Automation/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single runbook automation record with execution state."
+    },
+    {
+      "target": "$.paths['/BillingTemplate'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List billing templates"
+    },
+    {
+      "target": "$.paths['/BillingTemplate'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Billing/contract top-up template configuration (amounts, thresholds, intervals)."
+    },
+    {
+      "target": "$.paths['/CallScript'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List call scripts"
+    },
+    {
+      "target": "$.paths['/CallScript'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Telephony call script templates with category grouping."
+    },
+    {
+      "target": "$.paths['/CostCentres'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List cost centres"
+    },
+    {
+      "target": "$.paths['/CostCentres'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Cost centre configuration records."
+    },
+    {
+      "target": "$.paths['/Currency'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List currencies"
+    },
+    {
+      "target": "$.paths['/Currency'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Currency configuration (code, symbol, conversion rate)."
+    },
+    {
+      "target": "$.paths['/CustomQuery'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List custom queries"
+    },
+    {
+      "target": "$.paths['/CustomQuery'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Custom query definitions with a row cap (top_max)."
+    },
+    {
+      "target": "$.paths['/CustomQuery/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one custom query"
+    },
+    {
+      "target": "$.paths['/CustomQuery/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single custom query definition."
+    },
+    {
+      "target": "$.paths['/DistributionLists'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List distribution lists"
+    },
+    {
+      "target": "$.paths['/DistributionLists'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Email distribution lists with static or dynamic membership."
+    },
+    {
+      "target": "$.paths['/DistributionLists/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one distribution list"
+    },
+    {
+      "target": "$.paths['/DistributionLists/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single distribution list with its member rules."
+    },
+    {
+      "target": "$.paths['/EmailStore'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List email store records"
+    },
+    {
+      "target": "$.paths['/EmailStore'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Emailed-record store (send dates, client and mailbox references)."
+    },
+    {
+      "target": "$.paths['/Event'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List events"
+    },
+    {
+      "target": "$.paths['/Event'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Background event records with processing timestamps (last/next attempt)."
+    },
+    {
+      "target": "$.paths['/Event/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one event"
+    },
+    {
+      "target": "$.paths['/Event/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single background event record."
+    },
+    {
+      "target": "$.paths['/EventRule'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List event rules"
+    },
+    {
+      "target": "$.paths['/EventRule'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Event rule configuration (conditions that trigger automation)."
+    },
+    {
+      "target": "$.paths['/EventRule/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one event rule"
+    },
+    {
+      "target": "$.paths['/EventRule/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single event rule configuration."
+    },
+    {
+      "target": "$.paths['/Feedback'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List feedback"
+    },
+    {
+      "target": "$.paths['/Feedback'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "CSAT/feedback responses (score, band, comment, dates)."
+    },
+    {
+      "target": "$.paths['/IncomingWebhookAttempt'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List incoming webhook attempts"
+    },
+    {
+      "target": "$.paths['/IncomingWebhookAttempt'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Delivery attempts for incoming webhooks (status, error text)."
+    },
+    {
+      "target": "$.paths['/ItemGroup'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List item groups"
+    },
+    {
+      "target": "$.paths['/ItemGroup'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Product/item grouping (quote behaviour and visibility settings)."
+    },
+    {
+      "target": "$.paths['/ItemStockHistory/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one item stock movement"
+    },
+    {
+      "target": "$.paths['/ItemStockHistory/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single stock movement record."
+    },
+    {
+      "target": "$.paths['/Journey'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List journeys"
+    },
+    {
+      "target": "$.paths['/Journey'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Journey records (description, type, start date, linked ticket)."
+    },
+    {
+      "target": "$.paths['/NotificationMessage'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List notification messages"
+    },
+    {
+      "target": "$.paths['/NotificationMessage'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Notification message templates (name and template group)."
+    },
+    {
+      "target": "$.paths['/Organisation'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List organisations"
+    },
+    {
+      "target": "$.paths['/Organisation'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Parent-company/organisation records (contact email, address)."
+    },
+    {
+      "target": "$.paths['/ReleaseType'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List release types"
+    },
+    {
+      "target": "$.paths['/ReleaseType'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Release type definitions for version and release tracking."
+    },
+    {
+      "target": "$.paths['/SalesMailbox'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List sales mailboxes"
+    },
+    {
+      "target": "$.paths['/SalesMailbox'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Sales mailbox connections (per-provider auth state)."
+    },
+    {
+      "target": "$.paths['/SalesMailboxDetail'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List sales mailbox connection details"
+    },
+    {
+      "target": "$.paths['/SalesMailboxDetail'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Per-provider connection details (authorization, sync state)."
+    },
+    {
+      "target": "$.paths['/ScheduleOccurrence'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List schedule occurrences"
+    },
+    {
+      "target": "$.paths['/ScheduleOccurrence'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Scheduled occurrence records (status, processing timestamps)."
+    },
+    {
+      "target": "$.paths['/ScheduleOccurrence/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one schedule occurrence"
+    },
+    {
+      "target": "$.paths['/ScheduleOccurrence/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single scheduled occurrence record."
+    },
+    {
+      "target": "$.paths['/StockBin'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List stock bins"
+    },
+    {
+      "target": "$.paths['/StockBin'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Stock bin locations (parent bin, sequence)."
+    },
+    {
+      "target": "$.paths['/StockBin/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one stock bin"
+    },
+    {
+      "target": "$.paths['/StockBin/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single stock bin location."
+    },
+    {
+      "target": "$.paths['/StockTrace'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List stock traces"
+    },
+    {
+      "target": "$.paths['/StockTrace'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Stock trace/audit records (summary, item, action)."
+    },
+    {
+      "target": "$.paths['/StockTrace/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one stock trace"
+    },
+    {
+      "target": "$.paths['/StockTrace/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single stock trace record."
+    },
+    {
+      "target": "$.paths['/TicketArea'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List ticket areas"
+    },
+    {
+      "target": "$.paths['/TicketArea'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket area configuration (field visibility defaults)."
+    },
+    {
+      "target": "$.paths['/ToDoGroup'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List to-do groups"
+    },
+    {
+      "target": "$.paths['/ToDoGroup'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "To-do group records (task text and client linkage)."
+    },
+    {
+      "target": "$.paths['/ToDoGroup/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one to-do group"
+    },
+    {
+      "target": "$.paths['/ToDoGroup/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single to-do group record."
+    },
+    {
+      "target": "$.paths['/UserRoles'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List user roles"
+    },
+    {
+      "target": "$.paths['/UserRoles'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Role definitions with portal visibility flags."
+    },
+    {
+      "target": "$.paths['/WorkflowTarget'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List workflow targets"
+    },
+    {
+      "target": "$.paths['/WorkflowTarget'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Workflow target definitions (stage flow)."
+    },
+    {
+      "target": "$.paths['/WorkflowTarget/{id}'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Get one workflow target"
+    },
+    {
+      "target": "$.paths['/WorkflowTarget/{id}'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Single workflow target definition."
+    },
+    {
+      "target": "$.paths['/formattedemail'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List formatted emails"
+    },
+    {
+      "target": "$.paths['/formattedemail'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Formatted email records (subject, open timestamps)."
     }
   ]
 }

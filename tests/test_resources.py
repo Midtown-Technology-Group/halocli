@@ -56,7 +56,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 48
+    assert len(RESOURCES) == 126
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -557,7 +557,8 @@ def test_get_outputs_json_item(monkeypatch) -> None:
     assert payload["item"] == {"id": 7, "name": "Acme"}
 
 
-PHASE2_BATCH1 = (
+SWEEP_PROMOTED = (
+    # phase-2 batch 1
     "outgoing",
     "outgoing-attempts",
     "email-templates",
@@ -568,23 +569,43 @@ PHASE2_BATCH1 = (
     "call-log",
     "mailboxes",
     "charge-rates",
+    # phase-2 batch 2 (2026-10-02)
+    "address", "agent-check-ins", "approval-process", "approval-process-rules",
+    "asset-groups", "asset-types", "automations", "billing-templates",
+    "booking-types", "budget-types", "cabs", "call-scripts", "client-prepays",
+    "consignments", "cost-centres", "currencies", "custom-buttons",
+    "custom-queries", "custom-tables", "dashboard-links", "database-lookups",
+    "distribution-lists", "email-address-books", "email-rules", "email-stores",
+    "events", "event-rules", "faq-lists", "feeds", "feedbacks", "fields",
+    "field-groups", "field-infos", "holidays", "incoming-webhook-attempts",
+    "invoice-changes", "item-groups", "item-stocks", "item-stock-histories",
+    "journeys", "licence-changes", "notifications", "notification-messages",
+    "organisations", "pdf-templates", "products", "purchase-orders",
+    "qualifications", "release-types", "roles", "sales-mailboxes",
+    "sales-mailbox-details", "sales-orders", "schedules", "schedule-occurrences",
+    "services", "service-categories", "service-request-details",
+    "service-restrictions", "stock-bins", "stock-traces", "taxes", "templates",
+    "ticket-approvals", "ticket-areas", "ticket-rules", "ticket-type-fields",
+    "to-do-groups", "user-changes", "user-roles", "view-columns", "view-filters",
+    "view-list-groups", "view-lists", "workflows", "workflow-targets",
+    "formattedemails", "workflowsteps",
 )
 
 
-def test_phase2_batch1_columns_come_from_sweep_evidence() -> None:
-    """Batch-1 declarations are bound to live evidence, not spec guesses.
+def test_sweep_promoted_columns_come_from_sweep_evidence() -> None:
+    """Every sweep-promoted declaration is bound to live evidence, not guesses.
 
-    Every non-id table_field must appear in the sweep-observed row keys
-    (sweep_results.json; the sweep caps row_keys at 30 sorted keys, which is
-    why the universal `id` is exempt and checked against the spec schema
-    instead), list_key must match the observed envelope, and supports_get
-    must match what the id-route probe actually answered.
+    For each promoted resource: every non-id table_field must appear in the
+    sweep-observed row keys (sweep_results.json; the sweep caps row_keys at 30
+    sorted keys, which is why the universal `id` is exempt and checked against
+    the spec schema instead), list_key must match the observed envelope, and
+    supports_get must match what the id-route probe actually answered.
     """
     sweep = json.loads((REPO_ROOT / "sweep_results.json").read_text(encoding="utf-8"))
     spec = load_spec()
     assert spec is not None
 
-    for name in PHASE2_BATCH1:
+    for name in SWEEP_PROMOTED:
         resource = get_resource(name)
         evidence = sweep[f"GET {resource.endpoint}"]
         assert evidence["status"] == 200 and evidence["rows"], name
@@ -604,7 +625,11 @@ def test_phase2_batch1_columns_come_from_sweep_evidence() -> None:
 
         id_evidence = sweep.get(f"GET {resource.endpoint}/{{id}}")
         if resource.supports_get:
-            assert id_evidence and id_evidence["status"] in (400, 404), name
+            # 500 counts as route-alive (the route exists; the probe token
+            # crashed the handler) - cf. Holiday in the batch-2 comments.
+            assert id_evidence and id_evidence["status"] in (400, 404, 500), (
+                f"{name}: id-route evidence {id_evidence} does not support supports_get=True"
+            )
             assert f"{resource.endpoint}/{{id}}" in spec["paths"], name
         else:
             assert id_evidence is None, name

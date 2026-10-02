@@ -202,10 +202,10 @@ def test_halo_resources_dumps_full_catalog() -> None:
     assert by_name["quotations"]["aliases"] == ["quotation", "quotes", "quote"]
 
 
-def test_halo_resources_dumps_all_48_resources_with_operations() -> None:
+def test_halo_resources_dumps_all_126_resources_with_operations() -> None:
     """halo_resources lists the whole registry with per-resource operations."""
     _, payload = call_tool("halo_resources", {})
-    assert payload["count"] == 48
+    assert payload["count"] == 126
     by_name = {entry["name"]: entry for entry in payload["resources"]}
 
     pdf_ops = [op for op in by_name["invoices"]["operations"] if op["name"] == "pdf"]
@@ -235,11 +235,17 @@ def test_halo_resources_operation_entries_have_exact_shape() -> None:
 
 
 def test_halo_search_surfaces_operations_via_matched_terms() -> None:
-    # Query terms that exist nowhere at resource level still surface the owner.
+    """Query terms surface their owning resource: ops when no name matches, names when they do."""
+    _, clone_payload = call_tool("halo_search", {"query": "clone"})
+    clone_top = clone_payload["results"][0]
+    assert clone_top["name"] == "reports"
+    assert "clone" in clone_top["matched_operations"]
+
+    # Resource-name matches outrank operation matches: `pdf` now answers with
+    # the pdf-templates resource promoted in phase-2 batch 2 (documented
+    # ranking, previously pinned to invoices' pdf operation).
     _, pdf_payload = call_tool("halo_search", {"query": "pdf"})
-    pdf_top = pdf_payload["results"][0]
-    assert pdf_top["name"] == "invoices"
-    assert "pdf" in pdf_top["matched_operations"]
+    assert pdf_payload["results"][0]["name"] == "pdf-templates"
 
     _, void_payload = call_tool("halo_search", {"query": "void"})
     void_top = void_payload["results"][0]

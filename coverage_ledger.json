@@ -1,16 +1,16 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 554,
+   "backlog": 410,
    "deliberately-raw": 718,
-   "dormant": 11,
-   "first-class": 149,
+   "dormant": 10,
+   "first-class": 294,
    "junk": 23
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "3baae57a202fa9aaee2574a730955a861a037339b764da736a200dbe28381a80",
-  "spec_sha256": "2c0636b6f0c4a7249bb97277d7aeb6fc69edbdb24ff5a14fad2e970b228cfe28",
+  "policy_sha256": "151aec8e4deccebf3db97dd8da733d93f07958f0cdb6bac059ff92e7d448abe8",
+  "spec_sha256": "baac5425f25982a1ffd1c02c37e34ff6577f19f219027784bf7cdf050be8fa3c",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -154,32 +154,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "contact/site addresses; full CRUD with filters (site_id,user_id)",
+   "note": "",
    "path": "/Address",
-   "via": ""
+   "via": "halocli address list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "contact/site addresses; full CRUD with filters (site_id,user_id)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Address",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "contact/site addresses; full CRUD with filters (site_id,user_id)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Address/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "contact/site addresses; full CRUD with filters (site_id,user_id)",
+   "note": "",
    "path": "/Address/{id}",
-   "via": ""
+   "via": "halocli address get"
   },
   {
    "disposition": "dormant",
@@ -308,25 +308,25 @@
    "via": "halocli agents get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "agent check-ins (5p, agent_id/date filters); purpose unclear; probe",
+   "note": "",
    "path": "/AgentCheckIn",
-   "via": ""
+   "via": "halocli agent-check-ins list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "agent check-ins (5p, agent_id/date filters); purpose unclear; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/AgentCheckIn",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "agent check-ins (5p, agent_id/date filters); purpose unclear; probe",
+   "note": "",
    "path": "/AgentCheckIn/{id}",
-   "via": ""
+   "via": "halocli agent-check-ins get"
   },
   {
    "disposition": "deliberately-raw",
@@ -511,60 +511,60 @@
    "via": "halocli appointments get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "approval workflow config; list has summary+filters",
+   "note": "",
    "path": "/ApprovalProcess",
-   "via": ""
+   "via": "halocli approval-process list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "approval workflow config; list has summary+filters",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ApprovalProcess",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "approval workflow config; list has summary+filters",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ApprovalProcess/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "approval workflow config; list has summary+filters",
+   "note": "",
    "path": "/ApprovalProcess/{id}",
-   "via": ""
+   "via": "halocli approval-process get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "approval workflow rules (process_id/step_id filters); config read",
+   "note": "",
    "path": "/ApprovalProcessRule",
-   "via": ""
+   "via": "halocli approval-process-rules list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "approval workflow rules (process_id/step_id filters); config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ApprovalProcessRule",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "approval workflow rules (process_id/step_id filters); config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ApprovalProcessRule/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "approval workflow rules (process_id/step_id filters); config read",
+   "note": "",
    "path": "/ApprovalProcessRule/{id}",
-   "via": ""
+   "via": "halocli approval-process-rules get"
   },
   {
    "disposition": "deliberately-raw",
@@ -700,32 +700,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "asset grouping (tree read, istree); asset config",
+   "note": "",
    "path": "/AssetGroup",
-   "via": ""
+   "via": "halocli asset-groups list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "asset grouping (tree read, istree); asset config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/AssetGroup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "asset grouping (tree read, istree); asset config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/AssetGroup/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "asset grouping (tree read, istree); asset config",
+   "note": "",
    "path": "/AssetGroup/{id}",
-   "via": ""
+   "via": "halocli asset-groups get"
   },
   {
    "disposition": "backlog",
@@ -735,32 +735,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "asset type config (Xtype 201p) full CRUD; asset config",
+   "note": "",
    "path": "/AssetType",
-   "via": ""
+   "via": "halocli asset-types list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "asset type config (Xtype 201p) full CRUD; asset config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/AssetType",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "asset type config (Xtype 201p) full CRUD; asset config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/AssetType/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "asset type config (Xtype 201p) full CRUD; asset config",
+   "note": "",
    "path": "/AssetType/{id}",
-   "via": ""
+   "via": "halocli asset-types get"
   },
   {
    "disposition": "deliberately-raw",
@@ -945,37 +945,37 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+   "note": "",
    "path": "/Automation",
-   "via": ""
+   "via": "halocli automations list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Automation",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Automation/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+   "note": "",
    "path": "/Automation/{id}",
-   "via": ""
+   "via": "halocli automations get"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Automation/{runbookId}",
    "via": ""
   },
@@ -1071,39 +1071,39 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "billing/contract templates (ContractTemplateHeader); billing config",
+   "note": "",
    "path": "/BillingTemplate",
-   "via": ""
+   "via": "halocli billing-templates list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "billing/contract templates (ContractTemplateHeader); billing config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/BillingTemplate",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "billing/contract templates (ContractTemplateHeader); billing config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/BillingTemplate/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "billing/contract templates (ContractTemplateHeader); billing config",
+   "note": "",
    "path": "/BillingTemplate/{id}",
-   "via": ""
+   "via": "halocli billing-templates get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "booking types (GET-only); scheduling config read",
+   "note": "",
    "path": "/BookingType",
-   "via": ""
+   "via": "halocli booking-types list"
   },
   {
    "disposition": "backlog",
@@ -1120,32 +1120,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "budget types keyed by ticket_id (5p); purpose unclear",
+   "note": "",
    "path": "/BudgetType",
-   "via": ""
+   "via": "halocli budget-types list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "budget types keyed by ticket_id (5p); purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/BudgetType",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "budget types keyed by ticket_id (5p); purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/BudgetType/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "budget types keyed by ticket_id (5p); purpose unclear",
+   "note": "",
    "path": "/BudgetType/{id}",
-   "via": ""
+   "via": "halocli budget-types get"
   },
   {
    "disposition": "backlog",
@@ -1190,32 +1190,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "change advisory board records (CabHeader 31p); change management",
+   "note": "",
    "path": "/CAB",
-   "via": ""
+   "via": "halocli cabs list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "change advisory board records (CabHeader 31p); change management",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CAB",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "change advisory board records (CabHeader 31p); change management",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CAB/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "change advisory board records (CabHeader 31p); change management",
+   "note": "",
    "path": "/CAB/{id}",
-   "via": ""
+   "via": "halocli cabs get"
   },
   {
    "disposition": "backlog",
@@ -1407,32 +1407,32 @@
    "via": "halocli call-log get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "call script templates (ScriptHeader); telephony config read",
+   "note": "",
    "path": "/CallScript",
-   "via": ""
+   "via": "halocli call-scripts list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "call script templates (ScriptHeader); telephony config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CallScript",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "call script templates (ScriptHeader); telephony config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CallScript/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "call script templates (ScriptHeader); telephony config read",
+   "note": "",
    "path": "/CallScript/{id}",
-   "via": ""
+   "via": "halocli call-scripts get"
   },
   {
    "disposition": "first-class",
@@ -1729,32 +1729,32 @@
    "via": "halocli contracts get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "prepay history billing-read (client_id,billing_date filters)",
+   "note": "",
    "path": "/ClientPrepay",
-   "via": ""
+   "via": "halocli client-prepays list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "prepay history billing-read (client_id,billing_date filters)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ClientPrepay",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "prepay history billing-read (client_id,billing_date filters)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ClientPrepay/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "prepay history billing-read (client_id,billing_date filters)",
+   "note": "",
    "path": "/ClientPrepay/{id}",
-   "via": ""
+   "via": "halocli client-prepays get"
   },
   {
    "disposition": "deliberately-raw",
@@ -1883,32 +1883,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock consignment orders; procurement-adjacent CRUD",
+   "note": "",
    "path": "/Consignment",
-   "via": ""
+   "via": "halocli consignments list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "stock consignment orders; procurement-adjacent CRUD",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Consignment",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "stock consignment orders; procurement-adjacent CRUD",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Consignment/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock consignment orders; procurement-adjacent CRUD",
+   "note": "",
    "path": "/Consignment/{id}",
-   "via": ""
+   "via": "halocli consignments get"
   },
   {
    "disposition": "backlog",
@@ -2093,32 +2093,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "cost centre config CRUD; billing config read",
+   "note": "",
    "path": "/CostCentres",
-   "via": ""
+   "via": "halocli cost-centres list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "cost centre config CRUD; billing config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CostCentres",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "cost centre config CRUD; billing config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CostCentres/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "cost centre config CRUD; billing config read",
+   "note": "",
    "path": "/CostCentres/{id}",
-   "via": ""
+   "via": "halocli cost-centres get"
   },
   {
    "disposition": "junk",
@@ -2128,60 +2128,60 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "currency config CRUD; billing config read",
+   "note": "",
    "path": "/Currency",
-   "via": ""
+   "via": "halocli currencies list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "currency config CRUD; billing config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Currency",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "currency config CRUD; billing config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Currency/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "currency config CRUD; billing config read",
+   "note": "",
    "path": "/Currency/{id}",
-   "via": ""
+   "via": "halocli currencies get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom button config (24p); UI action config read",
+   "note": "",
    "path": "/CustomButton",
-   "via": ""
+   "via": "halocli custom-buttons list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "custom button config (24p); UI action config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CustomButton",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "custom button config (24p); UI action config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CustomButton/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom button config (24p); UI action config read",
+   "note": "",
    "path": "/CustomButton/{id}",
-   "via": ""
+   "via": "halocli custom-buttons get"
   },
   {
    "disposition": "junk",
@@ -2268,60 +2268,60 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom query CRUD undocumented; query semantics unclear; probe",
+   "note": "",
    "path": "/CustomQuery",
-   "via": ""
+   "via": "halocli custom-queries list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "custom query CRUD undocumented; query semantics unclear; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CustomQuery",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "custom query CRUD undocumented; query semantics unclear; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CustomQuery/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom query CRUD undocumented; query semantics unclear; probe",
+   "note": "",
    "path": "/CustomQuery/{id}",
-   "via": ""
+   "via": "halocli custom-queries get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom tables (62p, isconfig); admin config read",
+   "note": "",
    "path": "/CustomTable",
-   "via": ""
+   "via": "halocli custom-tables list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "custom tables (62p, isconfig); admin config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CustomTable",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "custom tables (62p, isconfig); admin config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/CustomTable/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom tables (62p, isconfig); admin config read",
+   "note": "",
    "path": "/CustomTable/{id}",
-   "via": ""
+   "via": "halocli custom-tables get"
   },
   {
    "disposition": "backlog",
@@ -2331,16 +2331,16 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "dashboard links (45p) with user filters; dashboard config read",
+   "note": "",
    "path": "/DashboardLinks",
-   "via": ""
+   "via": "halocli dashboard-links list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "dashboard links (45p) with user filters; dashboard config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DashboardLinks",
    "via": ""
   },
@@ -2354,16 +2354,16 @@
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "dashboard links (45p) with user filters; dashboard config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DashboardLinks/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "dashboard links (45p) with user filters; dashboard config read",
+   "note": "",
    "path": "/DashboardLinks/{id}",
-   "via": ""
+   "via": "halocli dashboard-links get"
   },
   {
    "disposition": "deliberately-raw",
@@ -2380,39 +2380,39 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "parts lookup with POST /run (execution side effects); probe",
+   "note": "",
+   "path": "/DatabaseLookup",
+   "via": "halocli database-lookups list"
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DatabaseLookup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "parts lookup with POST /run (execution side effects); probe",
-   "path": "/DatabaseLookup",
-   "via": ""
-  },
-  {
-   "disposition": "backlog",
-   "method": "post",
-   "note": "parts lookup with POST /run (execution side effects); probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DatabaseLookup/run",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "parts lookup with POST /run (execution side effects); probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DatabaseLookup/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "parts lookup with POST /run (execution side effects); probe",
+   "note": "",
    "path": "/DatabaseLookup/{id}",
-   "via": ""
+   "via": "halocli database-lookups get"
   },
   {
    "disposition": "backlog",
@@ -2492,32 +2492,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "distribution list config (46p) CRUD; mail config read",
+   "note": "",
    "path": "/DistributionLists",
-   "via": ""
+   "via": "halocli distribution-lists list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "distribution list config (46p) CRUD; mail config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DistributionLists",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "distribution list config (46p) CRUD; mail config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/DistributionLists/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "distribution list config (46p) CRUD; mail config read",
+   "note": "",
    "path": "/DistributionLists/{id}",
-   "via": ""
+   "via": "halocli distribution-lists get"
   },
   {
    "disposition": "backlog",
@@ -2681,67 +2681,67 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "user address book with rich filters (client_id,site_id); contact-like",
+   "note": "",
    "path": "/EmailAddressBook",
-   "via": ""
+   "via": "halocli email-address-books list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "inbound email rules (EmailRule 76p); mail routing config",
+   "note": "",
    "path": "/EmailRule",
-   "via": ""
+   "via": "halocli email-rules list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "inbound email rules (EmailRule 76p); mail routing config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/EmailRule",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "inbound email rules (EmailRule 76p); mail routing config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/EmailRule/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "inbound email rules (EmailRule 76p); mail routing config",
+   "note": "",
    "path": "/EmailRule/{id}",
-   "via": ""
+   "via": "halocli email-rules get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "mail store config (48p), list op undocumented; purpose unclear",
+   "note": "",
    "path": "/EmailStore",
-   "via": ""
+   "via": "halocli email-stores list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "mail store config (48p), list op undocumented; purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/EmailStore",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "mail store config (48p), list op undocumented; purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/EmailStore/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "mail store config (48p), list op undocumented; purpose unclear",
+   "note": "",
    "path": "/EmailStore/{id}",
-   "via": ""
+   "via": "halocli email-stores get"
   },
   {
    "disposition": "first-class",
@@ -2835,60 +2835,60 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "bare CRUD with [integer] create body; event entity purpose unclear",
+   "note": "",
    "path": "/Event",
-   "via": ""
+   "via": "halocli events list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "bare CRUD with [integer] create body; event entity purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Event",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "bare CRUD with [integer] create body; event entity purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Event/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "bare CRUD with [integer] create body; event entity purpose unclear",
+   "note": "",
    "path": "/Event/{id}",
-   "via": ""
+   "via": "halocli events get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "event rule config (47p) full CRUD; read-first, writes gated",
+   "note": "",
    "path": "/EventRule",
-   "via": ""
+   "via": "halocli event-rules list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "event rule config (47p) full CRUD; read-first, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/EventRule",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "event rule config (47p) full CRUD; read-first, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/EventRule/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "event rule config (47p) full CRUD; read-first, writes gated",
+   "note": "",
    "path": "/EventRule/{id}",
-   "via": ""
+   "via": "halocli event-rules get"
   },
   {
    "disposition": "deliberately-raw",
@@ -2996,32 +2996,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "FAQ list structure (FAQListHead 42p); KB-adjacent config read",
+   "note": "",
    "path": "/FAQLists",
-   "via": ""
+   "via": "halocli faq-lists list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "FAQ list structure (FAQListHead 42p); KB-adjacent config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/FAQLists",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "FAQ list structure (FAQListHead 42p); KB-adjacent config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/FAQLists/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "FAQ list structure (FAQListHead 42p); KB-adjacent config read",
+   "note": "",
    "path": "/FAQLists/{id}",
-   "via": ""
+   "via": "halocli faq-lists get"
   },
   {
    "disposition": "deliberately-raw",
@@ -3094,23 +3094,23 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "activity feed with client/site/user filters; operations read",
+   "note": "",
    "path": "/Feed",
-   "via": ""
+   "via": "halocli feeds list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+   "note": "",
    "path": "/Feedback",
-   "via": ""
+   "via": "halocli feedbacks list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Feedback",
    "via": ""
   },
@@ -3124,107 +3124,107 @@
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Feedback/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+   "note": "",
    "path": "/Feedback/{id}",
-   "via": ""
+   "via": "halocli feedbacks get"
+  },
+  {
+   "disposition": "first-class",
+   "method": "get",
+   "note": "",
+   "path": "/Field",
+   "via": "halocli fields list"
   },
   {
    "disposition": "backlog",
-   "method": "get",
-   "note": "custom field config (Field 68p); form config read",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Field",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "custom field config (Field 68p); form config read",
-   "path": "/Field",
-   "via": ""
-  },
-  {
-   "disposition": "backlog",
-   "method": "post",
-   "note": "custom field config (Field 68p); form config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Field/AddFieldToAll/{id}",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "custom field config (Field 68p); form config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Field/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "custom field config (Field 68p); form config read",
+   "note": "",
    "path": "/Field/{id}",
-   "via": ""
+   "via": "halocli fields get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "field groups (isconfig filter); form config read",
+   "note": "",
    "path": "/FieldGroup",
-   "via": ""
+   "via": "halocli field-groups list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "field groups (isconfig filter); form config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/FieldGroup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "field groups (isconfig filter); form config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/FieldGroup/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "field groups (isconfig filter); form config read",
+   "note": "",
    "path": "/FieldGroup/{id}",
-   "via": ""
+   "via": "halocli field-groups get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "field metadata (151p) with rich filters; form config read",
+   "note": "",
    "path": "/FieldInfo",
-   "via": ""
+   "via": "halocli field-infos list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "field metadata (151p) with rich filters; form config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/FieldInfo",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "field metadata (151p) with rich filters; form config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/FieldInfo/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "field metadata (151p) with rich filters; form config read",
+   "note": "",
    "path": "/FieldInfo/{id}",
-   "via": ""
+   "via": "halocli field-infos get"
   },
   {
    "disposition": "deliberately-raw",
@@ -3493,32 +3493,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "holiday/leave records (agent_id,approved_only); workforce read",
+   "note": "",
    "path": "/Holiday",
-   "via": ""
+   "via": "halocli holidays list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "holiday/leave records (agent_id,approved_only); workforce read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Holiday",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "holiday/leave records (agent_id,approved_only); workforce read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Holiday/{id}",
    "via": ""
   },
   {
-   "disposition": "dormant",
+   "disposition": "first-class",
    "method": "get",
-   "note": "live500 on probe id (GET sweep 2026-10-02); detail route crashes even at validation - re-probe with a real id before promoting",
+   "note": "",
    "path": "/Holiday/{id}",
-   "via": ""
+   "via": "halocli holidays get"
   },
   {
    "disposition": "deliberately-raw",
@@ -3626,11 +3626,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "webhook attempt log, undocumented single GET; purpose unclear",
+   "note": "",
    "path": "/IncomingWebhookAttempt",
-   "via": ""
+   "via": "halocli incoming-webhook-attempts list"
   },
   {
    "disposition": "deliberately-raw",
@@ -5138,16 +5138,16 @@
    "via": "halocli invoices void"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "invoice change audit (invoice_id,line_id filters); billing-read",
+   "note": "",
    "path": "/InvoiceChange",
-   "via": ""
+   "via": "halocli invoice-changes list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "invoice change audit (invoice_id,line_id filters); billing-read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/InvoiceChange",
    "via": ""
   },
@@ -5285,74 +5285,74 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "item grouping; product catalog config",
+   "note": "",
    "path": "/ItemGroup",
-   "via": ""
+   "via": "halocli item-groups list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "item grouping; product catalog config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ItemGroup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "item grouping; product catalog config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ItemGroup/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "item grouping; product catalog config",
+   "note": "",
    "path": "/ItemGroup/{id}",
-   "via": ""
+   "via": "halocli item-groups get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock levels (item_id,stockbin_id filters); inventory read",
+   "note": "",
    "path": "/ItemStock",
-   "via": ""
+   "via": "halocli item-stocks list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "stock levels (item_id,stockbin_id filters); inventory read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ItemStock",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "stock levels (item_id,stockbin_id filters); inventory read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ItemStock/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock levels (item_id,stockbin_id filters); inventory read",
+   "note": "",
    "path": "/ItemStock/{id}",
-   "via": ""
+   "via": "halocli item-stocks get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock movement history; inventory audit read",
+   "note": "",
    "path": "/ItemStockHistory",
-   "via": ""
+   "via": "halocli item-stock-histories list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock movement history; inventory audit read",
+   "note": "",
    "path": "/ItemStockHistory/{id}",
-   "via": ""
+   "via": "halocli item-stock-histories get"
   },
   {
    "disposition": "deliberately-raw",
@@ -5411,32 +5411,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "journey CRUD (20p), purpose unclear from spec; probe",
+   "note": "",
    "path": "/Journey",
-   "via": ""
+   "via": "halocli journeys list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "journey CRUD (20p), purpose unclear from spec; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Journey",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "journey CRUD (20p), purpose unclear from spec; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Journey/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "journey CRUD (20p), purpose unclear from spec; probe",
+   "note": "",
    "path": "/Journey/{id}",
-   "via": ""
+   "via": "halocli journeys get"
   },
   {
    "disposition": "first-class",
@@ -5663,11 +5663,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "licence change history (licence_id filters); billing audit read",
+   "note": "",
    "path": "/LicenceChange",
-   "via": ""
+   "via": "halocli licence-changes list"
   },
   {
    "disposition": "deliberately-raw",
@@ -6237,32 +6237,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "per-agent notification rules (71p); alert config read",
+   "note": "",
    "path": "/Notification",
-   "via": ""
+   "via": "halocli notifications list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "per-agent notification rules (71p); alert config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Notification",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "per-agent notification rules (71p); alert config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Notification/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "per-agent notification rules (71p); alert config read",
+   "note": "",
    "path": "/Notification/{id}",
-   "via": ""
+   "via": "halocli notifications get"
   },
   {
    "disposition": "junk",
@@ -6272,32 +6272,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "notification message templates; alert config read",
+   "note": "",
    "path": "/NotificationMessage",
-   "via": ""
+   "via": "halocli notification-messages list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "notification message templates; alert config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/NotificationMessage",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "notification message templates; alert config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/NotificationMessage/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "notification message templates; alert config read",
+   "note": "",
    "path": "/NotificationMessage/{id}",
-   "via": ""
+   "via": "halocli notification-messages get"
   },
   {
    "disposition": "backlog",
@@ -6398,32 +6398,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "organisation (parent company) CRUD; contact-like",
+   "note": "",
    "path": "/Organisation",
-   "via": ""
+   "via": "halocli organisations list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "organisation (parent company) CRUD; contact-like",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Organisation",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "organisation (parent company) CRUD; contact-like",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Organisation/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "organisation (parent company) CRUD; contact-like",
+   "note": "",
    "path": "/Organisation/{id}",
-   "via": ""
+   "via": "halocli organisations get"
   },
   {
    "disposition": "first-class",
@@ -6594,32 +6594,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "PDF templates for invoices/quotes; billing-adjacent config",
+   "note": "",
    "path": "/PdfTemplate",
-   "via": ""
+   "via": "halocli pdf-templates list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "PDF templates for invoices/quotes; billing-adjacent config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/PdfTemplate",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "PDF templates for invoices/quotes; billing-adjacent config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/PdfTemplate/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "PDF templates for invoices/quotes; billing-adjacent config",
+   "note": "",
    "path": "/PdfTemplate/{id}",
-   "via": ""
+   "via": "halocli pdf-templates get"
   },
   {
    "disposition": "deliberately-raw",
@@ -6762,32 +6762,32 @@
    "via": "halocli priorities get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "release products (ReleaseProduct); release config read (low priority)",
+   "note": "",
    "path": "/Product",
-   "via": ""
+   "via": "halocli products list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "release products (ReleaseProduct); release config read (low priority)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Product",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "release products (ReleaseProduct); release config read (low priority)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Product/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "release products (ReleaseProduct); release config read (low priority)",
+   "note": "",
    "path": "/Product/{id}",
-   "via": ""
+   "via": "halocli products get"
   },
   {
    "disposition": "backlog",
@@ -6895,74 +6895,74 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+   "note": "",
+   "path": "/PurchaseOrder",
+   "via": "halocli purchase-orders list"
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/PurchaseOrder",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
-   "path": "/PurchaseOrder",
-   "via": ""
-  },
-  {
-   "disposition": "backlog",
-   "method": "post",
-   "note": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/PurchaseOrder/View",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/PurchaseOrder/confirmreceipt",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/PurchaseOrder/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+   "note": "",
    "path": "/PurchaseOrder/{id}",
-   "via": ""
+   "via": "halocli purchase-orders get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "agent qualifications (skill matrix); config read",
+   "note": "",
    "path": "/Qualification",
-   "via": ""
+   "via": "halocli qualifications list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "agent qualifications (skill matrix); config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Qualification",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "agent qualifications (skill matrix); config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Qualification/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "agent qualifications (skill matrix); config read",
+   "note": "",
    "path": "/Qualification/{id}",
-   "via": ""
+   "via": "halocli qualifications get"
   },
   {
    "disposition": "deliberately-raw",
@@ -7210,32 +7210,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "release types; release config read (low priority)",
+   "note": "",
    "path": "/ReleaseType",
-   "via": ""
+   "via": "halocli release-types list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "release types; release config read (low priority)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ReleaseType",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "release types; release config read (low priority)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ReleaseType/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "release types; release config read (low priority)",
+   "note": "",
    "path": "/ReleaseType/{id}",
-   "via": ""
+   "via": "halocli release-types get"
   },
   {
    "disposition": "backlog",
@@ -7371,32 +7371,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "role/permission definitions (NHD_Roles 98p); admin read, writes gated",
+   "note": "",
    "path": "/Roles",
-   "via": ""
+   "via": "halocli roles list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "role/permission definitions (NHD_Roles 98p); admin read, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Roles",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "role/permission definitions (NHD_Roles 98p); admin read, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Roles/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "role/permission definitions (NHD_Roles 98p); admin read, writes gated",
+   "note": "",
    "path": "/Roles/{id}",
-   "via": ""
+   "via": "halocli roles get"
   },
   {
    "disposition": "deliberately-raw",
@@ -7553,81 +7553,81 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "sales mailbox CRUD; mail config read (sibling of tickets salesmailbox)",
+   "note": "",
    "path": "/SalesMailbox",
-   "via": ""
+   "via": "halocli sales-mailboxes list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "sales mailbox CRUD; mail config read (sibling of tickets salesmailbox)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/SalesMailbox",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "sales mailbox CRUD; mail config read (sibling of tickets salesmailbox)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/SalesMailbox/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "sales mailbox CRUD; mail config read (sibling of tickets salesmailbox)",
+   "note": "",
    "path": "/SalesMailbox/{id}",
-   "via": ""
+   "via": "halocli sales-mailboxes get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "SalesMailbox child, undocumented GET/POST; purpose unclear",
+   "note": "",
    "path": "/SalesMailboxDetail",
-   "via": ""
+   "via": "halocli sales-mailbox-details list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "SalesMailbox child, undocumented GET/POST; purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/SalesMailboxDetail",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "sales orders (OrderHead 152p); orders/procurement read",
+   "note": "",
+   "path": "/SalesOrder",
+   "via": "halocli sales-orders list"
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/SalesOrder",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "sales orders (OrderHead 152p); orders/procurement read",
-   "path": "/SalesOrder",
-   "via": ""
-  },
-  {
-   "disposition": "backlog",
-   "method": "post",
-   "note": "sales orders (OrderHead 152p); orders/procurement read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/SalesOrder/View",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "sales orders (OrderHead 152p); orders/procurement read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/SalesOrder/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "sales orders (OrderHead 152p); orders/procurement read",
+   "note": "",
    "path": "/SalesOrder/{id}",
-   "via": ""
+   "via": "halocli sales-orders get"
   },
   {
    "disposition": "backlog",
@@ -7658,46 +7658,46 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "schedule entity (type/primaryid params), purpose ambiguous; probe",
+   "note": "",
    "path": "/Schedule",
-   "via": ""
+   "via": "halocli schedules list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "schedule entity (type/primaryid params), purpose ambiguous; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Schedule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "schedule entity (type/primaryid params), purpose ambiguous; probe",
+   "note": "",
    "path": "/Schedule/{id}",
-   "via": ""
+   "via": "halocli schedules get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "schedule occurrences, [integer] create body; purpose unclear",
+   "note": "",
    "path": "/ScheduleOccurrence",
-   "via": ""
+   "via": "halocli schedule-occurrences list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "schedule occurrences, [integer] create body; purpose unclear",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ScheduleOccurrence",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "schedule occurrences, [integer] create body; purpose unclear",
+   "note": "",
    "path": "/ScheduleOccurrence/{id}",
-   "via": ""
+   "via": "halocli schedule-occurrences get"
   },
   {
    "disposition": "deliberately-raw",
@@ -7896,39 +7896,39 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
+   "note": "",
+   "path": "/Service",
+   "via": "halocli services list"
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Service",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
-   "path": "/Service",
-   "via": ""
-  },
-  {
-   "disposition": "backlog",
-   "method": "post",
-   "note": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Service/unsubscribe",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Service/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
+   "note": "",
    "path": "/Service/{id}",
-   "via": ""
+   "via": "halocli services get"
   },
   {
    "disposition": "backlog",
@@ -7959,53 +7959,53 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "service categories; service catalog config",
+   "note": "",
    "path": "/ServiceCategory",
-   "via": ""
+   "via": "halocli service-categories list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "service categories; service catalog config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ServiceCategory",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "service categories; service catalog config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ServiceCategory/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "service categories; service catalog config",
+   "note": "",
    "path": "/ServiceCategory/{id}",
-   "via": ""
+   "via": "halocli service-categories get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "service request options (GET-only, service_id); catalog read",
+   "note": "",
    "path": "/ServiceRequestDetails",
-   "via": ""
+   "via": "halocli service-request-details list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "service request options (GET-only, service_id); catalog read",
+   "note": "",
    "path": "/ServiceRequestDetails/{id}",
-   "via": ""
+   "via": "halocli service-request-details get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "client/service visibility restrictions (GET-only); admin read",
+   "note": "",
    "path": "/ServiceRestriction",
-   "via": ""
+   "via": "halocli service-restrictions list"
   },
   {
    "disposition": "backlog",
@@ -8407,46 +8407,46 @@
    "via": "halocli statuses get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock bins/locations config; inventory family",
+   "note": "",
    "path": "/StockBin",
-   "via": ""
+   "via": "halocli stock-bins list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "stock bins/locations config; inventory family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/StockBin",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "stock bins/locations config; inventory family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/StockBin/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock bins/locations config; inventory family",
+   "note": "",
    "path": "/StockBin/{id}",
-   "via": ""
+   "via": "halocli stock-bins get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock movement trace (GET-only); inventory audit read",
+   "note": "",
    "path": "/StockTrace",
-   "via": ""
+   "via": "halocli stock-traces list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "stock movement trace (GET-only); inventory audit read",
+   "note": "",
    "path": "/StockTrace/{id}",
-   "via": ""
+   "via": "halocli stock-traces get"
   },
   {
    "disposition": "deliberately-raw",
@@ -8715,32 +8715,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "tax rates config CRUD; billing config read",
+   "note": "",
    "path": "/Tax",
-   "via": ""
+   "via": "halocli taxes list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "tax rates config CRUD; billing config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Tax",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "tax rates config CRUD; billing config read",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Tax/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "tax rates config CRUD; billing config read",
+   "note": "",
    "path": "/Tax/{id}",
-   "via": ""
+   "via": "halocli taxes get"
   },
   {
    "disposition": "backlog",
@@ -8841,32 +8841,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "STD request templates (StdRequest 235p); ticket config",
+   "note": "",
    "path": "/Template",
-   "via": ""
+   "via": "halocli templates list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "STD request templates (StdRequest 235p); ticket config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Template",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "STD request templates (StdRequest 235p); ticket config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Template/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "STD request templates (StdRequest 235p); ticket config",
+   "note": "",
    "path": "/Template/{id}",
-   "via": ""
+   "via": "halocli templates get"
   },
   {
    "disposition": "deliberately-raw",
@@ -8939,88 +8939,88 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket approvals (FaultApproval 105p; mine/ticket_id); approval workflow",
+   "note": "",
    "path": "/TicketApproval",
-   "via": ""
+   "via": "halocli ticket-approvals list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "ticket approvals (FaultApproval 105p; mine/ticket_id); approval workflow",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/TicketApproval",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket approvals (FaultApproval 105p; mine/ticket_id); approval workflow",
+   "note": "",
    "path": "/TicketApproval/{id}",
-   "via": ""
+   "via": "halocli ticket-approvals get"
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "ticket approvals (FaultApproval 105p; mine/ticket_id); approval workflow",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/TicketApproval/{id}&{seq}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket area config (48p); admin touches",
+   "note": "",
    "path": "/TicketArea",
-   "via": ""
+   "via": "halocli ticket-areas list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "ticket area config (48p); admin touches",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/TicketArea",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "ticket area config (48p); admin touches",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/TicketArea/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket area config (48p); admin touches",
+   "note": "",
    "path": "/TicketArea/{id}",
-   "via": ""
+   "via": "halocli ticket-areas get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "auto-assign ticket rules; admins audit routing (Autoassign 74p)",
+   "note": "",
    "path": "/TicketRules",
-   "via": ""
+   "via": "halocli ticket-rules list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "auto-assign ticket rules; admins audit routing (Autoassign 74p)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/TicketRules",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "auto-assign ticket rules; admins audit routing (Autoassign 74p)",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/TicketRules/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "auto-assign ticket rules; admins audit routing (Autoassign 74p)",
+   "note": "",
    "path": "/TicketRules/{id}",
-   "via": ""
+   "via": "halocli ticket-rules get"
   },
   {
    "disposition": "first-class",
@@ -9051,11 +9051,11 @@
    "via": "halocli ticket-types get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "request type fields (GET-only); ticket config read",
+   "note": "",
    "path": "/TicketTypeField",
-   "via": ""
+   "via": "halocli ticket-type-fields list"
   },
   {
    "disposition": "backlog",
@@ -9254,32 +9254,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "to-do group config; operator workflow config",
+   "note": "",
    "path": "/ToDoGroup",
-   "via": ""
+   "via": "halocli to-do-groups list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "to-do group config; operator workflow config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ToDoGroup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "to-do group config; operator workflow config",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ToDoGroup/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "to-do group config; operator workflow config",
+   "note": "",
    "path": "/ToDoGroup/{id}",
-   "via": ""
+   "via": "halocli to-do-groups get"
   },
   {
    "disposition": "first-class",
@@ -9443,39 +9443,39 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "user change history (change_date filters); audit read",
+   "note": "",
    "path": "/UserChange",
-   "via": ""
+   "via": "halocli user-changes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "user role assignments; admin read, writes gated",
+   "note": "",
    "path": "/UserRoles",
-   "via": ""
+   "via": "halocli user-roles list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "user role assignments; admin read, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/UserRoles",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "user role assignments; admin read, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/UserRoles/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "user role assignments; admin read, writes gated",
+   "note": "",
    "path": "/UserRoles/{id}",
-   "via": ""
+   "via": "halocli user-roles get"
   },
   {
    "disposition": "first-class",
@@ -9597,116 +9597,116 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket view column config; admins manage saved views",
+   "note": "",
+   "path": "/ViewColumns",
+   "via": "halocli view-columns list"
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewColumns",
    "via": ""
   },
   {
    "disposition": "backlog",
-   "method": "post",
-   "note": "ticket view column config; admins manage saved views",
-   "path": "/ViewColumns",
-   "via": ""
-  },
-  {
-   "disposition": "backlog",
    "method": "delete",
-   "note": "ticket view column config; admins manage saved views",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewColumns/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket view column config; admins manage saved views",
+   "note": "",
    "path": "/ViewColumns/{id}",
-   "via": ""
+   "via": "halocli view-columns get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket view filters; saved views family",
+   "note": "",
    "path": "/ViewFilter",
-   "via": ""
+   "via": "halocli view-filters list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "ticket view filters; saved views family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewFilter",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "ticket view filters; saved views family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewFilter/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "ticket view filters; saved views family",
+   "note": "",
    "path": "/ViewFilter/{id}",
-   "via": ""
+   "via": "halocli view-filters get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "view list groups; saved views family",
+   "note": "",
    "path": "/ViewListGroup",
-   "via": ""
+   "via": "halocli view-list-groups list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "view list groups; saved views family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewListGroup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "view list groups; saved views family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewListGroup/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "view list groups; saved views family",
+   "note": "",
    "path": "/ViewListGroup/{id}",
-   "via": ""
+   "via": "halocli view-list-groups get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "saved ticket views (ViewLists 40p); saved views family",
+   "note": "",
    "path": "/ViewLists",
-   "via": ""
+   "via": "halocli view-lists list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "saved ticket views (ViewLists 40p); saved views family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewLists",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "saved ticket views (ViewLists 40p); saved views family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/ViewLists/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "saved ticket views (ViewLists 40p); saved views family",
+   "note": "",
    "path": "/ViewLists/{id}",
-   "via": ""
+   "via": "halocli view-lists get"
   },
   {
    "disposition": "deliberately-raw",
@@ -9933,60 +9933,60 @@
    "via": "halocli workdays get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "workflow definitions (FlowHeader); read-first, writes gated",
+   "note": "",
    "path": "/Workflow",
-   "via": ""
+   "via": "halocli workflows list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "workflow definitions (FlowHeader); read-first, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Workflow",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "workflow definitions (FlowHeader); read-first, writes gated",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Workflow/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "workflow definitions (FlowHeader); read-first, writes gated",
+   "note": "",
    "path": "/Workflow/{id}",
-   "via": ""
+   "via": "halocli workflows get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "workflow target config; child of Workflow family",
+   "note": "",
    "path": "/WorkflowTarget",
-   "via": ""
+   "via": "halocli workflow-targets list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "workflow target config; child of Workflow family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/WorkflowTarget",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "workflow target config; child of Workflow family",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/WorkflowTarget/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "workflow target config; child of Workflow family",
+   "note": "",
    "path": "/WorkflowTarget/{id}",
-   "via": ""
+   "via": "halocli workflow-targets get"
   },
   {
    "disposition": "deliberately-raw",
@@ -10087,32 +10087,32 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "formatted email CRUD undocumented; render-vs-send unclear; probe",
+   "note": "",
    "path": "/formattedemail",
-   "via": ""
+   "via": "halocli formattedemails list"
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "formatted email CRUD undocumented; render-vs-send unclear; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/formattedemail",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "formatted email CRUD undocumented; render-vs-send unclear; probe",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/formattedemail/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "formatted email CRUD undocumented; render-vs-send unclear; probe",
+   "note": "",
    "path": "/formattedemail/{id}",
-   "via": ""
+   "via": "halocli formattedemails get"
   },
   {
    "disposition": "backlog",
@@ -10206,11 +10206,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "workflow steps (FlowDetail, GET-only); child of Workflow",
+   "note": "",
    "path": "/workflowstep",
-   "via": ""
+   "via": "halocli workflowsteps list"
   }
  ]
 }
