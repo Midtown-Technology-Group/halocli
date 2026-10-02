@@ -600,6 +600,16 @@
       "target": "$.paths['/TimesheetEvent/mine'].get.description",
       "description": "curated description for a surfaced operation",
       "update": "Returns the authenticated agent's own events. Probing this tenant answers 403 for the API agent (time-module permission), so the route is verified only as far as the status code."
+    },
+    {
+      "target": "$.paths['/Tags'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List tags"
+    },
+    {
+      "target": "$.paths['/Tags'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket/entity tags (id, text, type) used for filtering and automation triggers."
     }
   ]
 }

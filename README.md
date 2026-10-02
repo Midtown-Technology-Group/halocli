@@ -178,7 +178,9 @@ priorities, categories, ticket-types, slas, appointments, contracts, invoices,
 invoice-payments, invoice-statuses, recurring-invoices, opportunities,
 projects, suppliers, items, quotations, releases, reports,
 webhooks, workdays, software-licences, crm-notes, top-levels, expenses,
-timesheets, attachments, searches, canned-text, timesheet-events
+timesheets, attachments, searches, canned-text, timesheet-events,
+outgoing, outgoing-attempts, email-templates, tags, popup-notes, lookups,
+outcomes, call-log, mailboxes, charge-rates
 ```
 
 Each resource supports:
@@ -288,8 +290,8 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 130 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 573 |
+| `first-class` | reachable as a real `halocli` command today | 149 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 554 |
 | `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 718 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 11 |
 | `junk` | vestigial/duplicate in the spec | 23 |

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -14,6 +15,7 @@ from halocli.schema import load_spec
 
 
 runner = CliRunner()
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # Resources that must carry first-class write metadata.
 WRITE_RESOURCES = (
@@ -54,7 +56,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 38
+    assert len(RESOURCES) == 48
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -553,3 +555,58 @@ def test_get_outputs_json_item(monkeypatch) -> None:
     payload = json.loads(result.output)
     assert payload["resource"] == "clients"
     assert payload["item"] == {"id": 7, "name": "Acme"}
+
+
+PHASE2_BATCH1 = (
+    "outgoing",
+    "outgoing-attempts",
+    "email-templates",
+    "tags",
+    "popup-notes",
+    "lookups",
+    "outcomes",
+    "call-log",
+    "mailboxes",
+    "charge-rates",
+)
+
+
+def test_phase2_batch1_columns_come_from_sweep_evidence() -> None:
+    """Batch-1 declarations are bound to live evidence, not spec guesses.
+
+    Every non-id table_field must appear in the sweep-observed row keys
+    (sweep_results.json; the sweep caps row_keys at 30 sorted keys, which is
+    why the universal `id` is exempt and checked against the spec schema
+    instead), list_key must match the observed envelope, and supports_get
+    must match what the id-route probe actually answered.
+    """
+    sweep = json.loads((REPO_ROOT / "sweep_results.json").read_text(encoding="utf-8"))
+    spec = load_spec()
+    assert spec is not None
+
+    for name in PHASE2_BATCH1:
+        resource = get_resource(name)
+        evidence = sweep[f"GET {resource.endpoint}"]
+        assert evidence["status"] == 200 and evidence["rows"], name
+
+        observed = set(evidence.get("row_keys") or [])
+        declared = set(resource.table_fields)
+        assert "id" in declared, name
+        assert declared - {"id"} <= observed, (
+            f"{name}: columns not observed on a live row: {sorted(declared - observed - {'id'})}"
+        )
+
+        envelope = evidence.get("envelope")
+        if envelope in ("<bare array>", "<object>"):
+            assert resource.list_key is None, name
+        else:
+            assert resource.list_key == envelope, name
+
+        id_evidence = sweep.get(f"GET {resource.endpoint}/{{id}}")
+        if resource.supports_get:
+            assert id_evidence and id_evidence["status"] in (400, 404), name
+            assert f"{resource.endpoint}/{{id}}" in spec["paths"], name
+        else:
+            assert id_evidence is None, name
+            assert f"{resource.endpoint}/{{id}}" not in spec["paths"], name
+        assert "get" in spec["paths"][resource.endpoint], name
