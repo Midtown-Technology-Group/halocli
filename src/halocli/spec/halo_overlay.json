@@ -1450,6 +1450,236 @@
       "target": "$.paths['/ToDoGroup'].post.description",
       "description": "curated description for a surfaced operation",
       "update": "To-do group records (task text, client linkage)."
+    },
+    {
+      "target": "$.paths['/CustomTable/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a custom table"
+    },
+    {
+      "target": "$.paths['/CustomTable/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a custom table definition; data rows are governed by Halo."
+    },
+    {
+      "target": "$.paths['/FieldGroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a field group"
+    },
+    {
+      "target": "$.paths['/FieldGroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a field group."
+    },
+    {
+      "target": "$.paths['/FieldInfo/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete field info"
+    },
+    {
+      "target": "$.paths['/FieldInfo/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a field's display configuration."
+    },
+    {
+      "target": "$.paths['/Holiday/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a holiday"
+    },
+    {
+      "target": "$.paths['/Holiday/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a holiday calendar entry."
+    },
+    {
+      "target": "$.paths['/Lookup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a lookup entry"
+    },
+    {
+      "target": "$.paths['/Lookup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a lookup value; cached options may need the clear-cache operation."
+    },
+    {
+      "target": "$.paths['/Organisation/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an organisation"
+    },
+    {
+      "target": "$.paths['/Organisation/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an organisation record; Halo protects the primary organisation."
+    },
+    {
+      "target": "$.paths['/Product/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a product"
+    },
+    {
+      "target": "$.paths['/Product/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a product record; releases keep their stored product reference."
+    },
+    {
+      "target": "$.paths['/SLA/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an SLA"
+    },
+    {
+      "target": "$.paths['/SLA/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an SLA definition; contracts referencing it may be rejected by Halo."
+    },
+    {
+      "target": "$.paths['/Supplier/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a supplier"
+    },
+    {
+      "target": "$.paths['/Supplier/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a supplier reference record."
+    },
+    {
+      "target": "$.paths['/Team/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a team"
+    },
+    {
+      "target": "$.paths['/Team/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a team; agents keep their department assignments."
+    },
+    {
+      "target": "$.paths['/Workday/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a workday"
+    },
+    {
+      "target": "$.paths['/Workday/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a working-day definition."
+    },
+    {
+      "target": "$.paths['/CustomTable'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a custom table"
+    },
+    {
+      "target": "$.paths['/CustomTable'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Custom table definition (columns, entry type, ordering) behind custom extra fields."
+    },
+    {
+      "target": "$.paths['/Field'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a field"
+    },
+    {
+      "target": "$.paths['/Field'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Custom field definition (kind, lookup, validation, calendar/activity visibility)."
+    },
+    {
+      "target": "$.paths['/FieldGroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a field group"
+    },
+    {
+      "target": "$.paths['/FieldGroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Field grouping with header text and read/update restrictions."
+    },
+    {
+      "target": "$.paths['/FieldInfo'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update field info"
+    },
+    {
+      "target": "$.paths['/FieldInfo'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Field display and behaviour configuration (input type, hints, character limits, encryption)."
+    },
+    {
+      "target": "$.paths['/Holiday'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a holiday"
+    },
+    {
+      "target": "$.paths['/Holiday'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Holiday calendar entry (date, duration, type, agent/workday linkage)."
+    },
+    {
+      "target": "$.paths['/Lookup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a lookup entry"
+    },
+    {
+      "target": "$.paths['/Lookup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Lookup table value (name/value columns feeding dropdown selections)."
+    },
+    {
+      "target": "$.paths['/Organisation'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update the organisation profile"
+    },
+    {
+      "target": "$.paths['/Organisation'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Tenant organisation record: branding, contact details, portal settings, bank detail lines."
+    },
+    {
+      "target": "$.paths['/Product'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a product"
+    },
+    {
+      "target": "$.paths['/Product'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Product catalogue record linked to releases and third-party references."
+    },
+    {
+      "target": "$.paths['/SLA'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an SLA"
+    },
+    {
+      "target": "$.paths['/SLA'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Service level agreement definition: response targets, breach statuses, workday linkage."
+    },
+    {
+      "target": "$.paths['/Supplier'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a supplier"
+    },
+    {
+      "target": "$.paths['/Supplier'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Supplier/vendor reference record (contact details, mailbox address, logo)."
+    },
+    {
+      "target": "$.paths['/Team'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a team"
+    },
+    {
+      "target": "$.paths['/Team'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Agent team configuration (department, mailbox override, tree visibility, sequence)."
+    },
+    {
+      "target": "$.paths['/Workday'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a workday"
+    },
+    {
+      "target": "$.paths['/Workday'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Working-day definition (per-weekday start/end times and inclusion flags)."
     }
   ]
 }

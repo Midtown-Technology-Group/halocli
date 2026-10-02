@@ -189,7 +189,19 @@ RESOURCES: tuple[HaloResource, ...] = (
         supports_delete=True,
         write_preview_fields=("id", "name", "email", "use", "team"),
     ),
-    HaloResource("teams", "/Team", aliases=("team",), table_fields=("id", "name")),
+    HaloResource(
+        "teams", "/Team", aliases=("team",), table_fields=("id", "name"),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Team",
+        update_endpoint="/Team",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "department_id", "inactive"),
+    ),
     HaloResource(
         "users",
         "/Users",
@@ -368,7 +380,19 @@ RESOURCES: tuple[HaloResource, ...] = (
         supports_delete=True,
         write_preview_fields=("id", "name"),
     ),
-    HaloResource("slas", "/SLA", aliases=("sla",), table_fields=("id", "name")),
+    HaloResource(
+        "slas", "/SLA", aliases=("sla",), table_fields=("id", "name"),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/SLA",
+        update_endpoint="/SLA",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "responsereset", "workday_id"),
+    ),
     HaloResource(
         "appointments",
         "/Appointment",
@@ -558,7 +582,19 @@ RESOURCES: tuple[HaloResource, ...] = (
         aliases=("project",),
         table_fields=("id", "summary", "client_name"),
     ),
-    HaloResource("suppliers", "/Supplier", aliases=("supplier",), table_fields=("id", "name")),
+    HaloResource(
+        "suppliers", "/Supplier", aliases=("supplier",), table_fields=("id", "name"),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Supplier",
+        update_endpoint="/Supplier",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "email_address", "phone_number"),
+    ),
     HaloResource(
         "items",
         "/Item",
@@ -829,6 +865,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # value columns are instance-shaped (value4/value6 present live) -
         # columns kept exactly to what list rows returned.
         table_fields=("id", "lookupid", "name", "value4", "value5", "value6"),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Lookup",
+        update_endpoint="/Lookup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "lookupid", "value4"),
     ),
     HaloResource(
         "outcomes",
@@ -1050,6 +1096,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/CustomTable",
         # Sweep 2026-10-02: envelope '<bare array>', 31 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'clear_on_close', 'columns', 'customextratableid', 'customtable_orderby'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/CustomTable",
+        update_endpoint="/CustomTable",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "table_type", "data_entry_type"),
     ),
     HaloResource(
         "dashboard-links",
@@ -1138,18 +1194,48 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Field",
         # Sweep 2026-10-02: envelope '<bare array>', 32 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'inactiveupdatetype', 'moveupdatedefault', 'moveupdatetype', 'validate'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Field",
+        update_endpoint="/Field",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "kind", "mandatory"),
     ),
     HaloResource(
         "field-groups",
         "/FieldGroup",
         # Sweep 2026-10-02: envelope '<bare array>', 38 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'restrictupdate', 'group_visibility_conditions', 'guid', 'header'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/FieldGroup",
+        update_endpoint="/FieldGroup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "header", "restrictread"),
     ),
     HaloResource(
         "field-infos",
         "/FieldInfo",
         # Sweep 2026-10-02: envelope '<bare array>', 430 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'copytochildonupdate', 'defaultdate', 'addunknown', 'calculation'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/FieldInfo",
+        update_endpoint="/FieldInfo",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "inputtype", "hint"),
     ),
     HaloResource(
         "holidays",
@@ -1158,6 +1244,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # (route alive - the probe token crashed the server handler), so the
         # detail route is kept but is known-broken for odd ids.
         table_fields=('id', 'name', 'date', 'end_date', 'agent_id', 'agent_name'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Holiday",
+        update_endpoint="/Holiday",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "date", "duration"),
     ),
     HaloResource(
         "incoming-webhook-attempts",
@@ -1246,6 +1342,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Organisation",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'email', 'address', 'all_user_faqlists_allowed', 'bank_details_line_1'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Organisation",
+        update_endpoint="/Organisation",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "address", "phone"),
     ),
     HaloResource(
         "pdf-templates",
@@ -1268,6 +1374,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Product",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'devops_details_id', 'release_count', 'third_party_id', 'third_party_name'),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Product",
+        update_endpoint="/Product",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "third_party_name", "release_count"),
     ),
     HaloResource(
         "purchase-orders",
@@ -1546,7 +1662,19 @@ RESOURCES: tuple[HaloResource, ...] = (
         table_fields=('id', 'name', 'actions', 'allow_all_statuses', 'allowed_statuses', 'auto_action'),
     ),
     HaloResource("webhooks", "/Webhook", aliases=("webhook",), table_fields=("id", "name", "url")),
-    HaloResource("workdays", "/Workday", aliases=("workday",), table_fields=("id", "name")),
+    HaloResource(
+        "workdays", "/Workday", aliases=("workday",), table_fields=("id", "name"),
+        # Writes: spec-verified POST + DELETE /{id} (never fired at the
+        # tenant - verification: spec). Required = the primary display
+        # column observed on live rows (house assumption: the spec
+        # declares no required fields anywhere).
+        create_endpoint="/Workday",
+        update_endpoint="/Workday",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "start", "end", "alldayssame"),
+    ),
     HaloResource(
         "software-licences",
         "/SoftwareLicence",
@@ -1560,10 +1688,11 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Live-verified 2026-09-30: envelope {"actions": [...], "record_count": N};
         # GET /CRMNote/14630 -> 200. Unfiltered list returns 0 records (a scope
         # filter such as toplevel_id is required); `count` is honored (default
-        # 50) but page_no/pageinate/page_size are IGNORED by Halo - the generic
-        # list loop therefore duplicates rows whenever record_count exceeds the
-        # per-page count (workaround: --param count=<record_count> for a
-        # one-page fetch; tracked separately as a list-machinery issue).
+        # 50) but page_no/pageinate/page_size are IGNORED by Halo. Since 1.8.0
+        # the generic list loop detects the repeated page, never appends it,
+        # recovers the full set with one count=<record_count> fetch, and reports
+        # `paging_ignored` in the payload (issue #24, live-verified: 133 of 133
+        # distinct). --param count=<total> remains the manual workaround.
         # table_fields corrected: live rows carry `datetime`, never `date`.
         # POST/DELETE are never fired at the tenant (no write authorization)
         # -> writes stay verification: spec.
