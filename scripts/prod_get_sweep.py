@@ -52,6 +52,7 @@ REQUEST_TIMEOUT = 15.0
 
 
 def load_ledger_gets() -> list[dict]:
+    """All GET entries from the coverage ledger (the sweep's target set)."""
     ledger = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
     return [e for e in ledger["operations"] if e["method"] == "get"]
 
@@ -67,6 +68,7 @@ def probe_id_path(path: str) -> tuple[str, dict]:
 
 
 def collection_params(path: str) -> dict:
+    """Bound-list hints for id-less paths (ignored by endpoints that cannot)."""
     if "{" in path:
         return {}
     return dict(BOUND_PARAMS)
@@ -99,6 +101,7 @@ def describe_body(body) -> dict:
 
 
 async def probe_one(client, path: str, params: dict) -> dict:
+    """Probe one GET path and compact the verdict (status/latency/shape)."""
     started = time.monotonic()
     try:
         body = await client.request("GET", path, params=params, timeout=REQUEST_TIMEOUT)
@@ -137,6 +140,7 @@ async def probe_one(client, path: str, params: dict) -> dict:
 
 
 async def run(args) -> int:
+    """Probe every pending ledger GET in resumable batches; write results."""
     from halocli.client import HaloClient
     from halocli.config import load_profile
 
@@ -197,6 +201,7 @@ async def run(args) -> int:
 
 
 def main() -> int:
+    """CLI entry: parse sweep options and run the async probe loop."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", default="thomas")
     parser.add_argument("--batch-size", type=int, default=50)
