@@ -341,12 +341,32 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Category",
         aliases=("category",),
         table_fields=("id", "name", "value"),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/Category",
+        update_endpoint="/Category",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name"),
     ),
     HaloResource(
         "ticket-types",
         "/TicketType",
         aliases=("ticket-type", "tickettypes"),
         table_fields=("id", "name", "guid"),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/TicketType",
+        update_endpoint="/TicketType",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name"),
     ),
     HaloResource("slas", "/SLA", aliases=("sla",), table_fields=("id", "name")),
     HaloResource(
@@ -590,6 +610,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Release",
         aliases=("release",),
         table_fields=("id", "name", "status_name"),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/Release",
+        update_endpoint="/Release",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name"),
     ),
     HaloResource(
         "reports",
@@ -756,6 +786,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/EmailTemplate",
         # Sweep 2026-10-02: bare array, 94 rows, GET/{id} -> 400.
         table_fields=("id", "name", "description", "template_group", "sectionid"),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/EmailTemplate",
+        update_endpoint="/EmailTemplate",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "description", "template_group"),
     ),
     HaloResource(
         "tags",
@@ -763,6 +803,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         aliases=("tag",),
         # Sweep 2026-10-02: bare array, 103 rows, GET/{id} -> 400.
         table_fields=("id", "text", "type"),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/Tags",
+        update_endpoint="/Tags",
+        required_create_fields=("text",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "text", "type"),
     ),
     HaloResource(
         "popup-notes",
@@ -786,6 +836,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: bare array, 91 rows (TOutcome - ticket action
         # outcomes, 285p schema), GET/{id} -> 400.
         table_fields=("id", "buttonname", "colour", "chargerate", "actiongroup"),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/Outcome",
+        update_endpoint="/Outcome",
+        required_create_fields=("buttonname",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "buttonname", "colour", "chargerate"),
     ),
     HaloResource(
         "call-log",
@@ -842,12 +902,32 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/AssetGroup",
         # Sweep 2026-10-02: envelope '<bare array>', 13 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'autogroupnewquotelines', 'connector', 'default_quantity_decimal_places', 'defaultsite'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/AssetGroup",
+        update_endpoint="/AssetGroup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name"),
     ),
     HaloResource(
         "asset-types",
         "/AssetType",
         # Sweep 2026-10-02: envelope '<bare array>', 34 rows, GET/{id} -> 400 (route-verified); name recovered via uncapped re-probe
         table_fields=('id', 'name'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/AssetType",
+        update_endpoint="/AssetType",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name"),
     ),
     HaloResource(
         "automations",
@@ -874,18 +954,48 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/BudgetType",
         # Sweep 2026-10-02: envelope '<bare array>', 6 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'defaultrate'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/BudgetType",
+        update_endpoint="/BudgetType",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "defaultrate"),
     ),
     HaloResource(
         "cabs",
         "/CAB",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'all_must_approve', 'approvals_needed', 'guid', 'rejection_threshold'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/CAB",
+        update_endpoint="/CAB",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "all_must_approve", "approvals_needed"),
     ),
     HaloResource(
         "call-scripts",
         "/CallScript",
         # Sweep 2026-10-02: envelope '<bare array>', 2 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'note', 'category_1'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/CallScript",
+        update_endpoint="/CallScript",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "note", "category_1"),
     ),
     HaloResource(
         "client-prepays",
@@ -906,6 +1016,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/CostCentres",
         # Sweep 2026-10-02: envelope '<bare array>', 3 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'addr1', 'addr2', 'addr3', 'addr4'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/CostCentres",
+        update_endpoint="/CostCentres",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name"),
     ),
     HaloResource(
         "currencies",
@@ -988,6 +1108,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/FAQLists",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'description', 'name', 'group_id', 'type', 'allow_indexing'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/FAQLists",
+        update_endpoint="/FAQLists",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "description", "group_id"),
     ),
     HaloResource(
         "feeds",
@@ -1050,6 +1180,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/ItemGroup",
         # Sweep 2026-10-02: envelope '<bare array>', 10 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'category', 'type', 'add_all_group_items_quote', 'allow_users'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/ItemGroup",
+        update_endpoint="/ItemGroup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "category", "type"),
     ),
     HaloResource(
         "item-stocks",
@@ -1057,6 +1197,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: envelope 'itemstock', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'date', 'cost', 'item_assettype_id', 'item_id', 'item_name'),
         list_key="itemstock",
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/ItemStock",
+        update_endpoint="/ItemStock",
+        required_create_fields=("item_id",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "item_id", "item_name", "cost"),
     ),
     HaloResource(
         "item-stock-histories",
@@ -1102,6 +1252,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/PdfTemplate",
         # Sweep 2026-10-02: envelope '<bare array>', 21 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'type', 'colour', 'colour_type', 'config_source_type'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/PdfTemplate",
+        update_endpoint="/PdfTemplate",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "type", "colour"),
     ),
     HaloResource(
         "products",
@@ -1121,12 +1281,32 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Qualification",
         # Sweep 2026-10-02: envelope '<bare array>', 2 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'criteria', 'guid', 'mustmatch', 'weight'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/Qualification",
+        update_endpoint="/Qualification",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "criteria", "weight"),
     ),
     HaloResource(
         "release-types",
         "/ReleaseType",
         # Sweep 2026-10-02: envelope '<bare array>', 4 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'releasenoteset'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/ReleaseType",
+        update_endpoint="/ReleaseType",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "releasenoteset"),
     ),
     HaloResource(
         "roles",
@@ -1173,12 +1353,32 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: envelope 'services', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'asset_count', 'assettype_id', 'business_owner_cab_id', 'business_owner_id'),
         list_key="services",
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/Service",
+        update_endpoint="/Service",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "asset_count", "business_owner_id"),
     ),
     HaloResource(
         "service-categories",
         "/ServiceCategory",
         # Sweep 2026-10-02: envelope '<bare array>', 6 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'summary', 'guid', 'icon', 'important'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/ServiceCategory",
+        update_endpoint="/ServiceCategory",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "summary", "important"),
     ),
     HaloResource(
         "service-request-details",
@@ -1199,6 +1399,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/StockBin",
         # Sweep 2026-10-02: envelope '<bare array>', 14 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'dont_add_to_order', 'parent_id', 'parent_name', 'sequence'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/StockBin",
+        update_endpoint="/StockBin",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "parent_id", "sequence"),
     ),
     HaloResource(
         "stock-traces",
@@ -1231,6 +1441,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/TicketArea",
         # Sweep 2026-10-02: envelope '<bare array>', 3 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'name', 'agents_with_no_tickets_display_type', 'allow_ticket_type_selection', 'area_use', 'default_columns_id'),
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/TicketArea",
+        update_endpoint="/TicketArea",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "area_use", "default_columns_id"),
     ),
     HaloResource(
         "ticket-rules",
@@ -1251,6 +1471,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: envelope 'data', 33 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'text', 'client_name'),
         list_key="data",
+        # Writes: spec-verified POST + DELETE /{id}; never fired at the
+        # tenant (verification: spec). Required set = the primary display
+        # field - the spec declares no required fields anywhere (house
+        # assumption, commented as such per the `agents` precedent).
+        create_endpoint="/ToDoGroup",
+        update_endpoint="/ToDoGroup",
+        required_create_fields=("text",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "text", "client_name"),
     ),
     HaloResource(
         "user-changes",
