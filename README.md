@@ -281,6 +281,28 @@ before sending. Unknown endpoints and missing required body fields are
 refused; pass `--no-validate` to bypass the check (spec warnings are returned
 as `spec_warnings` either way).
 
+## Endpoint Coverage
+
+Every operation in the vendored spec (1,455 of them) carries an explicit
+disposition in `coverage_ledger.json` — coverage is enforced, not aspirational:
+
+| Disposition | Meaning | Count |
+|---|---|---|
+| `first-class` | reachable as a real `halocli` command today | 130 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 579 |
+| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 719 |
+| `dormant` | known-dead on this tenant (live evidence in `note`) | 4 |
+| `junk` | vestigial/duplicate in the spec | 23 |
+
+```powershell
+python scripts/build_coverage_ledger.py          # regenerate after spec/policy changes
+python scripts/build_coverage_ledger.py --check  # what CI runs; exit 1 if stale
+```
+
+Classification lives in `coverage_policy.json` (segment-level, human-owned).
+A spec re-vendor that introduces an unclassified segment fails CI until a
+human decides — the ledger is the spine of the endpoint-promotion effort.
+
 ## Endpoint Discovery
 
 Two kinds of search, split at 1.0.0:

@@ -64,6 +64,12 @@ jobs:
       - name: Spec-vs-registry coverage gate
         run: python scripts/coverage_report.py --check --top 50 > coverage-report.json
 
+      # Fails when the committed ledger is stale OR when the spec contains
+      # segments coverage_policy.json has never classified - completeness of
+      # endpoint classification is enforced, not aspirational.
+      - name: Coverage ledger gate
+        run: python scripts/build_coverage_ledger.py --check
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -6,6 +6,26 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.4.0 - 2026-10-01
+
+- **Coverage ledger: every spec operation, explicitly classified** — the
+  enforcement spine of the endpoint-promotion effort.
+  - `coverage_ledger.json`: all **1,455** spec operations with a disposition —
+    `first-class` (130, registry-derived command mapping), `backlog` (579,
+    candidate/probe rationale in `note`), `deliberately-raw` (719, argued
+    reasons), `dormant` (4, live evidence), `junk` (23).
+  - `coverage_policy.json`: segment-level human classification (374 segments;
+    spec-reading scout pass, mechanically validated) plus per-endpoint live
+    overrides (Addressbook's tenant 500).
+  - `scripts/build_coverage_ledger.py [--check]` + 4 tests + a CI gate in the
+    Coverage Oracle job: a stale ledger **or any unclassified segment**
+    (e.g. from a spec re-vendor) fails CI until a human decides.
+  - First application already paid off: the ledger surfaced **75 hidden
+    operations inside registry-covered segments** (the deferred money writes
+    incl. `POST /RecurringInvoice/process`, the pending contracts writes,
+    `GET /Timesheet/mine`/`POST /Timesheet`, `/Agent/me`, kb `View`/`vote`…)
+    — a precise, evidence-carrying promotion backlog.
+
 ## 1.3.1 - 2026-10-01
 
 - **Declarations now describe the proven Quick Time workflow** (both learned
