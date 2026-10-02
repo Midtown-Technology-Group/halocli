@@ -271,6 +271,16 @@ RESOURCES: tuple[HaloResource, ...] = (
             "client_id",
             "site_id",
         ),
+        operations=(
+            ResourceOperation(
+                name="prefs",
+                method="POST",
+                path="/Users/prefs",
+                body=True,
+                summary="Save user preferences (lang, theme, userdetails; spec-verified)",
+                verification="spec",
+            ),
+        ),
     ),
     HaloResource(
         "kb",
@@ -542,6 +552,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # not a mechanical one. DELETE /ClientContract/{id} exists in the spec but
         # stays disabled until that decision is made deliberately.
         supports_delete=False,
+        operations=(
+            ResourceOperation(
+                name="next-ref",
+                method="POST",
+                path="/ClientContract/NextRef",
+                body=True,
+                summary="Compute the next contract reference from a contract-shaped body (returns the next ref; spec-verified, never fired)",
+                verification="spec",
+            ),
+        ),
     ),
     HaloResource(
         "invoices",
@@ -1051,6 +1071,17 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Address",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'type', 'date_active', 'inactive', 'line1', 'line2'),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). Required fields are house choices
+        # from the POST schema's own properties (spec declares required:
+        # [] everywhere); tests bind them there. Promoted by the
+        # tackle-the-25 decision pass (2026-10-02).
+        create_endpoint="/Address",
+        update_endpoint="/Address",
+        required_create_fields=("site_id", "line1"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "site_id", "line1", "line2", "postcode", "type", "primary"),
     ),
     HaloResource(
         "agent-check-ins",
@@ -2132,6 +2163,17 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). Required fields are house choices
+        # from the POST schema's own properties (spec declares required:
+        # [] everywhere); tests bind them there. Promoted by the
+        # tackle-the-25 decision pass (2026-10-02).
+        create_endpoint="/Contactgroup",
+        update_endpoint="/Contactgroup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "allowall", "ownerunum"),
     ),
     HaloResource(
         "contact-group-contacts",
@@ -2144,6 +2186,17 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). Required fields are house choices
+        # from the POST schema's own properties (spec declares required:
+        # [] everywhere); tests bind them there. Promoted by the
+        # tackle-the-25 decision pass (2026-10-02).
+        create_endpoint="/Contactgroupcontact",
+        update_endpoint="/Contactgroupcontact",
+        required_create_fields=("ccgid", "cuid"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "ccgid", "cuid", "name", "emailaddress"),
     ),
     HaloResource(
         "contract-rules",
@@ -2180,6 +2233,17 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). Required fields are house choices
+        # from the POST schema's own properties (spec declares required:
+        # [] everywhere); tests bind them there. Promoted by the
+        # tackle-the-25 decision pass (2026-10-02).
+        create_endpoint="/ContractSchedulePlan",
+        update_endpoint="/ContractSchedulePlan",
+        required_create_fields=("contract_id", "subject"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "contract_id", "subject", "date", "agent_id", "hours"),
     ),
     HaloResource(
         "device-licences",

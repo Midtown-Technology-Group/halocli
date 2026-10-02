@@ -88,6 +88,11 @@ WRITE_RESOURCES = (
     "agent-check-ins",
     "call-log",
     "to-dos",
+    # Tackle-the-25 (2026-10-02): contact/address writes + contract visit plans.
+    "address",
+    "contact-groups",
+    "contact-group-contacts",
+    "contract-schedule-plans",
 )
 WRITE_POST_ONLY = (
     "agent-check-ins",
@@ -130,7 +135,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 60
+    assert len(WRITE_RESOURCES) == 64
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -271,11 +276,15 @@ def test_contracts_reads_client_contract_and_stays_read_only() -> None:
     assert not contracts.supports_update
     assert contracts.supports_delete is False
 
-    # The read endpoint is spec-documented with GET, but no verified *write*
-    # route exists for generic "contracts": POST /ClientContract narrows the
-    # semantics to client contracts only, POST /SupplierContract is a different
-    # entity again, and /SupplierContract is permission-gated (403) for our
-    # agents. Guard against re-enabling writes without that decision.
+    # The read endpoint is spec-documented with GET. The tackle-the-25 pass
+    # (2026-10-02) resolved the long-standing write decision AGAINST
+    # promotion, on evidence: POST /ClientContract's schema carries prepay
+    # auto-topup fields (autotopup*) and outbound flags
+    # (_send_appointment_invites/_send_outstanding_emails), approval carries
+    # a signature/token, and POST /SupplierContract is a different entity
+    # behind a 403 scope for our agents. The core is argued-raw in policy
+    # op_overrides; `contracts next-ref` ships as a first-class op. This
+    # guard keeps any future flip deliberate.
     spec = load_spec()
     assert spec is not None
     assert "/Contract" not in spec["paths"]
@@ -1004,3 +1013,42 @@ def test_post_only_tier_offers_no_delete_command() -> None:
         assert "post" in spec["paths"][resource.endpoint], name
         assert "delete" not in spec["paths"].get(f"{resource.endpoint}/{{id}}", {}), name
         assert resource.required_create_fields, name
+
+TACKLE25_CUD = (
+    "address",
+    "contact-groups",
+    "contact-group-contacts",
+    "contract-schedule-plans",
+)
+
+
+def test_tackle25_writes_bind_to_spec_post_schemas() -> None:
+    """The four promote-from-deferral writes bind to spec POST schema props."""
+    spec = load_spec()
+    assert spec is not None
+
+    def props(path: str) -> set[str]:
+        schema = spec["paths"][path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+        if "$ref" in schema:
+            node = spec
+            for part in schema["$ref"].lstrip("#/").split("/"):
+                node = node[part]
+            schema = node
+        if schema.get("type") == "array":
+            schema = schema.get("items", {})
+            if "$ref" in schema:
+                node = spec
+                for part in schema["$ref"].lstrip("#/").split("/"):
+                    node = node[part]
+                schema = node
+        return set((schema.get("properties") or {}).keys())
+
+    assert len(TACKLE25_CUD) == 4
+    for name in TACKLE25_CUD:
+        resource = get_resource(name)
+        assert resource.supports_create and resource.supports_update, name
+        assert resource.supports_delete, name
+        assert "post" in spec["paths"][resource.endpoint], name
+        assert "delete" in spec["paths"][f"{resource.endpoint}/{{id}}"], name
+        assert set(resource.required_create_fields) <= props(resource.endpoint), name
+        assert resource.effective_write_preview_fields[0] == "id", name

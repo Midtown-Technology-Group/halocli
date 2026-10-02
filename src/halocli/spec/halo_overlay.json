@@ -2570,6 +2570,106 @@
       "target": "$.paths['/ProductComponent/{id}'].delete.description",
       "description": "curated description for a surfaced operation",
       "update": "Remove a product component record; preview-gated like every first-class delete."
+    },
+    {
+      "target": "$.paths['/Address'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update address"
+    },
+    {
+      "target": "$.paths['/Address'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Address records; spec-verified POST, never fired (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Address/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete address"
+    },
+    {
+      "target": "$.paths['/Address/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a address record; preview-gated like every first-class delete."
+    },
+    {
+      "target": "$.paths['/Contactgroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update contact groups"
+    },
+    {
+      "target": "$.paths['/Contactgroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Contact Groups records; spec-verified POST, never fired (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Contactgroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete contact groups"
+    },
+    {
+      "target": "$.paths['/Contactgroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a contact groups record; preview-gated like every first-class delete."
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update contact group contacts"
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Contact Group Contacts records; spec-verified POST, never fired (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete contact group contacts"
+    },
+    {
+      "target": "$.paths['/Contactgroupcontact/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a contact group contacts record; preview-gated like every first-class delete."
+    },
+    {
+      "target": "$.paths['/ContractSchedulePlan'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update contract schedule plans"
+    },
+    {
+      "target": "$.paths['/ContractSchedulePlan'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Contract Schedule Plans records; spec-verified POST, never fired (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ContractSchedulePlan/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete contract schedule plans"
+    },
+    {
+      "target": "$.paths['/ContractSchedulePlan/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a contract schedule plans record; preview-gated like every first-class delete."
+    },
+    {
+      "target": "$.paths['/ClientContract/NextRef'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Compute the next contract reference"
+    },
+    {
+      "target": "$.paths['/ClientContract/NextRef'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Takes a contract-shaped body and returns the next reference number; spec-verified, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Users/prefs'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Save user preferences"
+    },
+    {
+      "target": "$.paths['/Users/prefs'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Persists id/lang/theme/userdetails for a user; spec-verified, never fired at the tenant (verification: spec)."
     }
   ]
 }

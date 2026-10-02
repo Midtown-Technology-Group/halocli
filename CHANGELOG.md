@@ -6,6 +6,37 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.12.0 - 2026-10-02
+
+- **Tackle-the-25: every deferred decision resolved** (user directive:
+  "tackle the25"). Each op moved to a final, evidence-cited disposition:
+  - **Promoted CUD (8 ops)**: address (site_id+line1 - the schema's
+    structural anchor), contact-groups (name), contact-group-contacts
+    (ccgid+cuid link pair, itemsupplier precedent) and
+    contract-schedule-plans (contract_id+subject - planning fields, no
+    money or automation flags). Write-enabled60 -> **64**.
+  - **Promoted ops (2)**: `contracts next-ref` (computes the next
+    reference from a contract-shaped body) and `users prefs`
+    (lang/theme/userdetails - benign preferences on a live-proven
+    family).
+  - **Argued raw, finally (15)** - deferral notes replaced with
+    schema-cited reasons: client-contract core (autotopup billing fields
+    + outbound invite/email flags), contract approval (signature/token),
+    contract rules (execute against contracts), contract schedules
+    (amount field), SupplierContract x3 (403 scope + costing),
+    appointment Booking (invites) and Generate (EMPTY body),
+    Attachment base (spec declares no request body - the upload family
+    owns it), report deletion (clone-op overlap + published consumers).
+  - The10 promoted ops' defer overrides were removed (registry mapping
+    now speaks for them).
+- Ledger: first-class496 -> **506**, backlog33 -> **8** (only the four
+  auth-gated routes and the four no-list-route probes remain),
+  deliberately-raw893 -> **908**.
+- Contracts README paragraph rewritten to record the resolution;20
+  overlay prose actions for the newly surfaced routes; new
+  TACKLE25_CUD evidence test binds required fields to the spec POST
+  schemas. Version1.12.0
+
 ## 1.11.0 - 2026-10-02
 
 - **Spec currency proven**: upstream swagger diffed against the vendored
