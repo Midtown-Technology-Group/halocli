@@ -2275,6 +2275,20 @@
    }
   ]
  },
+ "GET /CustomTableCSV/{id}": {
+  "path": "/CustomTableCSV/{id}",
+  "status": 400,
+  "id_used": 1,
+  "via": "/CustomTableCSV/1",
+  "note": "real custom-table id rejected with an empty validation body {} (2026-10-02): route alive but the bare request is incomplete"
+ },
+ "GET /DatabaseLookupConfirmation/{id}": {
+  "path": "/DatabaseLookupConfirmation/{id}",
+  "status": 404,
+  "id_used": 2,
+  "via": "/DatabaseLookupConfirmation/2",
+  "note": "real database-lookup config id rejected (2026-10-02)"
+ },
  "GET /DeviceLicence": {
   "path": "/DeviceLicence",
   "attempts": [
@@ -2854,6 +2868,13 @@
     "record_count": null
    }
   ]
+ },
+ "GET /FaultsForecasting/{id}": {
+  "path": "/FaultsForecasting/{id}",
+  "status": 404,
+  "id_used": 162483,
+  "via": "/FaultsForecasting/162483",
+  "note": "real fault id rejected (2026-10-02): no forecasting rows for it on this tenant"
  },
  "GET /HistoricalTicketVolumes": {
   "path": "/HistoricalTicketVolumes",
@@ -7034,125 +7055,44 @@
   "path": "/incomingemail",
   "attempts": [
    {
-    "params": {},
-    "status": "error:ReadTimeout",
-    "ms": 15006,
-    "error": "ReadTimeout"
-   },
-   {
     "params": {
-     "order": "1"
+     "count": "25"
     },
-    "status": "error:ReadTimeout",
-    "ms": 15089,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "order2": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15077,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "order3": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15099,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "order4": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15071,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "order5": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15072,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "client_id": "625"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15103,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "toplevel_id": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15078,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "agent_id": "37"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15077,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "site_id": "626"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15088,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "supplier_id": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15097,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "department_id": "1"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15084,
-    "error": "ReadTimeout"
-   },
-   {
-    "params": {
-     "fault_id": "162483"
-    },
-    "status": "error:ReadTimeout",
-    "ms": 15094,
-    "error": "ReadTimeout"
+    "status": 200,
+    "budget_s": 120,
+    "note": "pass3 long-timeout probe (15s budget timed out 15/15 in passes 1-2)"
    }
   ],
-  "rows": 0,
-  "winner_params": null,
-  "envelope": null,
-  "record_count": null,
-  "row_keys": null,
-  "pass2_attempts": [
-   {
-    "params": {},
-    "status": "error:ReadTimeout"
-   },
-   {
-    "params": {
-     "count": "100"
-    },
-    "status": "error:ReadTimeout"
-   }
-  ]
+  "pass": 3,
+  "status": 200,
+  "rows": 22440,
+  "record_count": 22440,
+  "envelope": "emails",
+  "winner_params": {
+   "count": "25"
+  },
+  "row_keys": [
+   "datecreated",
+   "dateprocessed",
+   "delete",
+   "from",
+   "html",
+   "id",
+   "issalesmb",
+   "last_attempt_date",
+   "mailid",
+   "mbid",
+   "old_id",
+   "outbound",
+   "processed",
+   "removed_from_mailbox",
+   "retry_remaining",
+   "source",
+   "status",
+   "subject",
+   "to"
+  ],
+  "quirk": "count/page params ignored: the endpoint dumps all rows in one response; needs a 120s read budget (22,440 rows, ~2 MB)"
  },
  "GET /itemsupplier": {
   "path": "/itemsupplier",

@@ -1,15 +1,15 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 35,
+   "backlog": 33,
    "deliberately-raw": 893,
    "dormant": 10,
-   "first-class": 494,
+   "first-class": 496,
    "junk": 23
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "1891506b38ec041ef02c097aaa721bf969d9b3095b81f337ba987cca0b2c2978",
+  "policy_sha256": "d68d6d280f3a976eb30c484e8333d790b23b7b1660a0400d7e0df6c889f7b8b1",
   "spec_sha256": "cd762dda0f08296e394dc63a49ad60ce588ad5c59e01964fc70f68fadf11fbe3",
   "sweep": {
    "entries": 797,
@@ -2326,7 +2326,7 @@
   {
    "disposition": "backlog",
    "method": "get",
-   "note": "custom table CSV export (single GET /{id), undocumented; probe",
+   "note": "custom table CSV export (single GET /{id), undocumented - detail route probed with a real custom-table id (1) ->400 {} on 2026-10-02; route alive, bare request incomplete",
    "path": "/CustomTableCSV/{id}",
    "via": ""
   },
@@ -2424,7 +2424,7 @@
   {
    "disposition": "backlog",
    "method": "get",
-   "note": "lookup confirmation helper, undocumented; probe",
+   "note": "lookup confirmation helper, undocumented - detail route probed with a real database-lookup id (2) ->404 on 2026-10-02; no list route to promote from",
    "path": "/DatabaseLookupConfirmation/{id}",
    "via": ""
   },
@@ -3068,7 +3068,7 @@
   {
    "disposition": "backlog",
    "method": "get",
-   "note": "no list route (POST + GET/{id} only); forecasting shape odd",
+   "note": "no list route (POST + GET/{id} only); forecasting shape odd - detail route probed with a real fault id (162483) ->404 on 2026-10-02; no list route to promote from",
    "path": "/FaultsForecasting/{id}",
    "via": ""
   },
@@ -10115,11 +10115,11 @@
    "via": "halocli formattedemails get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
+   "note": "",
    "path": "/incomingemail",
-   "via": ""
+   "via": "halocli incoming-emails list"
   },
   {
    "disposition": "deliberately-raw",
@@ -10143,11 +10143,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "get",
-   "note": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
+   "note": "",
    "path": "/incomingemail/{id}",
-   "via": ""
+   "via": "halocli incoming-emails get"
   },
   {
    "disposition": "first-class",

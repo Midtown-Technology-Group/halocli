@@ -6,6 +6,28 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.11.0 - 2026-10-02
+
+- **Spec currency proven**: upstream swagger diffed against the vendored
+  build - operation-for-operation identical (1,455 ops, zero adds/removes,
+  operationIds intact). The checker is committed as
+  `scripts/check_spec_currency.py` (exit1 on drift with re-vendor
+  instructions); today's verdict: **NO DRIFT**.
+- **incoming-emails promoted** (first-class494 -> **496**): the last
+  ReadTimeout hold is resolved - a120s-budget probe answered200 with
+  envelope `emails` and **22,440 rows**. The quirk is now evidence, not
+  mystery: count/page params are ignored (one bare dump), which is exactly
+  why the15s sweep budget timed out15/15; the default500 ceiling still
+  bounds CLI output and reports truncated. Writes stay deliberately-raw
+  (mail stance). Registry180 -> **181**.
+- **Real-id detail probes for the three no-list-route holds** (evidence
+  into probe_results.json + policy reasons): FaultsForecasting/162483 ->
+ 404, CustomTableCSV/1 ->400 {} (route alive, bare request incomplete),
+  DatabaseLookupConfirmation/2 ->404 - all stay backlog because the
+  segments have no list route, but the notes now carry real-id evidence
+  instead of "probe".
+- Ledger: first-class494 -> **496**, backlog35 -> **33** (sum1455)
+
 ## 1.10.0 - 2026-10-02
 
 - **Every remaining covered backlog op is now argued** - the generic

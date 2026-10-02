@@ -19,3 +19,5 @@ scripts/*
 !scripts/prod_get_sweep.py
 !scripts/get_backlog_probes.py
 !scripts/get_backlog_probes_pass2.py
+!scripts/evidence_probes.py
+!scripts/check_spec_currency.py

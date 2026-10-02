@@ -116,7 +116,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 180
+    assert len(RESOURCES) == 181
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -888,13 +888,15 @@ def test_route_verified_empty_resources_match_probe_evidence() -> None:
 PROBE_WINNERS = (
     "asset-changes",
     "asset-software",
+    "incoming-emails",
 )
 
 
 def test_probe_winners_bind_to_observed_rows() -> None:
     """Row-evidenced promotions: columns come from the probe's live rows."""
     probe = json.loads((REPO_ROOT / "probe_results.json").read_text(encoding="utf-8"))
-    assert len(PROBE_WINNERS) == 2
+    sweep = json.loads((REPO_ROOT / "sweep_results.json").read_text(encoding="utf-8"))
+    assert len(PROBE_WINNERS) == 3
     for name in PROBE_WINNERS:
         resource = get_resource(name)
         rec = probe[f"GET {resource.endpoint}"]
@@ -903,8 +905,11 @@ def test_probe_winners_bind_to_observed_rows() -> None:
         assert set(resource.table_fields) <= set(rec["row_keys"]), name
         env = rec.get("envelope")
         assert resource.list_key == (None if env == "<bare array>" else env), name
-        # no GET /{id} route in the spec for these two -> list-only
-        assert resource.supports_get is False, name
+        # supports_get binds to the by-id probe: absent route -> False,
+        # probe-token alive (400/404/500) -> True
+        sw_byid = sweep.get(f"GET {resource.endpoint}/{{id}}")
+        alive = bool(sw_byid and str(sw_byid.get("status")) in {"400", "404", "500"})
+        assert resource.supports_get is alive, name
 
 
 ROUTE_VERIFIED_OPS = (

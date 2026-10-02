@@ -2736,6 +2736,24 @@ RESOURCES: tuple[HaloResource, ...] = (
         table_fields=("id", "bundledesc", "cost", "count", "did", "install_date", "licence_id", "licence_name", "licence_required", "moduleid", "name", "role_id", "role_name", "snowid", "user_id", "version"),
         supports_get=False,
     ),
+    HaloResource(
+        "incoming-emails",
+        "/incomingemail",
+        aliases=("incoming-email",),
+        # Live 2026-10-02 (scripts/evidence_probes.py, 120s budget): envelope
+        # "emails",22,440 rows, record_count matches. Quirk: count/page params
+        # are IGNORED - the endpoint dumps everything in one response, which is
+        # why the15s sweep budget timed out 15/15 (sweep_results keeps that
+        # history; probe_results.json carries this probe). The default list
+        # ceiling (500) still bounds the output and reports truncated.
+        # Writes stay deliberately-raw (mail stance) via op_overrides.
+        table_fields=(
+            "id", "datecreated", "from", "to", "subject", "status",
+            "outbound", "processed",
+        ),
+        list_key="emails",
+        # GET /{id} answers 400 with a probe token = route alive.
+    ),
 )
 
 RESOURCE_BY_NAME = {resource.name: resource for resource in RESOURCES}

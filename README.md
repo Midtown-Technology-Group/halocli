@@ -215,7 +215,7 @@ service-availabilities, service-statuses, single-sign-on-attempts,
 software-licence-roles, supplier-contracts, tax-rules,
 ticket-type-groups, timeslots, to-dos, transcription-stores,
 xtype-roles, csp-invoices, item-suppliers, asset-changes,
-asset-software
+asset-software, incoming-emails
 ```
 
 54 of these are **route-verified reads whose tenant holds no rows yet**: their
@@ -349,8 +349,8 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 494 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 35 |
+| `first-class` | reachable as a real `halocli` command today | 496 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 33 |
 | `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 893 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 10 |
 | `junk` | vestigial/duplicate in the spec | 23 |
