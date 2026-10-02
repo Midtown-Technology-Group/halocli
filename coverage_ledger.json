@@ -9,7 +9,7 @@
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "9761a0d5f7585c9dbd2092052bd74fa97c7cb4b4e6a41bd73280d8aa70ac4cd2",
+  "policy_sha256": "8e51b72ab798b49d2ca84d97e146a0cbc771845b3288f012abf1ae6085543888",
   "spec_sha256": "ee68a3bc973fbef5429be71c5118b01d38bd6c0181a0792ad5ee20afe37b9f45"
  },
  "operations": [

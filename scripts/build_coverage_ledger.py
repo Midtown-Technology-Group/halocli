@@ -130,6 +130,18 @@ def classify(path: str, method: str, reg: dict, segments: dict, overrides: dict)
     return {"disposition": disp, "via": "", "note": reason}
 
 
+def content_sha256(path: Path) -> str:
+    """EOL-insensitive content hash.
+
+    Windows runners check out with core.autocrlf=true, so byte-hashing the
+    inputs would make the ledger "stale" on Windows checkouts only (observed
+    on PR #34: spec_sha differed while Linux/mac passed). Normalize line
+    endings before hashing so freshness means same content everywhere.
+    """
+    data = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
 def build() -> dict:
     spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     reg = registry_map()
@@ -174,8 +186,8 @@ def build() -> dict:
     return {
         "_meta": {
             "generated_by": "scripts/build_coverage_ledger.py",
-            "spec_sha256": hashlib.sha256(SPEC_PATH.read_bytes()).hexdigest(),
-            "policy_sha256": hashlib.sha256(POLICY_PATH.read_bytes()).hexdigest(),
+            "spec_sha256": content_sha256(SPEC_PATH),
+            "policy_sha256": content_sha256(POLICY_PATH),
             "operation_count": len(ops),
             "disposition_counts": dict(sorted(counts.items())),
         },
