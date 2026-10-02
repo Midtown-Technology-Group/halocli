@@ -288,7 +288,7 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Forty-nine resources carry write metadata and first-class write commands:
+Sixty resources carry write metadata and first-class write commands:
 the ticketing core (tickets, actions, statuses, priorities, kb, canned-text),
 the people/CRM layer (clients, sites, assets, agents, appointments, users,
 crm-notes, timesheet-events), writes-batch-1's config/reference set —
@@ -298,7 +298,7 @@ call-scripts, qualifications, asset-groups, asset-types, item-groups,
 item-stocks, stock-bins, service-categories, services, pdf-templates and
 to-do-groups — and writes-batch-2's set: organisations, teams, suppliers,
 slas, workdays, products, fields, field-groups, field-infos, custom-tables,
-holidays and lookups. Both batches' routes are spec-verified (`POST` on the
+holidays and lookups - plus writes-batch-3's set: crm-note-replies, certificates, email-template-variables, release-note-groups, release-pipelines, ticket-type-groups, item-suppliers, product-components, and the POST-only tier (agent-check-ins, call-log, to-dos - the spec offers no DELETE /{id}, so the CLI withholds the command). All batches' routes are spec-verified (`POST` on the
 collection, `DELETE /{id}`) but were never fired at a tenant
 (`verification: spec`); their single required create field is the observed
 primary column — a documented house assumption, since the spec declares no
@@ -349,9 +349,9 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 467 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 237 |
-| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 718 |
+| `first-class` | reachable as a real `halocli` command today | 494 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 35 |
+| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 893 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 10 |
 | `junk` | vestigial/duplicate in the spec | 23 |
 

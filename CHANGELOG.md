@@ -6,6 +6,43 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.10.0 - 2026-10-02
+
+- **Every remaining covered backlog op is now argued** - the generic
+  "promote it or argue it" note is gone from the ledger (Phase-0's
+  deliberately-raw obligation discharged with per-group, user-accepted
+  reasons):
+  - money/mail/security/audit/automation/SQL/executable-code/per-agent-UI/
+    operational-live-state/undocumented surfaces -> **deliberately-raw**
+    with the standing arguments recorded in coverage_policy.json
+    (op_overrides), e.g. money stays raw because first-class sugar would
+    normalize financial mutations; SQL stays raw because command sugar
+    would normalize arbitrary execution
+  - pending-decision holds stay **backlog with specific reasons** (no
+    longer generic): contacts (user deferral), contracts (contracts
+    decision), appointment nested routes (recipe-driven family),
+    generic attachment POST/DELETE (multipart semantics), Users/prefs
+    (payload undetermined), report deletion (clone op covers creation)
+- **Writes-batch-3:8 full-CUD promotions** (write-enabled 49 ->60 total):
+  crm-note-replies, certificates, email-template-variables,
+  release-note-groups, release-pipelines, ticket-type-groups,
+  item-suppliers, product-components - required fields are commented house
+  choices bound to the spec POST schema's own properties (the spec
+  declares required: [] everywhere)
+- **POST-only tier: the write contract is amended** - delete is offered
+  iff the spec offers DELETE /{id}: agent-check-ins, call-log and to-dos
+  join as create/update-only commands (no delete command, asserted)
+- **8 nested action ops**: agents clear-cache, email-templates preview,
+  kb view + vote, lookups clear-cache, reports bookmark + create-pdf +
+  print (all spec-verified, never fired)
+- 50 overlay prose actions for the newly surfaced write/action routes
+  (two passes - a membership bug skipped the7 DELETE pairs first; caught
+  by the prose audit before CI)
+- Ledger: first-class 467 -> **494**,
+  backlog 237 -> **35** (all remaining have specific
+  reasons), deliberately-raw 718 -> **893**
+- Registry stays180; write-enabled49 -> **60**; version1.10.0
+
 ## 1.9.0 - 2026-10-02
 
 - **Route-verified read campaign: every backlog GET probed, the reachable

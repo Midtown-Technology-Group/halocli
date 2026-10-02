@@ -196,6 +196,13 @@ RESOURCES: tuple[HaloResource, ...] = (
                 summary="The acting agent's identity claims (JWT claims envelope; 108 entries live)",
                 verification="live",
             ),
+            ResourceOperation(
+                name="clear-cache",
+                method="POST",
+                path="/Agent/ClearCache",
+                summary="Clear the agent's cached data (config action)",
+                verification="spec",
+            ),
         ),
     ),
     HaloResource(
@@ -289,6 +296,24 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "name", "description", "resolution", "type", "inactive"),
+        operations=(
+            ResourceOperation(
+                name="view",
+                method="POST",
+                path="/KBArticle/View",
+                body=True,
+                summary="Render an article view (POST-as-read)",
+                verification="spec",
+            ),
+            ResourceOperation(
+                name="vote",
+                method="POST",
+                path="/KBArticle/vote",
+                body=True,
+                summary="Cast a vote on a knowledge article",
+                verification="spec",
+            ),
+        ),
     ),
     HaloResource(
         "sites",
@@ -726,6 +751,30 @@ RESOURCES: tuple[HaloResource, ...] = (
                 verification="live",
                 handler="report_clone",
             ),
+            ResourceOperation(
+                name="bookmark",
+                method="POST",
+                path="/Report/Bookmark",
+                body=True,
+                summary="Bookmark a report for the agent",
+                verification="spec",
+            ),
+            ResourceOperation(
+                name="create-pdf",
+                method="POST",
+                path="/Report/createpdf",
+                body=True,
+                summary="Generate a PDF rendering of a report (binary response)",
+                verification="spec",
+            ),
+            ResourceOperation(
+                name="print",
+                method="POST",
+                path="/Report/print",
+                body=True,
+                summary="Render a report for printing",
+                verification="spec",
+            ),
         ),
     ),
     HaloResource(
@@ -882,6 +931,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "name", "description", "template_group"),
+        operations=(
+            ResourceOperation(
+                name="preview",
+                method="POST",
+                path="/EmailTemplate/preview",
+                body=True,
+                summary="Render an email template preview without sending",
+                verification="spec",
+            ),
+        ),
     ),
     HaloResource(
         "tags",
@@ -925,6 +984,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         required_update_fields=("id",),
         supports_delete=True,
         write_preview_fields=("id", "name", "lookupid", "value4"),
+        operations=(
+            ResourceOperation(
+                name="clear-cache",
+                method="POST",
+                path="/Lookup/ClearCache",
+                summary="Clear lookup value caches",
+                verification="spec",
+            ),
+        ),
     ),
     HaloResource(
         "outcomes",
@@ -950,6 +1018,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         # GET/{id} -> 400.
         table_fields=("id", "start_date", "callerid", "call_status", "client_name", "agent_id"),
         list_key="calllog",
+        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/CallLog",
+        update_endpoint="/CallLog",
+        required_create_fields=("summary",),
+        required_update_fields=("id",),
+        write_preview_fields=("id", "summary", "caller_primary_number", "client_id", "start_date"),
     ),
     HaloResource(
         "mailboxes",
@@ -980,6 +1057,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/AgentCheckIn",
         # Sweep 2026-10-02: envelope '<bare array>', 149 rows, GET/{id} -> 400 (route-verified)
         table_fields=('id', 'status', 'timestamp', 'agent_id'),
+        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/AgentCheckIn",
+        update_endpoint="/AgentCheckIn",
+        required_create_fields=("agent_id",),
+        required_update_fields=("id",),
+        write_preview_fields=("id", "agent_id", "status", "timestamp"),
     ),
     HaloResource(
         "approval-process",
@@ -1938,6 +2024,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/CRMNoteReply",
+        update_endpoint="/CRMNoteReply",
+        required_create_fields=("note",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "note", "parent_id", "agent_id"),
     ),
     HaloResource(
         "csp-consumption-data",
@@ -1988,6 +2084,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/Certificate",
+        update_endpoint="/Certificate",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "issuer", "subject", "thumbprint"),
     ),
     HaloResource(
         "change-calendars",
@@ -2134,6 +2240,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/EmailTemplateVariable",
+        update_endpoint="/EmailTemplateVariable",
+        required_create_fields=("variable",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "variable", "text", "emailtemplate_id"),
     ),
     HaloResource(
         "historical-ticket-volumes",
@@ -2262,6 +2378,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). Required = primary field from the
+        # POST schema (spec declares required: [] everywhere).
+        create_endpoint="/ProductComponent",
+        update_endpoint="/ProductComponent",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "active", "devops_details_id"),
     ),
     HaloResource(
         "publish-profiles",
@@ -2299,6 +2424,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/ReleaseNoteGroup",
+        update_endpoint="/ReleaseNoteGroup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "releasenote"),
     ),
     HaloResource(
         "release-pipelines",
@@ -2312,6 +2447,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
         list_key="releasepipelines",
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/ReleasePipeline",
+        update_endpoint="/ReleasePipeline",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "active", "devops_pipeline_id"),
     ),
     HaloResource(
         "remote-sessions",
@@ -2460,6 +2605,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/TicketTypeGroup",
+        update_endpoint="/TicketTypeGroup",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "intent"),
     ),
     HaloResource(
         "timeslots",
@@ -2486,6 +2641,15 @@ RESOURCES: tuple[HaloResource, ...] = (
         # no GET /{id} route in spec -> list-only.
         table_fields=("id",),
         supports_get=False,
+        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/ToDo",
+        update_endpoint="/ToDo",
+        required_create_fields=("ticket_id", "text"),
+        required_update_fields=("id",),
+        write_preview_fields=("id", "ticket_id", "text", "group_id", "done"),
     ),
     HaloResource(
         "transcription-stores",
@@ -2536,6 +2700,16 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
+        # Writes: spec-verified POST + DELETE /{id} - never fired at the
+        # tenant (verification: spec). The spec declares required: []
+        # everywhere, so the required set is a commented house choice
+        # from the POST schema's own properties (tests bind it there).
+        create_endpoint="/itemsupplier",
+        update_endpoint="/itemsupplier",
+        required_create_fields=("item_id", "supplier_id"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "item_id", "supplier_id", "price", "note"),
     ),
     HaloResource(
         "asset-changes",

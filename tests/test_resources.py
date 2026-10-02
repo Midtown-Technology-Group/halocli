@@ -72,6 +72,27 @@ WRITE_RESOURCES = (
     "custom-tables",
     "holidays",
     "lookups",
+    # Writes-batch-3 (1.10.0): CUD on route-verified config/reference sets;
+    # required fields are house choices from the POST schema (spec declares
+    # required: [] everywhere) - bound to the schema by WRITE_BATCH3's test.
+    "crm-note-replies",
+    "certificates",
+    "email-template-variables",
+    "release-note-groups",
+    "release-pipelines",
+    "ticket-type-groups",
+    "item-suppliers",
+    "product-components",
+    # POST-only tier: the spec offers no DELETE /{id}, so delete is withheld
+    # (contract amended: delete iff the spec offers it).
+    "agent-check-ins",
+    "call-log",
+    "to-dos",
+)
+WRITE_POST_ONLY = (
+    "agent-check-ins",
+    "call-log",
+    "to-dos",
 )
 
 
@@ -109,13 +130,24 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 49
+    assert len(WRITE_RESOURCES) == 60
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
         assert resource.supports_create, name
         assert resource.supports_update, name
-        assert resource.supports_delete, name
+        # Contract (amended for the POST-only tier): delete is offered iff the
+        # spec offers DELETE /{id}. Everything not in WRITE_POST_ONLY must be
+        # full-CUD; the trio must have no delete route in the spec at all.
+        if name in WRITE_POST_ONLY:
+            assert not resource.supports_delete, name
+            spec_doc = load_spec()
+            assert spec_doc is not None
+            assert "delete" not in spec_doc["paths"].get(
+                f"{resource.endpoint}/{{id}}", {}
+            ), name
+        else:
+            assert resource.supports_delete, name
         assert resource.create_endpoint == resource.endpoint, name
         assert resource.update_endpoint == resource.endpoint, name
         assert resource.required_create_fields, name
@@ -907,3 +939,63 @@ def test_route_verified_ops_are_live_declared_and_prosed() -> None:
         evidence = sweep.get(f"GET {op_path}") or probe.get(f"GET {op_path}")
         assert evidence is not None, op_path
         assert evidence.get("status") == 200, op_path
+
+WRITE_BATCH3 = (
+    "crm-note-replies",
+    "certificates",
+    "email-template-variables",
+    "release-note-groups",
+    "release-pipelines",
+    "ticket-type-groups",
+    "item-suppliers",
+    "product-components",
+)
+
+
+def test_write_batch3_required_fields_come_from_spec_post_schemas() -> None:
+    """Batch-3 creates bind to the spec POST schemas (no rows exist to observe).
+
+    The vendored spec declares `required: []` everywhere, so the required set
+    is a commented house choice - but it must be a subset of the POST body's
+    own properties, and the routes must exist (POST collection + DELETE {id}).
+    """
+    spec = load_spec()
+    assert spec is not None
+
+    def props(path: str) -> set[str]:
+        schema = spec["paths"][path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+        if schema.get("type") == "array":
+            schema = schema.get("items", {})
+        if "$ref" in schema:
+            node = spec
+            for part in schema["$ref"].lstrip("#/").split("/"):
+                node = node[part]
+            schema = node
+        return set((schema.get("properties") or {}).keys())
+
+    assert len(WRITE_BATCH3) == 8
+    for name in WRITE_BATCH3:
+        resource = get_resource(name)
+        assert resource.supports_delete, name
+        assert "post" in spec["paths"][resource.endpoint], name
+        assert "delete" in spec["paths"][f"{resource.endpoint}/{{id}}"], name
+        body_props = props(resource.endpoint)
+        assert set(resource.required_create_fields) <= body_props, name
+        assert resource.effective_write_preview_fields[0] == "id", name
+        assert set(resource.required_create_fields) <= set(
+            resource.effective_write_preview_fields
+        ), name
+
+
+def test_post_only_tier_offers_no_delete_command() -> None:
+    """The POST-only trio: create/update first-class, delete withheld by spec."""
+    spec = load_spec()
+    assert spec is not None
+    assert len(WRITE_POST_ONLY) == 3
+    for name in WRITE_POST_ONLY:
+        resource = get_resource(name)
+        assert resource.supports_create and resource.supports_update, name
+        assert not resource.supports_delete, name
+        assert "post" in spec["paths"][resource.endpoint], name
+        assert "delete" not in spec["paths"].get(f"{resource.endpoint}/{{id}}", {}), name
+        assert resource.required_create_fields, name
