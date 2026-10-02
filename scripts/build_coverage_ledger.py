@@ -200,16 +200,30 @@ def main() -> int:
         if not LEDGER_PATH.exists():
             print("coverage_ledger.json is missing; run scripts/build_coverage_ledger.py")
             return 1
-        committed = LEDGER_PATH.read_text(encoding="utf-8")
-        if committed != text:
-            stale = [
-                e["path"] + " " + e["method"]
-                for e in json.loads(committed)["operations"]
-            ][:0]  # placeholder, we only need the verdict
+        committed_text = LEDGER_PATH.read_text(encoding="utf-8")
+        if committed_text != text:
             print(
                 "coverage_ledger.json is stale (spec, policy or registry changed); "
                 "run: python scripts/build_coverage_ledger.py"
             )
+            committed = json.loads(committed_text)
+            committed_ops = {
+                (e["path"], e["method"]): e for e in committed.get("operations", [])
+            }
+            generated_ops = {
+                (e["path"], e["method"]): e for e in ledger["operations"]
+            }
+            for key in sorted(set(committed_ops) | set(generated_ops)):
+                old, new = committed_ops.get(key), generated_ops.get(key)
+                if old != new:
+                    print(f"  {key[1].upper()} {key[0]}: committed={old} generated={new}")
+            old_meta = committed.get("_meta", {})
+            for field in ("spec_sha256", "policy_sha256"):
+                if old_meta.get(field) != ledger["_meta"].get(field):
+                    print(
+                        f"  meta {field}: committed={old_meta.get(field)} "
+                        f"generated={ledger['_meta'].get(field)}"
+                    )
             return 1
         unclassified = [e for e in ledger["operations"] if "UNCLASSIFIED" in e["note"]]
         if unclassified:
