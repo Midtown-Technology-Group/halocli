@@ -654,7 +654,7 @@
     },
     "CustomTableCSV": {
       "disposition": "needs-live-probe",
-      "reason": "custom table CSV export (single GET /{id), undocumented; probe",
+      "reason": "custom table CSV export (single GET /{id), undocumented - detail route probed with a real custom-table id (1) ->400 {} on 2026-10-02; route alive, bare request incomplete",
       "evidence": "GET /CustomTableCSV/{id}: no summary",
       "ops": 1,
       "methods": "GET"
@@ -682,7 +682,7 @@
     },
     "DatabaseLookupConfirmation": {
       "disposition": "needs-live-probe",
-      "reason": "lookup confirmation helper, undocumented; probe",
+      "reason": "lookup confirmation helper, undocumented - detail route probed with a real database-lookup id (2) ->404 on 2026-10-02; no list route to promote from",
       "evidence": "GET/POST /DatabaseLookupConfirmation: no summaries",
       "ops": 2,
       "methods": "GET,POST"
@@ -871,7 +871,7 @@
     },
     "FaultsForecasting": {
       "disposition": "needs-live-probe",
-      "reason": "no list route (POST + GET/{id} only); forecasting shape odd",
+      "reason": "no list route (POST + GET/{id} only); forecasting shape odd - detail route probed with a real fault id (162483) ->404 on 2026-10-02; no list route to promote from",
       "evidence": "POST /FaultsForecasting + GET /{id}; no GET collection",
       "ops": 2,
       "methods": "GET,POST"
@@ -2585,9 +2585,9 @@
       "methods": "DELETE,GET,POST"
     },
     "incomingemail": {
-      "disposition": "needs-live-probe",
-      "reason": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
-      "evidence": "List of IncomingEmail",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py) - promoted from the120s evidence probe",
+      "evidence": "envelope emails,22,440 rows (evidence_probes.py 2026-10-02)",
       "ops": 5,
       "methods": "DELETE,GET,POST"
     },
