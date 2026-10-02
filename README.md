@@ -289,19 +289,27 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 | Disposition | Meaning | Count |
 |---|---|---|
 | `first-class` | reachable as a real `halocli` command today | 130 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 579 |
-| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 719 |
-| `dormant` | known-dead on this tenant (live evidence in `note`) | 4 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 573 |
+| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 718 |
+| `dormant` | known-dead on this tenant (live evidence in `note`) | 11 |
 | `junk` | vestigial/duplicate in the spec | 23 |
 
 ```powershell
 python scripts/build_coverage_ledger.py          # regenerate after spec/policy changes
 python scripts/build_coverage_ledger.py --check  # what CI runs; exit 1 if stale
+python scripts/prod_get_sweep.py                 # re-probe every GET (read-only)
 ```
 
-Classification lives in `coverage_policy.json` (segment-level, human-owned).
-A spec re-vendor that introduces an unclassified segment fails CI until a
-human decides — the ledger is the spine of the endpoint-promotion effort.
+Classification lives in `coverage_policy.json` (segment-level, human-owned,
+plus per-operation overrides for live-evidence flips). A spec re-vendor that
+introduces an unclassified segment fails CI until a human decides — the ledger
+is the spine of the endpoint-promotion effort.
+
+**Live evidence:** `sweep_results.json` holds the 2026-10-02 production GET
+sweep — all 797 GET operations probed read-only (358 × 200, 292 route-verified
+via validation-400, 149 backlog candidates now live-200, plus the 401/403/404/
+500/timeout findings that produced the `dormant` flips above). The sweep
+runner is structurally write-free (GET-only code path).
 
 ## Endpoint Discovery
 

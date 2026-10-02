@@ -1,16 +1,30 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 579,
-   "deliberately-raw": 719,
-   "dormant": 4,
+   "backlog": 573,
+   "deliberately-raw": 718,
+   "dormant": 11,
    "first-class": 130,
    "junk": 23
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "8e51b72ab798b49d2ca84d97e146a0cbc771845b3288f012abf1ae6085543888",
-  "spec_sha256": "ee68a3bc973fbef5429be71c5118b01d38bd6c0181a0792ad5ee20afe37b9f45"
+  "policy_sha256": "5e03cac7dd254d82a0a7194f2e69fa121e594a7c9dd902847feb2d73fbfcd2e1",
+  "spec_sha256": "ee68a3bc973fbef5429be71c5118b01d38bd6c0181a0792ad5ee20afe37b9f45",
+  "sweep": {
+   "entries": 797,
+   "file": "sweep_results.json",
+   "statuses": {
+    "200": 358,
+    "302": 4,
+    "400": 380,
+    "401": 4,
+    "403": 5,
+    "404": 28,
+    "500": 13,
+    "error:ReadTimeout": 5
+   }
+  }
  },
  "operations": [
   {
@@ -462,9 +476,9 @@
    "via": "halocli appointments create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "dormant",
    "method": "get",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "live404 bare GET (sweep 2026-10-02); no sub-route/params found - re-probe before promoting",
    "path": "/Appointment/Booking",
    "via": ""
   },
@@ -1647,7 +1661,7 @@
   {
    "disposition": "backlog",
    "method": "get",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "identity read candidate (Agent/me answers 200 with a claims envelope) | live401 for app-credential auth (GET sweep 2026-10-02) - may need delegated auth",
    "path": "/Client/me",
    "via": ""
   },
@@ -2331,9 +2345,9 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "dormant",
    "method": "get",
-   "note": "dashboard links (45p) with user filters; dashboard config read",
+   "note": "live500 on midtowntg (GET sweep 2026-10-02); collection GET is healthy - detail/filter sub-route broken",
    "path": "/DashboardLinks/FilterValues",
    "via": ""
   },
@@ -3101,9 +3115,9 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "dormant",
    "method": "get",
-   "note": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+   "note": "live500 on midtowntg (GET sweep 2026-10-02); collection GET is healthy - sub-route broken",
    "path": "/Feedback/FeedbackMessage",
    "via": ""
   },
@@ -3500,9 +3514,9 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "dormant",
    "method": "get",
-   "note": "holiday/leave records (agent_id,approved_only); workforce read",
+   "note": "live500 on probe id (GET sweep 2026-10-02); detail route crashes even at validation - re-probe with a real id before promoting",
    "path": "/Holiday/{id}",
    "via": ""
   },
@@ -8666,9 +8680,9 @@
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "dormant",
    "method": "get",
-   "note": "internal task monitor (undocumented GET); system task engine",
+   "note": "live500 on midtowntg (GET sweep 2026-10-02) - broken for this tenant's app auth",
    "path": "/TaskMonitorEvent",
    "via": ""
   },
@@ -9172,7 +9186,7 @@
   {
    "disposition": "backlog",
    "method": "get",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "day-view sibling of /TimesheetEvent/mine (bifrost uses GET /Timesheet/0) | live403 for our app (GET sweep 2026-10-02) - time-module permission",
    "path": "/Timesheet/mine",
    "via": ""
   },
@@ -9478,16 +9492,16 @@
    "via": "halocli users create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "dormant",
    "method": "get",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build",
    "path": "/Users/me",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "dormant",
    "method": "get",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build",
    "path": "/Users/onbehalf",
    "via": ""
   },

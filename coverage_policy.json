@@ -2625,5 +2625,43 @@
       "disposition": "dormant",
       "reason": "live GET/GET{id} answer 500 on midtowntg (4 attempts, 2026-09-30); re-probe before promoting"
     }
+  },
+  "op_overrides": {
+    "GET /Users/me": {
+      "disposition": "dormant",
+      "reason": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build"
+    },
+    "GET /Users/onbehalf": {
+      "disposition": "dormant",
+      "reason": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build"
+    },
+    "GET /Appointment/Booking": {
+      "disposition": "dormant",
+      "reason": "live404 bare GET (sweep 2026-10-02); no sub-route/params found - re-probe before promoting"
+    },
+    "GET /DashboardLinks/FilterValues": {
+      "disposition": "dormant",
+      "reason": "live500 on midtowntg (GET sweep 2026-10-02); collection GET is healthy - detail/filter sub-route broken"
+    },
+    "GET /Feedback/FeedbackMessage": {
+      "disposition": "dormant",
+      "reason": "live500 on midtowntg (GET sweep 2026-10-02); collection GET is healthy - sub-route broken"
+    },
+    "GET /TaskMonitorEvent": {
+      "disposition": "dormant",
+      "reason": "live500 on midtowntg (GET sweep 2026-10-02) - broken for this tenant's app auth"
+    },
+    "GET /Holiday/{id}": {
+      "disposition": "dormant",
+      "reason": "live500 on probe id (GET sweep 2026-10-02); detail route crashes even at validation - re-probe with a real id before promoting"
+    },
+    "GET /Timesheet/mine": {
+      "disposition": "backlog",
+      "reason": "day-view sibling of /TimesheetEvent/mine (bifrost uses GET /Timesheet/0) | live403 for our app (GET sweep 2026-10-02) - time-module permission"
+    },
+    "GET /Client/me": {
+      "disposition": "backlog",
+      "reason": "identity read candidate (Agent/me answers 200 with a claims envelope) | live401 for app-credential auth (GET sweep 2026-10-02) - may need delegated auth"
+    }
   }
 }

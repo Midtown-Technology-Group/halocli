@@ -36,6 +36,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SPEC_PATH = REPO_ROOT / "src" / "halocli" / "spec" / "halo_openapi.json"
 POLICY_PATH = REPO_ROOT / "coverage_policy.json"
 LEDGER_PATH = REPO_ROOT / "coverage_ledger.json"
+RESULTS_PATH = REPO_ROOT / "sweep_results.json"
 
 HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 REASON_REQUIRED = {"deliberately-raw", "dormant", "junk"}
@@ -83,16 +84,38 @@ def registry_map() -> dict[tuple[str, str], str]:
     return mapping
 
 
-def policy_segments() -> tuple[dict, dict]:
+def policy_segments() -> tuple[dict, dict, dict]:
     policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
-    return policy.get("segments", {}), policy.get("overrides", {})
+    return policy.get("segments", {}), policy.get("overrides", {}), policy.get("op_overrides", {})
 
 
-def classify(path: str, method: str, reg: dict, segments: dict, overrides: dict):
+def classify(
+    path: str,
+    method: str,
+    reg: dict,
+    segments: dict,
+    overrides: dict,
+    op_overrides: dict,
+):
     key = (path, method)
     if key in reg:
         return {"disposition": "first-class", "via": reg[key], "note": ""}
     segment = path.strip("/").split("/")[0] if path.strip("/") else ""
+    op_key = f"{method.upper()} {path}"
+    if op_key in op_overrides:
+        entry = dict(op_overrides[op_key])
+        disp = entry.get("disposition", "")
+        if disp not in DISPOSITIONS:
+            raise SystemExit(
+                f"coverage_policy.json: op_override {op_key!r} has unknown "
+                f"disposition {disp!r}"
+            )
+        if disp in REASON_REQUIRED and not entry.get("reason", "").strip():
+            raise SystemExit(
+                f"coverage_policy.json: op_override {op_key!r} disposition "
+                f"{disp!r} needs a reason"
+            )
+        return {"disposition": disp, "via": "", "note": entry.get("reason", "")}
     seg_policy = dict(segments.get(segment) or {})
     seg_policy.update(overrides.get(segment) or {})
     if not seg_policy:
@@ -145,7 +168,7 @@ def content_sha256(path: Path) -> str:
 def build() -> dict:
     spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     reg = registry_map()
-    segments, overrides = policy_segments()
+    segments, overrides, op_overrides = policy_segments()
 
     # Policy must describe reality: covered markers exactly match the registry's
     # segments, and every spec segment must be classified somewhere.
@@ -175,7 +198,7 @@ def build() -> dict:
             if method not in http_methods():
                 continue
             entry = {"path": path, "method": method}
-            entry.update(classify(path, method, reg, segments, overrides))
+            entry.update(classify(path, method, reg, segments, overrides, op_overrides))
             ops.append(entry)
     ops.sort(key=lambda e: (e["path"], e["method"]))
 
@@ -183,14 +206,30 @@ def build() -> dict:
     for entry in ops:
         counts[entry["disposition"]] = counts.get(entry["disposition"], 0) + 1
 
+    # Reference the live sweep evidence when it exists: the ledger links to
+    # it, and --check stays coupled to it (re-running the sweep changes
+    # totals -> ledger must be regenerated).
+    meta: dict = {
+        "generated_by": "scripts/build_coverage_ledger.py",
+        "spec_sha256": content_sha256(SPEC_PATH),
+        "policy_sha256": content_sha256(POLICY_PATH),
+        "operation_count": len(ops),
+        "disposition_counts": dict(sorted(counts.items())),
+    }
+    if RESULTS_PATH.exists():
+        sweep = json.loads(RESULTS_PATH.read_text(encoding="utf-8"))
+        statuses: dict[str, int] = {}
+        for entry in sweep.values():
+            status = str(entry.get("status"))
+            statuses[status] = statuses.get(status, 0) + 1
+        meta["sweep"] = {
+            "file": "sweep_results.json",
+            "entries": len(sweep),
+            "statuses": dict(sorted(statuses.items())),
+        }
+
     return {
-        "_meta": {
-            "generated_by": "scripts/build_coverage_ledger.py",
-            "spec_sha256": content_sha256(SPEC_PATH),
-            "policy_sha256": content_sha256(POLICY_PATH),
-            "operation_count": len(ops),
-            "disposition_counts": dict(sorted(counts.items())),
-        },
+        "_meta": meta,
         "operations": ops,
     }
 
