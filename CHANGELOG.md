@@ -6,7 +6,32 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
-## 1.4.0 - 2026-10-01
+## 1.4.1 - 2026-10-02
+
+- **Phase 1 complete: the production GET sweep** — all **797** GET
+  operations probed read-only against midtowntg (`sweep_results.json`,
+  structurally write-free runner: GET-only code path, probe-token path
+  params that touch no records, action-verb path segments skipped,
+  batches with pauses, resumable).
+  - Verdicts: **358 live-200** (envelope + row-key evidence per endpoint;
+    239 bare-array envelopes), 292 route-verified via validation-404/400,
+    110 param-required, plus **401 ×4, 403 ×5, 404 ×6, 500 ×13, timeouts ×5,
+    302 ×4** — every one recorded with path + disposition.
+  - **149 backlog GETs are now live-200** — promotion-ready with real
+    envelope/field evidence instead of spec guesses.
+  - The sweep **confirmed existing declarations** rather than contradicting
+    them (`salesmailbox` was already `live:500`, `list-images` `live:404`).
+  - **7 disposition flips to `dormant`** with live evidence folded in via a
+    new per-operation `op_overrides` policy layer (dead routes `/Users/me`,
+    `/Users/onbehalf`, `/Appointment/Booking`; broken sub-routes
+    `DashboardLinks/FilterValues`, `Feedback/FeedbackMessage`,
+    `TaskMonitorEvent`, `Holiday/{id}`), plus enriched reasons for
+    `/Timesheet/mine` (live403) and `/Client/me` (live401).
+  - Ledger `_meta.sweep` references the results file, keeping freshness
+    coupled to sweep re-runs; regression test pins every flip.
+- Docstrings for the sweep runner (CodeRabbit coverage gate).
+
+## 1.4.0 - 2026-10-02
 
 - **Coverage ledger: every spec operation, explicitly classified** — the
   enforcement spine of the endpoint-promotion effort.

@@ -105,3 +105,27 @@ def test_first_class_via_maps_to_real_commands(ledger: dict) -> None:
         name, verb = tail
         assert name in resource_names, entry
         assert verb in verbs or f"{name} {verb}" in operation_keys, entry
+
+
+def test_sweep_evidence_flips_are_in_the_ledger(ledger: dict) -> None:
+    """The GET sweep's disposition flips are pinned as regression facts.
+
+    Evidence: sweep_results.json (2026-10-02) - these routes answered 404/500
+    at collection level while their segments stayed healthy.
+    """
+    by_key = {(e["method"], e["path"]): e for e in ledger["operations"]}
+    for path in (
+        "/Users/me",
+        "/Users/onbehalf",
+        "/Appointment/Booking",
+        "/DashboardLinks/FilterValues",
+        "/Feedback/FeedbackMessage",
+        "/TaskMonitorEvent",
+        "/Holiday/{id}",
+    ):
+        entry = by_key[("get", path)]
+        assert entry["disposition"] == "dormant", entry
+        assert "live" in entry["note"] or "sweep" in entry["note"], entry
+    # enrichments keep their disposition but carry live evidence
+    assert by_key[("get", "/Timesheet/mine")]["disposition"] == "backlog"
+    assert "live403" in by_key[("get", "/Timesheet/mine")]["note"]
