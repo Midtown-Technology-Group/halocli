@@ -288,7 +288,7 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Sixty resources carry write metadata and first-class write commands:
+Sixty-four resources carry write metadata and first-class write commands:
 the ticketing core (tickets, actions, statuses, priorities, kb, canned-text),
 the people/CRM layer (clients, sites, assets, agents, appointments, users,
 crm-notes, timesheet-events), writes-batch-1's config/reference set —
@@ -298,7 +298,7 @@ call-scripts, qualifications, asset-groups, asset-types, item-groups,
 item-stocks, stock-bins, service-categories, services, pdf-templates and
 to-do-groups — and writes-batch-2's set: organisations, teams, suppliers,
 slas, workdays, products, fields, field-groups, field-infos, custom-tables,
-holidays and lookups - plus writes-batch-3's set: crm-note-replies, certificates, email-template-variables, release-note-groups, release-pipelines, ticket-type-groups, item-suppliers, product-components, and the POST-only tier (agent-check-ins, call-log, to-dos - the spec offers no DELETE /{id}, so the CLI withholds the command). All batches' routes are spec-verified (`POST` on the
+holidays and lookups - plus writes-batch-3's set: crm-note-replies, certificates, email-template-variables, release-note-groups, release-pipelines, ticket-type-groups, item-suppliers, product-components, and the POST-only tier (agent-check-ins, call-log, to-dos - the spec offers no DELETE /{id}, so the CLI withholds the command) - plus the tackle-the-25 set: address, contact-groups, contact-group-contacts and contract-schedule-plans. All batches' routes are spec-verified (`POST` on the
 collection, `DELETE /{id}`) but were never fired at a tenant
 (`verification: spec`); their single required create field is the observed
 primary column — a documented house assumption, since the spec declares no
@@ -314,12 +314,7 @@ halocli users create --data user.json              # firstname, surname, name,
 ```
 
 Passwords passed via `--data` are masked as `***` in preview and result output
-(the request itself carries the real value). `contracts` stays read-only by deliberate
-choice, not a missing route: the spec does document `POST /ClientContract`
-(standard Halo upsert), but client contracts carry billing machinery and
-the semantics would narrow to *client* contracts only (`POST
-/SupplierContract` is a different, permission-gated entity), so promotion
-waits for an explicit operator decision. Writes
+(the request itself carries the real value). `contracts` had deferred its writes pending an operator decision; the tackle-the-25 pass (2026-10-02) resolved it: the contract core is now **argued-raw with final, schema-cited reasons** (creation carries prepay auto-topup fields and `_send_appointment_invites`/`_send_outstanding_emails` flags; approval carries a signature/token; `POST /SupplierContract` sits behind a 403 scope), while `contracts next-ref` is first-class and the contract visit-plan children gained full CUD. Contact and address writes (`contact-groups`, `contact-group-contacts`, `address`) joined the same pass. Writes
 are **preview by default**: without flags
 they validate the payload and print what would be sent, with zero network
 calls. Executing requires both `--apply` and `--yes`:
@@ -349,9 +344,9 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 496 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 33 |
-| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 893 |
+| `first-class` | reachable as a real `halocli` command today | 506 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 8 |
+| `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 908 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 10 |
 | `junk` | vestigial/duplicate in the spec | 23 |
 

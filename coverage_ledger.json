@@ -1,16 +1,16 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 33,
-   "deliberately-raw": 893,
+   "backlog": 8,
+   "deliberately-raw": 908,
    "dormant": 10,
-   "first-class": 496,
+   "first-class": 506,
    "junk": 23
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "d68d6d280f3a976eb30c484e8333d790b23b7b1660a0400d7e0df6c889f7b8b1",
-  "spec_sha256": "cd762dda0f08296e394dc63a49ad60ce588ad5c59e01964fc70f68fadf11fbe3",
+  "policy_sha256": "db3c2d87d9d4142ca211b8b2511e3b46758616d6731be80aa314f3059d90a368",
+  "spec_sha256": "e4961ac880de2a3a035af9c159c015a261843337843213f346fd4115af8f73c2",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -161,18 +161,18 @@
    "via": "halocli address list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
+   "note": "",
    "path": "/Address",
-   "via": ""
+   "via": "halocli address create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
+   "note": "",
    "path": "/Address/{id}",
-   "via": ""
+   "via": "halocli address delete"
   },
   {
    "disposition": "first-class",
@@ -483,16 +483,16 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "appointments writes are recipe-driven (completion recipe live-proven); these nested routes' semantics are undetermined - held for a focused review",
+   "note": "booking fires attendee invites and can update tickets (_send/_force/_dont_update_ticket flags); the appointments surface is recipe-driven (completion recipe live-proven) - booking stays raw (final, evidence:190-prop POST schema 2026-10-02)",
    "path": "/Appointment/Booking",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "appointments writes are recipe-driven (completion recipe live-proven); these nested routes' semantics are undetermined - held for a focused review",
+   "note": "opaque action with an EMPTY request body in the spec - undocumented semantics; raw (final)",
    "path": "/Appointment/Generate",
    "via": ""
   },
@@ -819,9 +819,9 @@
    "via": "halocli attachments list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "generic POST/DELETE semantics (multipart vs JSON) undetermined - held while the upload family owns the surface",
+   "note": "the spec declares NO request body for base POST - binary upload is owned by the first-class upload-image/upload-document ops and the JSON write path cannot express it; raw (final)",
    "path": "/Attachment",
    "via": ""
   },
@@ -896,9 +896,9 @@
    "via": "halocli attachments get-nhserver"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "generic POST/DELETE semantics (multipart vs JSON) undetermined - held while the upload family owns the surface",
+   "note": "coupled to the undeclarable base upload route (no spec body) - kept raw with its pair (final)",
    "path": "/Attachment/{id}",
    "via": ""
   },
@@ -1694,30 +1694,30 @@
    "via": "halocli contracts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "contract creation carries prepay auto-topup billing fields (autotopup*, allowprepay/allowfixedprice) and outbound side-effect flags (_send_appointment_invites, _send_outstanding_emails) - creating one commits billing terms and can notify parties; billing stance: raw (final, evidence: POST schema props 2026-10-02)",
    "path": "/ClientContract",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "the approval body carries approver result/signature/token - approving a commercial agreement is a legally-meaningful, likely-notifying action; raw only (final, evidence: POST schema props 2026-10-02)",
    "path": "/ClientContract/Approval",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "",
    "path": "/ClientContract/NextRef",
-   "via": ""
+   "via": "halocli contracts next-ref"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "deleting a contract voids commercial terms and their schedule/asset links - contract lifecycle stays an explicit raw operation (billing stance, final)",
    "path": "/ClientContract/{id}",
    "via": ""
   },
@@ -1918,18 +1918,18 @@
    "via": "halocli contact-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
+   "note": "",
    "path": "/Contactgroup",
-   "via": ""
+   "via": "halocli contact-groups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
+   "note": "",
    "path": "/Contactgroup/{id}",
-   "via": ""
+   "via": "halocli contact-groups delete"
   },
   {
    "disposition": "first-class",
@@ -1946,18 +1946,18 @@
    "via": "halocli contact-group-contacts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
+   "note": "",
    "path": "/Contactgroupcontact",
-   "via": ""
+   "via": "halocli contact-group-contacts create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
+   "note": "",
    "path": "/Contactgroupcontact/{id}",
-   "via": ""
+   "via": "halocli contact-group-contacts delete"
   },
   {
    "disposition": "first-class",
@@ -1974,16 +1974,16 @@
    "via": "halocli contract-rules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "contract rules EXECUTE against contracts (rule_criteria + outcome_* mutate classification/coverage) - automation stance: raw (final)",
    "path": "/ContractRule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "contract assignment rules drive classification outcomes - automation stance: raw (final)",
    "path": "/ContractRule/{id}",
    "via": ""
   },
@@ -2002,16 +2002,16 @@
    "via": "halocli contract-schedules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "contract schedule entries carry an amount (scheduled charges) - billing stance: raw (final, evidence: POST schema props 2026-10-02)",
    "path": "/ContractSchedule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "removes a charge-bearing contract schedule entry - billing stance: raw (final)",
    "path": "/ContractSchedule/{id}",
    "via": ""
   },
@@ -2030,18 +2030,18 @@
    "via": "halocli contract-schedule-plans list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "",
    "path": "/ContractSchedulePlan",
-   "via": ""
+   "via": "halocli contract-schedule-plans create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "",
    "path": "/ContractSchedulePlan/{id}",
-   "via": ""
+   "via": "halocli contract-schedule-plans delete"
   },
   {
    "disposition": "first-class",
@@ -7308,9 +7308,9 @@
    "via": "halocli reports print"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "report creation is covered by the first-class clone op; deletion pending a focused CUD review",
+   "note": "focused review 2026-10-02: creation runs through the first-class clone op (POST is handler-bound to clone), a standalone create/update pair would duplicate that surface, and deleting published reports breaks external consumers - raw (final)",
    "path": "/Report/{id}",
    "via": ""
   },
@@ -8540,23 +8540,23 @@
    "via": "halocli supplier-contracts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "supplier-contract reads are permission-gated 403 for our agents and the schema carries costing_information (procurement billing) - writes cannot be verified against a readable surface; raw until a scope can read it (final)",
    "path": "/SupplierContract",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "the supplier-contract segment is permission-gated 403 for our agents (nothing can read what NextRef would number) - raw until a scope can read it (final)",
    "path": "/SupplierContract/NextRef",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
+   "note": "permission-gated 403 reads + procurement costing surface - raw until a scope can read it (final)",
    "path": "/SupplierContract/{id}",
    "via": ""
   },
@@ -9506,11 +9506,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "POST /Users/prefs payload shape undetermined - held for a focused review (users writes are otherwise live-proven)",
+   "note": "",
    "path": "/Users/prefs",
-   "via": ""
+   "via": "halocli users prefs"
   },
   {
    "disposition": "first-class",
