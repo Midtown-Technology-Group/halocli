@@ -203,6 +203,7 @@ def test_halo_resources_dumps_full_catalog() -> None:
 
 
 def test_halo_resources_dumps_all_48_resources_with_operations() -> None:
+    """halo_resources lists the whole registry with per-resource operations."""
     _, payload = call_tool("halo_resources", {})
     assert payload["count"] == 48
     by_name = {entry["name"]: entry for entry in payload["resources"]}
