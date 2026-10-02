@@ -6,6 +6,27 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.5.0 - 2026-10-02
+
+- **Phase 2 batch 1: ten backlog resources promoted, reads-first**, every
+  column bound to production sweep evidence (`sweep_results.json` — a test
+  asserts each `table_fields` entry (bar the universal `id`) was observed
+  on a live row, `list_key` matches the observed envelope, and
+  `supports_get` matches what the id-route probe answered):
+  - **mail ops:** `outgoing` (envelope `outgoing`, 702 rows — outbound mail
+    queue), `outgoing-attempts` (`attempts`, 7,047 delivery attempts —
+    mail-flow troubleshooting), `email-templates` (94)
+  - **ticket/CRM config:** `tags` (103; also gained the missing `GET /Tags`
+    prose via overlay), `popup-notes` (164; no `/{id}` route in spec →
+    `supports_get=False`), `lookups` (1,122), `outcomes` (91 — TOutcome
+    ticket-action outcomes)
+  - **comm/billing:** `call-log` (`calllog` envelope), `mailboxes`,
+    `charge-rates` (billing config, writes stay backlog)
+  - Ledger: **first-class 130 → 149**, backlog 573 → 554 (their POST/DELETE
+    correctly remain backlog); policy marks the ten segments `covered`
+    (the generator's registry-consistency gate demanded it — working as
+    designed).
+
 ## 1.4.1 - 2026-10-02
 
 - **Phase 1 complete: the production GET sweep** — all **797** GET

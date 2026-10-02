@@ -729,6 +729,85 @@ RESOURCES: tuple[HaloResource, ...] = (
         supports_get=False,
         table_fields=("use", "id", "name", "summary", "client_name"),
     ),
+    # --------------------------------------------------------------------------
+    # Phase 2 batch 1 (2026-10-02): promoted from backlog with production GET
+    # sweep evidence (sweep_results.json) - every table_field below was observed
+    # on a live list row, list_key matches the observed envelope, and the
+    # GET/{id} route answered validation-400 (route-verified, no record touched).
+    # Reads-first: POST/DELETE stay backlog until a write batch promotes them.
+    # --------------------------------------------------------------------------
+    HaloResource(
+        "outgoing",
+        "/Outgoing",
+        # Sweep 2026-10-02: envelope "outgoing", 702 rows, GET/{id} -> 400.
+        table_fields=("id", "timestamp", "status", "type", "subject", "mailboxid"),
+        list_key="outgoing",
+    ),
+    HaloResource(
+        "outgoing-attempts",
+        "/OutgoingAttempt",
+        # Sweep 2026-10-02: envelope "attempts", 7,047 rows (delivery attempts
+        # - mail-flow troubleshooting surface), GET/{id} -> 400.
+        table_fields=("id", "attemptdate", "status", "errorsubcode"),
+        list_key="attempts",
+    ),
+    HaloResource(
+        "email-templates",
+        "/EmailTemplate",
+        # Sweep 2026-10-02: bare array, 94 rows, GET/{id} -> 400.
+        table_fields=("id", "name", "description", "template_group", "sectionid"),
+    ),
+    HaloResource(
+        "tags",
+        "/Tags",
+        aliases=("tag",),
+        # Sweep 2026-10-02: bare array, 103 rows, GET/{id} -> 400.
+        table_fields=("id", "text", "type"),
+    ),
+    HaloResource(
+        "popup-notes",
+        "/PopupNote",
+        # Sweep 2026-10-02: bare array, 164 rows. No GET /PopupNote/{id} in
+        # the spec at all -> supports_get False (searches/expenses class).
+        supports_get=False,
+        table_fields=("id", "client_id", "date_created", "read_status", "note"),
+    ),
+    HaloResource(
+        "lookups",
+        "/Lookup",
+        # Sweep 2026-10-02: bare array, 1,122 rows, GET/{id} -> 400. The
+        # value columns are instance-shaped (value4/value6 present live) -
+        # columns kept exactly to what list rows returned.
+        table_fields=("id", "lookupid", "name", "value4", "value5", "value6"),
+    ),
+    HaloResource(
+        "outcomes",
+        "/Outcome",
+        # Sweep 2026-10-02: bare array, 91 rows (TOutcome - ticket action
+        # outcomes, 285p schema), GET/{id} -> 400.
+        table_fields=("id", "buttonname", "colour", "chargerate", "actiongroup"),
+    ),
+    HaloResource(
+        "call-log",
+        "/CallLog",
+        # Sweep 2026-10-02: envelope "calllog", rows present (thin tenant),
+        # GET/{id} -> 400.
+        table_fields=("id", "start_date", "callerid", "call_status", "client_name", "agent_id"),
+        list_key="calllog",
+    ),
+    HaloResource(
+        "mailboxes",
+        "/Mailbox",
+        # Sweep 2026-10-02: bare array, 124p mailbox config rows, GET/{id} -> 400.
+        table_fields=("id", "name", "display_address", "smtpaddress", "inbound_method", "enabled"),
+    ),
+    HaloResource(
+        "charge-rates",
+        "/ChargeRate",
+        # Sweep 2026-10-02: bare array, 12 rows (billing charge-rate config),
+        # GET/{id} -> 400. Read-only: billing config, writes stay backlog.
+        table_fields=("id", "rate", "current_rate", "startdate", "area", "org"),
+    ),
     HaloResource("webhooks", "/Webhook", aliases=("webhook",), table_fields=("id", "name", "url")),
     HaloResource("workdays", "/Workday", aliases=("workday",), table_fields=("id", "name")),
     HaloResource(
