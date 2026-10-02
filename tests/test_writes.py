@@ -255,10 +255,12 @@ async def test_preview_carries_warnings_for_extra_keys() -> None:
 
 @pytest.mark.asyncio
 async def test_resource_without_write_metadata_is_refused() -> None:
-    teams = get_resource("teams")
+    # currencies stays read-only by argument (money config); a future batch
+    # that flips it must consciously update this refusal test.
+    currencies = get_resource("currencies")
     client = RecordingClient()
 
-    result = await execute_write(client, teams, {"name": "Nope"}, apply=True)
+    result = await execute_write(client, currencies, {"name": "Nope"}, apply=True)
 
     assert result["ok"] is False
     assert any("does not support create" in problem for problem in result["errors"])
@@ -267,10 +269,10 @@ async def test_resource_without_write_metadata_is_refused() -> None:
 
 @pytest.mark.asyncio
 async def test_delete_refused_when_unsupported() -> None:
-    teams = get_resource("teams")
+    currencies = get_resource("currencies")
     client = RecordingClient()
 
-    result = await delete_resource(client, teams, 1, apply=True)
+    result = await delete_resource(client, currencies, 1, apply=True)
 
     assert result["ok"] is False
     assert result["method"] == "DELETE"

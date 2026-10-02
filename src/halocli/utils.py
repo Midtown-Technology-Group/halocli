@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
 
@@ -82,12 +83,23 @@ async def list_all(
     Halo reports as the total), ``returned`` and ``truncated``. Truncation is
     reported rather than implied: a caller that stopped at a limit must be able
     to tell "these are all the records" from "these are the first N".
+
+    ``paging_ignored`` (set only when it happens) reports that Halo repeated a
+    page instead of advancing — some endpoints ignore ``page_no``/``pageinate``
+    entirely (issue #24: /CRMNote answers every page with page 1). The repeated
+    page is never appended. Unless the caller already pinned ``count``, one
+    bounded recovery follows the documented workaround: a single fetch with
+    ``count=<record_count>``. If that also repeats, the first page stands and
+    the result is honestly truncated.
     """
     rows: list[dict] = []
     safe_page_size = clamp_page_size(page_size)
     page_no = 1
     record_count: int | None = None
     stopped_at_limit = False
+    paging_ignored = False
+    prev_signature: str | None = None
+    count_pinned = "count" in params
     while True:
         if max_pages is not None and page_no > max_pages:
             stopped_at_limit = True
@@ -100,6 +112,33 @@ async def list_all(
             record_count = page.record_count
         if not page.items:
             break
+        signature = _page_signature(page.items)
+        if prev_signature is not None and signature == prev_signature:
+            # The server handed back the previous page verbatim: paging params
+            # are ignored here. Never append the duplicate (issue #24).
+            paging_ignored = True
+            if not count_pinned and record_count is not None and len(rows) < record_count:
+                # One bounded recovery attempt: fetch everything as a single
+                # page (the workaround from the issue, automated).
+                retry = parse_page_result(
+                    await fetch(
+                        pageinate=True,
+                        page_no=1,
+                        page_size=safe_page_size,
+                        count=record_count,
+                        **params,
+                    ),
+                    list_key=list_key,
+                )
+                if len(retry.items) > len(rows):
+                    rows = retry.items
+                    if retry.record_count is not None:
+                        record_count = retry.record_count
+                    if max_records is not None and len(rows) > max_records:
+                        rows = rows[:max_records]
+                        stopped_at_limit = True
+            break
+        prev_signature = signature
         for item in page.items:
             rows.append(item)
             if max_records is not None and len(rows) >= max_records:
@@ -116,12 +155,24 @@ async def list_all(
     if stats is not None:
         stats["record_count"] = record_count
         stats["returned"] = len(rows)
-        # Stopping at a limit only counts as truncation when Halo says there is
-        # more to fetch; hitting max_records exactly at the total is a full read.
-        stats["truncated"] = stopped_at_limit and (
-            record_count is None or len(rows) < record_count
+        # Truncated covers three honest stops: a caller limit with more to
+        # fetch, a page that came back empty while Halo's total is unmet, and
+        # a paging-ignored endpoint whose first page is all that exists.
+        # Hitting max_records exactly at the total is a full read.
+        stats["truncated"] = (
+            record_count is None
+            and stopped_at_limit
+        ) or (
+            record_count is not None and len(rows) < record_count
         )
+        if paging_ignored:
+            stats["paging_ignored"] = True
     return rows
+
+
+def _page_signature(items: list[dict]) -> str:
+    """Stable identity for a page: identical pages mean paging was ignored."""
+    return json.dumps(items, sort_keys=True, default=str)
 
 
 def _first_list(data: dict[str, Any], list_key: str | None) -> tuple[list | None, str | None]:

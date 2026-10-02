@@ -58,6 +58,20 @@ WRITE_RESOURCES = (
     "ticket-areas",
     "ticket-types",
     "to-do-groups",
+    # Writes-batch-2 (1.8.0): config/reference entities chosen from sweep row
+    # evidence (money, mail, security, automation and raw-SQL held back).
+    "organisations",
+    "teams",
+    "suppliers",
+    "slas",
+    "workdays",
+    "products",
+    "fields",
+    "field-groups",
+    "field-infos",
+    "custom-tables",
+    "holidays",
+    "lookups",
 )
 
 
@@ -95,7 +109,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 37
+    assert len(WRITE_RESOURCES) == 49
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -170,6 +184,47 @@ def test_write_batch1_required_fields_are_observed_columns() -> None:
             resource.effective_write_preview_fields
         ), name
         # spec-verified routes: POST collection + DELETE by id
+        assert "post" in spec["paths"][resource.endpoint], name
+        assert "delete" in spec["paths"][f"{resource.endpoint}/{{id}}"], name
+
+
+WRITE_BATCH2 = (
+    "organisations",
+    "teams",
+    "suppliers",
+    "slas",
+    "workdays",
+    "products",
+    "fields",
+    "field-groups",
+    "field-infos",
+    "custom-tables",
+    "holidays",
+    "lookups",
+)
+
+
+def test_write_batch2_required_fields_are_observed_columns() -> None:
+    """Batch-2 create requirements must be live-observed list columns.
+
+    Same evidence binding as batch 1: `table_fields` derive from production
+    sweep rows, so `table_fields[primary]` ties each required create field to
+    a column Halo actually returns. Routes are spec-verified by
+    `find_write_mismatches` (POST on the collection, DELETE on `{id}`).
+    """
+    spec = load_spec()
+    assert spec is not None
+    assert len(WRITE_BATCH2) == 12
+    for name in WRITE_BATCH2:
+        resource = get_resource(name)
+        assert resource.supports_write, name
+        assert resource.supports_delete, name
+        assert resource.create_endpoint == resource.endpoint, name
+        primary = resource.required_create_fields[0]
+        assert primary in resource.table_fields, f"{name}: {primary} not observed"
+        assert set(resource.required_create_fields) <= set(
+            resource.effective_write_preview_fields
+        ), name
         assert "post" in spec["paths"][resource.endpoint], name
         assert "delete" in spec["paths"][f"{resource.endpoint}/{{id}}"], name
 

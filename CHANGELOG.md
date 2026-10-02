@@ -6,6 +6,42 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.8.0 - 2026-10-02
+
+- **Issue #24 fixed: list can no longer duplicate rows when Halo ignores
+  paging** — the generic loop now detects a page identical to the previous
+  one, never appends it, and makes one bounded recovery with
+  `count=<record_count>` (the documented workaround, automated). The payload
+  reports `paging_ignored: true`; if count is ignored too, page 1 stands
+  with honest truncation. An empty page while Halo's total is unmet is now
+  reported as truncated instead of reading complete. Live-verified on
+  `/CRMNote?toplevel_id=1`: 150 items/50 distinct → **133 items/133
+  distinct**. Four unit tests + two CLI-level tests pin the behaviour;
+  the crm-notes registry comment now documents the fix, not the workaround.
+- **Writes-batch-2: 12 config/reference resources gain first-class
+  create/update/delete** (write-enabled resources 37 → **49**), chosen from
+  production sweep row evidence:
+  - identity/org config: organisations (tenant profile), teams, suppliers;
+    scheduling: slas, workdays, holidays; catalogue: products; the
+    custom-field family: fields, field-groups, field-infos, custom-tables;
+    lookup values: lookups
+  - every route spec-verified (`POST` + `DELETE /{id}`;
+    `find_write_mismatches` empty), never fired at a tenant
+    (`verification: spec`); required create field = observed primary column
+    (asserted by `test_write_batch2_required_fields_are_observed_columns`)
+  - **held back with evidence, not habit**: billing-templates turned out to
+    be prepay auto-topup money automation (row keys), Currency/Tax carry
+    rates and accounting integrations, Item carries baseprice/costprice,
+    Projects/Opportunities/Journey carry cost/mileage, Template schedules
+    ticket creation, DatabaseLookup runs sql_script, Feedback would
+    fabricate/remove CSAT records, TopLevel's purpose stays ambiguous —
+    plus the standing money/mail/security/UI holds
+  - 48 overlay prose actions; two found upstream prose already present
+    (DELETE /Field/{id}) and were dropped so fill-if-missing never
+    overwrites upstream text
+  - **455 tests**, ruff clean, ledger fresh
+  - Ledger: **first-class 340 → 364**, backlog 364 → 340
+
 ## 1.7.0 - 2026-10-02
 
 - **Writes-batch-1: 23 config/reference resources gain first-class

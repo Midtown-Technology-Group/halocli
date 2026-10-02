@@ -87,6 +87,87 @@ async def test_list_all_max_pages_reports_truncation() -> None:
     assert stats["record_count"] == 50
 
 
+@pytest.mark.asyncio
+async def test_list_all_detects_ignored_paging_and_recovers_single_page() -> None:
+    """Issue #24: /CRMNote answers page 2 with page 1 verbatim.
+
+    The duplicate must never be appended, and one bounded recovery with
+    ``count=<record_count>`` (the documented workaround) fetches the rest.
+    """
+    first_page = {"notes": [{"id": 1}, {"id": 2}], "record_count": 5}
+    calls: list[dict[str, Any]] = []
+
+    async def fetch(**kwargs: Any) -> Any:
+        calls.append(dict(kwargs))
+        if kwargs.get("count") == 5:
+            return {"notes": [{"id": i} for i in range(1, 6)], "record_count": 5}
+        return first_page  # every page_no returns page 1 verbatim
+
+    stats: dict[str, Any] = {}
+    rows = await list_all(fetch, page_size=2, stats=stats, toplevel_id="1")
+
+    assert [row["id"] for row in rows] == [1, 2, 3, 4, 5]
+    assert stats["paging_ignored"] is True
+    assert stats["truncated"] is False
+    assert stats["record_count"] == 5
+    # page 1, duplicate page 2, exactly one recovery attempt
+    assert len(calls) == 3
+    assert calls[2]["count"] == 5
+    assert calls[2]["page_no"] == 1
+    assert calls[2]["toplevel_id"] == "1"  # caller params survive the recovery
+
+
+@pytest.mark.asyncio
+async def test_list_all_paging_ignored_and_count_ignored_is_honest_truncation() -> None:
+    """If count is ignored too (TimesheetEvent shape): page 1 stands, flagged."""
+
+    async def fetch(**kwargs: Any) -> Any:
+        return {"notes": [{"id": 1}, {"id": 2}], "record_count": 5}
+
+    stats: dict[str, Any] = {}
+    rows = await list_all(fetch, page_size=2, stats=stats)
+
+    assert rows == [{"id": 1}, {"id": 2}]  # never duplicated
+    assert stats["paging_ignored"] is True
+    assert stats["truncated"] is True
+    assert stats["returned"] == 2
+
+
+@pytest.mark.asyncio
+async def test_list_all_pinned_count_skips_recovery() -> None:
+    """An explicit count is the caller's choice: respect it, never override."""
+    calls: list[dict[str, Any]] = []
+
+    async def fetch(**kwargs: Any) -> Any:
+        calls.append(dict(kwargs))
+        return {"notes": [{"id": 1}, {"id": 2}], "record_count": 5}
+
+    stats: dict[str, Any] = {}
+    rows = await list_all(fetch, page_size=2, stats=stats, count=2)
+
+    assert rows == [{"id": 1}, {"id": 2}]
+    assert len(calls) == 2  # page 1 + duplicate page 2; no recovery call
+    assert stats["paging_ignored"] is True
+    assert stats["truncated"] is True
+
+
+@pytest.mark.asyncio
+async def test_list_all_empty_page_with_unmet_total_is_truncated() -> None:
+    """An empty page while Halo's total is unmet must not read as complete."""
+
+    async def fetch(**kwargs: Any) -> Any:
+        if kwargs["page_no"] == 1:
+            return {"notes": [{"id": 1}, {"id": 2}], "record_count": 5}
+        return {"notes": [], "record_count": 5}
+
+    stats: dict[str, Any] = {}
+    rows = await list_all(fetch, page_size=2, stats=stats)
+
+    assert len(rows) == 2
+    assert stats["truncated"] is True
+    assert "paging_ignored" not in stats
+
+
 def test_default_list_limit_is_sane() -> None:
     # Large enough to be useful, small enough that a bare `list` on a 137k-record
     # tenant cannot look like a hang.
@@ -158,6 +239,72 @@ def test_list_all_rejects_combination_with_explicit_limits() -> None:
 
     assert result.exit_code != 0
     assert "--all" in plain(result.output)
+
+
+def _mock_halo_ignoring_paging(
+    monkeypatch: pytest.MonkeyPatch, *, total: int, honor_count: bool
+) -> list[dict]:
+    """Serve the /CRMNote quirk from issue #24: page_no is ignored.
+
+    ``count`` optionally works (crm-notes honours it; timesheet-event ignores
+    count as well), and record_count always reports the true total.
+    """
+    async_client = httpx.AsyncClient
+    seen: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/auth/token":
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        params = dict(request.url.params)
+        seen.append(params)
+        page_size = int(params.get("page_size", "100"))
+        size = int(params.get("count", page_size)) if honor_count else page_size
+        size = min(size, total)
+        items = [{"id": n} for n in range(1, size + 1)]  # page_no deliberately unused
+        return httpx.Response(200, json={"sites": items, "record_count": total})
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "halocli.client.httpx.AsyncClient",
+        lambda *args, **kwargs: async_client(transport=transport),
+    )
+    monkeypatch.setenv("HALO_TENANT_URL", "https://halo.example.com")
+    monkeypatch.setenv("HALO_CLIENT_ID", "id")
+    monkeypatch.setenv("HALO_CLIENT_SECRET", "secret")
+    return seen
+
+
+def test_list_recovers_single_page_when_halo_ignores_paging(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The issue #24 symptom: 150 items, 50 distinct. After the fix: the full
+    # 133 via one count=<total> recovery, flagged, zero duplicates.
+    seen = _mock_halo_ignoring_paging(monkeypatch, total=133, honor_count=True)
+
+    result = runner.invoke(app, ["sites", "list"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    ids = [item["id"] for item in payload["items"]]
+    assert payload["count"] == 133
+    assert len(set(ids)) == 133
+    assert payload["paging_ignored"] is True
+    assert payload.get("truncated") is not True
+    assert seen and seen[-1].get("count") == "133"
+
+
+def test_list_reports_paging_ignored_when_count_is_ignored_too(monkeypatch: pytest.MonkeyPatch) -> None:
+    # count ignored as well: page 1 stands alone, flagged and honestly truncated.
+    _mock_halo_ignoring_paging(monkeypatch, total=133, honor_count=False)
+
+    result = runner.invoke(app, ["sites", "list"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["count"] == 100  # default page size, never duplicated
+    assert len({item["id"] for item in payload["items"]}) == 100
+    assert payload["paging_ignored"] is True
+    assert payload["truncated"] is True
+    assert payload["total_available"] == 133
+    assert "ignores paging" in plain(payload["hint"])
 
 
 def test_explicit_max_records_still_wins(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -220,6 +220,12 @@ complete result never carries them. Pass `--all` to fetch every record, or set
 `--max-records`/`--max-pages` explicitly. `--all` cannot be combined with those
 two flags.
 
+Some endpoints ignore paging entirely (`/CRMNote` answers every `page_no` with
+page 1). The list loop detects the repeated page, never appends it, recovers
+the full set with one `count=<total>` request, and reports
+`"paging_ignored": true` — so a lying pager can no longer duplicate rows (the
+`/CRMNote` case went from 150 items/50 distinct to 133/133, verified live).
+
 The `reports` resource also declares two nested operations, both verified live
 against the tenant:
 
@@ -263,18 +269,21 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Thirty-seven resources carry write metadata and first-class write commands:
+Forty-nine resources carry write metadata and first-class write commands:
 the ticketing core (tickets, actions, statuses, priorities, kb, canned-text),
 the people/CRM layer (clients, sites, assets, agents, appointments, users,
-crm-notes, timesheet-events), and writes-batch-1's config/reference set —
+crm-notes, timesheet-events), writes-batch-1's config/reference set —
 tags, outcomes, categories, ticket-types, ticket-areas, releases,
 release-types, email-templates, faq-lists, cost-centres, budget-types, cabs,
 call-scripts, qualifications, asset-groups, asset-types, item-groups,
 item-stocks, stock-bins, service-categories, services, pdf-templates and
-to-do-groups. Batch-1 routes are spec-verified (`POST` on the collection,
-`DELETE /{id}`) but were never fired at a tenant (`verification: spec`); their
-single required create field is the observed primary column — a documented
-house assumption, since the spec declares no required fields anywhere.
+to-do-groups — and writes-batch-2's set: organisations, teams, suppliers,
+slas, workdays, products, fields, field-groups, field-infos, custom-tables,
+holidays and lookups. Both batches' routes are spec-verified (`POST` on the
+collection, `DELETE /{id}`) but were never fired at a tenant
+(`verification: spec`); their single required create field is the observed
+primary column — a documented house assumption, since the spec declares no
+required fields anywhere.
 `users` carries the live-proven create set plus account actions —
 including the end-user MFA reset:
 
@@ -321,8 +330,8 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 340 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 364 |
+| `first-class` | reachable as a real `halocli` command today | 364 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 340 |
 | `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 718 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 10 |
 | `junk` | vestigial/duplicate in the spec | 23 |

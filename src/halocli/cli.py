@@ -1453,15 +1453,27 @@ async def _list_resource(
             **params,
         )
     payload: dict[str, Any] = {"resource": resource.name, "count": len(rows), "items": rows}
+    if stats.get("paging_ignored"):
+        # Halo answered page 2 with page 1 verbatim (issue #24): the endpoint
+        # ignores paging. The duplicate was never appended, and one
+        # single-page recovery (count=<total>) was already attempted.
+        payload["paging_ignored"] = True
     if stats.get("truncated"):
         # Say so plainly: a truncated payload must never read as a complete one.
         payload["truncated"] = True
         payload["total_available"] = stats.get("record_count")
-        payload["hint"] = (
-            f"Stopped at {len(rows)} of "
-            f"{stats.get('record_count') or 'unknown'} records. "
-            "Pass --all to fetch every record."
-        )
+        if stats.get("paging_ignored"):
+            payload["hint"] = (
+                f"Halo ignores paging on this endpoint (page 2 repeats page 1) "
+                f"and returned {len(rows)} of {stats.get('record_count') or 'unknown'} "
+                "records in a single page."
+            )
+        else:
+            payload["hint"] = (
+                f"Stopped at {len(rows)} of "
+                f"{stats.get('record_count') or 'unknown'} records. "
+                "Pass --all to fetch every record."
+            )
     render(payload, output=output, table_fields=resource.table_fields)
 
 
