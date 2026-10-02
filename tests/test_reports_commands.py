@@ -75,7 +75,7 @@ def _json_or_none(body: bytes) -> Any:
 def test_reports_declares_run_and_clone() -> None:
     resource = get_resource("reports")
     ops = {op.name: op for op in resource.operations}
-    assert set(ops) == {"run", "clone"}
+    assert set(ops) == {"run", "clone", "bookmark", "create-pdf", "print"}
 
     run = ops["run"]
     assert (run.method, run.path, run.args) == ("GET", "/Report/{id}", ("id",))
@@ -88,6 +88,17 @@ def test_reports_declares_run_and_clone() -> None:
     assert clone.write
     # Both were executed against the real tenant while building issue #15.
     assert run.verification == clone.verification == "live"
+
+    # writes-batch-3 action ops: spec-verified, never fired (1.10.0).
+    for name, path in (
+        ("bookmark", "/Report/Bookmark"),
+        ("create-pdf", "/Report/createpdf"),
+        ("print", "/Report/print"),
+    ):
+        op = ops[name]
+        assert (op.method, op.path) == ("POST", path)
+        assert op.verification == "spec"
+        assert op.write
 
 
 def test_declared_operations_exist_in_vendored_spec() -> None:

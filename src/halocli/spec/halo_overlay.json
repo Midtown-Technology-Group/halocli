@@ -2300,6 +2300,276 @@
       "target": "$.paths['/Downtime/DowntimeCalendar'].get.description",
       "description": "curated description for a surfaced operation",
       "update": "Downtime calendar sub-route; live-probed 2026-10-02 (200; empty on this tenant)."
+    },
+    {
+      "target": "$.paths['/Agent/ClearCache'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Clear the agent's cached data (config action)"
+    },
+    {
+      "target": "$.paths['/Agent/ClearCache'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on agents (clear-cache); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/AgentCheckIn'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update agent check ins"
+    },
+    {
+      "target": "$.paths['/AgentCheckIn'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Agent Check Ins records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/CRMNoteReply'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update crm note replies"
+    },
+    {
+      "target": "$.paths['/CRMNoteReply'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Crm Note Replies records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/CallLog'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update call log"
+    },
+    {
+      "target": "$.paths['/CallLog'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Call Log records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Certificate'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update certificates"
+    },
+    {
+      "target": "$.paths['/Certificate'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Certificates records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/EmailTemplate/preview'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Render an email template preview without sending"
+    },
+    {
+      "target": "$.paths['/EmailTemplate/preview'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on email-templates (preview); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update email template variables"
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Email Template Variables records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/KBArticle/View'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Render an article view (POST-as-read)"
+    },
+    {
+      "target": "$.paths['/KBArticle/View'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on kb (view); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/KBArticle/vote'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Cast a vote on a knowledge article"
+    },
+    {
+      "target": "$.paths['/KBArticle/vote'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on kb (vote); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/Lookup/ClearCache'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Clear lookup value caches"
+    },
+    {
+      "target": "$.paths['/Lookup/ClearCache'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on lookups (clear-cache); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/ReleaseNoteGroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update release note groups"
+    },
+    {
+      "target": "$.paths['/ReleaseNoteGroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Release Note Groups records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ReleasePipeline'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update release pipelines"
+    },
+    {
+      "target": "$.paths['/ReleasePipeline'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Release Pipelines records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Report/Bookmark'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Bookmark a report for the agent"
+    },
+    {
+      "target": "$.paths['/Report/Bookmark'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on reports (bookmark); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/Report/createpdf'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Generate a PDF rendering of a report (binary response)"
+    },
+    {
+      "target": "$.paths['/Report/createpdf'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on reports (create-pdf); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/Report/print'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Render a report for printing"
+    },
+    {
+      "target": "$.paths['/Report/print'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Nested action on reports (print); spec-verified POST, never fired at the tenant."
+    },
+    {
+      "target": "$.paths['/TicketTypeGroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update ticket type groups"
+    },
+    {
+      "target": "$.paths['/TicketTypeGroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket Type Groups records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ToDo'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update to dos"
+    },
+    {
+      "target": "$.paths['/ToDo'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "To Dos records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/itemsupplier'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update item suppliers"
+    },
+    {
+      "target": "$.paths['/itemsupplier'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Item Suppliers records; spec-verified POST, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/CRMNoteReply/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete crm note reply"
+    },
+    {
+      "target": "$.paths['/CRMNoteReply/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a crm note reply record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/Certificate/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete certificate"
+    },
+    {
+      "target": "$.paths['/Certificate/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a certificate record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete email template variable"
+    },
+    {
+      "target": "$.paths['/EmailTemplateVariable/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a email template variable record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ReleaseNoteGroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete release note group"
+    },
+    {
+      "target": "$.paths['/ReleaseNoteGroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a release note group record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ReleasePipeline/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete release pipeline"
+    },
+    {
+      "target": "$.paths['/ReleasePipeline/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a release pipeline record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/TicketTypeGroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete ticket type group"
+    },
+    {
+      "target": "$.paths['/TicketTypeGroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a ticket type group record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/itemsupplier/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete item supplier link"
+    },
+    {
+      "target": "$.paths['/itemsupplier/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a item supplier link record; preview-gated like every first-class delete (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ProductComponent'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a product component"
+    },
+    {
+      "target": "$.paths['/ProductComponent'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Component of a product in the release/devops tree; spec-verified POST, never fired (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ProductComponent/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a product component"
+    },
+    {
+      "target": "$.paths['/ProductComponent/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a product component record; preview-gated like every first-class delete."
     }
   ]
 }

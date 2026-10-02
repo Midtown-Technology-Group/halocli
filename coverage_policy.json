@@ -2670,6 +2670,806 @@
     "GET /Mailbox/{id}/OutlookContacts": {
       "disposition": "backlog",
       "reason": "probe 2026-10-02 with a real mailbox id (2) -> 400 ErrorAccessDenied; permission-gated for agent37 (probe-token run answered 404) - held"
+    },
+    "POST /Actions/Review": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Actions/reaction": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Address": {
+      "disposition": "backlog",
+      "reason": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call"
+    },
+    "DELETE /Address/{id}": {
+      "disposition": "backlog",
+      "reason": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call"
+    },
+    "POST /Appointment/Booking": {
+      "disposition": "backlog",
+      "reason": "appointments writes are recipe-driven (completion recipe live-proven); these nested routes' semantics are undetermined - held for a focused review"
+    },
+    "POST /Appointment/Generate": {
+      "disposition": "backlog",
+      "reason": "appointments writes are recipe-driven (completion recipe live-proven); these nested routes' semantics are undetermined - held for a focused review"
+    },
+    "POST /ApprovalProcess": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /ApprovalProcess/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /ApprovalProcessRule": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /ApprovalProcessRule/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /AssetChange": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Attachment": {
+      "disposition": "backlog",
+      "reason": "generic POST/DELETE semantics (multipart vs JSON) undetermined - held while the upload family owns the surface"
+    },
+    "DELETE /Attachment/{id}": {
+      "disposition": "backlog",
+      "reason": "generic POST/DELETE semantics (multipart vs JSON) undetermined - held while the upload family owns the surface"
+    },
+    "POST /Audit": {
+      "disposition": "deliberately-raw",
+      "reason": "audit/compliance trails: mutating or deleting audit records must stay an explicit raw operation, never a casual first-class command"
+    },
+    "DELETE /Audit/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "audit/compliance trails: mutating or deleting audit records must stay an explicit raw operation, never a casual first-class command"
+    },
+    "POST /Automation": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Automation/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Automation/{runbookId}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /BillingTemplate": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /BillingTemplate/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Bookmark": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /CSPConsumptionData": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /CSPConsumptionData/Parent/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /CSPConsumptionData/manage": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /CSPConsumptionData/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /CSVTemplate": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "DELETE /CSVTemplate/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /CallEvent": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Client/NewAccountsId": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Client/PaymentMethodUpdate": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /ClientContract": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /ClientContract/Approval": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /ClientContract/NextRef": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "DELETE /ClientContract/{id}": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /ClientPrepay": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /ClientPrepay/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /ConfirmClosure": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "DELETE /ConfirmClosure/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Consignment": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Consignment/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Contactgroup": {
+      "disposition": "backlog",
+      "reason": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call"
+    },
+    "DELETE /Contactgroup/{id}": {
+      "disposition": "backlog",
+      "reason": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call"
+    },
+    "POST /Contactgroupcontact": {
+      "disposition": "backlog",
+      "reason": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call"
+    },
+    "DELETE /Contactgroupcontact/{id}": {
+      "disposition": "backlog",
+      "reason": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call"
+    },
+    "POST /ContractRule": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "DELETE /ContractRule/{id}": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /ContractSchedule": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "DELETE /ContractSchedule/{id}": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /ContractSchedulePlan": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "DELETE /ContractSchedulePlan/{id}": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /Currency": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Currency/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /CustomButton": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /CustomButton/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /CustomQuery": {
+      "disposition": "deliberately-raw",
+      "reason": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only"
+    },
+    "DELETE /CustomQuery/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only"
+    },
+    "POST /DashboardLinks": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "DELETE /DashboardLinks/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "POST /DatabaseLookup": {
+      "disposition": "deliberately-raw",
+      "reason": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only"
+    },
+    "POST /DatabaseLookup/run": {
+      "disposition": "deliberately-raw",
+      "reason": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only"
+    },
+    "DELETE /DatabaseLookup/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only"
+    },
+    "POST /DatabaseLookupConfirmation": {
+      "disposition": "deliberately-raw",
+      "reason": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only"
+    },
+    "POST /DistributionLists": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /DistributionLists/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /DistributionListsLog": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /DistributionListsLog/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /Downtime": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "DELETE /Downtime/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "POST /EmailRule": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /EmailRule/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /EmailStore": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /EmailStore/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /Event": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Event/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /EventRule": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /EventRule/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Expense": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /FaultsForecasting": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Feedback": {
+      "disposition": "deliberately-raw",
+      "reason": "CSAT feedback records: creating would fabricate customer feedback and deleting would tamper with satisfaction metrics - raw only"
+    },
+    "DELETE /Feedback/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "CSAT feedback records: creating would fabricate customer feedback and deleting would tamper with satisfaction metrics - raw only"
+    },
+    "POST /Field/AddFieldToAll/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /HistoricalTicketVolumes": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "DELETE /HistoricalTicketVolumes/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /Invoice": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Invoice/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /InvoiceChange": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /InvoicePayment": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /InvoicePayment/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /InvoiceStatus": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /InvoiceStatus/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Item": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Item/NewAccountsId": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Item/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Journey": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Journey/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Mailbox": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /Mailbox/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /MeterReading": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Notification": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Notification/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /NotificationMessage": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /NotificationMessage/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Notifications": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Notifications/process": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Notifications/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Opportunities": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Opportunities/View": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Opportunities/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Outgoing": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /Outgoing/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /PopupNote/read": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /PowerShellScript": {
+      "disposition": "deliberately-raw",
+      "reason": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate"
+    },
+    "DELETE /PowerShellScript/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate"
+    },
+    "POST /PowerShellScriptCriteria": {
+      "disposition": "deliberately-raw",
+      "reason": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate"
+    },
+    "DELETE /PowerShellScriptCriteria/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate"
+    },
+    "POST /PowerShellScriptProcessing": {
+      "disposition": "deliberately-raw",
+      "reason": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate"
+    },
+    "DELETE /PowerShellScriptProcessing/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate"
+    },
+    "POST /Projects": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Projects/View": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Projects/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /PublishProfiles": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "DELETE /PublishProfiles/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /PurchaseOrder": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /PurchaseOrder/View": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /PurchaseOrder/confirmreceipt": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /PurchaseOrder/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Quotation": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Quotation/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /RecurringInvoice": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /RecurringInvoice/Lines": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /RecurringInvoice/process": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /RecurringInvoice/updatelines": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /RecurringInvoice/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /RemoteSession": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "DELETE /RemoteSession/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "DELETE /Report/{id}": {
+      "disposition": "backlog",
+      "reason": "report creation is covered by the first-class clone op; deletion pending a focused CUD review"
+    },
+    "POST /Roles": {
+      "disposition": "deliberately-raw",
+      "reason": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default"
+    },
+    "DELETE /Roles/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default"
+    },
+    "POST /SalesMailbox": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /SalesMailbox/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /SalesMailboxDetail": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /SalesOrder": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /SalesOrder/View": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /SalesOrder/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /SavedForecast": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "DELETE /SavedForecast/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "POST /Schedule": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /ScheduleOccurrence": {
+      "disposition": "deliberately-raw",
+      "reason": "POST body schema is EMPTY in the vendored spec and the tenant row gives no usable shape - raw until an occurrence payload can be evidenced"
+    },
+    "POST /Service/unsubscribe": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /ServiceAvailability": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "DELETE /ServiceAvailability/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "POST /ServiceStatus": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "POST /ServiceStatus/Subscribe": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "GET /ServiceStatus/Subscribe/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "DELETE /ServiceStatus/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate"
+    },
+    "DELETE /SingleSignOnAttempt/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "audit/compliance trails: mutating or deleting audit records must stay an explicit raw operation, never a casual first-class command"
+    },
+    "POST /SoftwareLicence": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /SoftwareLicence/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /SupplierContract": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /SupplierContract/NextRef": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "DELETE /SupplierContract/{id}": {
+      "disposition": "backlog",
+      "reason": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval"
+    },
+    "POST /Tax": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /Tax/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /TaxRule": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /TaxRule/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /Template": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Template/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /TicketApproval": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /TicketApproval/{id}&{seq}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /TicketRules": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /TicketRules/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Timesheet": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /TopLevel": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "DELETE /TopLevel/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /TranscriptionStore": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "DELETE /TranscriptionStore/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established"
+    },
+    "POST /UserRoles": {
+      "disposition": "deliberately-raw",
+      "reason": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default"
+    },
+    "DELETE /UserRoles/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default"
+    },
+    "POST /Users/prefs": {
+      "disposition": "backlog",
+      "reason": "POST /Users/prefs payload shape undetermined - held for a focused review (users writes are otherwise live-proven)"
+    },
+    "POST /ViewColumns": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "DELETE /ViewColumns/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "POST /ViewFilter": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "DELETE /ViewFilter/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "POST /ViewListGroup": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "DELETE /ViewListGroup/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "POST /ViewLists": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "DELETE /ViewLists/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
+    },
+    "POST /Webhook": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Webhook/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /Workflow": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /Workflow/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /WorkflowTarget": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "DELETE /WorkflowTarget/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
+    },
+    "POST /cspinvoice": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "DELETE /cspinvoice/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations"
+    },
+    "POST /formattedemail": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /formattedemail/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /incomingemail": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "POST /incomingemail/AddToTicket": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
+    },
+    "DELETE /incomingemail/{id}": {
+      "disposition": "deliberately-raw",
+      "reason": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)"
     }
   }
 }

@@ -1,16 +1,16 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 237,
-   "deliberately-raw": 718,
+   "backlog": 35,
+   "deliberately-raw": 893,
    "dormant": 10,
-   "first-class": 467,
+   "first-class": 494,
    "junk": 23
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "428896c73a60026d6fb71930ae8e3a096e3723d1e4aa0d897ab0a67ced6f8a98",
-  "spec_sha256": "370d0edeb0a97d3a3a71bb256014365a18db0966627ff5e26f22ee8f7b22f2e9",
+  "policy_sha256": "1891506b38ec041ef02c097aaa721bf969d9b3095b81f337ba987cca0b2c2978",
+  "spec_sha256": "cd762dda0f08296e394dc63a49ad60ce588ad5c59e01964fc70f68fadf11fbe3",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -98,16 +98,16 @@
    "via": "halocli actions create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/Actions/Review",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/Actions/reaction",
    "via": ""
   },
@@ -163,14 +163,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
    "path": "/Address",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
    "path": "/Address/{id}",
    "via": ""
   },
@@ -280,11 +280,11 @@
    "via": "halocli agents create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Agent/ClearCache",
-   "via": ""
+   "via": "halocli agents clear-cache"
   },
   {
    "disposition": "first-class",
@@ -315,11 +315,11 @@
    "via": "halocli agent-check-ins list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/AgentCheckIn",
-   "via": ""
+   "via": "halocli agent-check-ins create/update"
   },
   {
    "disposition": "first-class",
@@ -485,14 +485,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "appointments writes are recipe-driven (completion recipe live-proven); these nested routes' semantics are undetermined - held for a focused review",
    "path": "/Appointment/Booking",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "appointments writes are recipe-driven (completion recipe live-proven); these nested routes' semantics are undetermined - held for a focused review",
    "path": "/Appointment/Generate",
    "via": ""
   },
@@ -518,16 +518,16 @@
    "via": "halocli approval-process list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/ApprovalProcess",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/ApprovalProcess/{id}",
    "via": ""
   },
@@ -546,16 +546,16 @@
    "via": "halocli approval-process-rules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/ApprovalProcessRule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/ApprovalProcessRule/{id}",
    "via": ""
   },
@@ -693,9 +693,9 @@
    "via": "halocli asset-changes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/AssetChange",
    "via": ""
   },
@@ -821,7 +821,7 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "generic POST/DELETE semantics (multipart vs JSON) undetermined - held while the upload family owns the surface",
    "path": "/Attachment",
    "via": ""
   },
@@ -898,7 +898,7 @@
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "generic POST/DELETE semantics (multipart vs JSON) undetermined - held while the upload family owns the surface",
    "path": "/Attachment/{id}",
    "via": ""
   },
@@ -917,16 +917,16 @@
    "via": "halocli audits list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "audit/compliance trails: mutating or deleting audit records must stay an explicit raw operation, never a casual first-class command",
    "path": "/Audit",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "audit/compliance trails: mutating or deleting audit records must stay an explicit raw operation, never a casual first-class command",
    "path": "/Audit/{id}",
    "via": ""
   },
@@ -952,16 +952,16 @@
    "via": "halocli automations list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Automation",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Automation/{id}",
    "via": ""
   },
@@ -973,9 +973,9 @@
    "via": "halocli automations get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Automation/{runbookId}",
    "via": ""
   },
@@ -1078,16 +1078,16 @@
    "via": "halocli billing-templates list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/BillingTemplate",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/BillingTemplate/{id}",
    "via": ""
   },
@@ -1106,9 +1106,9 @@
    "via": "halocli booking-types list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "agent bookmarks, non-array POST body (Bookmark 5p), no summaries; probe",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/Bookmark",
    "via": ""
   },
@@ -1267,18 +1267,18 @@
    "via": "halocli crm-note-replies list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CRMNoteReply",
-   "via": ""
+   "via": "halocli crm-note-replies create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CRMNoteReply/{id}",
-   "via": ""
+   "via": "halocli crm-note-replies delete"
   },
   {
    "disposition": "first-class",
@@ -1295,30 +1295,30 @@
    "via": "halocli csp-consumption-data list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/CSPConsumptionData",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/CSPConsumptionData/Parent/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/CSPConsumptionData/manage",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/CSPConsumptionData/{id}",
    "via": ""
   },
@@ -1344,16 +1344,16 @@
    "via": "halocli csv-templates list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/CSVTemplate",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/CSVTemplate/{id}",
    "via": ""
   },
@@ -1372,9 +1372,9 @@
    "via": "halocli call-events list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/CallEvent",
    "via": ""
   },
@@ -1393,11 +1393,11 @@
    "via": "halocli call-log list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CallLog",
-   "via": ""
+   "via": "halocli call-log create/update"
   },
   {
    "disposition": "first-class",
@@ -1505,18 +1505,18 @@
    "via": "halocli certificates list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Certificate",
-   "via": ""
+   "via": "halocli certificates create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Certificate/{id}",
-   "via": ""
+   "via": "halocli certificates delete"
   },
   {
    "disposition": "first-class",
@@ -1645,16 +1645,16 @@
    "via": "halocli clients create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Client/NewAccountsId",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Client/PaymentMethodUpdate",
    "via": ""
   },
@@ -1696,28 +1696,28 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ClientContract",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ClientContract/Approval",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ClientContract/NextRef",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ClientContract/{id}",
    "via": ""
   },
@@ -1736,16 +1736,16 @@
    "via": "halocli client-prepays list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/ClientPrepay",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/ClientPrepay/{id}",
    "via": ""
   },
@@ -1806,16 +1806,16 @@
    "via": "halocli confirm-closures list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/ConfirmClosure",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/ConfirmClosure/{id}",
    "via": ""
   },
@@ -1890,16 +1890,16 @@
    "via": "halocli consignments list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Consignment",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Consignment/{id}",
    "via": ""
   },
@@ -1920,14 +1920,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
    "path": "/Contactgroup",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
    "path": "/Contactgroup/{id}",
    "via": ""
   },
@@ -1948,14 +1948,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
    "path": "/Contactgroupcontact",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "held with the contacts family per the user's deferral (contacts writes deferred) - promotion awaits that call",
    "path": "/Contactgroupcontact/{id}",
    "via": ""
   },
@@ -1976,14 +1976,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ContractRule",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ContractRule/{id}",
    "via": ""
   },
@@ -2004,14 +2004,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ContractSchedule",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ContractSchedule/{id}",
    "via": ""
   },
@@ -2032,14 +2032,14 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ContractSchedulePlan",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/ContractSchedulePlan/{id}",
    "via": ""
   },
@@ -2135,16 +2135,16 @@
    "via": "halocli currencies list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Currency",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Currency/{id}",
    "via": ""
   },
@@ -2163,16 +2163,16 @@
    "via": "halocli custom-buttons list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/CustomButton",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/CustomButton/{id}",
    "via": ""
   },
@@ -2275,16 +2275,16 @@
    "via": "halocli custom-queries list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only",
    "path": "/CustomQuery",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only",
    "path": "/CustomQuery/{id}",
    "via": ""
   },
@@ -2338,9 +2338,9 @@
    "via": "halocli dashboard-links list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/DashboardLinks",
    "via": ""
   },
@@ -2352,9 +2352,9 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/DashboardLinks/{id}",
    "via": ""
   },
@@ -2387,23 +2387,23 @@
    "via": "halocli database-lookups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only",
    "path": "/DatabaseLookup",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only",
    "path": "/DatabaseLookup/run",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only",
    "path": "/DatabaseLookup/{id}",
    "via": ""
   },
@@ -2415,9 +2415,9 @@
    "via": "halocli database-lookups get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "lookup confirmation helper, undocumented; probe",
+   "note": "raw SQL surfaces (custom queries, database lookups): command sugar would normalize arbitrary SQL execution - raw only",
    "path": "/DatabaseLookupConfirmation",
    "via": ""
   },
@@ -2499,16 +2499,16 @@
    "via": "halocli distribution-lists list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/DistributionLists",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/DistributionLists/{id}",
    "via": ""
   },
@@ -2527,16 +2527,16 @@
    "via": "halocli distribution-list-logs list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/DistributionListsLog",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/DistributionListsLog/{id}",
    "via": ""
   },
@@ -2562,9 +2562,9 @@
    "via": "halocli downtimes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/Downtime",
    "via": ""
   },
@@ -2576,9 +2576,9 @@
    "via": "halocli downtimes downtime-calendar"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/Downtime/{id}",
    "via": ""
   },
@@ -2695,16 +2695,16 @@
    "via": "halocli email-rules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/EmailRule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/EmailRule/{id}",
    "via": ""
   },
@@ -2723,16 +2723,16 @@
    "via": "halocli email-stores list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/EmailStore",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/EmailStore/{id}",
    "via": ""
   },
@@ -2758,11 +2758,11 @@
    "via": "halocli email-templates create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/EmailTemplate/preview",
-   "via": ""
+   "via": "halocli email-templates preview"
   },
   {
    "disposition": "first-class",
@@ -2786,18 +2786,18 @@
    "via": "halocli email-template-variables list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/EmailTemplateVariable",
-   "via": ""
+   "via": "halocli email-template-variables create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/EmailTemplateVariable/{id}",
-   "via": ""
+   "via": "halocli email-template-variables delete"
   },
   {
    "disposition": "first-class",
@@ -2842,16 +2842,16 @@
    "via": "halocli events list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Event",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Event/{id}",
    "via": ""
   },
@@ -2870,16 +2870,16 @@
    "via": "halocli event-rules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/EventRule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/EventRule/{id}",
    "via": ""
   },
@@ -2926,9 +2926,9 @@
    "via": "halocli expenses list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Expense",
    "via": ""
   },
@@ -3059,9 +3059,9 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "no list route (POST + GET/{id} only); forecasting shape odd",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/FaultsForecasting",
    "via": ""
   },
@@ -3108,9 +3108,9 @@
    "via": "halocli feedbacks list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "CSAT feedback records: creating would fabricate customer feedback and deleting would tamper with satisfaction metrics - raw only",
    "path": "/Feedback",
    "via": ""
   },
@@ -3122,9 +3122,9 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "CSAT feedback records: creating would fabricate customer feedback and deleting would tamper with satisfaction metrics - raw only",
    "path": "/Feedback/{id}",
    "via": ""
   },
@@ -3150,9 +3150,9 @@
    "via": "halocli fields create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Field/AddFieldToAll/{id}",
    "via": ""
   },
@@ -3472,16 +3472,16 @@
    "via": "halocli historical-ticket-volumes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/HistoricalTicketVolumes",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/HistoricalTicketVolumes/{id}",
    "via": ""
   },
@@ -5082,9 +5082,9 @@
    "via": "halocli invoices list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Invoice",
    "via": ""
   },
@@ -5117,9 +5117,9 @@
    "via": "halocli invoices update-lines"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Invoice/{id}",
    "via": ""
   },
@@ -5145,9 +5145,9 @@
    "via": "halocli invoice-changes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/InvoiceChange",
    "via": ""
   },
@@ -5166,16 +5166,16 @@
    "via": "halocli invoice-payments list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/InvoicePayment",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/InvoicePayment/{id}",
    "via": ""
   },
@@ -5194,16 +5194,16 @@
    "via": "halocli invoice-statuses list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/InvoiceStatus",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/InvoiceStatus/{id}",
    "via": ""
   },
@@ -5222,23 +5222,23 @@
    "via": "halocli items list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Item",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Item/NewAccountsId",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Item/{id}",
    "via": ""
   },
@@ -5418,16 +5418,16 @@
    "via": "halocli journeys list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Journey",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Journey/{id}",
    "via": ""
   },
@@ -5453,18 +5453,18 @@
    "via": "halocli kb create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/KBArticle/View",
-   "via": ""
+   "via": "halocli kb view"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/KBArticle/vote",
-   "via": ""
+   "via": "halocli kb vote"
   },
   {
    "disposition": "first-class",
@@ -5712,11 +5712,11 @@
    "via": "halocli lookups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Lookup/ClearCache",
-   "via": ""
+   "via": "halocli lookups clear-cache"
   },
   {
    "disposition": "first-class",
@@ -5950,16 +5950,16 @@
    "via": "halocli mailboxes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/Mailbox",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/Mailbox/{id}",
    "via": ""
   },
@@ -6104,9 +6104,9 @@
    "via": "halocli meter-readings list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/MeterReading",
    "via": ""
   },
@@ -6244,16 +6244,16 @@
    "via": "halocli notifications list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Notification",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Notification/{id}",
    "via": ""
   },
@@ -6279,16 +6279,16 @@
    "via": "halocli notification-messages list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/NotificationMessage",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/NotificationMessage/{id}",
    "via": ""
   },
@@ -6307,23 +6307,23 @@
    "via": "halocli escalation-messages list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Notifications",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Notifications/process",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Notifications/{id}",
    "via": ""
   },
@@ -6363,23 +6363,23 @@
    "via": "halocli opportunities list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Opportunities",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Opportunities/View",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Opportunities/{id}",
    "via": ""
   },
@@ -6461,16 +6461,16 @@
    "via": "halocli outgoing list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/Outgoing",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/Outgoing/{id}",
    "via": ""
   },
@@ -6643,9 +6643,9 @@
    "via": "halocli popup-notes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/PopupNote/read",
    "via": ""
   },
@@ -6657,16 +6657,16 @@
    "via": "halocli powershell-scripts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate",
    "path": "/PowerShellScript",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate",
    "path": "/PowerShellScript/{id}",
    "via": ""
   },
@@ -6685,16 +6685,16 @@
    "via": "halocli powershell-script-criteria list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate",
    "path": "/PowerShellScriptCriteria",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate",
    "path": "/PowerShellScriptCriteria/{id}",
    "via": ""
   },
@@ -6713,16 +6713,16 @@
    "via": "halocli powershell-script-processing list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate",
    "path": "/PowerShellScriptProcessing",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "script content is executable code: command sugar would normalize deploying code - raw keeps operators at the spec-validation gate",
    "path": "/PowerShellScriptProcessing/{id}",
    "via": ""
   },
@@ -6804,18 +6804,18 @@
    "via": "halocli product-components list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ProductComponent",
-   "via": ""
+   "via": "halocli product-components create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ProductComponent/{id}",
-   "via": ""
+   "via": "halocli product-components delete"
   },
   {
    "disposition": "first-class",
@@ -6839,23 +6839,23 @@
    "via": "halocli projects list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Projects",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Projects/View",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Projects/{id}",
    "via": ""
   },
@@ -6874,16 +6874,16 @@
    "via": "halocli publish-profiles list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/PublishProfiles",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/PublishProfiles/{id}",
    "via": ""
   },
@@ -6902,30 +6902,30 @@
    "via": "halocli purchase-orders list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/PurchaseOrder",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/PurchaseOrder/View",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/PurchaseOrder/confirmreceipt",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/PurchaseOrder/{id}",
    "via": ""
   },
@@ -7000,9 +7000,9 @@
    "via": "halocli quotations list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Quotation",
    "via": ""
   },
@@ -7028,9 +7028,9 @@
    "via": "halocli quotations view"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Quotation/{id}",
    "via": ""
   },
@@ -7077,37 +7077,37 @@
    "via": "halocli recurring-invoices list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/RecurringInvoice",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/RecurringInvoice/Lines",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/RecurringInvoice/process",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/RecurringInvoice/updatelines",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/RecurringInvoice/{id}",
    "via": ""
   },
@@ -7161,18 +7161,18 @@
    "via": "halocli release-note-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ReleaseNoteGroup",
-   "via": ""
+   "via": "halocli release-note-groups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ReleaseNoteGroup/{id}",
-   "via": ""
+   "via": "halocli release-note-groups delete"
   },
   {
    "disposition": "first-class",
@@ -7189,18 +7189,18 @@
    "via": "halocli release-pipelines list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ReleasePipeline",
-   "via": ""
+   "via": "halocli release-pipelines create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ReleasePipeline/{id}",
-   "via": ""
+   "via": "halocli release-pipelines delete"
   },
   {
    "disposition": "first-class",
@@ -7245,16 +7245,16 @@
    "via": "halocli remote-sessions list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/RemoteSession",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/RemoteSession/{id}",
    "via": ""
   },
@@ -7287,30 +7287,30 @@
    "via": "halocli reports clone"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Report/Bookmark",
-   "via": ""
+   "via": "halocli reports bookmark"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Report/createpdf",
-   "via": ""
+   "via": "halocli reports create-pdf"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Report/print",
-   "via": ""
+   "via": "halocli reports print"
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "report creation is covered by the first-class clone op; deletion pending a focused CUD review",
    "path": "/Report/{id}",
    "via": ""
   },
@@ -7378,16 +7378,16 @@
    "via": "halocli roles list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default",
    "path": "/Roles",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default",
    "path": "/Roles/{id}",
    "via": ""
   },
@@ -7560,16 +7560,16 @@
    "via": "halocli sales-mailboxes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/SalesMailbox",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/SalesMailbox/{id}",
    "via": ""
   },
@@ -7588,9 +7588,9 @@
    "via": "halocli sales-mailbox-details list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/SalesMailboxDetail",
    "via": ""
   },
@@ -7602,23 +7602,23 @@
    "via": "halocli sales-orders list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/SalesOrder",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/SalesOrder/View",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/SalesOrder/{id}",
    "via": ""
   },
@@ -7637,16 +7637,16 @@
    "via": "halocli saved-forecasts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/SavedForecast",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/SavedForecast/{id}",
    "via": ""
   },
@@ -7665,9 +7665,9 @@
    "via": "halocli schedules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Schedule",
    "via": ""
   },
@@ -7686,9 +7686,9 @@
    "via": "halocli schedule-occurrences list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "POST body schema is EMPTY in the vendored spec and the tenant row gives no usable shape - raw until an occurrence payload can be evidenced",
    "path": "/ScheduleOccurrence",
    "via": ""
   },
@@ -7910,9 +7910,9 @@
    "via": "halocli services create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Service/unsubscribe",
    "via": ""
   },
@@ -7938,16 +7938,16 @@
    "via": "halocli service-availabilities list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/ServiceAvailability",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/ServiceAvailability/{id}",
    "via": ""
   },
@@ -8015,30 +8015,30 @@
    "via": "halocli service-statuses list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/ServiceStatus",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/ServiceStatus/Subscribe",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "get",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/ServiceStatus/Subscribe/{id}",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "operational live-state surface (availability, subscriptions, remote sessions, downtime): mutates client-visible operational state - raw keeps the deliberate gate",
    "path": "/ServiceStatus/{id}",
    "via": ""
   },
@@ -8148,9 +8148,9 @@
    "via": "halocli single-sign-on-attempts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "audit/compliance trails: mutating or deleting audit records must stay an explicit raw operation, never a casual first-class command",
    "path": "/SingleSignOnAttempt/{id}",
    "via": ""
   },
@@ -8323,16 +8323,16 @@
    "via": "halocli software-licences list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/SoftwareLicence",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/SoftwareLicence/{id}",
    "via": ""
   },
@@ -8542,21 +8542,21 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/SupplierContract",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/SupplierContract/NextRef",
    "via": ""
   },
   {
    "disposition": "backlog",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "contract writes deferred per the contracts decision (billing-adjacent semantics) - promotion awaits explicit operator approval",
    "path": "/SupplierContract/{id}",
    "via": ""
   },
@@ -8722,16 +8722,16 @@
    "via": "halocli taxes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Tax",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Tax/{id}",
    "via": ""
   },
@@ -8750,16 +8750,16 @@
    "via": "halocli tax-rules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/TaxRule",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/TaxRule/{id}",
    "via": ""
   },
@@ -8848,16 +8848,16 @@
    "via": "halocli templates list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Template",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Template/{id}",
    "via": ""
   },
@@ -8946,9 +8946,9 @@
    "via": "halocli ticket-approvals list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/TicketApproval",
    "via": ""
   },
@@ -8960,9 +8960,9 @@
    "via": "halocli ticket-approvals get"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/TicketApproval/{id}&{seq}",
    "via": ""
   },
@@ -9002,16 +9002,16 @@
    "via": "halocli ticket-rules list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/TicketRules",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/TicketRules/{id}",
    "via": ""
   },
@@ -9065,18 +9065,18 @@
    "via": "halocli ticket-type-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/TicketTypeGroup",
-   "via": ""
+   "via": "halocli ticket-type-groups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/TicketTypeGroup/{id}",
-   "via": ""
+   "via": "halocli ticket-type-groups delete"
   },
   {
    "disposition": "first-class",
@@ -9170,9 +9170,9 @@
    "via": "halocli timesheets list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Timesheet",
    "via": ""
   },
@@ -9247,11 +9247,11 @@
    "via": "halocli to-dos list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ToDo",
-   "via": ""
+   "via": "halocli to-dos create/update"
   },
   {
    "disposition": "first-class",
@@ -9289,16 +9289,16 @@
    "via": "halocli top-levels list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/TopLevel",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/TopLevel/{id}",
    "via": ""
   },
@@ -9317,16 +9317,16 @@
    "via": "halocli transcription-stores list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/TranscriptionStore",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "semantics undocumented in the spec and insufficient read evidence to bless a first-class command - raw with spec validation is the honest surface until the semantics are established",
    "path": "/TranscriptionStore/{id}",
    "via": ""
   },
@@ -9457,16 +9457,16 @@
    "via": "halocli user-roles list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default",
    "path": "/UserRoles",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "identity/permission surface: role and permission mutations are security-sensitive - raw with preview gates, never a first-class default",
    "path": "/UserRoles/{id}",
    "via": ""
   },
@@ -9508,7 +9508,7 @@
   {
    "disposition": "backlog",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "POST /Users/prefs payload shape undetermined - held for a focused review (users writes are otherwise live-proven)",
    "path": "/Users/prefs",
    "via": ""
   },
@@ -9604,16 +9604,16 @@
    "via": "halocli view-columns list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewColumns",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewColumns/{id}",
    "via": ""
   },
@@ -9632,16 +9632,16 @@
    "via": "halocli view-filters list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewFilter",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewFilter/{id}",
    "via": ""
   },
@@ -9660,16 +9660,16 @@
    "via": "halocli view-list-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewListGroup",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewListGroup/{id}",
    "via": ""
   },
@@ -9688,16 +9688,16 @@
    "via": "halocli view-lists list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewLists",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command",
    "path": "/ViewLists/{id}",
    "via": ""
   },
@@ -9793,16 +9793,16 @@
    "via": "halocli webhooks list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Webhook",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Webhook/{id}",
    "via": ""
   },
@@ -9940,16 +9940,16 @@
    "via": "halocli workflows list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Workflow",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/Workflow/{id}",
    "via": ""
   },
@@ -9968,16 +9968,16 @@
    "via": "halocli workflow-targets list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/WorkflowTarget",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
    "path": "/WorkflowTarget/{id}",
    "via": ""
   },
@@ -10066,16 +10066,16 @@
    "via": "halocli csp-invoices list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/cspinvoice",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/cspinvoice/{id}",
    "via": ""
   },
@@ -10094,16 +10094,16 @@
    "via": "halocli formattedemails list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/formattedemail",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/formattedemail/{id}",
    "via": ""
   },
@@ -10122,23 +10122,23 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/incomingemail",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "post",
-   "note": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/incomingemail/AddToTicket",
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "deliberately-raw",
    "method": "delete",
-   "note": "inbound email archive read (+AddToTicket); mail diagnostics - probed 2026-10-02: 15 attempts (documented + scope params, bare, count=100) all ReadTimeout at the 15s budget; needs a working probe before promotion",
+   "note": "mail surface: creating/sending/routing mail from a CLI risks outbound side effects - kept raw per the mail stance (reads are first-class)",
    "path": "/incomingemail/{id}",
    "via": ""
   },
@@ -10157,18 +10157,18 @@
    "via": "halocli item-suppliers list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/itemsupplier",
-   "via": ""
+   "via": "halocli item-suppliers create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/itemsupplier/{id}",
-   "via": ""
+   "via": "halocli item-suppliers delete"
   },
   {
    "disposition": "first-class",
