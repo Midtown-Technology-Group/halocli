@@ -235,7 +235,7 @@ def test_halo_resources_operation_entries_have_exact_shape() -> None:
 
 
 def test_halo_search_surfaces_operations_via_matched_terms() -> None:
-    """Query terms that exist nowhere at resource level still surface the owner."""
+    """Query terms surface their owning resource: ops when no name matches, names when they do."""
     _, clone_payload = call_tool("halo_search", {"query": "clone"})
     clone_top = clone_payload["results"][0]
     assert clone_top["name"] == "reports"
