@@ -112,6 +112,11 @@ def test_sweep_evidence_flips_are_in_the_ledger(ledger: dict) -> None:
 
     Evidence: sweep_results.json (2026-10-02) - these routes answered 404/500
     at collection level while their segments stayed healthy.
+
+    Exception: /Holiday/{id} was initially flipped dormant (detail probe
+    crashed with 500) but its COLLECTION is live with 492 rows, so phase-2
+    batch 2 promoted the segment - the detail quirk is documented in the
+    resource comment instead of demoting the whole entity.
     """
     by_key = {(e["method"], e["path"]): e for e in ledger["operations"]}
     for path in (
@@ -121,7 +126,6 @@ def test_sweep_evidence_flips_are_in_the_ledger(ledger: dict) -> None:
         "/DashboardLinks/FilterValues",
         "/Feedback/FeedbackMessage",
         "/TaskMonitorEvent",
-        "/Holiday/{id}",
     ):
         entry = by_key[("get", path)]
         assert entry["disposition"] == "dormant", entry

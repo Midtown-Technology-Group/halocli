@@ -6,6 +6,34 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.6.0 - 2026-10-02
+
+- **Phase 2 batch 2: 78 sweep-evidenced resources promoted in one pass** —
+  the largest single promotion, generated from production sweep evidence
+  (`sweep_results.json`) and gated by the evidence-bound test:
+  - reads-first: `list`/`get` on every segment whose sweep collection GET
+    answered 200 with real rows; POST/DELETE deliberately stay `backlog`
+  - `table_fields` = columns observed on live rows (uncapped re-probe for
+    `asset-types` where the sweep's 30-key cap hid `name`), `list_key` =
+    observed envelope, `supports_get` = what the id-route probe answered
+    — all asserted by `test_sweep_promoted_columns_come_from_sweep_evidence`
+    (now covering **88** promoted resources)
+  - mail/ticket/billing/scheduling/inventory/config surface: outgoing,
+    email-templates, tags, lookups, outcomes, call-log, mailboxes,
+    charge-rates, purchase-orders, sales-orders, stock-*, view-*,
+    workflow-*, event*, notification*, organisation, holidays, products,
+    services, roles, … (full list in README)
+  - **76 overlay prose actions** (38 surfaced GET pairs had no
+    summary/description upstream) — one generator bug caught by the
+    enrichment gate mid-flight (uppercase method in targets), fixed
+  - quirks honored: `Holiday/{id}` detail crashes on probe-ids (collection
+    healthy — promoted with the quirk documented, flip-pin updated);
+    `ServiceRequestDetails` genuinely has no display-class column
+  - Ledger: **first-class 149 → 294**, backlog 554 → 410; registry
+    48 → **126**; README list regenerated from the registry (authoritative
+    order); `pdf` search ranking now surfaces `pdf-templates` (resource
+    names outrank operations — pinned in the MCP test)
+
 ## 1.5.0 - 2026-10-02
 
 - **Phase 2 batch 1: ten backlog resources promoted, reads-first**, every

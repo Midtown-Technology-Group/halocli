@@ -30,8 +30,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Address": {
-      "disposition": "first-class-candidate",
-      "reason": "contact/site addresses; full CRUD with filters (site_id,user_id)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of AddressStore",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -65,8 +65,8 @@
       "methods": "DELETE,GET,POST"
     },
     "AgentCheckIn": {
-      "disposition": "needs-live-probe",
-      "reason": "agent check-ins (5p, agent_id/date filters); purpose unclear; probe",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "'List of AgentCheckIn' params agent_id,start_date,end_date",
       "ops": 3,
       "methods": "GET,POST"
@@ -121,15 +121,15 @@
       "methods": "DELETE,GET,POST"
     },
     "ApprovalProcess": {
-      "disposition": "first-class-candidate",
-      "reason": "approval workflow config; list has summary+filters",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ApprovalProcess",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ApprovalProcessRule": {
-      "disposition": "first-class-candidate",
-      "reason": "approval workflow rules (process_id/step_id filters); config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ApprovalProcessRule",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -177,8 +177,8 @@
       "methods": "GET,POST"
     },
     "AssetGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "asset grouping (tree read, istree); asset config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Generic",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -191,8 +191,8 @@
       "methods": "GET"
     },
     "AssetType": {
-      "disposition": "first-class-candidate",
-      "reason": "asset type config (Xtype 201p) full CRUD; asset config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Xtype",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -240,8 +240,8 @@
       "methods": "GET"
     },
     "Automation": {
-      "disposition": "first-class-candidate",
-      "reason": "runbook list/read (49p); POST /{runbookId} executes - write stays raw",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "GET /Automation/{runbookId} -> Automation(49p); POST /Automation/{runbookId}",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -275,15 +275,15 @@
       "methods": "GET"
     },
     "BillingTemplate": {
-      "disposition": "first-class-candidate",
-      "reason": "billing/contract templates (ContractTemplateHeader); billing config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one ContractTemplateHeader",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "BookingType": {
-      "disposition": "first-class-candidate",
-      "reason": "booking types (GET-only); scheduling config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of BookingType",
       "ops": 1,
       "methods": "GET"
@@ -296,8 +296,8 @@
       "methods": "GET,POST"
     },
     "BudgetType": {
-      "disposition": "needs-live-probe",
-      "reason": "budget types keyed by ticket_id (5p); purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "'List of BudgetType' params ticket_id",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -317,8 +317,8 @@
       "methods": "DELETE,GET,POST"
     },
     "CAB": {
-      "disposition": "first-class-candidate",
-      "reason": "change advisory board records (CabHeader 31p); change management",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of CabHeader",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -387,8 +387,8 @@
       "methods": "GET,POST"
     },
     "CallScript": {
-      "disposition": "first-class-candidate",
-      "reason": "call script templates (ScriptHeader); telephony config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one ScriptHeader",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -485,8 +485,8 @@
       "methods": "DELETE,GET,POST"
     },
     "ClientPrepay": {
-      "disposition": "first-class-candidate",
-      "reason": "prepay history billing-read (client_id,billing_date filters)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of PrepayHistory",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -527,8 +527,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Consignment": {
-      "disposition": "first-class-candidate",
-      "reason": "stock consignment orders; procurement-adjacent CRUD",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ConsignmentHeader",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -576,8 +576,8 @@
       "methods": "GET,POST"
     },
     "CostCentres": {
-      "disposition": "first-class-candidate",
-      "reason": "cost centre config CRUD; billing config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one Costcentres",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -590,15 +590,15 @@
       "methods": "GET"
     },
     "Currency": {
-      "disposition": "first-class-candidate",
-      "reason": "currency config CRUD; billing config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one Currency",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "CustomButton": {
-      "disposition": "first-class-candidate",
-      "reason": "custom button config (24p); UI action config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of CustomButton",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -639,15 +639,15 @@
       "methods": "GET"
     },
     "CustomQuery": {
-      "disposition": "needs-live-probe",
-      "reason": "custom query CRUD undocumented; query semantics unclear; probe",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "POST /CustomQuery body [CustomQuery(8p)], no summaries",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "CustomTable": {
-      "disposition": "first-class-candidate",
-      "reason": "custom tables (62p, isconfig); admin config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of CustomTable",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -660,8 +660,8 @@
       "methods": "GET"
     },
     "DashboardLinks": {
-      "disposition": "first-class-candidate",
-      "reason": "dashboard links (45p) with user filters; dashboard config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of DashboardLinks",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -674,8 +674,8 @@
       "methods": "GET"
     },
     "DatabaseLookup": {
-      "disposition": "needs-live-probe",
-      "reason": "parts lookup with POST /run (execution side effects); probe",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "POST /DatabaseLookup/run body [PartsLookup(70p)]",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -709,8 +709,8 @@
       "methods": "GET"
     },
     "DistributionLists": {
-      "disposition": "first-class-candidate",
-      "reason": "distribution list config (46p) CRUD; mail config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "no summaries; schema []DistributionLists",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -765,22 +765,22 @@
       "methods": "DELETE,GET,POST"
     },
     "EmailAddressBook": {
-      "disposition": "first-class-candidate",
-      "reason": "user address book with rich filters (client_id,site_id); contact-like",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Users",
       "ops": 1,
       "methods": "GET"
     },
     "EmailRule": {
-      "disposition": "first-class-candidate",
-      "reason": "inbound email rules (EmailRule 76p); mail routing config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of EmailRule",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "EmailStore": {
-      "disposition": "needs-live-probe",
-      "reason": "mail store config (48p), list op undocumented; purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "GET /EmailStore: no summary",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -807,15 +807,15 @@
       "methods": "DELETE,GET,POST"
     },
     "Event": {
-      "disposition": "needs-live-probe",
-      "reason": "bare CRUD with [integer] create body; event entity purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "POST /Event body=[integer], all summaries empty",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "EventRule": {
-      "disposition": "first-class-candidate",
-      "reason": "event rule config (47p) full CRUD; read-first, writes gated",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "no summaries; schema []EventRule",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -849,8 +849,8 @@
       "methods": "DELETE,GET,POST"
     },
     "FAQLists": {
-      "disposition": "first-class-candidate",
-      "reason": "FAQ list structure (FAQListHead 42p); KB-adjacent config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FAQListHead",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -884,36 +884,36 @@
       "methods": "GET,POST"
     },
     "Feed": {
-      "disposition": "first-class-candidate",
-      "reason": "activity feed with client/site/user filters; operations read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Feed",
       "ops": 1,
       "methods": "GET"
     },
     "Feedback": {
-      "disposition": "first-class-candidate",
-      "reason": "CSAT feedback CRUD (+/FeedbackMessage); customer read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one Feedback",
       "ops": 5,
       "methods": "DELETE,GET,POST"
     },
     "Field": {
-      "disposition": "first-class-candidate",
-      "reason": "custom field config (Field 68p); form config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Field",
       "ops": 5,
       "methods": "DELETE,GET,POST"
     },
     "FieldGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "field groups (isconfig filter); form config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FieldGroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "FieldInfo": {
-      "disposition": "first-class-candidate",
-      "reason": "field metadata (151p) with rich filters; form config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FieldInfo",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -996,8 +996,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Holiday": {
-      "disposition": "first-class-candidate",
-      "reason": "holiday/leave records (agent_id,approved_only); workforce read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Holidays",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1031,8 +1031,8 @@
       "methods": "DELETE,GET,POST"
     },
     "IncomingWebhookAttempt": {
-      "disposition": "needs-live-probe",
-      "reason": "webhook attempt log, undocumented single GET; purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "GET /IncomingWebhookAttempt: no summary/params",
       "ops": 1,
       "methods": "GET"
@@ -1178,8 +1178,8 @@
       "methods": "DELETE,GET,POST"
     },
     "InvoiceChange": {
-      "disposition": "first-class-candidate",
-      "reason": "invoice change audit (invoice_id,line_id filters); billing-read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of InvoiceChange",
       "ops": 2,
       "methods": "GET,POST"
@@ -1220,22 +1220,22 @@
       "methods": "DELETE,GET,POST"
     },
     "ItemGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "item grouping; product catalog config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one ItemGroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ItemStock": {
-      "disposition": "first-class-candidate",
-      "reason": "stock levels (item_id,stockbin_id filters); inventory read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ItemStock",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ItemStockHistory": {
-      "disposition": "first-class-candidate",
-      "reason": "stock movement history; inventory audit read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ItemStockHistory",
       "ops": 2,
       "methods": "GET"
@@ -1255,8 +1255,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Journey": {
-      "disposition": "needs-live-probe",
-      "reason": "journey CRUD (20p), purpose unclear from spec; probe",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "POST /Journey body [Journey(20p)]",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1318,8 +1318,8 @@
       "methods": "DELETE,GET,POST"
     },
     "LicenceChange": {
-      "disposition": "first-class-candidate",
-      "reason": "licence change history (licence_id filters); billing audit read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of LicenceChange",
       "ops": 1,
       "methods": "GET"
@@ -1479,8 +1479,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Notification": {
-      "disposition": "first-class-candidate",
-      "reason": "per-agent notification rules (71p); alert config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of UnameNotification",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1493,8 +1493,8 @@
       "methods": "GET"
     },
     "NotificationMessage": {
-      "disposition": "first-class-candidate",
-      "reason": "notification message templates; alert config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one NotificationContent",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1535,8 +1535,8 @@
       "methods": "GET"
     },
     "Organisation": {
-      "disposition": "first-class-candidate",
-      "reason": "organisation (parent company) CRUD; contact-like",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one Organisation",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1591,8 +1591,8 @@
       "methods": "DELETE,GET,POST"
     },
     "PdfTemplate": {
-      "disposition": "first-class-candidate",
-      "reason": "PDF templates for invoices/quotes; billing-adjacent config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of PdfTemplate",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1640,8 +1640,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Product": {
-      "disposition": "first-class-candidate",
-      "reason": "release products (ReleaseProduct); release config read (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ReleaseProduct",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1682,15 +1682,15 @@
       "methods": "DELETE,GET,POST"
     },
     "PurchaseOrder": {
-      "disposition": "first-class-candidate",
-      "reason": "procurement: PO list/create/confirmreceipt; SupplierOrderHeader(164p)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "'List of SupplierOrderHeader' params awaiting_approval,supplier_id,salesorder_id",
       "ops": 6,
       "methods": "DELETE,GET,POST"
     },
     "Qualification": {
-      "disposition": "first-class-candidate",
-      "reason": "agent qualifications (skill matrix); config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Qualification",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1752,8 +1752,8 @@
       "methods": "DELETE,GET,POST"
     },
     "ReleaseType": {
-      "disposition": "first-class-candidate",
-      "reason": "release types; release config read (low priority)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one ReleaseType",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1808,8 +1808,8 @@
       "methods": "GET"
     },
     "Roles": {
-      "disposition": "first-class-candidate",
-      "reason": "role/permission definitions (NHD_Roles 98p); admin read, writes gated",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of NHD_Roles",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -1864,22 +1864,22 @@
       "methods": "GET"
     },
     "SalesMailbox": {
-      "disposition": "first-class-candidate",
-      "reason": "sales mailbox CRUD; mail config read (sibling of tickets salesmailbox)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one SalesMailbox",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "SalesMailboxDetail": {
-      "disposition": "needs-live-probe",
-      "reason": "SalesMailbox child, undocumented GET/POST; purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "GET/POST /SalesMailboxDetail: no summaries",
       "ops": 2,
       "methods": "GET,POST"
     },
     "SalesOrder": {
-      "disposition": "first-class-candidate",
-      "reason": "sales orders (OrderHead 152p); orders/procurement read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of OrderHead",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -1892,15 +1892,15 @@
       "methods": "DELETE,GET,POST"
     },
     "Schedule": {
-      "disposition": "needs-live-probe",
-      "reason": "schedule entity (type/primaryid params), purpose ambiguous; probe",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "GET /Schedule params type,primaryid",
       "ops": 3,
       "methods": "GET,POST"
     },
     "ScheduleOccurrence": {
-      "disposition": "needs-live-probe",
-      "reason": "schedule occurrences, [integer] create body; purpose unclear",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "POST /ScheduleOccurrence body=[integer]",
       "ops": 3,
       "methods": "GET,POST"
@@ -1962,8 +1962,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Service": {
-      "disposition": "first-class-candidate",
-      "reason": "service catalog (ServSite 223p; monitoredonly/status filters); monitoring read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ServSite",
       "ops": 5,
       "methods": "DELETE,GET,POST"
@@ -1976,22 +1976,22 @@
       "methods": "DELETE,GET,POST"
     },
     "ServiceCategory": {
-      "disposition": "first-class-candidate",
-      "reason": "service categories; service catalog config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ServiceCategory",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ServiceRequestDetails": {
-      "disposition": "first-class-candidate",
-      "reason": "service request options (GET-only, service_id); catalog read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ServiceRequestDetails",
       "ops": 2,
       "methods": "GET"
     },
     "ServiceRestriction": {
-      "disposition": "first-class-candidate",
-      "reason": "client/service visibility restrictions (GET-only); admin read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ServiceRestriction",
       "ops": 1,
       "methods": "GET"
@@ -2102,15 +2102,15 @@
       "methods": "DELETE,GET,POST"
     },
     "StockBin": {
-      "disposition": "first-class-candidate",
-      "reason": "stock bins/locations config; inventory family",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "no summaries; schema []StockBin",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "StockTrace": {
-      "disposition": "first-class-candidate",
-      "reason": "stock movement trace (GET-only); inventory audit read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "no summaries; params id",
       "ops": 2,
       "methods": "GET"
@@ -2193,8 +2193,8 @@
       "methods": "GET"
     },
     "Tax": {
-      "disposition": "first-class-candidate",
-      "reason": "tax rates config CRUD; billing config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Tax",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2228,8 +2228,8 @@
       "methods": "DELETE,GET,POST"
     },
     "Template": {
-      "disposition": "first-class-candidate",
-      "reason": "STD request templates (StdRequest 235p); ticket config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of StdRequest",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2277,22 +2277,22 @@
       "methods": "GET"
     },
     "TicketApproval": {
-      "disposition": "first-class-candidate",
-      "reason": "ticket approvals (FaultApproval 105p; mine/ticket_id); approval workflow",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FaultApproval",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "TicketArea": {
-      "disposition": "first-class-candidate",
-      "reason": "ticket area config (48p); admin touches",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one TicketArea",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "TicketRules": {
-      "disposition": "first-class-candidate",
-      "reason": "auto-assign ticket rules; admins audit routing (Autoassign 74p)",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of Autoassign",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2305,8 +2305,8 @@
       "methods": "DELETE,GET,POST"
     },
     "TicketTypeField": {
-      "disposition": "first-class-candidate",
-      "reason": "request type fields (GET-only); ticket config read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of RequestTypeField",
       "ops": 1,
       "methods": "GET"
@@ -2354,8 +2354,8 @@
       "methods": "GET,POST"
     },
     "ToDoGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "to-do group config; operator workflow config",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "no summaries; schema []ToDoGroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2410,15 +2410,15 @@
       "methods": "DELETE,GET,POST"
     },
     "UserChange": {
-      "disposition": "first-class-candidate",
-      "reason": "user change history (change_date filters); audit read",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of UserChange",
       "ops": 1,
       "methods": "GET"
     },
     "UserRoles": {
-      "disposition": "first-class-candidate",
-      "reason": "user role assignments; admin read, writes gated",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "Get one UserRoles",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2445,29 +2445,29 @@
       "methods": "GET"
     },
     "ViewColumns": {
-      "disposition": "first-class-candidate",
-      "reason": "ticket view column config; admins manage saved views",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ViewColumns",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ViewFilter": {
-      "disposition": "first-class-candidate",
-      "reason": "ticket view filters; saved views family",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ViewFilter",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ViewListGroup": {
-      "disposition": "first-class-candidate",
-      "reason": "view list groups; saved views family",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ViewListGroup",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "ViewLists": {
-      "disposition": "first-class-candidate",
-      "reason": "saved ticket views (ViewLists 40p); saved views family",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of ViewLists",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2529,15 +2529,15 @@
       "methods": "DELETE,GET,POST"
     },
     "Workflow": {
-      "disposition": "first-class-candidate",
-      "reason": "workflow definitions (FlowHeader); read-first, writes gated",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FlowHeader",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "WorkflowTarget": {
-      "disposition": "first-class-candidate",
-      "reason": "workflow target config; child of Workflow family",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "no summaries; schema []WorkflowTarget",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2578,8 +2578,8 @@
       "methods": "DELETE,GET,POST"
     },
     "formattedemail": {
-      "disposition": "needs-live-probe",
-      "reason": "formatted email CRUD undocumented; render-vs-send unclear; probe",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "GET/POST /formattedemail: no summaries",
       "ops": 4,
       "methods": "DELETE,GET,POST"
@@ -2613,8 +2613,8 @@
       "methods": "GET"
     },
     "workflowstep": {
-      "disposition": "first-class-candidate",
-      "reason": "workflow steps (FlowDetail, GET-only); child of Workflow",
+      "disposition": "covered",
+      "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FlowDetail",
       "ops": 1,
       "methods": "GET"
