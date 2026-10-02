@@ -263,9 +263,18 @@ Behaviour worth knowing:
   (spec-documented, not probed — writes are never fired at a tenant
   without an operator).
 
-Fourteen resources (tickets, actions, clients, sites, assets, agents,
-appointments, statuses, priorities, kb, crm-notes, users, canned-text,
-timesheet-events) have write metadata and first-class write commands.
+Thirty-seven resources carry write metadata and first-class write commands:
+the ticketing core (tickets, actions, statuses, priorities, kb, canned-text),
+the people/CRM layer (clients, sites, assets, agents, appointments, users,
+crm-notes, timesheet-events), and writes-batch-1's config/reference set —
+tags, outcomes, categories, ticket-types, ticket-areas, releases,
+release-types, email-templates, faq-lists, cost-centres, budget-types, cabs,
+call-scripts, qualifications, asset-groups, asset-types, item-groups,
+item-stocks, stock-bins, service-categories, services, pdf-templates and
+to-do-groups. Batch-1 routes are spec-verified (`POST` on the collection,
+`DELETE /{id}`) but were never fired at a tenant (`verification: spec`); their
+single required create field is the observed primary column — a documented
+house assumption, since the spec declares no required fields anywhere.
 `users` carries the live-proven create set plus account actions —
 including the end-user MFA reset:
 
@@ -312,8 +321,8 @@ disposition in `coverage_ledger.json` — coverage is enforced, not aspirational
 
 | Disposition | Meaning | Count |
 |---|---|---|
-| `first-class` | reachable as a real `halocli` command today | 294 |
-| `backlog` | promotion candidate or unprobed — reason in `note` | 410 |
+| `first-class` | reachable as a real `halocli` command today | 340 |
+| `backlog` | promotion candidate or unprobed — reason in `note` | 364 |
 | `deliberately-raw` | argued to stay raw (billing risk, integrations, secrets) | 718 |
 | `dormant` | known-dead on this tenant (live evidence in `note`) | 10 |
 | `junk` | vestigial/duplicate in the spec | 23 |

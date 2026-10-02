@@ -990,6 +990,466 @@
       "target": "$.paths['/formattedemail'].get.description",
       "description": "curated description for a surfaced operation",
       "update": "Formatted email records (subject, open timestamps)."
+    },
+    {
+      "target": "$.paths['/AssetGroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an asset group"
+    },
+    {
+      "target": "$.paths['/AssetGroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an asset group; assets in it are not deleted."
+    },
+    {
+      "target": "$.paths['/AssetType/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an asset type"
+    },
+    {
+      "target": "$.paths['/AssetType/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an asset type definition."
+    },
+    {
+      "target": "$.paths['/BudgetType/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a budget type"
+    },
+    {
+      "target": "$.paths['/BudgetType/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a budget type."
+    },
+    {
+      "target": "$.paths['/CAB/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a CAB entry"
+    },
+    {
+      "target": "$.paths['/CAB/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a change advisory board entry."
+    },
+    {
+      "target": "$.paths['/CallScript/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a call script"
+    },
+    {
+      "target": "$.paths['/CallScript/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a call script template."
+    },
+    {
+      "target": "$.paths['/Category/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a category"
+    },
+    {
+      "target": "$.paths['/Category/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a category node."
+    },
+    {
+      "target": "$.paths['/CostCentres/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a cost centre"
+    },
+    {
+      "target": "$.paths['/CostCentres/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a cost centre."
+    },
+    {
+      "target": "$.paths['/EmailTemplate/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an email template"
+    },
+    {
+      "target": "$.paths['/EmailTemplate/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an email template."
+    },
+    {
+      "target": "$.paths['/FAQLists/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an FAQ list"
+    },
+    {
+      "target": "$.paths['/FAQLists/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an FAQ list."
+    },
+    {
+      "target": "$.paths['/ItemGroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an item group"
+    },
+    {
+      "target": "$.paths['/ItemGroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove an item group."
+    },
+    {
+      "target": "$.paths['/ItemStock/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an item stock record"
+    },
+    {
+      "target": "$.paths['/ItemStock/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a stock record."
+    },
+    {
+      "target": "$.paths['/Outcome/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an outcome"
+    },
+    {
+      "target": "$.paths['/Outcome/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a ticket outcome; in-use outcomes may be rejected by Halo."
+    },
+    {
+      "target": "$.paths['/PdfTemplate/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a PDF template"
+    },
+    {
+      "target": "$.paths['/PdfTemplate/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a PDF template."
+    },
+    {
+      "target": "$.paths['/Qualification/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a qualification"
+    },
+    {
+      "target": "$.paths['/Qualification/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a qualification record."
+    },
+    {
+      "target": "$.paths['/Release/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a release"
+    },
+    {
+      "target": "$.paths['/Release/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a release record."
+    },
+    {
+      "target": "$.paths['/ReleaseType/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a release type"
+    },
+    {
+      "target": "$.paths['/ReleaseType/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a release type."
+    },
+    {
+      "target": "$.paths['/Service/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a service"
+    },
+    {
+      "target": "$.paths['/Service/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a service definition; attached assets are not deleted."
+    },
+    {
+      "target": "$.paths['/ServiceCategory/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a service category"
+    },
+    {
+      "target": "$.paths['/ServiceCategory/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a service category."
+    },
+    {
+      "target": "$.paths['/StockBin/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a stock bin"
+    },
+    {
+      "target": "$.paths['/StockBin/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a stock bin location."
+    },
+    {
+      "target": "$.paths['/Tags/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a tag"
+    },
+    {
+      "target": "$.paths['/Tags/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a tag."
+    },
+    {
+      "target": "$.paths['/TicketArea/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a ticket area"
+    },
+    {
+      "target": "$.paths['/TicketArea/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a ticket area."
+    },
+    {
+      "target": "$.paths['/TicketType/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a ticket type"
+    },
+    {
+      "target": "$.paths['/TicketType/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a ticket type; tickets keep their stored type name."
+    },
+    {
+      "target": "$.paths['/ToDoGroup/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a to-do group"
+    },
+    {
+      "target": "$.paths['/ToDoGroup/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Remove a to-do group record."
+    },
+    {
+      "target": "$.paths['/AssetGroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an asset group"
+    },
+    {
+      "target": "$.paths['/AssetGroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Asset grouping records (parent group, connector settings)."
+    },
+    {
+      "target": "$.paths['/AssetType'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an asset type"
+    },
+    {
+      "target": "$.paths['/AssetType'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Asset type definitions (Xtype) with field and visibility configuration."
+    },
+    {
+      "target": "$.paths['/BudgetType'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a budget type"
+    },
+    {
+      "target": "$.paths['/BudgetType'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Budget type configuration (default rate)."
+    },
+    {
+      "target": "$.paths['/CAB'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a CAB entry"
+    },
+    {
+      "target": "$.paths['/CAB'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Change advisory board configuration (approval counts, thresholds)."
+    },
+    {
+      "target": "$.paths['/CallScript'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a call script"
+    },
+    {
+      "target": "$.paths['/CallScript'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Telephony call script template with category grouping."
+    },
+    {
+      "target": "$.paths['/Category'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a category"
+    },
+    {
+      "target": "$.paths['/Category'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket category definitions (category/subcategory/area tree)."
+    },
+    {
+      "target": "$.paths['/CostCentres'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a cost centre"
+    },
+    {
+      "target": "$.paths['/CostCentres'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Cost centre configuration records."
+    },
+    {
+      "target": "$.paths['/EmailTemplate'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an email template"
+    },
+    {
+      "target": "$.paths['/EmailTemplate'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Email/notification template (name, description, header text, group)."
+    },
+    {
+      "target": "$.paths['/FAQLists'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an FAQ list"
+    },
+    {
+      "target": "$.paths['/FAQLists'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "FAQ list structure (description, grouping, indexing flags)."
+    },
+    {
+      "target": "$.paths['/ItemGroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an item group"
+    },
+    {
+      "target": "$.paths['/ItemGroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Product/item grouping (quote behaviour, visibility)."
+    },
+    {
+      "target": "$.paths['/ItemStock'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an item stock record"
+    },
+    {
+      "target": "$.paths['/ItemStock'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Stock movement/level record keyed by item."
+    },
+    {
+      "target": "$.paths['/Outcome'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an outcome"
+    },
+    {
+      "target": "$.paths['/Outcome'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket action outcome (button label, colour, charge rate, action group)."
+    },
+    {
+      "target": "$.paths['/PdfTemplate'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a PDF template"
+    },
+    {
+      "target": "$.paths['/PdfTemplate'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "PDF template configuration for invoices and quotes."
+    },
+    {
+      "target": "$.paths['/Qualification'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a qualification"
+    },
+    {
+      "target": "$.paths['/Qualification'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Qualification records (criteria, weight)."
+    },
+    {
+      "target": "$.paths['/Release'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a release"
+    },
+    {
+      "target": "$.paths['/Release'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Product release/version records."
+    },
+    {
+      "target": "$.paths['/ReleaseType'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a release type"
+    },
+    {
+      "target": "$.paths['/ReleaseType'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Release type definitions for version tracking."
+    },
+    {
+      "target": "$.paths['/Service'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a service"
+    },
+    {
+      "target": "$.paths['/Service'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Service definitions with asset counts and ownership."
+    },
+    {
+      "target": "$.paths['/ServiceCategory'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a service category"
+    },
+    {
+      "target": "$.paths['/ServiceCategory'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Service categorisation (summary, importance flags)."
+    },
+    {
+      "target": "$.paths['/StockBin'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a stock bin"
+    },
+    {
+      "target": "$.paths['/StockBin'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Stock bin locations (parent bin, sequence)."
+    },
+    {
+      "target": "$.paths['/Tags'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a tag"
+    },
+    {
+      "target": "$.paths['/Tags'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket/entity tags (text and type) used for filtering and automation."
+    },
+    {
+      "target": "$.paths['/TicketArea'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a ticket area"
+    },
+    {
+      "target": "$.paths['/TicketArea'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket area configuration (field visibility defaults)."
+    },
+    {
+      "target": "$.paths['/TicketType'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a ticket type"
+    },
+    {
+      "target": "$.paths['/TicketType'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Ticket type definitions (parent type, defaults)."
+    },
+    {
+      "target": "$.paths['/ToDoGroup'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a to-do group"
+    },
+    {
+      "target": "$.paths['/ToDoGroup'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "To-do group records (task text, client linkage)."
     }
   ]
 }

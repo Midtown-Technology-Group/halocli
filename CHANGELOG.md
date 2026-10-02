@@ -6,6 +6,37 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.7.0 - 2026-10-02
+
+- **Writes-batch-1: 23 config/reference resources gain first-class
+  create/update/delete** — the first write promotion of Phase 2 and the
+  largest backlog reducer so far:
+  - asset/inventory config: asset-groups, asset-types, item-groups,
+    item-stocks, stock-bins; ticket config: tags, outcomes, categories,
+    ticket-types, ticket-areas; commercial config: releases,
+    release-types, email-templates, faq-lists, cost-centres,
+    budget-types, cabs, call-scripts, qualifications,
+    service-categories, services, pdf-templates, to-do-groups
+  - every route spec-verified (`POST` on the collection, `DELETE /{id}`;
+    `find_write_mismatches` empty) and **never fired at a tenant**
+    (`verification: spec`); preview-first semantics unchanged
+    (`--apply --yes` gates execution)
+  - one required create field per entity = the observed primary column
+    (from live sweep `table_fields`, asserted by the new
+    `test_write_batch1_required_fields_are_observed_columns`) — the spec
+    declares no required fields anywhere, so the choice is a commented
+    house assumption per the `agents` precedent
+  - **92 overlay prose actions** (46 write routes lacked
+    summary/description upstream), baked into the built spec with the
+    vendor's fill-if-missing `apply_overlay`
+  - deliberately held back: money records (invoices, quotations,
+    purchase/sales orders, prepays), mail senders (outgoing, mailboxes),
+    security (roles, user-roles), workflows/triggers/alerting, and
+    POST-only entities (call-log, schedules, expenses, timesheets — the
+    spec has no `DELETE /{id}` route for them)
+  - Ledger: **first-class 294 → 340**, backlog 410 → 364 (+46 write
+    ops); write-enabled resources 14 → **37**
+
 ## 1.6.0 - 2026-10-02
 
 - **Phase 2 batch 2: 78 sweep-evidenced resources promoted in one pass** —

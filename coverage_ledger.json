@@ -1,16 +1,16 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 410,
+   "backlog": 364,
    "deliberately-raw": 718,
    "dormant": 10,
-   "first-class": 294,
+   "first-class": 340,
    "junk": 23
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
   "policy_sha256": "151aec8e4deccebf3db97dd8da733d93f07958f0cdb6bac059ff92e7d448abe8",
-  "spec_sha256": "baac5425f25982a1ffd1c02c37e34ff6577f19f219027784bf7cdf050be8fa3c",
+  "spec_sha256": "1857ca9cf7e9c324cded96a0e09e8f137379286b19c4b176475bdb7aeb306100",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -707,18 +707,18 @@
    "via": "halocli asset-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/AssetGroup",
-   "via": ""
+   "via": "halocli asset-groups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/AssetGroup/{id}",
-   "via": ""
+   "via": "halocli asset-groups delete"
   },
   {
    "disposition": "first-class",
@@ -742,18 +742,18 @@
    "via": "halocli asset-types list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/AssetType",
-   "via": ""
+   "via": "halocli asset-types create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/AssetType/{id}",
-   "via": ""
+   "via": "halocli asset-types delete"
   },
   {
    "disposition": "first-class",
@@ -1127,18 +1127,18 @@
    "via": "halocli budget-types list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/BudgetType",
-   "via": ""
+   "via": "halocli budget-types create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/BudgetType/{id}",
-   "via": ""
+   "via": "halocli budget-types delete"
   },
   {
    "disposition": "first-class",
@@ -1197,18 +1197,18 @@
    "via": "halocli cabs list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CAB",
-   "via": ""
+   "via": "halocli cabs create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CAB/{id}",
-   "via": ""
+   "via": "halocli cabs delete"
   },
   {
    "disposition": "first-class",
@@ -1414,18 +1414,18 @@
    "via": "halocli call-scripts list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CallScript",
-   "via": ""
+   "via": "halocli call-scripts create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CallScript/{id}",
-   "via": ""
+   "via": "halocli call-scripts delete"
   },
   {
    "disposition": "first-class",
@@ -1477,18 +1477,18 @@
    "via": "halocli categories list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Category",
-   "via": ""
+   "via": "halocli categories create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Category/{id}",
-   "via": ""
+   "via": "halocli categories delete"
   },
   {
    "disposition": "first-class",
@@ -2100,18 +2100,18 @@
    "via": "halocli cost-centres list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CostCentres",
-   "via": ""
+   "via": "halocli cost-centres create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/CostCentres/{id}",
-   "via": ""
+   "via": "halocli cost-centres delete"
   },
   {
    "disposition": "first-class",
@@ -2751,11 +2751,11 @@
    "via": "halocli email-templates list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/EmailTemplate",
-   "via": ""
+   "via": "halocli email-templates create/update"
   },
   {
    "disposition": "backlog",
@@ -2765,11 +2765,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/EmailTemplate/{id}",
-   "via": ""
+   "via": "halocli email-templates delete"
   },
   {
    "disposition": "first-class",
@@ -3003,18 +3003,18 @@
    "via": "halocli faq-lists list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/FAQLists",
-   "via": ""
+   "via": "halocli faq-lists create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/FAQLists/{id}",
-   "via": ""
+   "via": "halocli faq-lists delete"
   },
   {
    "disposition": "first-class",
@@ -5292,18 +5292,18 @@
    "via": "halocli item-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ItemGroup",
-   "via": ""
+   "via": "halocli item-groups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ItemGroup/{id}",
-   "via": ""
+   "via": "halocli item-groups delete"
   },
   {
    "disposition": "first-class",
@@ -5320,18 +5320,18 @@
    "via": "halocli item-stocks list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ItemStock",
-   "via": ""
+   "via": "halocli item-stocks create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ItemStock/{id}",
-   "via": ""
+   "via": "halocli item-stocks delete"
   },
   {
    "disposition": "first-class",
@@ -6433,18 +6433,18 @@
    "via": "halocli outcomes list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Outcome",
-   "via": ""
+   "via": "halocli outcomes create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Outcome/{id}",
-   "via": ""
+   "via": "halocli outcomes delete"
   },
   {
    "disposition": "first-class",
@@ -6601,18 +6601,18 @@
    "via": "halocli pdf-templates list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/PdfTemplate",
-   "via": ""
+   "via": "halocli pdf-templates create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/PdfTemplate/{id}",
-   "via": ""
+   "via": "halocli pdf-templates delete"
   },
   {
    "disposition": "first-class",
@@ -6944,18 +6944,18 @@
    "via": "halocli qualifications list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Qualification",
-   "via": ""
+   "via": "halocli qualifications create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Qualification/{id}",
-   "via": ""
+   "via": "halocli qualifications delete"
   },
   {
    "disposition": "first-class",
@@ -7133,18 +7133,18 @@
    "via": "halocli releases list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Release",
-   "via": ""
+   "via": "halocli releases create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Release/{id}",
-   "via": ""
+   "via": "halocli releases delete"
   },
   {
    "disposition": "first-class",
@@ -7217,18 +7217,18 @@
    "via": "halocli release-types list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ReleaseType",
-   "via": ""
+   "via": "halocli release-types create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ReleaseType/{id}",
-   "via": ""
+   "via": "halocli release-types delete"
   },
   {
    "disposition": "first-class",
@@ -7903,11 +7903,11 @@
    "via": "halocli services list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Service",
-   "via": ""
+   "via": "halocli services create/update"
   },
   {
    "disposition": "backlog",
@@ -7917,11 +7917,11 @@
    "via": ""
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Service/{id}",
-   "via": ""
+   "via": "halocli services delete"
   },
   {
    "disposition": "first-class",
@@ -7966,18 +7966,18 @@
    "via": "halocli service-categories list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ServiceCategory",
-   "via": ""
+   "via": "halocli service-categories create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ServiceCategory/{id}",
-   "via": ""
+   "via": "halocli service-categories delete"
   },
   {
    "disposition": "first-class",
@@ -8414,18 +8414,18 @@
    "via": "halocli stock-bins list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/StockBin",
-   "via": ""
+   "via": "halocli stock-bins create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/StockBin/{id}",
-   "via": ""
+   "via": "halocli stock-bins delete"
   },
   {
    "disposition": "first-class",
@@ -8631,18 +8631,18 @@
    "via": "halocli tags list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Tags",
-   "via": ""
+   "via": "halocli tags create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/Tags/{id}",
-   "via": ""
+   "via": "halocli tags delete"
   },
   {
    "disposition": "first-class",
@@ -8974,18 +8974,18 @@
    "via": "halocli ticket-areas list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/TicketArea",
-   "via": ""
+   "via": "halocli ticket-areas create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/TicketArea/{id}",
-   "via": ""
+   "via": "halocli ticket-areas delete"
   },
   {
    "disposition": "first-class",
@@ -9030,18 +9030,18 @@
    "via": "halocli ticket-types list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/TicketType",
-   "via": ""
+   "via": "halocli ticket-types create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/TicketType/{id}",
-   "via": ""
+   "via": "halocli ticket-types delete"
   },
   {
    "disposition": "first-class",
@@ -9261,18 +9261,18 @@
    "via": "halocli to-do-groups list"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "post",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ToDoGroup",
-   "via": ""
+   "via": "halocli to-do-groups create/update"
   },
   {
-   "disposition": "backlog",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "note": "",
    "path": "/ToDoGroup/{id}",
-   "via": ""
+   "via": "halocli to-do-groups delete"
   },
   {
    "disposition": "first-class",

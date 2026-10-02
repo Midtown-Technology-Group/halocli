@@ -33,6 +33,31 @@ WRITE_RESOURCES = (
     "users",
     "canned-text",
     "timesheet-events",
+    # Writes-batch-1 (1.7.0): config/reference entities with spec-verified
+    # POST + DELETE /{id}. Never fired at the tenant (verification: spec).
+    "asset-groups",
+    "asset-types",
+    "budget-types",
+    "cabs",
+    "call-scripts",
+    "categories",
+    "cost-centres",
+    "email-templates",
+    "faq-lists",
+    "item-groups",
+    "item-stocks",
+    "outcomes",
+    "pdf-templates",
+    "qualifications",
+    "releases",
+    "release-types",
+    "service-categories",
+    "services",
+    "stock-bins",
+    "tags",
+    "ticket-areas",
+    "ticket-types",
+    "to-do-groups",
 )
 
 
@@ -70,7 +95,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 14
+    assert len(WRITE_RESOURCES) == 37
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
@@ -92,6 +117,61 @@ def test_write_metadata_present_for_write_enabled_resources() -> None:
             continue
         assert not resource.supports_write, resource.name
         assert not resource.supports_delete, resource.name
+
+
+WRITE_BATCH1 = (
+    "asset-groups",
+    "asset-types",
+    "budget-types",
+    "cabs",
+    "call-scripts",
+    "categories",
+    "cost-centres",
+    "email-templates",
+    "faq-lists",
+    "item-groups",
+    "item-stocks",
+    "outcomes",
+    "pdf-templates",
+    "qualifications",
+    "releases",
+    "release-types",
+    "service-categories",
+    "services",
+    "stock-bins",
+    "tags",
+    "ticket-areas",
+    "ticket-types",
+    "to-do-groups",
+)
+
+
+def test_write_batch1_required_fields_are_observed_columns() -> None:
+    """Batch-1 create requirements must be live-observed list columns.
+
+    `table_fields` for these resources were derived from production GET sweep
+    rows (sweep_results.json), so requiring `table_fields[primary]` ties each
+    `required_create_fields` assumption ("the spec declares no required
+    fields anywhere") to a column Halo actually returns. Endpoints are
+    spec-verified separately by `find_write_mismatches` (POST on the
+    collection, DELETE on `{endpoint}/{id}`).
+    """
+    spec = load_spec()
+    assert spec is not None
+    assert len(WRITE_BATCH1) == 23
+    for name in WRITE_BATCH1:
+        resource = get_resource(name)
+        assert resource.supports_write, name
+        assert resource.supports_delete, name
+        assert resource.create_endpoint == resource.endpoint, name
+        primary = resource.required_create_fields[0]
+        assert primary in resource.table_fields, f"{name}: {primary} not observed"
+        assert set(resource.required_create_fields) <= set(
+            resource.effective_write_preview_fields
+        ), name
+        # spec-verified routes: POST collection + DELETE by id
+        assert "post" in spec["paths"][resource.endpoint], name
+        assert "delete" in spec["paths"][f"{resource.endpoint}/{{id}}"], name
 
 
 def test_contracts_reads_client_contract_and_stays_read_only() -> None:
