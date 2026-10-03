@@ -14,17 +14,17 @@
       {
         "datecreated": null,
         "datemodified": null,
+        "dateoccurred": "2026-10-03T12:26:25.177"
+      },
+      {
+        "datecreated": null,
+        "datemodified": null,
         "dateoccurred": "2026-10-03T06:24:10.967"
       },
       {
         "datecreated": null,
         "datemodified": null,
         "dateoccurred": "2026-10-03T06:03:44.38"
-      },
-      {
-        "datecreated": null,
-        "datemodified": null,
-        "dateoccurred": "2026-10-03T00:12:10.797"
       }
     ],
     "sampled": 50
@@ -33,6 +33,7 @@
     "identical_pages": true,
     "overlap": 50,
     "page1_ids": [
+      "177623",
       "177622",
       "177621",
       "177620",
@@ -81,10 +82,10 @@
       "177576",
       "177575",
       "177574",
-      "177573",
-      "177572"
+      "177573"
     ],
     "page2_ids": [
+      "177623",
       "177622",
       "177621",
       "177620",
@@ -133,11 +134,50 @@
       "177576",
       "177575",
       "177574",
-      "177573",
-      "177572"
+      "177573"
     ],
     "page_size": 50,
     "window_stayed_full": false
+  },
+  "feed_cursor_proof": {
+    "count_500_rows": 500,
+    "count_5_ids": [
+      177623,
+      177622,
+      177621,
+      177620,
+      177619
+    ],
+    "count_5_rows": 5,
+    "newer_than_id": {
+      "ids": [],
+      "note": "empty at the top of the feed is correct",
+      "request": 177623,
+      "strictly_newer": false
+    },
+    "older_than_id": {
+      "disjoint": true,
+      "ids": [
+        177618,
+        177617,
+        177616,
+        177615,
+        177614
+      ],
+      "request": 177619,
+      "strictly_older": true
+    },
+    "paging_trio_alongside_count": {
+      "ids": [
+        177623,
+        177622,
+        177621,
+        177620,
+        177619
+      ],
+      "rows": 5,
+      "still_ignored": true
+    }
   },
   "statuses": {
     "closed_candidates": {
@@ -207,7 +247,7 @@
     "status_endpoint": "/Status"
   },
   "ticket_flags": {
-    "closed_by_flag": 29,
+    "closed_by_flag": 28,
     "date_fully_closed_samples": [
       "2026-10-02T23:00:00",
       "2026-10-02T20:39:57.777",
@@ -224,7 +264,7 @@
     ],
     "hasbeenclosed_by_status": {
       "1": {
-        "null": 4
+        "null": 5
       },
       "21": {
         "null": 1
@@ -245,19 +285,19 @@
         "null": 6
       },
       "9": {
-        "true": 29
+        "true": 28
       }
     },
-    "open_by_flag": 21
+    "open_by_flag": 22
   },
   "tickets_ordering": {
     "attempts": [
       {
         "dates": [
+          "2026-10-03T12:26:25",
           "2026-10-03T06:24:10",
           "2026-10-03T06:03:44",
           "2026-10-03T00:12:10",
-          "2026-10-03T00:11:57",
           "2026-10-03T00:11:57"
         ],
         "orderdesc": "true"
@@ -274,10 +314,10 @@
       }
     ],
     "baseline_no_order": [
+      "2026-10-03T12:26:25",
       "2026-10-03T06:24:10",
       "2026-10-03T06:03:44",
       "2026-10-03T00:12:10",
-      "2026-10-03T00:11:57",
       "2026-10-03T00:11:57"
     ],
     "newest_first_achieved": true

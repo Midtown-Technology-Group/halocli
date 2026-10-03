@@ -66,6 +66,12 @@ class HaloResource:
     write_preview_fields: tuple[str, ...] = ()
     # First-class commands for nested endpoints (see ResourceOperation).
     operations: tuple[ResourceOperation, ...] = ()
+    # Cursor-paged endpoints: no page numbers exist and the pageinate trio
+    # is ignored. The spec documents count + newer_than_id/older_than_id,
+    # and live probes proved them (mirror_evidence.json -> feed_cursor_proof:
+    # count sets the window, older_than_id returns a strictly-older disjoint
+    # window). list_all walks these via older_than_id instead of page_no.
+    cursor_paging: bool = False
 
     @property
     def command_names(self) -> tuple[str, ...]:
@@ -1428,6 +1434,11 @@ RESOURCES: tuple[HaloResource, ...] = (
         supports_get=False,
         table_fields=("id", "datetime", "agent_id", "note", "content_id1", "content_id2"),
         list_key="feed",
+        # /Feed is an activity stream, not a pager: page numbers are ignored
+        # (page2 = page1 verbatim, page_size ignored - proven), while count /
+        # older_than_id are documented in the spec and proven live to walk
+        # disjoint windows. Walk the cursor instead of looping pages.
+        cursor_paging=True,
     ),
     HaloResource(
         "feedbacks",

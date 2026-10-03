@@ -257,6 +257,17 @@ the full set with one `count=<total>` request, and reports
 `"paging_ignored": true` — so a lying pager can no longer duplicate rows (the
 `/CRMNote` case went from 150 items/50 distinct to 133/133, verified live).
 
+`/Feed` is a different animal: an activity stream with **no page numbers at
+all** — the pageinate trio is ignored (page 2 is page 1 verbatim, `page_size`
+discarded). Its own documented params are `count` (window size) and
+`older_than_id`/`newer_than_id` (position), so `list` (and `sync`) walk
+`count` windows via the cursor instead of looping pages: windows are
+disjoint and boundary-exclusive (proven live), rows are deduped by id, and
+four independent guards — short window, non-advancing cursor, repeated-id
+stall, and the record ceiling — guarantee termination. A `--all` fetch on
+`feeds` genuinely streams the whole feed (~166k rows here) rather than
+re-reading one window forever.
+
 **Labels are resolved automatically.** Halo returns bare foreign keys
 (`status_id: 9`, `priority_id: 4`) and only occasionally denormalises a name,
 so `list`, `get` and post-`apply` results hydrate the tenant's own label
@@ -494,9 +505,10 @@ Design notes (evidence: `mirror_evidence.json`,
   this is not that.
 - Tenant-specific facts proven live: status ids are not portable (no
   hardcoded closed-id set — names are configurable via `--closed-status`),
-  `dateclosed` drives "closed in window", `/Feed` must never be
-  page-walked (page 2 = page 1 verbatim, `page_size` ignored), and
-  `/Actions` unfiltered times out (excluded from the core sync set).
+  `dateclosed` drives "closed in window", `/Feed` is cursor-based
+  (`count` + `older_than_id`; walked by `list`/`sync`, never
+  page-walked — page numbers are ignored there), and `/Actions`
+  unfiltered times out (excluded from the core sync set).
 
 Ideas adapted from Servosity's msp-skills halopsa CLI (Apache-2.0) — the
 SELECT-only guard stance and the hand-written digest concept; every field
