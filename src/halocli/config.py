@@ -28,6 +28,10 @@ class HaloProfile(BaseModel):
     interactive_discovered: bool = False
     authorization_endpoint: str | None = None
     token_endpoint: str | None = None
+    # Config key this profile was resolved from: the token cache is keyed by
+    # name, so a `default`-requested single-profile fallback must look up the
+    # real name's tokens (set by load_profile).
+    profile_name: str | None = None
 
     @property
     def api_base_url(self) -> str:
@@ -97,7 +101,18 @@ def load_profile(
     overrides: ConfigOverrides | None = None,
 ) -> HaloProfile:
     config = load_config(config_file)
-    values = config.profiles[profile_name].model_dump() if profile_name in config.profiles else {}
+    requested = config.profiles.get(profile_name)
+    resolved_name = profile_name
+    if requested is None and profile_name == DEFAULT_PROFILE and len(config.profiles) == 1:
+        # Single-profile convenience: `default` + exactly one configured
+        # profile is an unambiguous choice, so plain `halocli <cmd>` works
+        # without a permanent --profile tax. Explicit names still fail loudly.
+        resolved_name = next(iter(config.profiles))
+        requested = config.profiles[resolved_name]
+    values = requested.model_dump() if requested is not None else {}
+    # The token cache is keyed by name: carry the RESOLVED key on the profile
+    # so HaloClient looks up this profile's tokens, not 'default''s.
+    values["profile_name"] = resolved_name
 
     env_values = {
         "tenant_url": os.environ.get("HALO_TENANT_URL"),
@@ -116,9 +131,12 @@ def load_profile(
 
     missing = [key for key in ("tenant_url", "client_id") if not values.get(key)]
     if missing:
+        available = ", ".join(sorted(config.profiles)) or "none"
         raise ValueError(
-            f"Missing HaloCLI profile values: {', '.join(missing)}. "
-            "Run 'halocli configure' or set HALO_TENANT_URL and HALO_CLIENT_ID."
+            f"Missing HaloCLI profile values: {', '.join(missing)} "
+            f"(profile '{profile_name}'; configured: {available}). "
+            "Pass --profile <name>, run 'halocli configure', or set "
+            "HALO_TENANT_URL and HALO_CLIENT_ID."
         )
     auth_mode = values.get("auth_mode") or "client_credentials"
     if auth_mode == "client_credentials" and not values.get("client_secret"):

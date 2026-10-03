@@ -116,3 +116,66 @@ def test_ambient_halo_env_vars_are_cleared(monkeypatch) -> None:
 
     with pytest.raises(ValueError, match="Missing HaloCLI profile values"):
         load_profile("does-not-exist")
+
+
+def _write_config(tmp_path: Path, profiles: dict) -> Path:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(yaml.safe_dump({"profiles": profiles}), encoding="utf-8")
+    return config_file
+
+
+def _clear_env(monkeypatch) -> None:
+    for key in ("HALO_TENANT_URL", "HALO_CLIENT_ID", "HALO_CLIENT_SECRET", "HALO_SCOPE"):
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_single_profile_fallback_resolves_default(monkeypatch, tmp_path: Path) -> None:
+    """`default` + exactly one configured profile = unambiguous choice."""
+    _clear_env(monkeypatch)
+    config_file = _write_config(
+        tmp_path,
+        {
+            "thomas": {
+                "tenant_url": "https://one.example.com",
+                "client_id": "tid",
+                "client_secret": "ts",
+                "auth_mode": "client_credentials",
+            },
+        },
+    )
+
+    profile = load_profile(config_file=config_file)
+
+    assert profile.tenant_url == "https://one.example.com"
+    # the resolved config key rides along so the token cache uses the real name
+    assert profile.profile_name == "thomas"
+
+
+def test_multi_profile_default_fails_listing_names(monkeypatch, tmp_path: Path) -> None:
+    _clear_env(monkeypatch)
+    config_file = _write_config(
+        tmp_path,
+        {
+            "thomas": {"tenant_url": "https://one.example.com", "client_id": "a"},
+            "work": {"tenant_url": "https://two.example.com", "client_id": "b"},
+        },
+    )
+
+    with pytest.raises(ValueError) as exc:
+        load_profile(config_file=config_file)
+    message = str(exc.value)
+    assert "thomas" in message and "work" in message  # names the options
+    assert "--profile" in message
+
+
+def test_explicit_missing_profile_still_fails(monkeypatch, tmp_path: Path) -> None:
+    _clear_env(monkeypatch)
+    config_file = _write_config(
+        tmp_path,
+        {
+            "thomas": {"tenant_url": "https://one.example.com", "client_id": "a"},
+        },
+    )
+
+    with pytest.raises(ValueError, match="other"):
+        load_profile("other", config_file=config_file)

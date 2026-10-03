@@ -104,6 +104,11 @@ halocli auth login --profile thomas
 halocli auth test --profile thomas
 ```
 
+**Profile defaulting:** when exactly one profile is configured, `--profile`
+may be omitted — `default` resolves to it (and to its token cache). With
+multiple profiles, an explicit `--profile` is required and the error lists
+the configured names.
+
 Interactive login opens the system browser, listens on a temporary localhost
 callback, exchanges the authorization code at Halo's token endpoint, and stores
 tokens in the operating system's secure credential store. On Windows this is
@@ -230,6 +235,13 @@ Each resource supports:
 halocli <resource> list --param key=value --max-records 25
 halocli <resource> get ID
 ```
+
+Undocumented params are warned about, not silently dropped: Halo ignores
+unknown query params (`--param assigned_to=37` on tickets returns the
+*entire* tenant), so `list` warns per param against the spec and suggests
+close matches when they exist (`--param clinet_id=1` → "did you mean
+`client_id`?"). `/Tickets` alone documents 194 params — the warning exists
+because a filter that silently does nothing is worse than an error.
 
 `list` stops at **500 records** by default and says so: HaloPSA tenants can be
 large (`/Tickets` on our own instance holds 137k records — an unbounded fetch
@@ -502,11 +514,30 @@ Preview from captured JSON instead of live Graph:
 halocli todo import-ms --source-json microsoft-todos.json
 ```
 
-Create a lightweight Halo Todo backed by Halo's `Appointment` API:
+Create a lightweight Halo Todo backed by Halo's `Appointment` API (preview
+first, like every write — pass `--apply --yes` to fire):
 
 ```powershell
-halocli todo add "Independent todo list front end for HaloPSA" --owner 37 --due 2026-04-26 --tag microsoft-todo --tag halo-todo
+halocli todo add "Independent todo list front end for HaloPSA" --owner 37 --due 2026-04-26 --tag microsoft-todo --tag halo-todo --apply --yes
 ```
+
+List, inspect and complete Halo todos (these are `Appointment` rows with
+`is_task` — the API's own `/ToDo` table is empty on this tenant, so
+`to-dos list` returns nothing while `todo list` is the real surface):
+
+```powershell
+halocli todo list                       # open tasks, server-side filters
+halocli todo list --mine --max-records 50
+halocli todo list --status done         # or: --status all
+halocli todo get 38790
+halocli todo complete 38790             # preview: shows the exact payload
+halocli todo complete 38790 --apply --yes
+```
+
+Halo's completion convention (proven live,331 tasks): `complete_status`
+is **0 = done, -1 = open** — `list` filters server-side with
+`tasksonly`/`hidecompleted` and pages properly, so todos beyond the first
+page of appointments are not silently invisible.
 
 Run the local-first Todo HTTP API from the same HaloCLI profile:
 

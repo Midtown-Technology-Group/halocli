@@ -6,6 +6,43 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.14.0 - 2026-10-03
+
+- **The todo surface, finished** (from a real operator struggle — issue
+  context below):
+  - **`halocli todo list` / `get` / `complete`** — none existed before
+    (only add/import-ms/web). `list` now filters SERVER-side with the
+    documented `tasksonly` + `hidecompleted` + `agents` params (proven
+    live:331 tasks tenant-wide,331→308 with hidecompleted,331→324 for
+    agent37) and pages properly — the old client-side filter read only
+    the first200 appointments, hiding tasks beyond that window, and its
+    `agent_id` param was silently ignored (Halo wants `agents`).
+    A repeated page stops the loop (the issue #24 lesson).
+  - **Completion semantics confirmed live**: `complete_status` is
+    **0 = done, -1 = open** (331 tasks:5 done /326 open; no
+    complete_date anywhere) — `complete` previews the exact payload
+    (including `complete_status: 0`) and fires only with
+    `--apply --yes`.
+  - **`todo add` now previews first** — it used to fire unconditionally,
+    contradicting the README's preview-first contract for writes.
+  - The empty `to-dos` resource now points at `halocli todo list`.
+- **Profile defaulting**: with exactly one configured profile, `default`
+  resolves to it (values AND the token-cache key via the profile's
+  resolved `profile_name`) — no more `--profile thomas` on every
+  command. Multiple profiles → the error lists the configured names.
+  Explicit missing names still fail.
+- **Unknown `--param` warnings**: Halo silently ignores undocumented
+  query params (`--param assigned_to=37` returns all137,672 tickets);
+  `list` now warns per param against the spec with close-match
+  suggestions at a conservative0.72 cutoff (clinet_id → client_id;
+  assigned_to → no misleading guess). Documented params pass silently
+  (agent_id proven filtering:137,672 →731).
+- Tests: server-filter/paging/dedup/done cases, complete/add preview +
+  apply gates, profile fallback + name resolution, param warnings.
+  Full suite559 green (ruff, mypy, ledger clean).
+
+
+
 ## 1.13.0 - 2026-10-03
 
 - **Label hydration: no more mapping tables.** Halo returns bare foreign

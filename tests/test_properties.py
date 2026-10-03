@@ -104,10 +104,14 @@ actions_strategy = st.lists(
         st.sampled_from(["/A", "/B", "/C"]),
         st.sampled_from(["get", "post"]),
         st.sampled_from(["summary", "description"]),
-        # non-space, non-empty: the vendor rejects strip()-empty updates,
+        # non-space, non-empty: the vendor rejects strip()-empty updates
+        # (str.strip() also treats Cc/Zs whitespace such as \x85 as blank),
         # and empty-target filling is a separate edge from this invariant
         st.text(
-            alphabet=st.characters(min_codepoint=33, blacklist_categories=("Cs",)),
+            alphabet=st.characters(
+                min_codepoint=33,
+                blacklist_categories=("Cc", "Cs", "Zs", "Zl", "Zp"),
+            ),
             min_size=1,
             max_size=40,
         ),

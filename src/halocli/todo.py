@@ -194,31 +194,67 @@ class HaloTodoRepository:
         q: str | None = None,
         max_records: int = 200,
     ) -> list[dict[str, Any]]:
-        params: dict[str, Any] = {"page_size": max_records}
-        if client_id is not None:
-            params["client_id"] = client_id
-        if ticket_id is not None:
-            params["ticket_id"] = ticket_id
-        if q:
-            params["search"] = q
+        """List Halo todos (Appointment rows with ``is_task``).
+
+        Server-side filters, proven live 2026-10-02: ``tasksonly`` selects the
+        331 task rows tenant-wide (the old client-side filter over the first
+        200 appointments hid tasks beyond that window), ``hidecompleted``
+        trims done tasks (331 -> 308), ``agents`` scopes by owner (331 ->
+        324), and ``page_no`` genuinely pages (page 2 ids differ). Halo
+        silently ignores unknown params, so only documented names are sent.
+        Residual client-side status/tag/text filters stay as defense in
+        depth; a repeated page stops the loop (the issue #24 lesson).
+        """
+        base: dict[str, Any] = {
+            "tasksonly": "true",
+            "pageinate": "true",
+            "page_size": "100",
+        }
+        if status == "open":
+            base["hidecompleted"] = "true"
         if mine:
-            params["agent_id"] = await self._current_agent_id()
-        result = await self.halo_client.raw("GET", "/Appointment", params=params)
-        rows = result_rows(result)
-        todos = [todo_from_appointment(row) for row in rows if row.get("is_task") is True]
-        if status:
-            todos = [todo for todo in todos if todo.get("status") == status]
-        if tag:
-            todos = [todo for todo in todos if tag in todo.get("tags", [])]
+            base["agents"] = str(await self._current_agent_id())
+        if client_id is not None:
+            base["client_id"] = str(client_id)
+        if ticket_id is not None:
+            base["ticket_id"] = str(ticket_id)
         if q:
-            needle = q.lower()
-            todos = [
-                todo
-                for todo in todos
-                if needle in str(todo.get("title") or "").lower()
-                or needle in str(todo.get("description") or "").lower()
-            ]
-        return todos[:max_records]
+            base["search"] = q
+
+        rows: list[dict[str, Any]] = []
+        seen_pages: set[str] = set()
+        for page in range(1, 51):  # 50 x 100: a safety net above any tenant size we support
+            result = await self.halo_client.raw(
+                "GET", "/Appointment", params={**base, "page_no": str(page)}
+            )
+            batch = result_rows(result)
+            if not batch:
+                break
+            signature = str([row.get("id") for row in batch[:20]])
+            if signature in seen_pages:
+                break  # paging ignored: take the single page we have
+            seen_pages.add(signature)
+            for row in batch:
+                if row.get("is_task") is not True:
+                    continue
+                todo = todo_from_appointment(row)
+                if status and status != "all" and todo.get("status") != status:
+                    continue
+                if tag and tag not in todo.get("tags", []):
+                    continue
+                if q:
+                    needle = q.lower()
+                    if (
+                        needle not in str(todo.get("title") or "").lower()
+                        and needle not in str(todo.get("description") or "").lower()
+                    ):
+                        continue
+                rows.append(todo)
+                if len(rows) >= max_records:
+                    return rows
+            if len(batch) < int(base["page_size"]):
+                break  # short page: no more rows
+        return rows
 
     async def get(self, todo_id: int | str) -> dict[str, Any]:
         item = await self.halo_client.raw("GET", f"/Appointment/{todo_id}")

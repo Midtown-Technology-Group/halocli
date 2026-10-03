@@ -26,7 +26,9 @@ class HaloClient:
         file_token_cache: TokenCache | None = None,
     ) -> None:
         self.profile = profile
-        self.profile_name = profile_name
+        # Prefer the name the profile resolved from (single-profile fallback
+        # makes 'default' the wrong token-cache key).
+        self.profile_name = getattr(profile, "profile_name", None) or profile_name
         self._http = http
         self._file_token_cache = file_token_cache
         self._token: str | None = None

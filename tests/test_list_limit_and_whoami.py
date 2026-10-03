@@ -460,3 +460,45 @@ def test_whoami_help_loads() -> None:
     assert result.exit_code == 0
     assert "--check" in plain(result.output)
     assert "read-only" in plain(result.output)
+
+
+def _combined(result) -> str:
+    """Warnings go to stderr; some click versions keep it separate."""
+    parts = [result.output]
+    err = getattr(result, "stderr", None)
+    if err:
+        parts.append(err)
+    return plain("".join(parts))
+
+
+def test_unknown_param_warns_with_close_match(monkeypatch: pytest.MonkeyPatch) -> None:
+    _mock_halo(monkeypatch, total=10)
+
+    result = runner.invoke(app, ["tickets", "list", "--param", "clinet_id=1", "--max-records", "1"])
+
+    out = _combined(result)
+    assert "is not documented for GET /Tickets" in out
+    assert "did you mean 'client_id'" in out
+
+
+def test_unknown_param_without_close_match_stays_silent_about_suggestions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _mock_halo(monkeypatch, total=10)
+
+    result = runner.invoke(
+        app, ["tickets", "list", "--param", "assigned_to=37", "--max-records", "1"]
+    )
+
+    out = _combined(result)
+    assert "is not documented for GET /Tickets" in out
+    # a misleading guess is worse than none (semantic gaps fail the cutoff)
+    assert "did you mean" not in out
+
+
+def test_documented_param_produces_no_warning(monkeypatch: pytest.MonkeyPatch) -> None:
+    _mock_halo(monkeypatch, total=10)
+
+    result = runner.invoke(app, ["tickets", "list", "--param", "client_id=1", "--max-records", "1"])
+
+    assert "is not documented" not in _combined(result)

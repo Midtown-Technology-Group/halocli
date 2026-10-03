@@ -2897,6 +2897,9 @@ RESOURCES: tuple[HaloResource, ...] = (
         # and the vendored spec ships no response schema - so table_fields
         # stays id-only until a populated tenant yields column evidence.
         # no GET /{id} route in spec -> list-only.
+        # NOTE: the API's own /ToDo table is empty here; the operator-facing
+        # Halo todos are Appointment rows with is_task - use
+        # `halocli todo list` (server-side tasksonly/hidecompleted paging).
         table_fields=("id",),
         supports_get=False,
         # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
