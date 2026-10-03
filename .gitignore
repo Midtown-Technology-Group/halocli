@@ -24,3 +24,4 @@ scripts/*
 !scripts/release.py
 !scripts/mirror_evidence_probes.py
 !scripts/halo_version_snapshot.py
+!scripts/dev_write_sweep.py
