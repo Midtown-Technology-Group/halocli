@@ -23,3 +23,4 @@ scripts/*
 !scripts/check_spec_currency.py
 !scripts/release.py
 !scripts/mirror_evidence_probes.py
+!scripts/halo_version_snapshot.py
