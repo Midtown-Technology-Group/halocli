@@ -6,6 +6,42 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.15.0 - 2026-10-03
+
+- **Offline mirror + local digests** (`sync` / `sql` / `standup` / `triage`):
+  - `halocli sync` mirrors registry resources into local SQLite:
+    JSON-first rows (duplicate ids preserved via sequence), per-resource
+    views (`SELECT summary FROM tickets` works), sync-time label
+    hydration (agent/status/client names baked into the JSON), bounded
+    at 500 rows/resource (`--all` opts out), truncation recorded in
+    `mirror_state` and surfaced by the digests, and per-resource
+    failures recorded without wiping prior rows. Default = the
+    14-resource ops core; `--all-resources` covers the registry.
+    Tickets sync newest-first (proven: `order=dateoccurred` with the
+    literal `orderdesc=true` — `1` sorts ascending).
+  - `halocli sql` — SELECT-only against the local file (single
+    statement, conservative keyword guard, `--limit` reported not
+    implied). Never reaches Halo.
+  - `halocli triage` — open tickets oldest-first with resolved names,
+    stale thresholds and per-agent/status counts; `--closed-status`
+    configurable because status ids are tenant-specific (proven: our
+    tenant has no status 8 — hardcoded id sets are not portable).
+  - `halocli standup` — per-agent closed-in-window (via `dateclosed`),
+    open now, oldest open, top client.
+  - Evidence (`mirror_evidence.json`, `scripts/mirror_evidence_probes.py`,
+    GET-only): `datecreated` is always null (use `dateoccurred`),
+    ticket payloads carry no `agent_name`, `hasbeenclosed` correlates
+    exactly with status Closed, `/Feed` page 2 is page 1 verbatim and
+    ignores `page_size`, `/Actions` unfiltered times out even at 20s.
+  - Concepts adapted from Servosity msp-skills (Apache-2.0): the
+    SELECT-only guard stance and hand-written digests; every field note
+    re-proven on our tenant before shipping.
+- `scripts/release.py`: winget PR wait raised 900s -> 3600s (the v1.14.0
+  release proved the bot's webhook can lag past 15 minutes).
+- Tests: sync ceiling regression, duplicate-id preservation,
+  failure-keeps-rows, repeated-page dedup, guard allow/refuse matrices,
+  and sql/digest fixtures — all local, no tenant contact.
+
 ## 1.14.0 - 2026-10-03
 
 - **The todo surface, finished** (from a real operator struggle — issue

@@ -455,6 +455,53 @@ verifies registry promises against the spec in both directions:
 `tests/test_coverage.py` pins the current state of both lists, so a spec
 refresh that changes them fails the suite and forces a re-evaluation.
 
+## Offline Mirror: sync, sql, standup, triage
+
+`halocli sync` mirrors registry resources into a local SQLite database so
+cross-resource questions answer instantly instead of re-paging the tenant or
+guessing filter params (`--param assigned_to` silently returns all 137k
+tickets). Everything below reads the local file — nothing here writes to
+Halo, and the write contract is unchanged.
+
+```powershell
+halocli sync                          # ops-relevant core, bounded (500 rows/resource)
+halocli sync --all-resources          # the whole registry
+halocli sync -r tickets --all         # one resource, no ceiling
+halocli sql "SELECT status_name, COUNT(*) AS n FROM tickets GROUP BY status_name"
+halocli triage --stale-days 7 --limit 10
+halocli standup --since 24h
+```
+
+Design notes (evidence: `mirror_evidence.json`,
+`scripts/mirror_evidence_probes.py`, read-only probes):
+
+- **JSON-first rows + per-resource views**: rows live in `mirror_rows`; a
+  view per resource (`SELECT summary FROM tickets`) projects
+  plain-identifier keys via `json_extract`, and exotic keys stay reachable
+  through the `data` column. Rows sharing an id across parents survive
+  (sequence-numbered) instead of overwriting each other.
+- **Sync-time label hydration** bakes `agent_name`/`status_name`/
+  `client_name` into the mirror (ticket payloads ship none — proven), so
+  digests and SQL never need mapping tables.
+- **Bounded by default**: 500 rows per resource, `--all` opts out,
+  truncation recorded in `mirror_state` and echoed by `triage`/`standup` —
+  a partial tickets mirror says so instead of implying completeness.
+- **Failures keep data**: a resource that errors is recorded in the
+  summary; its previous rows stay (a transient 500 must not wipe the mirror).
+- **`sql` is SELECT-only** against the local file — single statement,
+  conservative keyword guard, `--limit` reported not implied. It never
+  reaches Halo; Halo's server-side SQL surface stays deliberately raw —
+  this is not that.
+- Tenant-specific facts proven live: status ids are not portable (no
+  hardcoded closed-id set — names are configurable via `--closed-status`),
+  `dateclosed` drives "closed in window", `/Feed` must never be
+  page-walked (page 2 = page 1 verbatim, `page_size` ignored), and
+  `/Actions` unfiltered times out (excluded from the core sync set).
+
+Ideas adapted from Servosity's msp-skills halopsa CLI (Apache-2.0) — the
+SELECT-only guard stance and the hand-written digest concept; every field
+note above was re-proven against our own tenant.
+
 ## MCP Server (Code Mode)
 
 `halocli serve` runs a code-mode MCP server over stdio (newline-delimited
