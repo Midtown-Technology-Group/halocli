@@ -58,6 +58,7 @@ async def main() -> int:
     profile = load_profile("thomas")
     out: dict[str, dict] = {}
     async with HaloClient(profile, profile_name="thomas") as client:
+
         async def dates(rows: list[dict]) -> list[str]:
             return [str(r.get("dateoccurred") or "")[:19] for r in rows]
 
@@ -76,9 +77,7 @@ async def main() -> int:
                     },
                     timeout=60,
                 )
-                attempts.append(
-                    {"orderdesc": orderdesc, "dates": await dates(rows_of(body))}
-                )
+                attempts.append({"orderdesc": orderdesc, "dates": await dates(rows_of(body))})
             base = await client.request(
                 "GET",
                 "/Tickets",
@@ -87,10 +86,7 @@ async def main() -> int:
             )
             newest_first = any(
                 len(a["dates"]) > 1
-                and all(
-                    a["dates"][i] >= a["dates"][i + 1]
-                    for i in range(len(a["dates"]) - 1)
-                )
+                and all(a["dates"][i] >= a["dates"][i + 1] for i in range(len(a["dates"]) - 1))
                 for a in attempts
             )
             return {
@@ -102,14 +98,10 @@ async def main() -> int:
         async def statuses_probe(newest_first: bool) -> dict:
             status_resource = get_resource("statuses")
             status_rows = rows_of(
-                await client.list_resource(
-                    "statuses", pageinate=True, page_no=1, page_size=100
-                )
+                await client.list_resource("statuses", pageinate=True, page_no=1, page_size=100)
             )
             id_to_name = {
-                str(r.get("id")): r.get("name")
-                for r in status_rows
-                if r.get("id") is not None
+                str(r.get("id")): r.get("name") for r in status_rows if r.get("id") is not None
             }
             recent = rows_of(
                 await client.request(
@@ -119,11 +111,7 @@ async def main() -> int:
                         "pageinate": "true",
                         "page_no": "1",
                         "page_size": "50",
-                        **(
-                            {"order": "dateoccurred", "orderdesc": "true"}
-                            if newest_first
-                            else {}
-                        ),
+                        **({"order": "dateoccurred", "orderdesc": "true"} if newest_first else {}),
                     },
                     timeout=60,
                 )
@@ -144,9 +132,7 @@ async def main() -> int:
         async def dates_probe(recent: list[dict]) -> dict:
             return {
                 "sampled": len(recent),
-                "datecreated_blank": sum(
-                    1 for r in recent if r.get("datecreated") in (None, "")
-                ),
+                "datecreated_blank": sum(1 for r in recent if r.get("datecreated") in (None, "")),
                 "dateoccurred_present": sum(
                     1 for r in recent if r.get("dateoccurred") not in (None, "")
                 ),
@@ -240,8 +226,10 @@ async def main() -> int:
             cross: dict[str, dict[str, int]] = {}
             for r in rows:
                 sid = str(r.get("status_id"))
-                closed = "true" if r.get("hasbeenclosed") is True else (
-                    "null" if r.get("hasbeenclosed") is None else str(r.get("hasbeenclosed"))
+                closed = (
+                    "true"
+                    if r.get("hasbeenclosed") is True
+                    else ("null" if r.get("hasbeenclosed") is None else str(r.get("hasbeenclosed")))
                 )
                 cross.setdefault(sid, {}).setdefault(closed, 0)
                 cross[sid][closed] += 1
