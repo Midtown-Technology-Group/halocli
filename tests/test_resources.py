@@ -5,6 +5,8 @@ from pathlib import Path
 
 import httpx
 import pytest
+from click.testing import CliRunner as ClickCliRunner
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from halocli.cli import app
@@ -15,6 +17,13 @@ from halocli.schema import load_spec
 
 
 runner = CliRunner()
+# Convert the Typer app to its click tree ONCE and drive it with click's own
+# runner: typer's CliRunner would rebuild the whole command tree (181
+# resources) on every invoke, which made the per-resource --help test ~75% of
+# suite runtime (~5 min local, x12 in the CI matrix). The Typer runner also
+# rejects a pre-converted tree, hence ClickCliRunner here.
+click_app = get_command(app)
+click_runner = ClickCliRunner()
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # Resources that must carry first-class write metadata.
@@ -615,9 +624,9 @@ def test_billing_read_resources_stay_read_only() -> None:
 
 @pytest.mark.parametrize("resource", RESOURCES)
 def test_generated_resource_commands_load(resource) -> None:
-    assert runner.invoke(app, [resource.name, "list", "--help"]).exit_code == 0
+    assert click_runner.invoke(click_app, [resource.name, "list", "--help"]).exit_code == 0
     # `get` exists only when the registry promises an item route.
-    get_help = runner.invoke(app, [resource.name, "get", "--help"]).exit_code
+    get_help = click_runner.invoke(click_app, [resource.name, "get", "--help"]).exit_code
     if resource.supports_get:
         assert get_help == 0
     else:
