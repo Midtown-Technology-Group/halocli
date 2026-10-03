@@ -245,6 +245,19 @@ the full set with one `count=<total>` request, and reports
 `"paging_ignored": true` — so a lying pager can no longer duplicate rows (the
 `/CRMNote` case went from 150 items/50 distinct to 133/133, verified live).
 
+**Labels are resolved automatically.** Halo returns bare foreign keys
+(`status_id: 9`, `priority_id: 4`) and only occasionally denormalises a name,
+so `list`, `get` and post-`apply` results hydrate the tenant's own label
+beside every resolvable id — `status_name: "Closed"`, `priority_name: "Low"` —
+using a bounded lookup read per entity (detail-fetch fallback for ids past the
+first page). Raw ids are never touched, labels Halo already sent are never
+overwritten, and table output prefers the label column. Opt out with
+`--no-labels`. Write *previews* stay zero-network by contract, so they show
+the ids that go on the wire; read the labels with `get`/`list`. Quirks:
+priorities are GUID-keyed while tickets store integers (joined via
+`priorityid`, since `/Priority/<int>` 404s), and unresolvable ids
+(e.g. external-system references) simply stay bare.
+
 The `reports` resource also declares two nested operations, both verified live
 against the tenant:
 

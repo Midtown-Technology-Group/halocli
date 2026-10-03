@@ -6,6 +6,39 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.13.0 - 2026-10-03
+
+- **Label hydration: no more mapping tables.** Halo returns bare foreign
+  keys on detail and most list rows (`status_id: 9`, `agent_id: 1`);
+  `list`, `get` and post-`apply` results now resolve them to the tenant's
+  own labels beside the raw id — `status_name: "Closed"`,
+  `tickettype_name: "Quick Time"` — so operators never need to know what
+  "status 9" means:
+  - **37 curated resolvers** (status, priority, agent, ticket type,
+    client, site, team, SLA, user, asset, outcome -> buttonname,
+    categoryid_1..4 -> category_1..4, …), every one test-bound to an
+    existing resource and an evidenced label column (table_fields or spec
+    POST properties)
+  - bounded cost: one list fetch per lookup entity per command run,
+    capped per-id detail fallback (budget100) for ids past page one;
+    failed ids are tolerated; `--no-labels` opts out entirely
+  - never overwrites a label Halo sent (including its seeded empty
+    strings where the FK is unset); raw ids untouched; JSON gains a
+    `labels_added` count only when hydration fired
+  - table output prefers `<stem>_name` over `<stem>_id` when the label
+    is present (presentation only — JSON keeps every key)
+  - Halo quirk nailed down: `/Priority` rows are GUID-keyed with an
+    integer `priorityid` column while tickets store the integer
+    (`/Priority/4` -> 404) — the resolver joins on `priorityid` and
+    never fires the doomed detail probe
+  - write previews remain zero-network (ids are the correct wire
+    format); live-verified on ticket 162483: all six core FKs labelled
+- **15 new tests** (`tests/test_labels.py`): resolver validity, no-
+  overwrite, detail fallback + budget cap, failure tolerance, disabled
+  mode, placeholder/exotic ids, category pairs, table-column
+  substitution, and CLI-level hydration/`--no-labels` wiring.
+- 531 tests pass, ruff clean. Version1.13.0
+
 ## 1.12.0 - 2026-10-02
 
 - **Tackle-the-25: every deferred decision resolved** (user directive:
