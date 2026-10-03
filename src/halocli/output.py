@@ -36,6 +36,11 @@ def warn(message: str) -> None:
     error_console.print(f"[yellow]warning:[/yellow] {message}")
 
 
+def progress(message: str) -> None:
+    """Stderr progress note for long local operations (never pollutes JSON)."""
+    error_console.print(f"[dim]{message}[/dim]")
+
+
 def _render_table(items: list[dict], *, table_fields: tuple[str, ...] | None = None) -> None:
     table = Table(show_header=True, header_style="bold")
     columns = _columns(items, table_fields=table_fields)

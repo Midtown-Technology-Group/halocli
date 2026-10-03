@@ -22,12 +22,22 @@ from halocli.config import AuthMode, HaloProfile, load_profile, save_profile, up
 from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload
-from halocli.output import render, render_error, warn
+from halocli.output import progress, render, render_error, warn
 from halocli.labels import hydrate_items
-from halocli.resources import RESOURCES, HaloResource, ResourceOperation
+from halocli.resources import RESOURCES, HaloResource, ResourceOperation, get_resource
 from halocli.schema import load_spec
 from halocli.schema import validate_request as validate_schema_request
 from halocli.token_cache import KeyringTokenCache, TokenCache
+from halocli.mirror import (
+    CORE_SYNC_RESOURCES,
+    DEFAULT_SYNC_LIMIT,
+    MirrorMissingError,
+    default_mirror_path,
+    open_existing,
+    sync_resources,
+)
+from halocli.ops import DEFAULT_CLOSED_STATUSES, OpsError, run_standup, run_triage
+from halocli.sqlguard import SQLGuardError, validate_select_only
 from halocli.writes import delete_resource, execute_write
 from halocli.todo import (
     GraphMicrosoftTodoRepository,
@@ -1038,6 +1048,225 @@ def raw(
             body=body,
             spec_warnings=warnings,
         )
+    )
+
+
+# --------------------------------------------------------------------- mirror
+# Offline mirror: bounded GET sync into local SQLite, then local-only reads
+# (sql/standup/triage). No command below writes to Halo; the write contract
+# is untouched. Evidence: mirror_evidence.json, scripts/mirror_evidence_probes.py.
+
+
+def _mirror_path(db: str | None) -> Path:
+    return Path(db) if db else default_mirror_path()
+
+
+def _local_error(exc: Exception, category: str) -> None:
+    render_error(
+        {
+            "ok": False,
+            "category": category,
+            "status_code": None,
+            "error": str(exc),
+            "diagnostic": "",
+        }
+    )
+    raise typer.Exit(1) from exc
+
+
+def _sync_progress(state: dict) -> None:
+    message = f"sync {state['resource']}: {state['rows']} rows"
+    if state.get("total") is not None:
+        message += f" / {state['total']}"
+    if state.get("truncated"):
+        message += " [truncated]"
+    if state.get("error"):
+        message += f" [error: {state['error']}]"
+    progress(message)
+
+
+async def _sync(
+    *,
+    names: list[str],
+    db_path: Path,
+    max_records: int | None,
+    labels: bool,
+    profile: str,
+    output: str,
+) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        summary = await sync_resources(
+            client,
+            names,
+            db_path=db_path,
+            max_records=max_records,
+            labels=labels,
+            progress=_sync_progress,
+        )
+    summary["items"] = summary.pop("results")
+    render(
+        summary,
+        output=output,
+        table_fields=("resource", "rows", "total", "truncated", "error"),
+    )
+
+
+@app.command()
+def sync(
+    resource: Annotated[list[str] | None, typer.Option("--resource", "-r")] = None,
+    all_resources: Annotated[
+        bool, typer.Option("--all-resources", help="Sync every registry resource.")
+    ] = False,
+    fetch_all: Annotated[
+        bool, typer.Option("--all", help="No per-resource record ceiling.")
+    ] = False,
+    max_records: Annotated[int | None, typer.Option("--max-records")] = None,
+    db: Annotated[str | None, typer.Option("--db", help="Mirror database path.")] = None,
+    no_labels: Annotated[
+        bool, typer.Option("--no-labels", help="Skip sync-time label hydration.")
+    ] = False,
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Sync Halo resources into a local SQLite mirror (bounded reads only)."""
+    if fetch_all and max_records is not None:
+        raise typer.BadParameter("--all cannot be combined with --max-records.")
+    if all_resources and resource:
+        raise typer.BadParameter("--all-resources cannot be combined with --resource.")
+    if resource:
+        names = []
+        for name in resource:
+            try:
+                get_resource(name)
+            except KeyError as exc:
+                raise typer.BadParameter(
+                    f"Unknown resource {name!r}. See 'halocli catalog <query>'."
+                ) from exc
+            names.append(name)
+    elif all_resources:
+        names = [r.name for r in RESOURCES]
+    else:
+        names = list(CORE_SYNC_RESOURCES)
+    # None must mean "the house default", never "unbounded": an explicit
+    # pass-through of None here would page the whole tenant (137k tickets)
+    # and hydrate every row. Only --all removes the ceiling.
+    if fetch_all:
+        effective_max: int | None = None
+    elif max_records is not None:
+        effective_max = max_records
+    else:
+        effective_max = DEFAULT_SYNC_LIMIT
+    _run(
+        _sync(
+            names=names,
+            db_path=_mirror_path(db),
+            max_records=effective_max,
+            labels=not no_labels,
+            profile=profile,
+            output=output,
+        )
+    )
+
+
+@app.command()
+def sql(
+    query: str,
+    db: Annotated[str | None, typer.Option("--db", help="Mirror database path.")] = None,
+    limit: Annotated[int, typer.Option("--limit", min=1)] = 500,
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Run a read-only SELECT against the local mirror (never reaches Halo)."""
+    try:
+        cleaned = validate_select_only(query)
+    except SQLGuardError as exc:
+        _local_error(exc, "validation")
+        return
+    try:
+        conn = open_existing(_mirror_path(db))
+    except MirrorMissingError as exc:
+        _local_error(exc, "not_found")
+        return
+    try:
+        cursor = conn.execute(cleaned)
+        columns = [d[0] for d in cursor.description] if cursor.description else []
+        raw = cursor.fetchmany(limit + 1)
+    finally:
+        conn.close()
+    truncated = len(raw) > limit
+    items = [dict(row) for row in raw[:limit]]
+    payload: dict = {
+        "ok": True,
+        "query": cleaned,
+        "count": len(items),
+        "columns": columns,
+        "items": items,
+    }
+    if truncated:
+        payload["truncated"] = True
+        payload["hint"] = f"Stopped at {limit} rows; add LIMIT or raise --limit."
+    render(payload, output=output, table_fields=tuple(columns))
+
+
+@app.command()
+def standup(
+    since: Annotated[
+        str, typer.Option("--since", help="Window: 24h, 7d, yesterday, ISO datetime.")
+    ] = "24h",
+    agent: Annotated[str | None, typer.Option("--agent", help="Filter by agent name.")] = None,
+    closed_status: Annotated[
+        list[str] | None,
+        typer.Option("--closed-status", help="Status names counted as closed (repeatable)."),
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db")] = None,
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Per-agent digest from the mirror: closed in window, open now, oldest open."""
+    closed = tuple(closed_status) if closed_status else DEFAULT_CLOSED_STATUSES
+    try:
+        payload = run_standup(_mirror_path(db), since=since, agent=agent, closed_statuses=closed)[
+            "standup"
+        ]
+    except (MirrorMissingError, OpsError) as exc:
+        _local_error(exc, "not_found" if isinstance(exc, MirrorMissingError) else "validation")
+        return
+    payload["items"] = payload.pop("agents")
+    render(
+        payload,
+        output=output,
+        table_fields=("agent", "closed_in_window", "open_now", "oldest_open_days", "top_client"),
+    )
+
+
+@app.command()
+def triage(
+    stale_days: Annotated[int, typer.Option("--stale-days", min=1)] = 7,
+    limit: Annotated[int, typer.Option("--limit", min=1)] = 20,
+    agent: Annotated[str | None, typer.Option("--agent", help="Filter by agent name.")] = None,
+    closed_status: Annotated[
+        list[str] | None,
+        typer.Option("--closed-status", help="Status names counted as closed (repeatable)."),
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db")] = None,
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Open tickets needing attention, oldest first, from the mirror."""
+    closed = tuple(closed_status) if closed_status else DEFAULT_CLOSED_STATUSES
+    try:
+        payload = run_triage(
+            _mirror_path(db),
+            stale_days=stale_days,
+            limit=limit,
+            agent=agent,
+            closed_statuses=closed,
+        )["triage"]
+    except (MirrorMissingError, OpsError) as exc:
+        _local_error(exc, "not_found" if isinstance(exc, MirrorMissingError) else "validation")
+        return
+    render(
+        payload,
+        output=output,
+        table_fields=("id", "age_days", "stale", "status", "agent", "client", "subject"),
     )
 
 

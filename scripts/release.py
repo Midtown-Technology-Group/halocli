@@ -179,7 +179,7 @@ def verify_release_assets(version: str) -> tuple[str, str]:
     return digest, code
 
 
-def find_winget_pr(version: str, *, timeout_s: int = 900) -> dict:
+def find_winget_pr(version: str, *, timeout_s: int = 3600) -> dict:
     """Wait for the winget-releaser PR for this version."""
     deadline = time.time() + timeout_s
     while time.time() < deadline:

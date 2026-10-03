@@ -22,3 +22,4 @@ scripts/*
 !scripts/evidence_probes.py
 !scripts/check_spec_currency.py
 !scripts/release.py
+!scripts/mirror_evidence_probes.py

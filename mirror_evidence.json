@@ -1,0 +1,285 @@
+{
+  "actions_dup_ids": {
+    "error": "ReadTimeout: "
+  },
+  "agent_name_claim": {
+    "agent_id_present": 50,
+    "agent_name_present": 0,
+    "sampled": 50
+  },
+  "dates_claim": {
+    "datecreated_blank": 50,
+    "dateoccurred_present": 50,
+    "sample_pair": [
+      {
+        "datecreated": null,
+        "datemodified": null,
+        "dateoccurred": "2026-10-03T06:24:10.967"
+      },
+      {
+        "datecreated": null,
+        "datemodified": null,
+        "dateoccurred": "2026-10-03T06:03:44.38"
+      },
+      {
+        "datecreated": null,
+        "datemodified": null,
+        "dateoccurred": "2026-10-03T00:12:10.797"
+      }
+    ],
+    "sampled": 50
+  },
+  "feed_claim": {
+    "identical_pages": true,
+    "overlap": 50,
+    "page1_ids": [
+      "177622",
+      "177621",
+      "177620",
+      "177619",
+      "177618",
+      "177617",
+      "177616",
+      "177615",
+      "177614",
+      "177613",
+      "177612",
+      "177611",
+      "177610",
+      "177609",
+      "177608",
+      "177607",
+      "177606",
+      "177605",
+      "177604",
+      "177603",
+      "177602",
+      "177601",
+      "177599",
+      "177598",
+      "177597",
+      "177596",
+      "177595",
+      "177594",
+      "177593",
+      "177592",
+      "177591",
+      "177590",
+      "177589",
+      "177588",
+      "177587",
+      "177586",
+      "177585",
+      "177584",
+      "177583",
+      "177582",
+      "177581",
+      "177580",
+      "177579",
+      "177578",
+      "177577",
+      "177576",
+      "177575",
+      "177574",
+      "177573",
+      "177572"
+    ],
+    "page2_ids": [
+      "177622",
+      "177621",
+      "177620",
+      "177619",
+      "177618",
+      "177617",
+      "177616",
+      "177615",
+      "177614",
+      "177613",
+      "177612",
+      "177611",
+      "177610",
+      "177609",
+      "177608",
+      "177607",
+      "177606",
+      "177605",
+      "177604",
+      "177603",
+      "177602",
+      "177601",
+      "177599",
+      "177598",
+      "177597",
+      "177596",
+      "177595",
+      "177594",
+      "177593",
+      "177592",
+      "177591",
+      "177590",
+      "177589",
+      "177588",
+      "177587",
+      "177586",
+      "177585",
+      "177584",
+      "177583",
+      "177582",
+      "177581",
+      "177580",
+      "177579",
+      "177578",
+      "177577",
+      "177576",
+      "177575",
+      "177574",
+      "177573",
+      "177572"
+    ],
+    "page_size": 50,
+    "window_stayed_full": false
+  },
+  "statuses": {
+    "closed_candidates": {
+      "13": "Closed Order",
+      "15": "Closed Item",
+      "9": "Closed"
+    },
+    "map": {
+      "1": "New",
+      "10": "With CAB",
+      "12": "Open Order",
+      "13": "Closed Order",
+      "14": "Open Item",
+      "15": "Closed Item",
+      "16": "Invoiced",
+      "17": "Awaiting Approval",
+      "18": "Approved",
+      "19": "Rejected",
+      "2": "Working Issue Now",
+      "20": "Complete",
+      "21": "On Hold",
+      "22": "Update Required",
+      "23": "Scheduled Remote",
+      "24": "Qualified",
+      "25": "Awaiting Change Review",
+      "26": "Quote Needed",
+      "27": "Quote Sent",
+      "28": "Scoped",
+      "29": "With Halo",
+      "3": "Action Required",
+      "30": "With Halo Development",
+      "31": "Draft",
+      "32": "Work Completed",
+      "33": "Waiting Parts/Repair",
+      "34": "Scheduling Required",
+      "35": "Waiting Customer",
+      "36": "Waiting 3rd Party",
+      "37": "Pre Process",
+      "38": "Procurement",
+      "39": "Scheduled Onsite",
+      "4": "With User",
+      "40": "Please Review",
+      "41": "Need to Invoice",
+      "42": "Invoice & Wait for Payment",
+      "43": "Invoice & Ship to  Client",
+      "44": "Invoice & Ship Here",
+      "45": "Paid - Order & Ship Here",
+      "46": "Paid - Order & Ship to Client",
+      "47": "Waiting for Payment",
+      "48": "Ordered",
+      "49": "Quickfix",
+      "5": "With Supplier",
+      "50": "Scope Needed",
+      "51": "Customer Note Added",
+      "9": "Closed"
+    },
+    "seen_in_recent_50": {
+      "1": "New",
+      "21": "On Hold",
+      "23": "Scheduled Remote",
+      "35": "Waiting Customer",
+      "37": "Pre Process",
+      "40": "Please Review",
+      "51": "Customer Note Added",
+      "9": "Closed"
+    },
+    "status_endpoint": "/Status"
+  },
+  "ticket_flags": {
+    "closed_by_flag": 29,
+    "date_fully_closed_samples": [
+      "2026-10-02T23:00:00",
+      "2026-10-02T20:39:57.777",
+      "2026-10-02T19:45:00",
+      "2026-10-02T13:00:00",
+      "2026-10-02T12:15:00"
+    ],
+    "dateclosed_samples": [
+      "2026-10-02T23:00:00",
+      "2026-10-02T20:39:57.777",
+      "2026-10-02T19:45:00",
+      "2026-10-02T13:00:00",
+      "2026-10-02T12:15:00"
+    ],
+    "hasbeenclosed_by_status": {
+      "1": {
+        "null": 4
+      },
+      "21": {
+        "null": 1
+      },
+      "23": {
+        "null": 4
+      },
+      "35": {
+        "null": 1
+      },
+      "37": {
+        "null": 4
+      },
+      "40": {
+        "null": 1
+      },
+      "51": {
+        "null": 6
+      },
+      "9": {
+        "true": 29
+      }
+    },
+    "open_by_flag": 21
+  },
+  "tickets_ordering": {
+    "attempts": [
+      {
+        "dates": [
+          "2026-10-03T06:24:10",
+          "2026-10-03T06:03:44",
+          "2026-10-03T00:12:10",
+          "2026-10-03T00:11:57",
+          "2026-10-03T00:11:57"
+        ],
+        "orderdesc": "true"
+      },
+      {
+        "dates": [
+          "2020-04-21T13:40:51",
+          "2020-04-24T20:43:34",
+          "2020-04-25T15:11:03",
+          "2020-05-03T11:38:28",
+          "2020-05-14T17:48:26"
+        ],
+        "orderdesc": "1"
+      }
+    ],
+    "baseline_no_order": [
+      "2026-10-03T06:24:10",
+      "2026-10-03T06:03:44",
+      "2026-10-03T00:12:10",
+      "2026-10-03T00:11:57",
+      "2026-10-03T00:11:57"
+    ],
+    "newest_first_achieved": true
+  }
+}
