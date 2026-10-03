@@ -1,0 +1,46 @@
+{
+  "midtowntg.halopsa.com": {
+    "beliefs": {
+      "halocli": "0.11.0",
+      "ledger_totals": {},
+      "registry_resources": 181,
+      "spec_info_version": "v2",
+      "spec_operations": 1455,
+      "spec_paths": 927,
+      "spec_sha256": "e4961ac880de2a3a035af9c159c015a261843337843213f346fd4115af8f73c2"
+    },
+    "captured_at": "2026-10-03T20:17:58+00:00",
+    "halo": {
+      "agent_count": 0,
+      "agent_url": "https://midtowntg.halopsa.com",
+      "app_name": "Halo PSA",
+      "app_version": "2.236.133",
+      "auth_url": "https://midtowntg.halopsa.com/auth",
+      "automation_service_url": "https://midtowntg.halopsa.com/api/$ENDPOINT",
+      "chat_service_url": "https://midtowntg.halopsa.com/api",
+      "database_version": "2236",
+      "dbid": "c0fcaf8a-2d3c-4e42-b8ee-dce2bd6bf875",
+      "hosted_group": "US16-Stable8",
+      "incoming_service_url": "https://midtowntg.halopsa.com/api/$ENDPOINT",
+      "last_login": "2026-10-03T19:13:49",
+      "last_task_run": "2026-10-03T20:17:40",
+      "licensed_agent_count": 0,
+      "mobileapp_enabled": true,
+      "nhserver_version": "1364.01",
+      "online_agent_count": 0,
+      "outgoing_service_url": "https://midtowntg.halopsa.com/api/$ENDPOINT",
+      "portal_url": "https://midtowntg.halopsa.com/portal/",
+      "report_service_url": "https://midtowntg.halopsa.com/api/$ENDPOINT",
+      "schedule_service_url": "https://midtowntg.halopsa.com/api/$ENDPOINT",
+      "teams_chat_profile": "",
+      "teamsbot_enabled": false,
+      "tenant_id": "midtowntg",
+      "using_event_service": true,
+      "using_incoming_service": true,
+      "using_outgoing_service": true,
+      "using_scheduling_service": true
+    },
+    "profile": "default",
+    "tenant_id": "midtowntg"
+  }
+}
