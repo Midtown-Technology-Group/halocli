@@ -87,6 +87,9 @@ halocli = ["spec/*.json"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "auto"
+markers = [
+    "real_state: reads real machine state (config file / OS credential store) and a real tenant BY DESIGN; skips the isolate_halocli_state fixture. Only the opt-in live-dev tests carry it - CI never runs them (they skip without HALO_DEV_* config).",
+]
 # Parallel by default: 531 tests serialise to ~68s and drop to ~36s on
 # workers. Only one test binds the fixed callback port, so no cross-worker
 # collision (verified locally and across the CI matrix). Debug serially

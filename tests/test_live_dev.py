@@ -25,6 +25,13 @@ Ground rules enforced here, not by convention:
 - every test cleans up after itself (create -> verify -> delete), so the
   trial stays tidy across campaign reruns;
 - records are named with a recognizable prefix for any manual sweep.
+
+The module carries the ``real_state`` marker: profile mode must read the
+real config file and the real OS credential store (the token minted by
+``auth login``), which the suite's autouse isolation fixture would
+otherwise redirect to tmp. CI still never runs these tests - they skip
+without HALO_DEV_* configuration - and isolation stays on for every
+other test.
 """
 
 from __future__ import annotations
@@ -52,12 +59,15 @@ def _active_mode() -> str | None:
     return None
 
 
-pytestmark = pytest.mark.skipif(
-    _active_mode() is None,
-    reason="dev tenant not configured (set HALO_DEV_PROFILE=<name> for the "
-    "native-profile path, or the HALO_DEV_TENANT_URL/CLIENT_ID/CLIENT_SECRET "
-    "env trio - see the dev-tenant setup issue for the trial flow)",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        _active_mode() is None,
+        reason="dev tenant not configured (set HALO_DEV_PROFILE=<name> for the "
+        "native-profile path, or the HALO_DEV_TENANT_URL/CLIENT_ID/CLIENT_SECRET "
+        "env trio - see the dev-tenant setup issue for the trial flow)",
+    ),
+    pytest.mark.real_state,
+]
 
 PROBE_PREFIX = "halocli-dev-probe-"
 

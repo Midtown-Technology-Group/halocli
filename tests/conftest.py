@@ -80,8 +80,24 @@ class InMemoryKeyring:
         return self
 
 
+def skip_isolation(node: Any) -> bool:
+    """True for tests that must reach real machine state by design.
+
+    Only the opt-in live-dev tests carry the ``real_state`` marker: their
+    profile mode needs the real config file (native profile) and the real
+    OS credential store (the interactive token minted by ``auth login``).
+    The isolation fixture stays on for every other test - CI included -
+    and the live tests still skip entirely without HALO_DEV_* config.
+    """
+    return node.get_closest_marker("real_state") is not None
+
+
 @pytest.fixture(autouse=True)
-def isolate_halocli_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def isolate_halocli_state(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Keep every test away from real machine state.
 
     - ``halocli.config`` resolves its config file through
@@ -93,7 +109,13 @@ def isolate_halocli_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     - ``keyring`` access goes to an in-memory fake, never the OS credential store.
     - ``webbrowser.open()`` and the OAuth ``wait_for_callback()`` HTTP server raise
       loudly (``ForbiddenTestSideEffect``) if any test reaches the interactive login.
+
+    Tests marked ``real_state`` are exempt (see ``skip_isolation``): they read
+    the real config and real credential store deliberately, and they never
+    reach the interactive login flow (their token already exists).
     """
+    if skip_isolation(request.node):
+        return
     config_file = tmp_path / "config.yaml"
     monkeypatch.setattr(halocli_config, "default_config_file", lambda: config_file)
     monkeypatch.setattr(
