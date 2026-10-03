@@ -123,6 +123,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Tickets/Object",
                 body=True,
                 summary="Create a single ticket object (spec summary empty; POST-with-id updates)",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "set-billable-project",
@@ -136,6 +137,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Tickets/View",
                 body=True,
                 summary="Run a saved ticket view (POST-as-read; still write-gated)",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "process-children",
@@ -157,6 +159,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Tickets/vote",
                 body=True,
                 summary="Cast a vote on a ticket",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "zapier",
@@ -207,7 +210,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 method="POST",
                 path="/Agent/ClearCache",
                 summary="Clear the agent's cached data (config action)",
-                verification="spec",
+                verification="live-dev",
             ),
         ),
     ),
@@ -216,8 +219,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Team",
         aliases=("team",),
         table_fields=("id", "name"),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Team",
@@ -301,7 +304,7 @@ RESOURCES: tuple[HaloResource, ...] = (
         # -> 400 validation (route-verified). table_fields corrected: live rows
         # carry `name` but never `title`. POST is a spec-declared bare array
         # (returns 201); execute_write's json_body=[payload] matches it, so no
-        # custom handler is needed. POST/DELETE are never fired at the tenant
+        # custom handler is needed. POST/DELETE are fired live on the dev trial 2026-10-03
         # (no write authorization) -> writes stay verification: spec.
         table_fields=("id", "name", "type", "inactive", "date_edited"),
         list_key="articles",
@@ -322,7 +325,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/KBArticle/View",
                 body=True,
                 summary="Render an article view (POST-as-read)",
-                verification="spec",
+                verification="live-dev",
             ),
             ResourceOperation(
                 name="vote",
@@ -330,7 +333,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/KBArticle/vote",
                 body=True,
                 summary="Cast a vote on a knowledge article",
-                verification="spec",
+                verification="live-dev",
             ),
         ),
     ),
@@ -440,8 +443,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Category",
         aliases=("category",),
         table_fields=("id", "name", "value"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/Category",
@@ -571,7 +574,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/ClientContract/NextRef",
                 body=True,
                 summary="Compute the next contract reference from a contract-shaped body (returns the next ref; spec-verified, never fired)",
-                verification="spec",
+                verification="live-dev",
             ),
         ),
     ),
@@ -587,6 +590,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Invoice/PDF/{id}",
                 args=("id",),
                 summary="Render an invoice PDF (binary response; use --save)",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "view",
@@ -594,6 +598,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Invoice/View",
                 body=True,
                 summary="Run a saved invoice view (POST-as-read; still write-gated)",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "lines",
@@ -615,6 +620,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Invoice/{id}/void",
                 args=("id",),
                 summary="Void an invoice (destructive; write-gated)",
+                verification="live-dev",
             ),
         ),
     ),
@@ -687,8 +693,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Supplier",
         aliases=("supplier",),
         table_fields=("id", "name"),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Supplier",
@@ -727,6 +733,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/Quotation/Lines",
                 body=True,
                 summary="Add or replace quotation lines",
+                verification="live-dev",
             ),
             ResourceOperation(
                 name="approval",
@@ -741,6 +748,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/Quotation/View",
                 body=True,
                 summary="Record a quotation view event (POST-as-read; still write-gated)",
+                verification="live-dev",
             ),
         ),
     ),
@@ -749,8 +757,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Release",
         aliases=("release",),
         table_fields=("id", "name", "status_name"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/Release",
@@ -792,7 +800,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/Report/Bookmark",
                 body=True,
                 summary="Bookmark a report for the agent",
-                verification="spec",
+                verification="live-dev",
             ),
             ResourceOperation(
                 name="create-pdf",
@@ -808,7 +816,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/Report/print",
                 body=True,
                 summary="Render a report for printing",
-                verification="spec",
+                verification="live-dev",
             ),
         ),
     ),
@@ -915,6 +923,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/CannedText/favourite",
                 body=True,
                 summary="Mark a canned text as favourite (body: id, ctid, unum)",
+                verification="live-dev",
             ),
         ),
     ),
@@ -956,8 +965,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/EmailTemplate",
         # Sweep 2026-10-02: bare array, 94 rows, GET/{id} -> 400.
         table_fields=("id", "name", "description", "template_group", "sectionid"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/EmailTemplate",
@@ -973,7 +982,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 path="/EmailTemplate/preview",
                 body=True,
                 summary="Render an email template preview without sending",
-                verification="spec",
+                verification="live-dev",
             ),
         ),
     ),
@@ -983,8 +992,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         aliases=("tag",),
         # Sweep 2026-10-02: bare array, 103 rows, GET/{id} -> 400.
         table_fields=("id", "text", "type"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/Tags",
@@ -1009,8 +1018,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # value columns are instance-shaped (value4/value6 present live) -
         # columns kept exactly to what list rows returned.
         table_fields=("id", "lookupid", "name", "value4", "value5", "value6"),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - create+update fired live on the dev trial 2026-10-03; delete server-blocked; verification: live-dev-partial; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Lookup",
@@ -1025,7 +1034,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 method="POST",
                 path="/Lookup/ClearCache",
                 summary="Clear lookup value caches",
-                verification="spec",
+                verification="live-dev",
             ),
         ),
     ),
@@ -1035,8 +1044,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: bare array, 91 rows (TOutcome - ticket action
         # outcomes, 285p schema), GET/{id} -> 400.
         table_fields=("id", "buttonname", "colour", "chargerate", "actiongroup"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/Outcome",
@@ -1053,8 +1062,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # GET/{id} -> 400.
         table_fields=("id", "start_date", "callerid", "call_status", "client_name", "agent_id"),
         list_key="calllog",
-        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/CallLog",
@@ -1086,8 +1095,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Address",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "type", "date_active", "inactive", "line1", "line2"),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). Required fields are house choices
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required fields are house choices
         # from the POST schema's own properties (spec declares required:
         # [] everywhere); tests bind them there. Promoted by the
         # tackle-the-25 decision pass (2026-10-02).
@@ -1103,8 +1112,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/AgentCheckIn",
         # Sweep 2026-10-02: envelope '<bare array>', 149 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "status", "timestamp", "agent_id"),
-        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/AgentCheckIn",
@@ -1144,8 +1153,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "default_quantity_decimal_places",
             "defaultsite",
         ),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/AssetGroup",
@@ -1160,8 +1169,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/AssetType",
         # Sweep 2026-10-02: envelope '<bare array>', 34 rows, GET/{id} -> 400 (route-verified); name recovered via uncapped re-probe
         table_fields=("id", "name"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/AssetType",
@@ -1217,8 +1226,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/BudgetType",
         # Sweep 2026-10-02: envelope '<bare array>', 6 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "defaultrate"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/BudgetType",
@@ -1240,8 +1249,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "guid",
             "rejection_threshold",
         ),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/CAB",
@@ -1256,8 +1265,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/CallScript",
         # Sweep 2026-10-02: envelope '<bare array>', 2 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "note", "category_1"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/CallScript",
@@ -1286,8 +1295,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/CostCentres",
         # Sweep 2026-10-02: envelope '<bare array>', 3 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "addr1", "addr2", "addr3", "addr4"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/CostCentres",
@@ -1334,8 +1343,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "customextratableid",
             "customtable_orderby",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - create+update fired live on the dev trial 2026-10-03; delete server-blocked; verification: live-dev-partial; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/CustomTable",
@@ -1416,8 +1425,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/FAQLists",
         # Sweep 2026-10-02: envelope '<bare array>', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "description", "name", "group_id", "type", "allow_indexing"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/FAQLists",
@@ -1458,8 +1467,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "moveupdatetype",
             "validate",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - create+update fired live on the dev trial 2026-10-03; delete server-blocked; verification: live-dev-partial; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Field",
@@ -1481,8 +1490,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "guid",
             "header",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/FieldGroup",
@@ -1522,8 +1531,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # (route alive - the probe token crashed the server handler), so the
         # detail route is kept but is known-broken for odd ids.
         table_fields=("id", "name", "date", "end_date", "agent_id", "agent_name"),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Holiday",
@@ -1561,8 +1570,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/ItemGroup",
         # Sweep 2026-10-02: envelope '<bare array>', 10 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "category", "type", "add_all_group_items_quote", "allow_users"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/ItemGroup",
@@ -1578,8 +1587,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: envelope 'itemstock', 1 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "date", "cost", "item_assettype_id", "item_id", "item_name"),
         list_key="itemstock",
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (create+update fired live on the dev trial 2026-10-03; delete server-blocked; verification: live-dev-partial; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/ItemStock",
@@ -1634,8 +1643,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "all_user_faqlists_allowed",
             "bank_details_line_1",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Organisation",
@@ -1650,8 +1659,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/PdfTemplate",
         # Sweep 2026-10-02: envelope '<bare array>', 21 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "type", "colour", "colour_type", "config_source_type"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/PdfTemplate",
@@ -1673,8 +1682,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "third_party_id",
             "third_party_name",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Product",
@@ -1703,8 +1712,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Qualification",
         # Sweep 2026-10-02: envelope '<bare array>', 2 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "criteria", "guid", "mustmatch", "weight"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/Qualification",
@@ -1719,8 +1728,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/ReleaseType",
         # Sweep 2026-10-02: envelope '<bare array>', 4 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "releasenoteset"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/ReleaseType",
@@ -1803,8 +1812,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "business_owner_id",
         ),
         list_key="services",
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/Service",
@@ -1819,8 +1828,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/ServiceCategory",
         # Sweep 2026-10-02: envelope '<bare array>', 6 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "summary", "guid", "icon", "important"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/ServiceCategory",
@@ -1856,8 +1865,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/StockBin",
         # Sweep 2026-10-02: envelope '<bare array>', 14 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "name", "dont_add_to_order", "parent_id", "parent_name", "sequence"),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/StockBin",
@@ -1905,8 +1914,8 @@ RESOURCES: tuple[HaloResource, ...] = (
             "area_use",
             "default_columns_id",
         ),
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/TicketArea",
@@ -1942,8 +1951,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # Sweep 2026-10-02: envelope 'data', 33 rows, GET/{id} -> 400 (route-verified)
         table_fields=("id", "text", "client_name"),
         list_key="data",
-        # Writes: spec-verified POST + DELETE /{id}; never fired at the
-        # tenant (verification: spec). Required set = the primary display
+        # Writes: spec-verified POST + DELETE /{id}; fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required set = the primary display
         # field - the spec declares no required fields anywhere (house
         # assumption, commented as such per the `agents` precedent).
         create_endpoint="/ToDoGroup",
@@ -2036,8 +2045,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         "/Workday",
         aliases=("workday",),
         table_fields=("id", "name"),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
+        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
+        # tenant - fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = the primary display
         # column observed on live rows (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/Workday",
@@ -2066,7 +2075,7 @@ RESOURCES: tuple[HaloResource, ...] = (
         # `paging_ignored` in the payload (issue #24, live-verified: 133 of 133
         # distinct). --param count=<total> remains the manual workaround.
         # table_fields corrected: live rows carry `datetime`, never `date`.
-        # POST/DELETE are never fired at the tenant (no write authorization)
+        # POST/DELETE are fired live on the dev trial 2026-10-03 (no write authorization)
         # -> writes stay verification: spec.
         table_fields=("id", "client_id", "datetime", "who_agentid", "note"),
         list_key="actions",
@@ -2124,6 +2133,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Attachment/document/{id}",
                 args=("id",),
                 summary="Delete a document attachment by id",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "list-images",
@@ -2138,6 +2148,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Attachment/image",
                 multipart=True,
                 summary="Upload an image (multipart form field 'file' per spec)",
+                verification="live-dev",
             ),
             ResourceOperation(
                 "get-image",
@@ -2182,6 +2193,7 @@ RESOURCES: tuple[HaloResource, ...] = (
                 "/Attachment/document",
                 body=True,
                 summary="Create a document attachment from a JSON body",
+                verification="live-dev",
             ),
         ),
     ),
@@ -2368,8 +2380,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). Required fields are house choices
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required fields are house choices
         # from the POST schema's own properties (spec declares required:
         # [] everywhere); tests bind them there. Promoted by the
         # tackle-the-25 decision pass (2026-10-02).
@@ -2509,8 +2521,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/EmailTemplateVariable",
@@ -2647,8 +2659,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). Required = primary field from the
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). Required = primary field from the
         # POST schema (spec declares required: [] everywhere).
         create_endpoint="/ProductComponent",
         update_endpoint="/ProductComponent",
@@ -2693,8 +2705,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/ReleaseNoteGroup",
@@ -2716,8 +2728,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
         list_key="releasepipelines",
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/ReleasePipeline",
@@ -2874,8 +2886,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/TicketTypeGroup",
@@ -2913,8 +2925,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # `halocli todo list` (server-side tasksonly/hidecompleted paging).
         table_fields=("id",),
         supports_get=False,
-        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST (POST-only: the spec offers no DELETE /{id}) - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/ToDo",
@@ -2972,8 +2984,8 @@ RESOURCES: tuple[HaloResource, ...] = (
         # stays id-only until a populated tenant yields column evidence.
         # GET /{id} -> 400 (route alive).
         table_fields=("id",),
-        # Writes: spec-verified POST + DELETE /{id} - never fired at the
-        # tenant (verification: spec). The spec declares required: []
+        # Writes: spec-verified POST + DELETE /{id} - fired live on the dev trial 2026-10-03 at the
+        # tenant (fired live on the dev trial 2026-10-03; verification: live-dev; evidence: dev_write_results.json). The spec declares required: []
         # everywhere, so the required set is a commented house choice
         # from the POST schema's own properties (tests bind it there).
         create_endpoint="/itemsupplier",

@@ -1,12 +1,408 @@
 {
   "meta": {
     "halocli": "0.11.0",
+    "nested_updated_at": "2026-10-03T22:39:53+00:00",
     "partial": false,
     "profile": "dev",
     "run_token": "d077f3",
     "started_at": "2026-10-03T21:11:34+00:00",
     "tenant": "clidev.trial.usehalo.com",
     "updated_at": "2026-10-03T21:12:26+00:00"
+  },
+  "nested": {
+    "meta": {
+      "captured_at": "2026-10-03T22:39:53+00:00",
+      "halocli": "0.11.0",
+      "run_token": "e04a2b",
+      "tenant": "clidev.trial.usehalo.com"
+    },
+    "results": [
+      {
+        "endpoint": "/Tickets/Object",
+        "judgment": "empty-body semantics probe",
+        "method": "POST",
+        "ok": true,
+        "operation": "create-object",
+        "outcome": "ok",
+        "resource": "tickets",
+        "response": "{\"id\": 2148, \"dateoccurred\": \"2026-10-02T13:55:19.203\", \"summary\": \"New Customer Onboarding\", \"details\": \"\", \"status_id\": 23, \"tickettype_id\": 5, \"sla_id\": 1, \"sla_name\": \"Request SLA\", \"priority_id\": 2, \"priority\": {\"id\": \"ca8f3c6e-110c-e811-8915-b01041c8667a\", \"slaid\": 1, \"priorityid\": 2, \"name\": ",
+        "target": 2148
+      },
+      {
+        "endpoint": "/Tickets/SetBillableProject",
+        "error": "HaloPSA validation error (400) on /api/Tickets/SetBillableProject: \"Missing parameters\"",
+        "judgment": "points a sample ticket at a sample project (trial)",
+        "method": "POST",
+        "ok": false,
+        "operation": "set-billable-project",
+        "outcome": "rejected",
+        "resource": "tickets",
+        "target": 2148
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Tickets/View",
+        "judgment": "view counter on a sample ticket (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "view",
+        "outcome": "ok",
+        "resource": "tickets",
+        "response": "{\"id\": 2148, \"lastincomingemail\": \"0001-01-01T00:00:00\", \"changeseq\": 254020, \"viewers\": [{\"id\": 3, \"name\": \"Thomas Bray\", \"lastlogindate\": \"2026-10-03T22:39:32.5644582Z\", \"current_action_type\": \"view\", \"current_action_name\": \"view\", \"use\": \"agent\"}], \"visible_child_tickets\": 0, \"table\": 1, \"use\": \"",
+        "target": 2148
+      },
+      {
+        "endpoint": "/Tickets/processchildren",
+        "error": "HaloPSA unknown error (410) on /api/Tickets/processchildren: \"This resource has been deprecated. Child ticket processing is now handled by a background service.\"",
+        "judgment": "sample ticket has no children: no-op or validation evidence",
+        "method": "POST",
+        "ok": false,
+        "operation": "process-children",
+        "outcome": "rejected",
+        "resource": "tickets",
+        "target": 2148
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Tickets/vote",
+        "judgment": "vote marker on a sample ticket (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "vote",
+        "outcome": "ok",
+        "resource": "tickets",
+        "response": "{\"id\": 2148, \"lastincomingemail\": \"0001-01-01T00:00:00\", \"visible_child_tickets\": 0, \"table\": 1, \"use\": \"ticket\", \"_open_search_score\": 0.0}",
+        "target": 2148
+      },
+      {
+        "endpoint": "/Agent/ClearCache",
+        "judgment": "idempotent cache clear",
+        "method": "POST",
+        "ok": true,
+        "operation": "clear-cache",
+        "outcome": "ok",
+        "resource": "agents",
+        "response": "\"ok\"",
+        "target": null
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Users/prefs",
+        "error": "HaloPSA server error (500) on /api/Users/prefs: HTTP 500: ",
+        "judgment": "empty-body probe; expected to read prefs, not mutate",
+        "method": "POST",
+        "ok": false,
+        "operation": "prefs",
+        "outcome": "rejected",
+        "resource": "users",
+        "target": null
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/KBArticle/View",
+        "judgment": "view counter on a sample KB article (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "view",
+        "outcome": "ok",
+        "resource": "kb",
+        "response": "{\"id\": 16, \"changeseq\": 1, \"viewers\": [{\"id\": 3, \"name\": \"Thomas Bray\", \"lastlogindate\": \"2026-10-03T22:39:33.1445865Z\", \"current_action_type\": \"view\", \"use\": \"agent\"}]}",
+        "target": 16
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/KBArticle/vote",
+        "judgment": "vote marker on a sample KB article (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "vote",
+        "outcome": "ok",
+        "resource": "kb",
+        "response": "{\"id\": 16, \"use\": \"article\", \"key\": 16, \"table\": 992}",
+        "target": 16
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/ClientContract/NextRef",
+        "judgment": "returns the next reference number; read-only effect",
+        "method": "POST",
+        "ok": true,
+        "operation": "next-ref",
+        "outcome": "ok",
+        "resource": "contracts",
+        "response": "{\"next_ref\": \"0001\"}",
+        "target": 1
+      },
+      {
+        "endpoint": "/Invoice/PDF/{id}",
+        "judgment": "renders a PDF for a sample invoice (trial artifact)",
+        "method": "POST",
+        "ok": true,
+        "operation": "pdf",
+        "outcome": "ok",
+        "resource": "invoices",
+        "response": "{\"id\": 10, \"use\": \"invoice\", \"client_id\": 15, \"client_name\": \"St Johns High School\", \"sitenumber\": 0, \"uid\": 0, \"invoicenumber\": \"0\", \"name\": \"St Johns High School\", \"address1\": \"\", \"address2\": \"\", \"address3\": \"\", \"address4\": \"\", \"address5\": \"\", \"deladdress1\": \"\", \"deladdress2\": \"\", \"deladdress3\": \"",
+        "target": 10
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Invoice/View",
+        "judgment": "view marker on a sample invoice (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "view",
+        "outcome": "ok",
+        "resource": "invoices",
+        "response": "{\"id\": 10, \"changeseq\": 3, \"viewers\": [{\"id\": 3, \"name\": \"Thomas Bray\", \"lastlogindate\": \"2026-10-03T22:39:42.9954378Z\", \"current_action_type\": \"view\", \"use\": \"agent\"}]}",
+        "target": 10
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Invoice/updatelines",
+        "error": "HaloPSA validation error (400) on /api/Invoice/updatelines: \"Invoice not found (id=)\"",
+        "judgment": "id-only body CANNOT mutate lines; validation evidence only",
+        "method": "POST",
+        "ok": false,
+        "operation": "update-lines",
+        "outcome": "rejected",
+        "resource": "invoices",
+        "target": 10
+      },
+      {
+        "endpoint": "/Invoice/{id}/void",
+        "judgment": "DESTRUCTIVE: voids a trial SAMPLE invoice - the dev tenant exists for exactly this",
+        "method": "POST",
+        "ok": true,
+        "operation": "void",
+        "outcome": "ok",
+        "resource": "invoices",
+        "response": "{\"customfields\": [], \"id\": 10, \"use\": \"invoice\", \"client_id\": 15, \"client_name\": \"St Johns High School\", \"sitenumber\": 0, \"uid\": 0, \"invoicenumber\": \"0\", \"posted\": false, \"name\": \"St Johns High School\", \"address1\": \"\", \"address2\": \"\", \"address3\": \"\", \"address4\": \"\", \"address5\": \"\", \"deladdress1\": \"\"",
+        "target": 10
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Quotation/Lines",
+        "judgment": "id-only body CANNOT add lines; validation evidence only",
+        "method": "POST",
+        "ok": true,
+        "operation": "lines",
+        "outcome": "ok",
+        "resource": "quotations",
+        "response": "\"\"",
+        "target": 14
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Quotation/Approval",
+        "error": "HaloPSA validation error (400) on /api/Quotation/Approval: \"Unable to approve, this quote has expired\"",
+        "judgment": "expected token/signature rejection = evidence for the argued-raw stance",
+        "method": "POST",
+        "ok": false,
+        "operation": "approval",
+        "outcome": "rejected",
+        "resource": "quotations",
+        "target": 14
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Quotation/View",
+        "judgment": "view marker on a sample quotation (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "view",
+        "outcome": "ok",
+        "resource": "quotations",
+        "response": "{\"id\": 14, \"changeseq\": 1, \"viewers\": [{\"id\": 3, \"name\": \"Thomas Bray\", \"lastlogindate\": \"2026-10-03T22:39:44.4225227Z\", \"current_action_type\": \"view\", \"use\": \"agent\"}]}",
+        "target": 14
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Report",
+        "judgment": "clones a sample report; the clone is deleted immediately after",
+        "method": "POST",
+        "ok": true,
+        "operation": "clone",
+        "outcome": "ok",
+        "resource": "reports",
+        "response": "{\"guid\": \"75302dfe-674c-41c0-8b78-8f11235bc55c\", \"id\": 1, \"name\": \"Customer Satisfaction Averages Report - By Technician\", \"sql\": \"select   (select uname from uname where unum=assignedtoint)as 'Technician',   (faultid) as 'Ticket Number',    cast(Satisfactioncomment as varchar(max))as 'Comment',   (",
+        "target": 1
+      },
+      {
+        "endpoint": "/Report/Bookmark",
+        "judgment": "toggles a bookmark flag on a sample report (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "bookmark",
+        "outcome": "ok",
+        "resource": "reports",
+        "response": "{\"id\": 1}",
+        "target": 1
+      },
+      {
+        "endpoint": "/Report/createpdf",
+        "error": "HaloPSA validation error (400) on /api/Report/createpdf: HTTP 400: ",
+        "judgment": "executes a sample report ONCE (house rule: never retry report execution); PDF artifact",
+        "method": "POST",
+        "ok": false,
+        "operation": "create-pdf",
+        "outcome": "rejected",
+        "resource": "reports",
+        "target": 1
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Report/print",
+        "judgment": "executes a sample report ONCE; print dispatch on a printer-less trial",
+        "method": "POST",
+        "ok": true,
+        "operation": "print",
+        "outcome": "ok",
+        "resource": "reports",
+        "response": "{\"guid\": \"75302dfe-674c-41c0-8b78-8f11235bc55c\", \"id\": 1, \"name\": \"Customer Satisfaction Averages Report - By Technician\", \"sql\": \"select   (select uname from uname where unum=assignedtoint)as 'Technician',   (faultid) as 'Ticket Number',    cast(Satisfactioncomment as varchar(max))as 'Comment',   (",
+        "target": 1
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/CannedText/favourite",
+        "judgment": "toggles favourite on a sample canned text (trial)",
+        "method": "POST",
+        "ok": true,
+        "operation": "favourite",
+        "outcome": "ok",
+        "resource": "canned-text",
+        "response": "{\"id\": 0}",
+        "target": 1
+      },
+      {
+        "endpoint": "/EmailTemplate/preview",
+        "judgment": "renders a preview; read-only effect",
+        "method": "POST",
+        "ok": true,
+        "operation": "preview",
+        "outcome": "ok",
+        "resource": "email-templates",
+        "response": "{\"id\": -100, \"preview_subject\": \"\", \"preview_body\": \"<div data-ogsb=\\\"rgb(245, 246, 250)\\\" style=\\\"border: 0px; font-style: normal; margin: 0px; padding: 0px; vertical-align: baseline; color: rgb(0, 0, 0); background-color: rgb(245, 246, 250) !important;\\\"><table align=\\\"center\\\" bgcolor=\\\"#F5F6FA\\\"",
+        "target": -100
+      },
+      {
+        "endpoint": "/Lookup/ClearCache",
+        "judgment": "idempotent cache clear (also proven by test_live_dev)",
+        "method": "POST",
+        "ok": true,
+        "operation": "clear-cache",
+        "outcome": "ok",
+        "resource": "lookups",
+        "response": "\"ok\"",
+        "target": null
+      },
+      {
+        "endpoint": "/Attachment/image",
+        "judgment": "uploads a 1px probe PNG; deleted immediately after",
+        "method": "POST",
+        "ok": true,
+        "operation": "upload-image",
+        "outcome": "ok",
+        "resource": "attachments",
+        "response": "{\"link\": \"https://clidev.trial.usehalo.com/api/attachment/image?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE2ZjM1YTZjLTQzMjMtNGRlNC1hMmJiLWI0ZTE1MGNkMDM4MiJ9.a-_pJRtMORrjhhwtCmHqp-Ve8yiJ7zkhfxHKDCnjSms\"}",
+        "target": null
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Attachment/GetS3PresignedURL",
+        "error": "HaloPSA validation error (400) on /api/Attachment/GetS3PresignedURL: \"Presigned post URL's are not enabled.\"",
+        "judgment": "presign flow probe (returns a URL)",
+        "method": "POST",
+        "ok": false,
+        "operation": "presign-url",
+        "outcome": "rejected",
+        "resource": "attachments",
+        "target": null
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Attachment/PresignedURLUploadComplete",
+        "error": "HaloPSA validation error (400) on /api/Attachment/PresignedURLUploadComplete: \"Presigned URL's are not enabled.\"",
+        "judgment": "presign completion probe without prior upload; validation evidence",
+        "method": "POST",
+        "ok": false,
+        "operation": "presign-complete",
+        "outcome": "rejected",
+        "resource": "attachments",
+        "target": null
+      },
+      {
+        "attempts": [
+          "array-retry"
+        ],
+        "endpoint": "/Attachment/document",
+        "judgment": "uploads a tiny probe text file; deleted immediately after",
+        "method": "POST",
+        "ok": true,
+        "operation": "create-document",
+        "outcome": "ok",
+        "resource": "attachments",
+        "response": "{\"third_party_id\": \"\", \"id\": 642, \"filename\": \"halocli-dev-probe.txt\", \"datecreated\": \"2026-10-03T22:39:52.6505772Z\", \"note\": \"\", \"filesize\": 0, \"type\": 0, \"unique_id\": 0, \"desc\": \"halocli-dev-probe.txt\", \"isimage\": false, \"ticket_id\": 0, \"user_id\": -1, \"agent_id\": 3, \"guid\": \"145d37df-9ed4-4bea-a2f",
+        "target": null
+      },
+      {
+        "endpoint": "/Attachment/document/{id}",
+        "judgment": "deletes this run's own probe document",
+        "method": "DELETE",
+        "ok": true,
+        "operation": "delete-document",
+        "outcome": "ok",
+        "resource": "attachments",
+        "response": "{\"third_party_id\": \"\", \"id\": 642, \"filename\": \"halocli-dev-probe.txt\", \"datecreated\": \"2026-10-03T22:39:52.65\", \"note\": \"\", \"filesize\": 0, \"type\": 0, \"unique_id\": 0, \"desc\": \"halocli-dev-probe.txt\", \"isimage\": false, \"user_id\": -1, \"agent_id\": 3, \"_canupdate\": true, \"guid\": \"145d37df-9ed4-4bea-a2fe-",
+        "target": 642
+      },
+      {
+        "endpoint": "/Attachment/image/{id}",
+        "judgment": "deletes this run's own probe image",
+        "method": "DELETE",
+        "operation": "delete-image",
+        "outcome": "skipped (nothing uploaded this run)",
+        "resource": "attachments"
+      }
+    ],
+    "summary": {
+      "attempted": 29,
+      "ok": 21,
+      "rejected": 8,
+      "skipped": 1,
+      "total": 30
+    }
   },
   "results": {
     "actions": {
