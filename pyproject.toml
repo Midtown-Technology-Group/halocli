@@ -42,6 +42,9 @@ dev = [
     "jsonpath-ng>=1.6.0",
     "pytest>=7.0.0",
     "pytest-asyncio>=0.23.0",
+    # A hung test must fail fast with stack dumps instead of eating GitHub's
+    # 6-hour default (a local hang cost 30 minutes once; see pytest config).
+    "pytest-timeout>=2.3.0",
     "ruff>=0.1.0",
     "uvicorn>=0.30.0",
 ]
@@ -78,6 +81,12 @@ halocli = ["spec/*.json"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "auto"
+# Every test must finish in 60s (slowest today: ~5s). The thread method is
+# deliberate: on timeout it dumps all thread stacks and crashes the RUN, which
+# fails fast on CI (and locally) instead of hanging for hours; it is also the
+# only method that works on Windows.
+timeout = 60
+timeout_method = "thread"
 
 [tool.ruff]
 line-length = 100
