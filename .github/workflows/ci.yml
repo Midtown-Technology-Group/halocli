@@ -9,10 +9,18 @@ on:
 permissions:
   contents: read
 
+# Superseded runs cancel: rapid pushes to the same ref should not stack
+# full matrix runs (the dance merges quickly).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    # Hard bound: a hung install/test must die here, not on GitHub's 6h default.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +54,7 @@ jobs:
   coverage:
     name: Coverage Oracle
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -81,6 +90,7 @@ jobs:
   package:
     name: Package Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
