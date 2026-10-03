@@ -14,14 +14,15 @@ APP_NAME = "halocli"
 DEFAULT_PROFILE = "default"
 
 
+AuthMode = Literal["client_credentials", "halo_interactive", "entra_broker"]
+
+
 class HaloProfile(BaseModel):
     tenant_url: str
     client_id: str
     client_secret: str | None = None
     scope: str = "all"
-    auth_mode: Literal["client_credentials", "halo_interactive", "entra_broker"] = (
-        "client_credentials"
-    )
+    auth_mode: AuthMode = "client_credentials"
     timeout: float = 30.0
     max_retries: int = 3
     interactive_discovered: bool = False
@@ -96,9 +97,7 @@ def load_profile(
     overrides: ConfigOverrides | None = None,
 ) -> HaloProfile:
     config = load_config(config_file)
-    values = (
-        config.profiles.get(profile_name).model_dump() if profile_name in config.profiles else {}
-    )
+    values = config.profiles[profile_name].model_dump() if profile_name in config.profiles else {}
 
     env_values = {
         "tenant_url": os.environ.get("HALO_TENANT_URL"),

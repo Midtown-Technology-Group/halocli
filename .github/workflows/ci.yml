@@ -69,6 +69,10 @@ jobs:
       - name: Install package
         run: python -m pip install -e ".[dev]"
 
+      # Type gate: clean baseline (findings fixed, not suppressed).
+      - name: Type check
+        run: mypy src/halocli --ignore-missing-imports
+
       # Report-only baseline (no floor yet): publishes the number we would
       # later gate on. Runs under -n auto like every other pytest invocation.
       - name: Test with coverage

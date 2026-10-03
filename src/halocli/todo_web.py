@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import builtins
+
 from collections.abc import Callable
 from datetime import date, datetime
 from typing import Any
@@ -12,7 +14,7 @@ try:
     from fastapi import Depends, FastAPI, HTTPException
     from pydantic import BaseModel
 except ModuleNotFoundError:  # pragma: no cover
-    Depends = FastAPI = HTTPException = BaseModel = None  # type: ignore[assignment]
+    Depends = FastAPI = HTTPException = BaseModel = None  # type: ignore[assignment, misc]
 
 
 if BaseModel is not None:
@@ -222,10 +224,10 @@ class ManagedHaloTodoRepository(HaloTodoRepository):
     async def log_time(self, todo_id: int | str, **payload: Any) -> dict[str, Any]:
         return await self._run("log_time", todo_id, **payload)
 
-    async def list_time_entries(self, todo_id: int | str) -> list[dict[str, Any]]:
+    async def list_time_entries(self, todo_id: int | str) -> builtins.list[dict[str, Any]]:
         return await self._run("list_time_entries", todo_id)
 
-    async def search_clients(self, q: str | None = None) -> list[dict[str, Any]]:
+    async def search_clients(self, q: str | None = None) -> builtins.list[dict[str, Any]]:
         return await self._run("search_clients", q)
 
     async def search_tickets(
@@ -234,7 +236,7 @@ class ManagedHaloTodoRepository(HaloTodoRepository):
         q: str | None = None,
         client_id: int | None = None,
         open_only: bool = True,
-    ) -> list[dict[str, Any]]:
+    ) -> builtins.list[dict[str, Any]]:
         return await self._run("search_tickets", q=q, client_id=client_id, open_only=open_only)
 
     async def me(self) -> dict[str, Any]:

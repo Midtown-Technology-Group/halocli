@@ -24,6 +24,8 @@ path free of slow stdlib modules (``re``/``pathlib``/``typing``/``urllib.parse``
 
 from __future__ import annotations
 
+from typing import Any
+
 import os
 
 SPEC_PATH: str = os.path.join(
@@ -47,7 +49,7 @@ class _Template:
     def __init__(
         self,
         template: str,
-        pieces: tuple[tuple[bool, str], ...],
+        pieces: tuple[tuple[tuple[bool, str], ...], ...],
         literal_segments: int,
         literal_chars: int,
         path_item: dict,
@@ -406,7 +408,9 @@ def _resolve_ref(spec: dict, node: object, limit: int = 16) -> dict:
     return {}
 
 
-def _object_shape(spec: dict, schema: object, depth: int = 0) -> tuple[object, list[str]]:
+def _object_shape(
+    spec: dict, schema: object, depth: int = 0
+) -> tuple[dict[str, Any] | None, list[str]]:
     """Flatten a schema to ``(properties, required)`` across ``allOf``/``oneOf``/``anyOf``.
 
     ``required`` is taken from the schema itself and ``allOf`` branches only (union branches
