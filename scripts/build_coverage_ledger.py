@@ -45,7 +45,7 @@ DISPOSITIONS = {"first-class", "backlog", "deliberately-raw", "dormant", "junk"}
 # policy disposition -> ledger disposition (candidates and probes are both backlog;
 # the note keeps which kind it was).
 _POLICY_MAP = {
-    "covered": "first-class",          # must agree with the registry (validated below)
+    "covered": "first-class",  # must agree with the registry (validated below)
     "first-class-candidate": "backlog",
     "needs-live-probe": "backlog",
     "deliberately-raw": "deliberately-raw",
@@ -69,10 +69,15 @@ def registry_map() -> dict[tuple[str, str], str]:
         if resource.supports_get:
             mapping[(f"{resource.endpoint}/{{id}}", "get")] = f"halocli {name} get"
         if resource.supports_create or resource.supports_update:
-            verb = "create/update" if (
-                resource.supports_create and resource.supports_update
-                and resource.create_endpoint == resource.update_endpoint
-            ) else ("create" if resource.supports_create else "update")
+            verb = (
+                "create/update"
+                if (
+                    resource.supports_create
+                    and resource.supports_update
+                    and resource.create_endpoint == resource.update_endpoint
+                )
+                else ("create" if resource.supports_create else "update")
+            )
             if resource.create_endpoint:
                 mapping[(resource.create_endpoint, "post")] = f"halocli {name} {verb}"
             if resource.update_endpoint and resource.update_endpoint != resource.create_endpoint:
@@ -107,13 +112,11 @@ def classify(
         disp = entry.get("disposition", "")
         if disp not in DISPOSITIONS:
             raise SystemExit(
-                f"coverage_policy.json: op_override {op_key!r} has unknown "
-                f"disposition {disp!r}"
+                f"coverage_policy.json: op_override {op_key!r} has unknown disposition {disp!r}"
             )
         if disp in REASON_REQUIRED and not entry.get("reason", "").strip():
             raise SystemExit(
-                f"coverage_policy.json: op_override {op_key!r} disposition "
-                f"{disp!r} needs a reason"
+                f"coverage_policy.json: op_override {op_key!r} disposition {disp!r} needs a reason"
             )
         return {"disposition": disp, "via": "", "note": entry.get("reason", "")}
     seg_policy = dict(segments.get(segment) or {})
@@ -181,9 +184,7 @@ def build() -> dict:
             f"coverage_policy.json 'covered' markers disagree with the registry "
             f"(missing={missing}, stale={extra})"
         )
-    spec_segments = {
-        p.strip("/").split("/")[0] for p in spec["paths"] if p.strip("/")
-    }
+    spec_segments = {p.strip("/").split("/")[0] for p in spec["paths"] if p.strip("/")}
     unclassified = sorted(spec_segments - set(segments) - set(overrides))
     if unclassified:
         raise SystemExit(
@@ -240,7 +241,9 @@ def render(ledger: dict) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="fail if the committed ledger is stale")
+    parser.add_argument(
+        "--check", action="store_true", help="fail if the committed ledger is stale"
+    )
     args = parser.parse_args()
 
     ledger = build()
@@ -258,12 +261,8 @@ def main() -> int:
                 "run: python scripts/build_coverage_ledger.py"
             )
             committed = json.loads(committed_text)
-            committed_ops = {
-                (e["path"], e["method"]): e for e in committed.get("operations", [])
-            }
-            generated_ops = {
-                (e["path"], e["method"]): e for e in ledger["operations"]
-            }
+            committed_ops = {(e["path"], e["method"]): e for e in committed.get("operations", [])}
+            generated_ops = {(e["path"], e["method"]): e for e in ledger["operations"]}
             for key in sorted(set(committed_ops) | set(generated_ops)):
                 old, new = committed_ops.get(key), generated_ops.get(key)
                 if old != new:

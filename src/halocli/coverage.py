@@ -143,9 +143,7 @@ def find_write_mismatches(
             ("update_endpoint", resource.update_endpoint),
         ):
             if target:
-                declared.setdefault((target, "POST"), []).append(
-                    f"{resource.name}.{field_name}"
-                )
+                declared.setdefault((target, "POST"), []).append(f"{resource.name}.{field_name}")
         if resource.supports_delete:
             declared.setdefault((f"{_endpoint(resource)}/{{id}}", "DELETE"), []).append(
                 f"{resource.name}.supports_delete"
@@ -197,10 +195,7 @@ def find_operation_mismatches(
                 problem = f"path not present in spec: {path}"
             elif operation.method.lower() not in available:
                 spec_methods = ", ".join(m.upper() for m in available)
-                problem = (
-                    f"spec has no {operation.method.upper()} on {path} "
-                    f"(has: {spec_methods})"
-                )
+                problem = f"spec has no {operation.method.upper()} on {path} (has: {spec_methods})"
             else:
                 continue
             mismatches.append(
@@ -329,10 +324,7 @@ def build_report(
         # by_kind operations == spec operations) still hold exactly.
         candidate_methods = methods
         if kind == "operation":
-            declared = {
-                op.method.lower()
-                for _res, op in _matching_operations(path, resources)
-            }
+            declared = {op.method.lower() for _res, op in _matching_operations(path, resources)}
             covered = [m for m in methods if m.lower() in declared]
             candidate_methods = [m for m in methods if m.lower() not in declared]
             by_kind["operation"]["paths"] += 1
@@ -364,9 +356,7 @@ def build_report(
             },
         )
         entry["operations"] += len(candidate_methods)
-        entry["get_operations"] += sum(
-            1 for m in candidate_methods if m.lower() == "get"
-        )
+        entry["get_operations"] += sum(1 for m in candidate_methods if m.lower() == "get")
         if len(entry["sample_paths"]) < 3:
             entry["sample_paths"].append(path)
 
@@ -375,17 +365,13 @@ def build_report(
         key=lambda c: (-int(c["curated_root"]), -c["operations"], c["root"]),
     )
     for candidate in candidates:
-        candidate["related_resources"] = _related_resources(
-            candidate["root"], resources
-        )
+        candidate["related_resources"] = _related_resources(candidate["root"], resources)
     candidates_total = len(candidates)
 
     meta = spec_meta() or {}
     return {
         "ok": True,
-        "spec_meta": {
-            key: meta[key] for key in ("source", "origin", "vendored_at") if key in meta
-        },
+        "spec_meta": {key: meta[key] for key in ("source", "origin", "vendored_at") if key in meta},
         "spec": {"paths": total_paths, "operations": total_operations},
         "registry": {"resources": len(resources)},
         "coverage": {

@@ -112,11 +112,7 @@ WRITE_POST_ONLY = (
 
 def test_registry_names_and_aliases_are_unique() -> None:
     names = [resource.name for resource in RESOURCES]
-    commands = [
-        command_name
-        for resource in RESOURCES
-        for command_name in resource.command_names
-    ]
+    commands = [command_name for resource in RESOURCES for command_name in resource.command_names]
 
     assert len(names) == len(set(names))
     assert len(commands) == len(set(commands))
@@ -157,9 +153,7 @@ def test_write_metadata_present_for_write_enabled_resources() -> None:
             assert not resource.supports_delete, name
             spec_doc = load_spec()
             assert spec_doc is not None
-            assert "delete" not in spec_doc["paths"].get(
-                f"{resource.endpoint}/{{id}}", {}
-            ), name
+            assert "delete" not in spec_doc["paths"].get(f"{resource.endpoint}/{{id}}", {}), name
         else:
             assert resource.supports_delete, name
         assert resource.create_endpoint == resource.endpoint, name
@@ -563,19 +557,44 @@ def test_appointments_completion_recipe_is_in_write_shape() -> None:
     """
     appts = get_resource("appointments")
     recipe = {
-        "id", "subject", "start_date", "end_date",
-        "allday", "is_private", "agents", "user_id", "ticket_id",
-        "reminderminutes", "agent_status", "note_html", "is_task",
-        "appointment_type_id", "shift_type_id",
-        "followup_start_date", "followup_end_date", "followup_allday",
-        "followup_is_private", "followup_user_id", "followup_reminderminutes",
-        "followup_agent_status", "followup_note_html", "followup_agent_id",
-        "complete_status", "chargerate", "complete_date", "complete_timetaken",
-        "complete_notehtml", "complete_agent_id", "utcoffset",
-        "apfaultidremoved", "agent_id",
+        "id",
+        "subject",
+        "start_date",
+        "end_date",
+        "allday",
+        "is_private",
+        "agents",
+        "user_id",
+        "ticket_id",
+        "reminderminutes",
+        "agent_status",
+        "note_html",
+        "is_task",
+        "appointment_type_id",
+        "shift_type_id",
+        "followup_start_date",
+        "followup_end_date",
+        "followup_allday",
+        "followup_is_private",
+        "followup_user_id",
+        "followup_reminderminutes",
+        "followup_agent_status",
+        "followup_note_html",
+        "followup_agent_id",
+        "complete_status",
+        "chargerate",
+        "complete_date",
+        "complete_timetaken",
+        "complete_notehtml",
+        "complete_agent_id",
+        "utcoffset",
+        "apfaultidremoved",
+        "agent_id",
     }
     missing = recipe - set(appts.write_preview_fields)
-    assert not missing, f"completion fields missing from appointments write shape: {sorted(missing)}"
+    assert not missing, (
+        f"completion fields missing from appointments write shape: {sorted(missing)}"
+    )
     assert "complete_timetaken" in appts.write_preview_fields
 
 
@@ -697,9 +716,7 @@ def test_table_output_uses_registry_fields(monkeypatch) -> None:
         return httpx.Response(
             200,
             json={
-                "sites": [
-                    {"id": 1, "name": "HQ", "client_name": "Example", "ignored": "hidden"}
-                ],
+                "sites": [{"id": 1, "name": "HQ", "client_name": "Example", "ignored": "hidden"}],
                 "record_count": 1,
             },
         )
@@ -755,25 +772,84 @@ SWEEP_PROMOTED = (
     "mailboxes",
     "charge-rates",
     # phase-2 batch 2 (2026-10-02)
-    "address", "agent-check-ins", "approval-process", "approval-process-rules",
-    "asset-groups", "asset-types", "automations", "billing-templates",
-    "booking-types", "budget-types", "cabs", "call-scripts", "client-prepays",
-    "consignments", "cost-centres", "currencies", "custom-buttons",
-    "custom-queries", "custom-tables", "dashboard-links", "database-lookups",
-    "distribution-lists", "email-address-books", "email-rules", "email-stores",
-    "events", "event-rules", "faq-lists", "feeds", "feedbacks", "fields",
-    "field-groups", "field-infos", "holidays", "incoming-webhook-attempts",
-    "invoice-changes", "item-groups", "item-stocks", "item-stock-histories",
-    "journeys", "licence-changes", "notifications", "notification-messages",
-    "organisations", "pdf-templates", "products", "purchase-orders",
-    "qualifications", "release-types", "roles", "sales-mailboxes",
-    "sales-mailbox-details", "sales-orders", "schedules", "schedule-occurrences",
-    "services", "service-categories", "service-request-details",
-    "service-restrictions", "stock-bins", "stock-traces", "taxes", "templates",
-    "ticket-approvals", "ticket-areas", "ticket-rules", "ticket-type-fields",
-    "to-do-groups", "user-changes", "user-roles", "view-columns", "view-filters",
-    "view-list-groups", "view-lists", "workflows", "workflow-targets",
-    "formattedemails", "workflowsteps",
+    "address",
+    "agent-check-ins",
+    "approval-process",
+    "approval-process-rules",
+    "asset-groups",
+    "asset-types",
+    "automations",
+    "billing-templates",
+    "booking-types",
+    "budget-types",
+    "cabs",
+    "call-scripts",
+    "client-prepays",
+    "consignments",
+    "cost-centres",
+    "currencies",
+    "custom-buttons",
+    "custom-queries",
+    "custom-tables",
+    "dashboard-links",
+    "database-lookups",
+    "distribution-lists",
+    "email-address-books",
+    "email-rules",
+    "email-stores",
+    "events",
+    "event-rules",
+    "faq-lists",
+    "feeds",
+    "feedbacks",
+    "fields",
+    "field-groups",
+    "field-infos",
+    "holidays",
+    "incoming-webhook-attempts",
+    "invoice-changes",
+    "item-groups",
+    "item-stocks",
+    "item-stock-histories",
+    "journeys",
+    "licence-changes",
+    "notifications",
+    "notification-messages",
+    "organisations",
+    "pdf-templates",
+    "products",
+    "purchase-orders",
+    "qualifications",
+    "release-types",
+    "roles",
+    "sales-mailboxes",
+    "sales-mailbox-details",
+    "sales-orders",
+    "schedules",
+    "schedule-occurrences",
+    "services",
+    "service-categories",
+    "service-request-details",
+    "service-restrictions",
+    "stock-bins",
+    "stock-traces",
+    "taxes",
+    "templates",
+    "ticket-approvals",
+    "ticket-areas",
+    "ticket-rules",
+    "ticket-type-fields",
+    "to-do-groups",
+    "user-changes",
+    "user-roles",
+    "view-columns",
+    "view-filters",
+    "view-list-groups",
+    "view-lists",
+    "workflows",
+    "workflow-targets",
+    "formattedemails",
+    "workflowsteps",
 )
 
 
@@ -963,6 +1039,7 @@ def test_route_verified_ops_are_live_declared_and_prosed() -> None:
         assert evidence is not None, op_path
         assert evidence.get("status") == 200, op_path
 
+
 WRITE_BATCH3 = (
     "crm-note-replies",
     "certificates",
@@ -1022,6 +1099,7 @@ def test_post_only_tier_offers_no_delete_command() -> None:
         assert "post" in spec["paths"][resource.endpoint], name
         assert "delete" not in spec["paths"].get(f"{resource.endpoint}/{{id}}", {}), name
         assert resource.required_create_fields, name
+
 
 TACKLE25_CUD = (
     "address",

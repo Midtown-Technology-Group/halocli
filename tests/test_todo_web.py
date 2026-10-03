@@ -68,7 +68,12 @@ class FakeTodoRepository:
         return self.todos[int(todo_id)]
 
     async def log_time(self, todo_id, **payload):
-        entry = {"id": 9001, "todo_id": int(todo_id), "duration_minutes": payload.get("minutes", 0), **payload}
+        entry = {
+            "id": 9001,
+            "todo_id": int(todo_id),
+            "duration_minutes": payload.get("minutes", 0),
+            **payload,
+        }
         self.todos[int(todo_id)]["time_entries"].append(entry)
         return entry
 
@@ -79,10 +84,19 @@ class FakeTodoRepository:
         return self.clients
 
     async def search_tickets(self, q=None, client_id=None, open_only=True):
-        return [ticket for ticket in self.tickets if client_id is None or ticket["client_id"] == client_id]
+        return [
+            ticket
+            for ticket in self.tickets
+            if client_id is None or ticket["client_id"] == client_id
+        ]
 
     async def me(self):
-        return {"id": 37, "name": "Thomas Bray", "client_id": 12, "client_name": "Midtown Technology Group"}
+        return {
+            "id": 37,
+            "name": "Thomas Bray",
+            "client_id": 12,
+            "client_name": "Midtown Technology Group",
+        }
 
 
 def test_todo_api_lists_filtered_items() -> None:

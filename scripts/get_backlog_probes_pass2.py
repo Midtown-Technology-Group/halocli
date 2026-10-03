@@ -6,6 +6,7 @@ matter what. This pass retries every empty endpoint with (a) NO params at
 all and (b) count=100 only, and upgrades probe_results.json in place when
 rows come back (winner params, uncapped row keys, real-id detail probe).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,11 +32,14 @@ def describe(body) -> dict:
                 envelope, rows = key, value
                 break
         if envelope is None:
-            return {"envelope": "<object>", "rows": None, "row_keys": None,
-                    "record_count": None}
+            return {"envelope": "<object>", "rows": None, "row_keys": None, "record_count": None}
     else:
-        return {"envelope": f"<{type(body).__name__}>", "rows": None,
-                "row_keys": None, "record_count": None}
+        return {
+            "envelope": f"<{type(body).__name__}>",
+            "rows": None,
+            "row_keys": None,
+            "record_count": None,
+        }
     keys = None
     if rows and isinstance(rows[0], dict):
         keys = sorted(rows[0].keys())[:100]
@@ -45,9 +49,13 @@ def describe(body) -> dict:
             record_count = int(body.get("record_count"))
         except (TypeError, ValueError):
             record_count = None
-    return {"envelope": envelope, "rows": len(rows), "row_keys": keys,
-            "record_count": record_count, "_raw_first_id": (
-                rows[0].get("id") if rows and isinstance(rows[0], dict) else None)}
+    return {
+        "envelope": envelope,
+        "rows": len(rows),
+        "row_keys": keys,
+        "record_count": record_count,
+        "_raw_first_id": (rows[0].get("id") if rows and isinstance(rows[0], dict) else None),
+    }
 
 
 async def run() -> int:
@@ -72,15 +80,22 @@ async def run() -> int:
                         "GET", path, params=dict(params), timeout=REQUEST_TIMEOUT
                     )
                 except Exception as exc:
-                    attempt_log.append({
-                        "params": params,
-                        "status": getattr(exc, "status_code", None)
-                        or f"error:{getattr(exc, 'category', type(exc).__name__)}",
-                    })
+                    attempt_log.append(
+                        {
+                            "params": params,
+                            "status": getattr(exc, "status_code", None)
+                            or f"error:{getattr(exc, 'category', type(exc).__name__)}",
+                        }
+                    )
                     continue
                 desc = describe(body)
-                attempt_log.append({"params": params, "status": 200, **{
-                    k: v for k, v in desc.items() if k != "_raw_first_id"}})
+                attempt_log.append(
+                    {
+                        "params": params,
+                        "status": 200,
+                        **{k: v for k, v in desc.items() if k != "_raw_first_id"},
+                    }
+                )
                 if desc.get("rows"):
                     winner_desc, winner_params = desc, params
                     break
@@ -88,22 +103,29 @@ async def run() -> int:
             if winner_desc:
                 first_id = winner_desc.pop("_raw_first_id", None)
                 rec = results[key]
-                rec.update({
-                    "rows": winner_desc["rows"],
-                    "winner_params": winner_params,
-                    "envelope": winner_desc["envelope"],
-                    "record_count": winner_desc["record_count"],
-                    "row_keys": winner_desc["row_keys"],
-                    "pass": 2,
-                })
+                rec.update(
+                    {
+                        "rows": winner_desc["rows"],
+                        "winner_params": winner_params,
+                        "envelope": winner_desc["envelope"],
+                        "record_count": winner_desc["record_count"],
+                        "row_keys": winner_desc["row_keys"],
+                        "pass": 2,
+                    }
+                )
                 if first_id is not None:
                     try:
                         detail = await client.request(
-                            "GET", f"{path}/{first_id}", params={},
+                            "GET",
+                            f"{path}/{first_id}",
+                            params={},
                             timeout=REQUEST_TIMEOUT,
                         )
-                        rec["id_probe"] = {"id": first_id, "status": 200,
-                                           "envelope": describe(detail)["envelope"]}
+                        rec["id_probe"] = {
+                            "id": first_id,
+                            "status": 200,
+                            "envelope": describe(detail)["envelope"],
+                        }
                     except Exception as exc:
                         rec["id_probe"] = {
                             "id": first_id,
@@ -111,11 +133,12 @@ async def run() -> int:
                             or f"error:{getattr(exc, 'category', type(exc).__name__)}",
                         }
                 unlocked.append((key, winner_desc["rows"], winner_params))
-                print(f"  UNLOCKED {key}: rows={winner_desc['rows']} params={winner_params}",
-                      flush=True)
+                print(
+                    f"  UNLOCKED {key}: rows={winner_desc['rows']} params={winner_params}",
+                    flush=True,
+                )
             PROBE_PATH.write_text(
-                json.dumps(dict(sorted(results.items())), indent=1,
-                           ensure_ascii=False) + "\n",
+                json.dumps(dict(sorted(results.items())), indent=1, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
     print(f"pass2 done: {len(unlocked)} unlocked of {len(empties)}")

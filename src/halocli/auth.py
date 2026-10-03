@@ -43,7 +43,9 @@ def _first(values: list[str] | None) -> str | None:
 DEFAULT_CALLBACK_PORT = 8765
 
 
-def build_login_request(profile: HaloProfile, *, port: int = DEFAULT_CALLBACK_PORT) -> OAuthLoginRequest:
+def build_login_request(
+    profile: HaloProfile, *, port: int = DEFAULT_CALLBACK_PORT
+) -> OAuthLoginRequest:
     if not profile.authorization_endpoint:
         raise ValueError("Profile does not include a discovered authorization endpoint.")
     state = secrets.token_urlsafe(24)
@@ -96,7 +98,9 @@ def wait_for_callback(login_request: OAuthLoginRequest, *, timeout_seconds: int 
         def log_message(self, format: str, *args: object) -> None:  # noqa: A002
             return
 
-    server = ThreadingHTTPServer((parsed.hostname or "127.0.0.1", parsed.port or 0), CallbackHandler)
+    server = ThreadingHTTPServer(
+        (parsed.hostname or "127.0.0.1", parsed.port or 0), CallbackHandler
+    )
     server.timeout = timeout_seconds
     server.handle_request()
     server.server_close()

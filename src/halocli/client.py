@@ -106,7 +106,10 @@ class HaloClient:
                 self._token = None
                 headers["Authorization"] = f"Bearer {await self._access_token()}"
                 continue
-            if response.status_code in {429, 500, 502, 503, 504} and attempt < self.profile.max_retries:
+            if (
+                response.status_code in {429, 500, 502, 503, 504}
+                and attempt < self.profile.max_retries
+            ):
                 await asyncio.sleep(self._retry_wait(response, attempt))
                 continue
             break
@@ -121,7 +124,9 @@ class HaloClient:
         resource_def = get_resource(resource)
         return await self.request("GET", f"{resource_def.endpoint}/{item_id}")
 
-    async def raw(self, method: str, path: str, *, params: dict[str, Any] | None = None, body: Any = None) -> Any:
+    async def raw(
+        self, method: str, path: str, *, params: dict[str, Any] | None = None, body: Any = None
+    ) -> Any:
         return await self.request(method, path, params=params, json_body=body)
 
     async def download(self, path: str, *, params: dict[str, Any] | None = None) -> bytes:
@@ -194,7 +199,9 @@ class HaloClient:
         }
         if self.profile.client_secret:
             data["client_secret"] = self.profile.client_secret
-        response = await self._http.post(self.profile.token_endpoint or self.profile.auth_token_url, data=data)
+        response = await self._http.post(
+            self.profile.token_endpoint or self.profile.auth_token_url, data=data
+        )
         if response.status_code >= 300:
             raise _response_error(response, endpoint="/auth/token")
         payload = TokenPayload.model_validate(response.json())

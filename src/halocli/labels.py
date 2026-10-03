@@ -15,6 +15,7 @@ exists: `get`, `list`, and post-`apply` write results.
 Every RESOLVERS entry is test-bound: the target resource must exist and the
 label field must appear in its table_fields or the spec's POST properties.
 """
+
 from __future__ import annotations
 
 from typing import Any

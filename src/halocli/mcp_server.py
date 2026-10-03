@@ -541,8 +541,7 @@ def _normalize_params(raw: Any) -> dict[str, str] | None:
             params[key] = str(value)
         else:
             raise ValueError(
-                f"'params[{key}]' must be a string value; nested objects and arrays "
-                "are not allowed"
+                f"'params[{key}]' must be a string value; nested objects and arrays are not allowed"
             )
     return params
 

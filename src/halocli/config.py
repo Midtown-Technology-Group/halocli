@@ -19,7 +19,9 @@ class HaloProfile(BaseModel):
     client_id: str
     client_secret: str | None = None
     scope: str = "all"
-    auth_mode: Literal["client_credentials", "halo_interactive", "entra_broker"] = "client_credentials"
+    auth_mode: Literal["client_credentials", "halo_interactive", "entra_broker"] = (
+        "client_credentials"
+    )
     timeout: float = 30.0
     max_retries: int = 3
     interactive_discovered: bool = False
@@ -73,7 +75,9 @@ def save_profile(profile_name: str, profile: HaloProfile, config_file: Path | No
     return path
 
 
-def update_profile(profile_name: str, updates: dict[str, object], config_file: Path | None = None) -> HaloProfile:
+def update_profile(
+    profile_name: str, updates: dict[str, object], config_file: Path | None = None
+) -> HaloProfile:
     path = config_file or default_config_file()
     config = load_config(path)
     if profile_name not in config.profiles:
@@ -93,9 +97,7 @@ def load_profile(
 ) -> HaloProfile:
     config = load_config(config_file)
     values = (
-        config.profiles.get(profile_name).model_dump()
-        if profile_name in config.profiles
-        else {}
+        config.profiles.get(profile_name).model_dump() if profile_name in config.profiles else {}
     )
 
     env_values = {

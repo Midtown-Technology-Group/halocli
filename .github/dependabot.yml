@@ -1,0 +1,15 @@
+# Keep dependency and action pins fresh (actions are SHA-pinned; workflows
+# currently print Node-20 deprecation warnings from older action versions).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

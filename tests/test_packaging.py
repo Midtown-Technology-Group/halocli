@@ -61,7 +61,7 @@ def test_pyinstaller_spec_bundles_dist_info_metadata() -> None:
     """
     source = SPEC_PATH.read_text(encoding="utf-8")
     assert 'copy_metadata("halocli")' in source, (
-        "packaging/windows/halocli.spec must call copy_metadata(\"halocli\"): "
+        'packaging/windows/halocli.spec must call copy_metadata("halocli"): '
         "collect_data_files() does not bundle halocli-*.dist-info, and "
         "halocli_launcher.py resolves the console script through "
         "importlib.metadata. Removing this ships an exe that exits 1 on every "
@@ -73,7 +73,7 @@ def test_pyinstaller_spec_bundles_dist_info_metadata() -> None:
         for line in source.splitlines()
         if 'copy_metadata("halocli")' in line and not line.lstrip().startswith("#")
     ]
-    assert active, "copy_metadata(\"halocli\") appears only in comments"
+    assert active, 'copy_metadata("halocli") appears only in comments'
 
 
 def test_msi_build_smoke_tests_the_binary() -> None:

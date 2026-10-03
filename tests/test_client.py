@@ -53,7 +53,9 @@ async def test_client_uses_retry_after_for_rate_limit(monkeypatch) -> None:
         return httpx.Response(200, json={"ok": True})
 
     monkeypatch.setattr("halocli.client.asyncio.sleep", fake_sleep)
-    profile = HaloProfile(tenant_url="https://halo.example.com", client_id="id", client_secret="secret")
+    profile = HaloProfile(
+        tenant_url="https://halo.example.com", client_id="id", client_secret="secret"
+    )
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
         client = HaloClient(profile, http=http)
         result = await client.request("GET", "/Client")

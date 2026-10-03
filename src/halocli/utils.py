@@ -159,10 +159,7 @@ async def list_all(
         # fetch, a page that came back empty while Halo's total is unmet, and
         # a paging-ignored endpoint whose first page is all that exists.
         # Hitting max_records exactly at the total is a full read.
-        stats["truncated"] = (
-            record_count is None
-            and stopped_at_limit
-        ) or (
+        stats["truncated"] = (record_count is None and stopped_at_limit) or (
             record_count is not None and len(rows) < record_count
         )
         if paging_ignored:

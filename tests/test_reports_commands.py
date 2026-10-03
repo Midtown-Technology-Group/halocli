@@ -109,9 +109,7 @@ def test_declared_operations_exist_in_vendored_spec() -> None:
     assert "post" in spec["paths"]["/Report"], "spec must document POST /Report"
     # loadreport is the execution flag run depends on; without it the command
     # returns a definition instead of rows.
-    params = [
-        p.get("name") for p in spec["paths"]["/Report/{id}"]["get"].get("parameters", [])
-    ]
+    params = [p.get("name") for p in spec["paths"]["/Report/{id}"]["get"].get("parameters", [])]
     assert "loadreport" in params
 
 
@@ -233,7 +231,7 @@ def test_run_limit_truncates_but_reports_the_total(monkeypatch: pytest.MonkeyPat
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert payload["row_count"] == 5  # the truth
-    assert payload["count"] == 2      # what we returned
+    assert payload["count"] == 2  # what we returned
     assert len(payload["items"]) == 2
     assert "--limit 5" in plain(payload.get("hint", ""))
 
@@ -369,9 +367,7 @@ def test_run_gateway_timeout_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> 
 def test_clone_preview_is_zero_network(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = _install_mock(monkeypatch, lambda r: httpx.Response(200, json={}))
 
-    result = runner.invoke(
-        app, ["reports", "clone", "147", "--name", "Copy of closed"]
-    )
+    result = runner.invoke(app, ["reports", "clone", "147", "--name", "Copy of closed"])
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
@@ -571,9 +567,7 @@ def test_clone_reports_source_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
 
     handler.calls = 0
     _install_mock(monkeypatch, handler)
-    result = runner.invoke(
-        app, ["reports", "clone", "147", "--name", "Copy", "--apply", "--yes"]
-    )
+    result = runner.invoke(app, ["reports", "clone", "147", "--name", "Copy", "--apply", "--yes"])
 
     assert result.exit_code == 1, "a mutated source must not report success"
     payload = json.loads(result.output)

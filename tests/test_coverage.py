@@ -331,9 +331,7 @@ def test_build_report_splits_partially_declared_operation(tmp_path, monkeypatch)
     assert sum(k["paths"] for k in cov["by_kind"].values()) == report["spec"]["paths"]
     assert sum(k["paths"] for k in cov["by_kind"].values()) == 2
     assert (
-        sum(k["operations"] for k in cov["by_kind"].values())
-        == report["spec"]["operations"]
-        == 3
+        sum(k["operations"] for k in cov["by_kind"].values()) == report["spec"]["operations"] == 3
     )
 
 

@@ -307,7 +307,9 @@ async def test_halo_repository_time_entry_client_override_updates_todo() -> None
             return [{**body[0], "id": 123}]
 
     repository = HaloTodoRepository(FakeClient())
-    result = await repository.log_time(123, note="Moved to customer context.", minutes=0, client_id=99)
+    result = await repository.log_time(
+        123, note="Moved to customer context.", minutes=0, client_id=99
+    )
 
     appointment_updates = [call for call in calls if call[1] == "/Appointment"]
     assert appointment_updates[0][2][0]["client_id"] == 99

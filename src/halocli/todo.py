@@ -136,7 +136,12 @@ class JsonMicrosoftTodoRepository:
         return filter_tasks(tasks, include_completed=include_completed, max_records=max_records)
 
     def complete_task(self, task: MicrosoftTodoTask) -> dict[str, Any]:
-        return {"ok": False, "skipped": True, "reason": "source-json is read-only", "task_id": task.id}
+        return {
+            "ok": False,
+            "skipped": True,
+            "reason": "source-json is read-only",
+            "task_id": task.id,
+        }
 
 
 class HaloTodoRepository:
@@ -239,7 +244,9 @@ class HaloTodoRepository:
             **metadata,
             "kind": "halocli.todo",
             "priority": priority or metadata.get("priority") or "normal",
-            "status": status or metadata.get("status") or todo_from_appointment(existing).get("status"),
+            "status": status
+            or metadata.get("status")
+            or todo_from_appointment(existing).get("status"),
             "tags": merged_tags,
         }
         payload = {
@@ -247,7 +254,9 @@ class HaloTodoRepository:
             "id": int(todo_id),
             "subject": title if title is not None else existing.get("subject"),
             "note_html": note_html(
-                description if description is not None else extract_description(str(existing.get("note_html") or "")),
+                description
+                if description is not None
+                else extract_description(str(existing.get("note_html") or "")),
                 merged_metadata,
             ),
             "is_task": True,
@@ -289,7 +298,9 @@ class HaloTodoRepository:
             **existing,
             "id": int(todo_id),
             "is_task": True,
-            "note_html": note_html(extract_description(str(existing.get("note_html") or "")), metadata),
+            "note_html": note_html(
+                extract_description(str(existing.get("note_html") or "")), metadata
+            ),
         }
         result = await self.halo_client.raw("POST", "/Appointment", body=[payload])
         return todo_from_appointment(first_result(result) or payload)
@@ -344,9 +355,14 @@ class HaloTodoRepository:
         rows = result_rows(await self.halo_client.raw("GET", "/TimesheetEvent", params=params))
         marker = f"[Todo #{todo_id}]"
         entries = [
-            time_entry_from_halo(row, todo_id=int(todo_id), duration_minutes=minutes_from_timetaken(row.get("timetaken")))
+            time_entry_from_halo(
+                row,
+                todo_id=int(todo_id),
+                duration_minutes=minutes_from_timetaken(row.get("timetaken")),
+            )
             for row in rows
-            if str(row.get("todo_id") or "") == str(todo_id) or marker in str(row.get("subject") or "")
+            if str(row.get("todo_id") or "") == str(todo_id)
+            or marker in str(row.get("subject") or "")
         ]
         return entries
 
@@ -477,9 +493,15 @@ def preview_task(task: MicrosoftTodoTask) -> dict[str, Any]:
     }
 
 
-def task_from_graph(raw: dict[str, Any], *, list_id: str | None = None, list_name: str | None = None) -> MicrosoftTodoTask:
+def task_from_graph(
+    raw: dict[str, Any], *, list_id: str | None = None, list_name: str | None = None
+) -> MicrosoftTodoTask:
     body = raw.get("body")
-    body_content = body.get("content") if isinstance(body, dict) else raw.get("body") or raw.get("description") or ""
+    body_content = (
+        body.get("content")
+        if isinstance(body, dict)
+        else raw.get("body") or raw.get("description") or ""
+    )
     return MicrosoftTodoTask(
         id=str(raw.get("id") or ""),
         title=str(raw.get("title") or raw.get("subject") or "").strip(),
@@ -606,7 +628,11 @@ def required_client_id() -> str:
 
 
 def scopes_from_env() -> list[str]:
-    return [scope.strip() for scope in os.environ.get("TODO_SCOPES", "Tasks.Read").split(",") if scope.strip()]
+    return [
+        scope.strip()
+        for scope in os.environ.get("TODO_SCOPES", "Tasks.Read").split(",")
+        if scope.strip()
+    ]
 
 
 def env_bool(name: str, default: bool) -> bool:
@@ -746,7 +772,9 @@ def duration_as_minutes(
     return 0.0
 
 
-def time_entry_from_halo(item: dict[str, Any], *, todo_id: int, duration_minutes: float) -> dict[str, Any]:
+def time_entry_from_halo(
+    item: dict[str, Any], *, todo_id: int, duration_minutes: float
+) -> dict[str, Any]:
     return {
         "id": item.get("id"),
         "todo_id": todo_id,
@@ -769,7 +797,10 @@ def minutes_from_timetaken(value: Any) -> float:
 
 
 def compact_client(row: dict[str, Any]) -> dict[str, Any]:
-    return {"id": row.get("id"), "name": row.get("name") or row.get("client_name") or row.get("display_name")}
+    return {
+        "id": row.get("id"),
+        "name": row.get("name") or row.get("client_name") or row.get("display_name"),
+    }
 
 
 def compact_ticket(row: dict[str, Any]) -> dict[str, Any]:

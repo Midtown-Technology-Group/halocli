@@ -52,7 +52,14 @@ def test_coerce_batch_response_extracts_named_list() -> None:
 
 @pytest.mark.parametrize(
     ("status_code", "category"),
-    [(400, "validation"), (401, "auth"), (403, "permission"), (404, "not_found"), (429, "rate_limit"), (500, "server")],
+    [
+        (400, "validation"),
+        (401, "auth"),
+        (403, "permission"),
+        (404, "not_found"),
+        (429, "rate_limit"),
+        (500, "server"),
+    ],
 )
 def test_classify_error_maps_status_codes(status_code: int, category: str) -> None:
     err = classify_error(StatusError(status_code, "body", retry_after="9"), endpoint="/api/Client")
