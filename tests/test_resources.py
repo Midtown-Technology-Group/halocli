@@ -385,7 +385,11 @@ def test_quotation_operations_are_declared_and_spec_backed() -> None:
     for (method, path), op in ops.items():
         assert op.body is True
         assert op.args == ()
-        assert op.verification == "spec"
+        # live-dev from the nested sweep (dev_write_results.json): lines and
+        # view fired on the trial; approval was rejected ("quote has
+        # expired") and therefore stays spec-backed.
+        expected = "spec" if op.name == "approval" else "live-dev"
+        assert op.verification == expected
         assert str(op.summary).strip()
         assert method.lower() in spec["paths"][path]
 
@@ -488,7 +492,8 @@ def test_canned_text_shape_matches_live_evidence() -> None:
         "/CannedText/favourite",
         True,
     )
-    assert favourite.verification == "spec"
+    # fired on the dev trial (dev_write_results.json -> nested.favourite)
+    assert favourite.verification == "live-dev"
 
     spec = load_spec()
     assert spec is not None

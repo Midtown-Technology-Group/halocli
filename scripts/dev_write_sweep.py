@@ -49,6 +49,7 @@ from halocli.client import HaloClient  # noqa: E402
 from halocli.config import load_profile  # noqa: E402
 from halocli.mirror import default_mirror_path  # noqa: E402
 from halocli.resources import RESOURCES  # noqa: E402
+from halocli.utils import normalize_halo_result  # noqa: E402
 from halocli.writes import delete_resource, execute_write  # noqa: E402
 
 PROBE = "halocli-dev-probe-"
@@ -540,6 +541,11 @@ async def main() -> int:
     parser.add_argument("--db", default=None)
     parser.add_argument("--only", default=None)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--nested",
+        action="store_true",
+        help="phase2: the nested write ops (requires the main evidence file)",
+    )
     args = parser.parse_args()
 
     db_path = Path(args.db) if args.db else default_mirror_path().with_name("mirror_dev.db")
@@ -557,6 +563,15 @@ async def main() -> int:
     host = profile.tenant_url.split("//", 1)[-1].split("/", 1)[0]
     if "midtowntg" in host:
         raise SystemExit("refusing: profile points at PRODUCTION")
+
+    if args.nested:
+        # max_retries=0: report executions must never be repeated (house rule)
+        exec_profile = profile.model_copy(update={"max_retries": 0})
+        async with HaloClient(exec_profile, profile_name=args.profile) as client:
+            nested = await nested_phase(client, mirror)
+        _merge_nested(nested, host)
+        print(json.dumps(nested["summary"], indent=2, sort_keys=True))
+        return 0
 
     ids: dict[str, Any] = {}
     results: dict[str, Any] = {}
@@ -627,6 +642,235 @@ async def main() -> int:
     evidence = _write_evidence(results, started, host, partial=False, leftovers=leftovers)
     print(json.dumps(evidence["summary"], indent=2, sort_keys=True))
     return 0
+
+
+async def nested_phase(client, mirror: Mirror) -> dict[str, Any]:
+    """Phase 2: the30 nested write ops, each with a recorded judgment.
+
+    Target principle: act on SAMPLE rows (mirror ids) or this run's own
+    probe records - never on anything that matters, even though this is a
+    throwaway trial. Body principle: id-only bodies for line/approval ops
+    so a validation rejection gives free evidence WITHOUT mutating
+    (the server cannot apply lines we never sent).
+    """
+    results: list[dict[str, Any]] = []
+    created_nested: dict[str, Any] = {}
+
+    judgment = {
+        ("agents", "clear-cache"): "idempotent cache clear",
+        ("lookups", "clear-cache"): "idempotent cache clear (also proven by test_live_dev)",
+        ("users", "prefs"): "empty-body probe; expected to read prefs, not mutate",
+        ("tickets", "view"): "view counter on a sample ticket (trial)",
+        ("tickets", "vote"): "vote marker on a sample ticket (trial)",
+        (
+            "tickets",
+            "process-children",
+        ): "sample ticket has no children: no-op or validation evidence",
+        ("tickets", "create-object"): "empty-body semantics probe",
+        ("tickets", "set-billable-project"): "points a sample ticket at a sample project (trial)",
+        ("kb", "view"): "view counter on a sample KB article (trial)",
+        ("kb", "vote"): "vote marker on a sample KB article (trial)",
+        ("contracts", "next-ref"): "returns the next reference number; read-only effect",
+        ("invoices", "pdf"): "renders a PDF for a sample invoice (trial artifact)",
+        ("invoices", "view"): "view marker on a sample invoice (trial)",
+        ("invoices", "update-lines"): "id-only body CANNOT mutate lines; validation evidence only",
+        (
+            "invoices",
+            "void",
+        ): "DESTRUCTIVE: voids a trial SAMPLE invoice - the dev tenant exists for exactly this",
+        ("quotations", "lines"): "id-only body CANNOT add lines; validation evidence only",
+        (
+            "quotations",
+            "approval",
+        ): "expected token/signature rejection = evidence for the argued-raw stance",
+        ("quotations", "view"): "view marker on a sample quotation (trial)",
+        ("reports", "clone"): "clones a sample report; the clone is deleted immediately after",
+        ("reports", "bookmark"): "toggles a bookmark flag on a sample report (trial)",
+        (
+            "reports",
+            "create-pdf",
+        ): "executes a sample report ONCE (house rule: never retry report execution); PDF artifact",
+        (
+            "reports",
+            "print",
+        ): "executes a sample report ONCE; print dispatch on a printer-less trial",
+        ("canned-text", "favourite"): "toggles favourite on a sample canned text (trial)",
+        ("email-templates", "preview"): "renders a preview; read-only effect",
+        ("attachments", "presign-url"): "presign flow probe (returns a URL)",
+        (
+            "attachments",
+            "presign-complete",
+        ): "presign completion probe without prior upload; validation evidence",
+        (
+            "attachments",
+            "create-document",
+        ): "uploads a tiny probe text file; deleted immediately after",
+        ("attachments", "upload-image"): "uploads a 1px probe PNG; deleted immediately after",
+        ("attachments", "delete-document"): "deletes this run's own probe document",
+        ("attachments", "delete-image"): "deletes this run's own probe image",
+    }
+    target_resource = {
+        "tickets": "tickets",
+        "kb": "kb",
+        "contracts": "contracts",
+        "invoices": "invoices",
+        "quotations": "quotations",
+        "reports": "reports",
+        "canned-text": "canned-text",
+        "email-templates": "email-templates",
+    }
+    exec_ops = {"create-pdf", "print"}
+
+    pairs = [
+        (r, op) for r in RESOURCES for op in r.operations if op.method.upper() in ("POST", "DELETE")
+    ]
+    # creations before deletes so this run's uploads have ids to delete
+    pairs.sort(key=lambda p: p[1].method.upper() == "DELETE")
+
+    png_1px = bytes.fromhex(
+        "89504e470d0a1a0a0000000d494844520000000100000001080600000"
+        "01f15c4890000000a49444154789c6360000002000100ffff03000006000557bfabd40000000049454e44ae426082"
+    )
+
+    for resource, op in pairs:
+        entry: dict[str, Any] = {
+            "resource": resource.name,
+            "operation": op.name,
+            "method": op.method,
+            "endpoint": op.path,
+            "judgment": judgment.get((resource.name, op.name), "standard probe"),
+        }
+
+        # target resolution --------------------------------------------------
+        target: Any = None
+        if resource.name in target_resource:
+            target = mirror.first_id(target_resource[resource.name])
+            if target is None:
+                entry["outcome"] = "skipped (no sample rows to target)"
+                results.append(entry)
+                continue
+        if op.method.upper() == "DELETE":
+            key = "document_id" if "document" in op.name else "image_id"
+            target = created_nested.get(key)
+            if target is None:
+                entry["outcome"] = "skipped (nothing uploaded this run)"
+                results.append(entry)
+                continue
+
+        # path + body --------------------------------------------------------
+        path = op.path
+        if "{id}" in path:
+            if target is None:
+                entry["outcome"] = "skipped (path needs an id, none resolvable)"
+                results.append(entry)
+                continue
+            path = path.replace("{id}", str(target))
+        entry["target"] = target
+
+        body: Any = None
+        files = None
+        if resource.name == "attachments" and op.name == "create-document":
+            if op.multipart:
+                files = {"file": ("halocli-dev-probe.txt", b"halocli dev probe", "text/plain")}
+            else:
+                body = {"filename": "halocli-dev-probe.txt", "content": "halocli dev probe"}
+        elif resource.name == "attachments" and op.name == "upload-image":
+            if op.multipart:
+                files = {"file": ("halocli-dev-probe.png", png_1px, "image/png")}
+            else:
+                body = {"filename": "halocli-dev-probe.png"}
+        elif resource.name == "attachments" and op.name in {"presign-url", "presign-complete"}:
+            body = {}
+        elif resource.name == "invoices" and op.name in {"pdf", "void"}:
+            body = None  # id travels in the path
+        elif resource.name == "agents" and op.name == "clear-cache":
+            body = {}
+        elif resource.name == "lookups" and op.name == "clear-cache":
+            body = {}
+        elif resource.name == "users" and op.name == "prefs":
+            body = {}
+        elif resource.name == "tickets" and op.name == "set-billable-project":
+            body = {"id": target}
+            project = mirror.first_id("projects")
+            if project is not None:
+                body["project_id"] = project
+        else:
+            body = {"id": target} if target is not None else {}
+
+        # execute ------------------------------------------------------------
+        timeout = 120.0 if op.name in exec_ops else 30.0
+        attempts: list[str] = []
+        try:
+            kwargs: dict[str, Any] = {"timeout": timeout}
+            if body is not None:
+                kwargs["json_body"] = body
+            if files is not None:
+                kwargs["files"] = files
+            try:
+                result = await client.request(op.method, path, **kwargs)
+            except Exception as first:  # noqa: BLE001
+                # Round-1 of phase 2 proved the wire shape: most of these
+                # endpoints deserialize into MODEL ARRAYS (Faults[],
+                # Viewers[], "POST object length is less than 1") - one
+                # bounded retry with the body wrapped as an array.
+                message = str(first)
+                wants_array = "[]" in message or "object length is less" in message
+                if not wants_array or body is None or isinstance(body, list):
+                    raise
+                attempts.append("array-retry")
+                kwargs["json_body"] = [body]
+                result = await client.request(op.method, path, **kwargs)
+            if isinstance(result, bytes):
+                entry.update(ok=True, outcome="ok", response=f"<{len(result)} bytes>")
+            else:
+                normalized = normalize_halo_result(result)
+                text = json.dumps(normalized, default=str)
+                entry.update(ok=True, outcome="ok", response=text[:300])
+                if resource.name == "attachments" and op.name == "create-document":
+                    created_nested["document_id"] = extract_id(normalized)
+                if resource.name == "attachments" and op.name == "upload-image":
+                    created_nested["image_id"] = extract_id(normalized)
+                if resource.name == "reports" and op.name == "clone":
+                    clone_id = extract_id(normalized)
+                    if clone_id is not None and resource.supports_delete:
+                        try:
+                            await delete_resource(client, resource, clone_id, apply=True)
+                            entry["clone_cleanup"] = "deleted"
+                        except Exception as cleanup:  # noqa: BLE001
+                            entry["clone_cleanup"] = f"FAILED: {str(cleanup)[:160]}"
+        except Exception as exc:  # noqa: BLE001 - every failure is evidence
+            entry.update(ok=False, outcome="rejected", error=str(exc)[:400])
+        if attempts:
+            entry["attempts"] = attempts
+        results.append(entry)
+
+    summary = {
+        "attempted": sum(1 for e in results if e.get("ok") is not None),
+        "ok": sum(1 for e in results if e.get("ok") is True),
+        "rejected": sum(1 for e in results if e.get("ok") is False),
+        "skipped": sum(1 for e in results if "skipped" in str(e.get("outcome", ""))),
+        "total": len(results),
+    }
+    return {"results": results, "summary": summary}
+
+
+def _merge_nested(nested: dict[str, Any], host: str) -> None:
+    if not EVIDENCE_FILE.exists():
+        raise SystemExit("dev_write_results.json missing; run the main sweep first")
+    evidence = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    from importlib import metadata
+
+    nested["meta"] = {
+        "tenant": host,
+        "captured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "halocli": metadata.version("halocli"),
+        "run_token": RUN_TOKEN,
+    }
+    evidence["nested"] = nested
+    evidence["meta"]["nested_updated_at"] = nested["meta"]["captured_at"]
+    EVIDENCE_FILE.write_text(
+        json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def _write_evidence(
