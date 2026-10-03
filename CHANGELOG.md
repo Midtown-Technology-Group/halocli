@@ -6,6 +6,38 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.16.0 - 2026-10-03
+
+- **/Feed is now walked properly (cursor paging).** `/Feed` has no page
+  numbers: the pageinate trio is ignored (page 2 = page 1 verbatim,
+  `page_size` discarded), while the spec documents `count` +
+  `older_than_id`/`newer_than_id`. `HaloResource.cursor_paging` marks the
+  stream and `list_all` walks `count` windows via the cursor instead of
+  looping pages:
+  - proven live before building (mirror_evidence.json ->
+    `feed_cursor_proof`): `count` sets the window (500 honored, no small
+    cap), `older_than_id` returns a strictly-older **disjoint** window
+    (boundary exclusive), `newer_than_id` is empty at the top (correct),
+    and the paging trio stays ignored alongside `count`;
+  - four independent termination guards (short window, non-advancing
+    cursor, repeated-id stall, caller ceilings) plus id dedup — the
+    non-terminating client-cursor walk Servosity avoided
+    (msp-skills #264/#273) cannot occur here, and their "100 fetched /
+    62 stored" overlap symptom is structurally impossible;
+  - `feeds list --max-records 25` live: 25 rows, strictly-descending
+    unique ids across 3 windows, honest truncation ("25 of 166,187"),
+    no `paging_ignored`; `--all` now genuinely streams the whole feed;
+  - `sync --all-resources` rides the same path: feeds mirrors bounded
+    windows instead of tripping the page-repeat recovery with
+    `count=166187`.
+- Other clients surveyed for this issue: Servosity's Go CLI takes a
+  single `count` window per sync and refuses to walk; Mendy Green's
+  pyhaloapi has no pagination at all (one GET per call); the answer was
+  in Halo's own OpenAPI spec the whole time.
+- Tests: full-walk coverage with cursor values, ceiling truncation,
+  stall no-duplicates, drain, unusable ids, `feeds list` end-to-end,
+  sync cursor walk bounded at the default ceiling.
+
 ## 1.15.0 - 2026-10-03
 
 - **Offline mirror + local digests** (`sync` / `sql` / `standup` / `triage`):

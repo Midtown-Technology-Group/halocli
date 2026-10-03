@@ -317,6 +317,7 @@ async def sync_resources(
                     max_records=max_records,
                     list_key=resource.list_key,
                     stats=stats,
+                    cursor_paging=resource.cursor_paging,
                     **SYNC_ORDER.get(name, {}),
                 )
                 # Bake tenant labels into the stored JSON (agent_id ->

@@ -1865,6 +1865,7 @@ async def _list_resource(
             max_records=effective_max_records,
             list_key=resource.list_key,
             stats=stats,
+            cursor_paging=resource.cursor_paging,
             **params,
         )
         # Hydrate tenant labels for bare foreign keys (status_id ->

@@ -255,7 +255,68 @@ async def main() -> int:
         else:
             await probe(out, "dates_claim", lambda: dates_probe(recent))
             await probe(out, "agent_name_claim", lambda: agent_probe(recent))
+
+        async def feed_cursor_probe() -> dict:
+            """Spec claims for /Feed (count + newer/older_than_id) - live check
+            before list_all walks a cursor instead of page numbers."""
+            r1 = rows_of(await client.request("GET", "/Feed", params={"count": "5"}, timeout=30))
+            ids1 = [int(r["id"]) for r in r1 if str(r.get("id", "")).isdigit()]
+            result: dict[str, Any] = {"count_5_rows": len(r1), "count_5_ids": ids1}
+            if ids1:
+                older = rows_of(
+                    await client.request(
+                        "GET",
+                        "/Feed",
+                        params={"count": "5", "older_than_id": str(min(ids1))},
+                        timeout=30,
+                    )
+                )
+                oids = [int(r["id"]) for r in older if str(r.get("id", "")).isdigit()]
+                result["older_than_id"] = {
+                    "request": min(ids1),
+                    "ids": oids,
+                    "strictly_older": bool(oids) and max(oids) < min(ids1),
+                    "disjoint": not (set(oids) & set(ids1)),
+                }
+                newer = rows_of(
+                    await client.request(
+                        "GET",
+                        "/Feed",
+                        params={"count": "5", "newer_than_id": str(max(ids1))},
+                        timeout=30,
+                    )
+                )
+                nids = [int(r["id"]) for r in newer if str(r.get("id", "")).isdigit()]
+                result["newer_than_id"] = {
+                    "request": max(ids1),
+                    "ids": nids,
+                    "strictly_newer": bool(nids) and min(nids) > max(ids1),
+                    "note": "empty at the top of the feed is correct",
+                }
+            big = rows_of(await client.request("GET", "/Feed", params={"count": "500"}, timeout=60))
+            result["count_500_rows"] = len(big)
+            duo = rows_of(
+                await client.request(
+                    "GET",
+                    "/Feed",
+                    params={
+                        "count": "5",
+                        "pageinate": "true",
+                        "page_no": "2",
+                        "page_size": "5",
+                    },
+                    timeout=30,
+                )
+            )
+            result["paging_trio_alongside_count"] = {
+                "rows": len(duo),
+                "ids": [r.get("id") for r in duo[:6]],
+                "still_ignored": [r.get("id") for r in duo[:6]] == ids1[:6],
+            }
+            return result
+
         await probe(out, "feed_claim", feed_probe)
+        await probe(out, "feed_cursor_proof", feed_cursor_probe)
         await probe(out, "actions_dup_ids", actions_probe)
         await probe(out, "ticket_flags", ticket_flags_probe)
 

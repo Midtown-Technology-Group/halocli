@@ -75,6 +75,7 @@ async def list_all(
     max_records: int | None = None,
     list_key: str | None = None,
     stats: dict[str, Any] | None = None,
+    cursor_paging: bool = False,
     **params: Any,
 ) -> list[dict]:
     """Fetch pages until exhausted or a limit is hit.
@@ -91,7 +92,20 @@ async def list_all(
     bounded recovery follows the documented workaround: a single fetch with
     ``count=<record_count>``. If that also repeats, the first page stands and
     the result is honestly truncated.
+
+    ``cursor_paging=True`` switches to window-cursor walking for streams like
+    /Feed where page numbers do not exist at all (see ``_list_cursor``).
     """
+    if cursor_paging:
+        return await _list_cursor(
+            fetch,
+            page_size=page_size,
+            max_pages=max_pages,
+            max_records=max_records,
+            list_key=list_key,
+            stats=stats,
+            **params,
+        )
     rows: list[dict] = []
     safe_page_size = clamp_page_size(page_size)
     page_no = 1
@@ -165,6 +179,90 @@ async def list_all(
         if paging_ignored:
             stats["paging_ignored"] = True
     return rows
+
+
+async def _list_cursor(
+    fetch: Callable[..., Awaitable[Any]],
+    *,
+    page_size: int,
+    max_pages: int | None,
+    max_records: int | None,
+    list_key: str | None,
+    stats: dict[str, Any] | None,
+    **params: Any,
+) -> list[dict]:
+    """Walk a window cursor (``count`` + ``older_than_id``), not page numbers.
+
+    /Feed evidence (mirror_evidence.json -> feed_cursor_proof): ``count``
+    sets the window (``page_size`` is ignored), ``older_than_id`` returns a
+    strictly-older DISJOINT window (boundary exclusive), the pageinate trio
+    is ignored entirely, and ``count`` has no small cap (500 honored).
+
+    Termination is guaranteed four independent ways — short window (drained),
+    a cursor that stops decreasing (server ignored the param), a window whose
+    ids are all already seen (stall), and the caller's max_records/max_pages —
+    so the non-terminating client-cursor walk Servosity avoided
+    (msp-skills #264/#273) cannot occur here. Overlapping rows at a boundary
+    are dropped by the seen-set, never duplicated (their #264 symptom).
+    """
+    window = clamp_page_size(page_size)
+    rows: list[dict] = []
+    record_count: int | None = None
+    stopped_at_limit = False
+    cursor: int | None = None
+    seen: set[str] = set()
+    page_no = 0
+    while True:
+        page_no += 1
+        if max_pages is not None and page_no > max_pages:
+            stopped_at_limit = True
+            break
+        fetch_params: dict[str, Any] = {"count": window, **params}
+        if cursor is not None:
+            fetch_params["older_than_id"] = cursor
+        page = parse_page_result(await fetch(**fetch_params), list_key=list_key)
+        if page.record_count is not None:
+            record_count = page.record_count
+        if not page.items:
+            break
+        fresh = [item for item in page.items if str(item.get("id")) not in seen]
+        if not fresh:
+            break  # stall: the server repeated a window (no progress possible)
+        for item in page.items:
+            seen.add(str(item.get("id")))
+        for item in fresh:
+            rows.append(item)
+            if max_records is not None and len(rows) >= max_records:
+                stopped_at_limit = True
+                break
+        if stopped_at_limit:
+            break
+        next_cursor = _min_int_id(fresh)
+        if next_cursor is None or (cursor is not None and next_cursor >= cursor):
+            break  # ids unusable or cursor not advancing: honest stop
+        cursor = next_cursor
+        if len(page.items) < window:
+            break  # drained: last window came back short
+    if stats is not None:
+        stats["record_count"] = record_count
+        stats["returned"] = len(rows)
+        stats["truncated"] = (record_count is None and stopped_at_limit) or (
+            record_count is not None and len(rows) < record_count
+        )
+    return rows
+
+
+def _min_int_id(items: list[dict]) -> int | None:
+    ids: list[int] = []
+    for item in items:
+        raw = item.get("id")
+        if raw is None:
+            continue
+        try:
+            ids.append(int(raw))
+        except (TypeError, ValueError):
+            continue
+    return min(ids) if ids else None
 
 
 def _page_signature(items: list[dict]) -> str:

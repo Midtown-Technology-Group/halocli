@@ -459,3 +459,44 @@ def test_ops_missing_mirror_is_friendly(tmp_path: Path) -> None:
         result = runner.invoke(app, [*command, "--db", missing])
         assert result.exit_code == 1
         assert "halocli sync" in _all(result)
+
+
+@pytest.mark.asyncio
+async def test_sync_walks_cursor_resources_bounded(tmp_path: Path) -> None:
+    """feeds (cursor_paging=True): sync walks count/older_than_id windows
+    - no page_no trio ever sent - and the default ceiling still applies."""
+    db = tmp_path / "mirror.db"
+    stream = list(range(999, -1, -1))
+
+    class _Client:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        async def list_resource(self, name, **kwargs):
+            _ = name
+            self.calls.append(kwargs)
+            count = int(kwargs.get("count", 100))
+            older = kwargs.get("older_than_id")
+            rows = [{"id": i, "note": f"n{i}"} for i in stream]
+            if older is not None:
+                rows = [r for r in rows if r["id"] < int(older)]
+            return {"feed": rows[:count], "record_count": len(stream)}
+
+    client = _Client()
+    summary = await sync_resources(
+        client, ["feeds"], db_path=db, max_records=DEFAULT_SYNC_LIMIT, labels=False
+    )
+
+    (entry,) = summary["results"]
+    assert entry["error"] is None
+    assert entry["rows"] == DEFAULT_SYNC_LIMIT  # 5 windows of100, ceiling holds
+    assert entry["truncated"] is True
+    stored = load_resource(db, "feeds")
+    assert len(stored) == DEFAULT_SYNC_LIMIT
+    assert len({r["id"] for r in stored}) == DEFAULT_SYNC_LIMIT  # no dupes
+    assert len(client.calls) == 5
+    for call in client.calls:
+        assert "page_no" not in call and "pageinate" not in call  # cursor, not pages
+        assert call["count"] == 100
+    assert client.calls[0].get("older_than_id") is None  # starts at the newest
+    assert client.calls[1]["older_than_id"] == 900

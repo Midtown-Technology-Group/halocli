@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from typing import Any
@@ -502,3 +503,150 @@ def test_documented_param_produces_no_warning(monkeypatch: pytest.MonkeyPatch) -
     result = runner.invoke(app, ["tickets", "list", "--param", "client_id=1", "--max-records", "1"])
 
     assert "is not documented" not in _combined(result)
+
+
+# ------------------------------------------------------- cursor paging (/Feed)
+# /Feed has no page numbers: count sets the window, older_than_id walks
+# strictly-older disjoint windows (spec + mirror_evidence.json ->
+# feed_cursor_proof). list_all must walk the cursor, terminate honestly,
+# and never duplicate a boundary row.
+
+
+def _feed_stream(newest_first_ids: list[int]):
+    """Fake fetch honoring count + older_than_id (boundary-exclusive)."""
+    calls: list[dict] = []
+
+    async def fetch(**kwargs):
+        calls.append(kwargs)
+        count = int(kwargs.get("count", 10))
+        older = kwargs.get("older_than_id")
+        available = [{"id": i, "note": f"n{i}"} for i in newest_first_ids]
+        if older is not None:
+            available = [row for row in available if row["id"] < int(older)]
+        window = available[:count]
+        return {"feed": window, "record_count": len(newest_first_ids)}
+
+    fetch.calls = calls
+    return fetch
+
+
+def test_cursor_walk_covers_the_whole_stream() -> None:
+    async def scenario():
+        fetch = _feed_stream(list(range(100, 0, -1)))
+        stats: dict = {}
+        rows = await list_all(fetch, page_size=10, stats=stats, cursor_paging=True)
+        return fetch, stats, rows
+
+    fetch, stats, rows = asyncio.run(scenario())
+    assert [r["id"] for r in rows] == list(range(100, 0, -1))  # order kept
+    assert stats["returned"] == 100
+    assert stats["truncated"] is False
+    # exact-boundary stream:10 full windows, then one final empty probe
+    assert len(fetch.calls) == 11
+    assert "older_than_id" not in fetch.calls[0]  # first window is newest
+    assert fetch.calls[1]["older_than_id"] == 91  # boundary-exclusive cursor
+    assert fetch.calls[10]["older_than_id"] == 1  # discovers the drain
+
+
+def test_cursor_walk_respects_max_records_with_honest_truncation() -> None:
+    async def scenario():
+        fetch = _feed_stream(list(range(100, 0, -1)))
+        stats: dict = {}
+        rows = await list_all(fetch, page_size=10, max_records=25, stats=stats, cursor_paging=True)
+        return fetch, stats, rows
+
+    fetch, stats, rows = asyncio.run(scenario())
+    assert len(rows) == 25
+    assert stats["truncated"] is True  # record_count says more exists
+    assert len(fetch.calls) == 3  # stopped mid-walk, not after draining
+
+
+def test_cursor_walk_stall_never_duplicates() -> None:
+    """A server that ignores older_than_id: one window, no dupes, honest stop."""
+
+    async def scenario():
+        fixed = [{"id": i, "note": "x"} for i in range(100, 90, -1)]
+        calls: list[dict] = []
+
+        async def fetch(**kwargs):
+            calls.append(kwargs)
+            return {"feed": fixed, "record_count": 100}
+
+        stats: dict = {}
+        rows = await list_all(fetch, page_size=10, stats=stats, cursor_paging=True)
+        return calls, stats, rows
+
+    calls, stats, rows = asyncio.run(scenario())
+    assert [r["id"] for r in rows] == list(range(100, 90, -1))  # each id once
+    assert len(calls) == 2  # second window was identical -> stop
+    assert stats["truncated"] is True
+
+
+def test_cursor_walk_short_window_drains_completely() -> None:
+    async def scenario():
+        fetch = _feed_stream(list(range(5, 0, -1)))  # 5 total < window10
+        stats: dict = {}
+        rows = await list_all(fetch, page_size=10, stats=stats, cursor_paging=True)
+        return fetch, stats, rows
+
+    fetch, stats, rows = asyncio.run(scenario())
+    assert len(rows) == 5
+    assert len(fetch.calls) == 1  # short window = drained, no empty probe
+    assert stats["truncated"] is False
+
+
+def test_cursor_walk_unusable_ids_stops_honestly() -> None:
+    async def scenario():
+        calls: list[dict] = []
+
+        async def fetch(**kwargs):
+            calls.append(kwargs)
+            return {"feed": [{"id": "abc"}, {"id": "def"}], "record_count": 500}
+
+        stats: dict = {}
+        rows = await list_all(fetch, page_size=10, stats=stats, cursor_paging=True)
+        return calls, stats, rows
+
+    calls, stats, rows = asyncio.run(scenario())
+    assert len(rows) == 2  # the window we got
+    assert len(calls) == 1  # no cursor possible
+    assert stats["truncated"] is True
+
+
+def test_feeds_list_uses_cursor_walk(monkeypatch: pytest.MonkeyPatch) -> None:
+    """End-to-end: `feeds list` walks windows instead of page_no loops."""
+    import httpx as _httpx
+
+    stream = list(range(1000, 0, -1))
+    real_async = _httpx.AsyncClient
+
+    def handler(request: _httpx.Request) -> _httpx.Response:
+        path = request.url.path
+        if path == "/auth/token":
+            return _httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        if path.endswith("/Feed"):
+            count = int(request.url.params.get("count", "10"))
+            older = request.url.params.get("older_than_id")
+            rows = [{"id": i, "note": f"n{i}"} for i in stream]
+            if older is not None:
+                rows = [r for r in rows if r["id"] < int(older)]
+            return _httpx.Response(200, json={"feed": rows[:count], "record_count": len(stream)})
+        return _httpx.Response(404, json={"error": path})
+
+    transport = _httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "halocli.client.httpx.AsyncClient",
+        lambda *args, **kwargs: real_async(transport=transport),
+    )
+    monkeypatch.setenv("HALO_TENANT_URL", "https://halo.example.com")
+    monkeypatch.setenv("HALO_CLIENT_ID", "id")
+    monkeypatch.setenv("HALO_CLIENT_SECRET", "secret")
+
+    result = runner.invoke(app, ["feeds", "list", "--max-records", "25"])
+
+    assert result.exit_code == 0, _combined(result)
+    start = result.output.find("{")
+    payload = json.loads(result.output[start:])
+    assert payload["count"] == 25
+    assert payload["truncated"] is True
+    assert "paging_ignored" not in payload  # cursor walk, not page loop
