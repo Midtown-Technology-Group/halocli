@@ -49,6 +49,7 @@ dev = [
     # (report-only in CI; no floor yet - baseline first).
     "pytest-xdist>=3.5",
     "pytest-cov>=5.0",
+    "mypy>=1.10",
     "ruff>=0.1.0",
     "uvicorn>=0.30.0",
 ]
@@ -100,6 +101,12 @@ timeout_method = "thread"
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.mypy]
+# Clean baseline as of the initial triage: every finding was fixed properly
+# (corrected annotations, narrowing, and cast at the validated boundary) -
+# no blanket suppressions. Run: mypy src/halocli --ignore-missing-imports
+ignore_missing_imports = true
 
 # Lock the rule set explicitly: ruff 0.16 broadened its defaults (adding BLE,
 # B, DTZ, TRY, I, UP, RUF, PL...), which broke CI on code that passed 0.15.

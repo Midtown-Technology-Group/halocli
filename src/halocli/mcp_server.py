@@ -19,7 +19,7 @@ import re
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _package_version
-from typing import Any, Awaitable, Callable, TextIO
+from typing import Any, Callable, TextIO, Coroutine
 
 from halocli.client import HaloClient
 from halocli.config import load_profile
@@ -54,7 +54,7 @@ INVALID_REQUEST = -32600
 METHOD_NOT_FOUND = -32601
 INVALID_PARAMS = -32602
 
-ToolHandler = Callable[[dict[str, Any]], Awaitable[tuple[dict[str, Any], bool]]]
+ToolHandler = Callable[[dict[str, Any]], Coroutine[Any, Any, tuple[dict[str, Any], bool]]]
 
 
 def _load_schema_search() -> Callable[..., Any] | None:

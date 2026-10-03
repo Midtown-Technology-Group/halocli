@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import builtins
+
 import html
 import json
 import os
@@ -235,7 +237,7 @@ class HaloTodoRepository:
         client_id: int | None = None,
         site_id: int | None = None,
         ticket_id: int | None = None,
-        tags: list[str] | None = None,
+        tags: builtins.list[str] | None = None,
     ) -> dict[str, Any]:
         existing = first_result(await self.halo_client.raw("GET", f"/Appointment/{todo_id}")) or {}
         metadata = extract_metadata(str(existing.get("note_html") or ""))
@@ -345,7 +347,7 @@ class HaloTodoRepository:
         item = first_result(result) or payload
         return time_entry_from_halo(item, todo_id=int(todo_id), duration_minutes=duration_minutes)
 
-    async def list_time_entries(self, todo_id: int | str) -> list[dict[str, Any]]:
+    async def list_time_entries(self, todo_id: int | str) -> builtins.list[dict[str, Any]]:
         existing = first_result(await self.halo_client.raw("GET", f"/Appointment/{todo_id}")) or {}
         params: dict[str, Any] = {"todo_id": int(todo_id), "page_size": 50}
         if existing.get("client_id") is not None:
@@ -366,7 +368,7 @@ class HaloTodoRepository:
         ]
         return entries
 
-    async def search_clients(self, q: str | None = None) -> list[dict[str, Any]]:
+    async def search_clients(self, q: str | None = None) -> builtins.list[dict[str, Any]]:
         params: dict[str, Any] = {"page_size": 25}
         if q:
             params["search"] = q
@@ -379,7 +381,7 @@ class HaloTodoRepository:
         q: str | None = None,
         client_id: int | None = None,
         open_only: bool = True,
-    ) -> list[dict[str, Any]]:
+    ) -> builtins.list[dict[str, Any]]:
         params: dict[str, Any] = {"page_size": 25}
         if q:
             params["search"] = q

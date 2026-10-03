@@ -353,7 +353,8 @@ def _success_payload(response: httpx.Response) -> Any:
 def _response_error(response: httpx.Response, *, endpoint: str) -> HaloCLIError:
     snippet = _error_snippet(response)
     error = RuntimeError(f"HTTP {response.status_code}: {snippet}")
-    error.response_body = snippet  # type: ignore[attr-defined] - read by classify_error
+    # classify_error reads .response_body/.response off this RuntimeError.
+    error.response_body = snippet  # type: ignore[attr-defined]
     error.response = response  # type: ignore[attr-defined]
     return classify_error(error, endpoint=endpoint)
 
