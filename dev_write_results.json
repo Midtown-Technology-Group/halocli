@@ -1,0 +1,2968 @@
+{
+  "meta": {
+    "halocli": "0.11.0",
+    "partial": false,
+    "profile": "dev",
+    "run_token": "d077f3",
+    "started_at": "2026-10-03T21:11:34+00:00",
+    "tenant": "clidev.trial.usehalo.com",
+    "updated_at": "2026-10-03T21:12:26+00:00"
+  },
+  "results": {
+    "actions": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/Actions: {\"ClassName\":\"System.Exception\",\"Message\":\"An Outcome must be entered for this Action\",\"Data\":null,\"InnerException\":null,\"HelpURL\":null,\"StackTraceString\":null,\"RemoteStackTraceString\":null,\"RemoteStackIndex\":0,\"ExceptionMethod\":null,\"HResult\":-2146233"
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "actions"
+    },
+    "address": {
+      "cud": [
+        {
+          "id": 47,
+          "ok": true,
+          "payload": {
+            "line1": "halocli-dev-probe-d077f3-line1",
+            "site_id": 44
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "address"
+    },
+    "agent-check-ins": {
+      "cud": [
+        {
+          "id": 11,
+          "ok": true,
+          "payload": {
+            "agent_id": 3
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        }
+      ],
+      "left_in_place": "POST-only resource: no delete route by contract",
+      "outcome": "proven-pending-cleanup",
+      "resource": "agent-check-ins"
+    },
+    "agents": {
+      "cud": [
+        {
+          "id": 15,
+          "ok": true,
+          "payload": {
+            "email": "halocli-dev-probe-example.invalid",
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "agents"
+    },
+    "appointments": {
+      "cud": [
+        {
+          "id": 53,
+          "ok": true,
+          "payload": {
+            "agents": [
+              {
+                "id": 3,
+                "use": "agent"
+              }
+            ],
+            "end_date": "2026-10-03T18:11:43",
+            "start_date": "2026-10-03T17:11:43",
+            "subject": "halocli-dev-probe-d077f3-subject"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "appointments"
+    },
+    "asset-groups": {
+      "cud": [
+        {
+          "id": 115,
+          "ok": true,
+          "payload": {
+            "autogroupnewquotelines": 0,
+            "autogroupnewsolines": 0,
+            "connector": false,
+            "default_quantity_decimal_places": 0,
+            "defaultsite": -1,
+            "isfixedasset": false,
+            "islan": " ",
+            "item_assettype_default": 0,
+            "item_billing_period_default": 0,
+            "item_contract_default": false,
+            "item_doesnotneedconsigning_default": false,
+            "item_dont_invoice_default": false,
+            "item_dont_receive_on_po_default": false,
+            "item_donttrackstock_default": false,
+            "item_meter_type_default": 0,
+            "item_recurring_default": false,
+            "item_taxable_default": true,
+            "items_in_group_no_consign": false,
+            "kaseyaid": "",
+            "moveassetonrequest": false,
+            "name": "halocli-dev-probe-d077f3-name",
+            "qbo_item_type": -1,
+            "sequence": 51,
+            "showasequip": false,
+            "showasitem": true,
+            "showwarningifonrequest": false,
+            "tcsnote": "",
+            "thirdpartyid": "",
+            "use": 1
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'islan' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'connector' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'showasitem' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'showasequip' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'showwarningifonrequest' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'moveassetonrequest' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'defaultsite' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'kaseyaid' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'items_in_group_no_consign' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'sequence' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'thirdpartyid' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'isfixedasset' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'tcsnote' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'qbo_item_type' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_recurring_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_meter_type_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_donttrackstock_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_doesnotneedconsigning_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_contract_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_assettype_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_billing_period_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_taxable_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_dont_receive_on_po_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'item_dont_invoice_default' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'autogroupnewquotelines' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'default_quantity_decimal_places' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'autogroupnewsolines' is not part of the asset-groups write shape; Halo will receive it as-is",
+            "field 'use' is not part of the asset-groups write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "asset-groups"
+    },
+    "asset-types": {
+      "cud": [
+        {
+          "id": 147,
+          "ok": true,
+          "payload": {
+            "accountscode1": "",
+            "accountscode2": "",
+            "active_tab": -1,
+            "allow_all_view": false,
+            "allowall_custombuttons": true,
+            "allowall_status": true,
+            "apply_workflow_on_type_change": true,
+            "asset_details_tab_display": 0,
+            "assetgroup_id": 104,
+            "assetgroup_name": "\ud83d\udda5\ufe0f Configuration Items",
+            "assettype_tab": -1,
+            "businessowner_tab": -1,
+            "column_profile_id": 0,
+            "columnprofileoverride_name": "",
+            "cost": 0.0,
+            "criticality_tab": -1,
+            "criticality_visibility": 1,
+            "default_device_template": 0,
+            "default_item": -1,
+            "default_showinusercatalog": 0,
+            "default_ticket_type": -1,
+            "defaultsequence": 0,
+            "dependencies_tab": -1,
+            "diagramfield1": 0,
+            "diagramfield2": 0,
+            "diagramfield3": 0,
+            "dontloaddependencychart_tab": -1,
+            "enableresourcebooking": false,
+            "fields": [
+              {
+                "field_id": 51.0,
+                "field_name": "Model",
+                "groupname": "",
+                "id": 3.0,
+                "keyfield_id": "1",
+                "sequence": 1,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "X",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 102.0,
+                "field_name": "OS Version",
+                "groupname": "",
+                "id": 6.0,
+                "keyfield_id": "2",
+                "sequence": 2,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "X",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 55.0,
+                "field_name": "Mac Address",
+                "groupname": "",
+                "id": 2.0,
+                "sequence": 3,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "X",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 29.0,
+                "field_name": "IP Address",
+                "groupname": "",
+                "id": 5.0,
+                "sequence": 4,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "X",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 44.0,
+                "field_name": "RAM Memory",
+                "groupname": "",
+                "id": 4.0,
+                "sequence": 5,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "X",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 113.0,
+                "field_name": "Contract Expires",
+                "groupname": "",
+                "id": 7.0,
+                "sequence": 6,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "D",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 140.0,
+                "field_name": "Connect",
+                "groupname": "",
+                "id": 8.0,
+                "sequence": 7,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "X",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              },
+              {
+                "field_id": 145.0,
+                "field_name": "Purchase Cost",
+                "groupname": "",
+                "id": 9.0,
+                "keyfield_id": "3",
+                "sequence": 8,
+                "tab_id": -1,
+                "tab_name": "",
+                "techdetail": 1,
+                "type": "C",
+                "typeinfo_id": 111.0,
+                "userdetail": 1
+              }
+            ],
+            "fiid": -1,
+            "finame": "Asset Tag",
+            "fiveyearlycost": 0.0,
+            "fouryearlycost": 0.0,
+            "icon": "https://clidev.trial.usehalo.com/api/attachment/image/a39c7681-f756-43d8-95dd-7745d4be5c8f",
+            "inventorynumber_tab": -1,
+            "is_businessapp": false,
+            "is_service": false,
+            "item_code": "",
+            "itemno": 0,
+            "kaseyaid": "",
+            "keyfield2_id": 6,
+            "keyfield2_name": "OS Version",
+            "keyfield3_id": 9,
+            "keyfield3_name": "Purchase Cost",
+            "keyfield_id": 3,
+            "keyfield_name": "Model",
+            "labourwarrantyend_tab": -1,
+            "labourwarrantystart_tab": -1,
+            "licence_tab": -1,
+            "licence_visibility": 1,
+            "linkedcontracttype": 0,
+            "manufacturer": 2,
+            "manufacturer_tab": -1,
+            "monthlycost": 0.0,
+            "name": "halocli-dev-probe-d077f3-name",
+            "notes_tab": -1,
+            "notes_visibility": 1,
+            "owningbusinessapp_tab": -1,
+            "owningci_tab": -1,
+            "owningportfolio_tab": -1,
+            "owningservice_tab": -1,
+            "partswarrantyend_tab": -1,
+            "partswarrantystart_tab": -1,
+            "primary_instance_type": 0,
+            "priority_tab": -1,
+            "purchasedate_tab": -1,
+            "quarterlycost": 0.0,
+            "ref_tab": -1,
+            "resourcebooking_allow_asset_selection": false,
+            "resourcebooking_asset_custom_field": 0,
+            "resourcebooking_asset_restriction_type": 0,
+            "resourcebooking_max_days_advance": 365.0,
+            "resourcebooking_min_hours_advance": 1.0,
+            "resourcebooking_site_selection_type": 0,
+            "resourcebooking_workdays_id": 1,
+            "service_category_name": "",
+            "services_tab": -1,
+            "show_to_users": true,
+            "site_tab": -1,
+            "sixmonthlycost": 0.0,
+            "sla_tab": -1,
+            "status_tab": -1,
+            "stocklocation_tab": -1,
+            "supplier1": 2,
+            "supplier_tab": -1,
+            "tagprefix": "",
+            "technicalowner_tab": -1,
+            "threeyearlycost": 0.0,
+            "twoyearlycost": 0.0,
+            "use": 0,
+            "user_tab": -1,
+            "user_visibility": 1,
+            "useteamviewer": false,
+            "visibility_level": 1,
+            "warrantynotes_tab": -1,
+            "weeklycost": 0.0,
+            "workflow_id": 0,
+            "workflow_name": "",
+            "workflow_tab": -1,
+            "workflow_visibility": 1,
+            "yearlycost": 0.0
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'default_showinusercatalog' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'assetgroup_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'assetgroup_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'keyfield_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'keyfield_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'keyfield2_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'keyfield2_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'keyfield3_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'keyfield3_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'manufacturer' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'supplier1' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'itemno' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'cost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'useteamviewer' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'accountscode1' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'accountscode2' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'weeklycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'monthlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'quarterlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'sixmonthlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'yearlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'twoyearlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'threeyearlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'fouryearlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'fiveyearlycost' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'kaseyaid' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'icon' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'show_to_users' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'fields' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'item_code' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'defaultsequence' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'tagprefix' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'column_profile_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'columnprofileoverride_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'enableresourcebooking' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_workdays_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_allow_asset_selection' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_asset_restriction_type' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_min_hours_advance' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_max_days_advance' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'linkedcontracttype' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'fiid' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'finame' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'asset_details_tab_display' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'allowall_status' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'businessowner_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'technicalowner_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'sla_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'priority_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'status_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'services_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'dependencies_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'notes_visibility' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'notes_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'visibility_level' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_site_selection_type' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'licence_visibility' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'licence_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'allow_all_view' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'criticality_visibility' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'criticality_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'is_service' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'is_businessapp' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'service_category_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'user_visibility' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'user_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'default_item' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'owningservice_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'owningbusinessapp_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'allowall_custombuttons' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'default_device_template' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'owningportfolio_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'owningci_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'primary_instance_type' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'use' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'assettype_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'inventorynumber_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'site_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'active_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'dontloaddependencychart_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'stocklocation_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'supplier_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'manufacturer_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'purchasedate_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'ref_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'partswarrantystart_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'partswarrantyend_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'labourwarrantystart_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'labourwarrantyend_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'warrantynotes_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'workflow_visibility' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'workflow_tab' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'diagramfield1' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'diagramfield2' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'diagramfield3' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'resourcebooking_asset_custom_field' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'default_ticket_type' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'workflow_id' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'workflow_name' is not part of the asset-types write shape; Halo will receive it as-is",
+            "field 'apply_workflow_on_type_change' is not part of the asset-types write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "asset-types"
+    },
+    "assets": {
+      "cud": [
+        {
+          "id": 68,
+          "ok": true,
+          "payload": {
+            "assettype_id": 131,
+            "client_id": 33
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "assets"
+    },
+    "budget-types": {
+      "cud": [
+        {
+          "id": 9,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "budget-types"
+    },
+    "cabs": {
+      "cud": [
+        {
+          "id": 5,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "cabs"
+    },
+    "call-log": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "summary": "halocli-dev-probe-d077f3-summary"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        }
+      ],
+      "left_in_place": "POST-only resource: no delete route by contract",
+      "outcome": "proven-pending-cleanup",
+      "resource": "call-log"
+    },
+    "call-scripts": {
+      "cud": [
+        {
+          "id": 2,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "call-scripts"
+    },
+    "canned-text": {
+      "cud": [
+        {
+          "id": 3,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name",
+            "text": "halocli-dev-probe-d077f3-text"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "canned-text"
+    },
+    "categories": {
+      "cud": [
+        {
+          "id": 165,
+          "ok": true,
+          "payload": {
+            "category_group_id": 0,
+            "category_name": "Software Reinstall",
+            "chargerate": 0,
+            "include_note": false,
+            "itilrequesttype": 0,
+            "level1": "Software Reinstall",
+            "name": "halocli-dev-probe-d077f3-name",
+            "note": "halocli-dev-probe-d077f3-note",
+            "priority_id": -1,
+            "sla_id": -1,
+            "type_id": 2,
+            "user_note": "",
+            "value": "halocli-dev-probe-d077f3-value"
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'value' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'category_name' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'type_id' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'sla_id' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'priority_id' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'chargerate' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'category_group_id' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'include_note' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'note' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'user_note' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'itilrequesttype' is not part of the categories write shape; Halo will receive it as-is",
+            "field 'level1' is not part of the categories write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "categories"
+    },
+    "certificates": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/Certificate: {\"ClassName\":\"System.Exception\",\"Message\":\"Password is mandatory\",\"Data\":null,\"InnerException\":null,\"HelpURL\":null,\"StackTraceString\":null,\"RemoteStackTraceString\":null,\"RemoteStackIndex\":0,\"ExceptionMethod\":null,\"HResult\":-2146233088,\"Source\":null"
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "certificates"
+    },
+    "clients": {
+      "cud": [
+        {
+          "id": 33,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "clients"
+    },
+    "contact-group-contacts": {
+      "cud": [
+        {
+          "errors": [
+            "ValueError: unresolved FK cuid: no /Contact rows readable"
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "contact-group-contacts"
+    },
+    "contact-groups": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "contact-groups"
+    },
+    "contract-schedule-plans": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/ContractSchedulePlan: {\"ClassName\":\"System.Exception\",\"Message\":\"A database error occurred (515) - Cannot insert the value NULL into column 'CSPHoursAllocated', table 'D_CLIdev.dbo.ContractSchedulePlan'; column does not allow nulls. INSERT fails.\\r\\nThe stateme"
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "contract-schedule-plans"
+    },
+    "cost-centres": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "cost-centres"
+    },
+    "crm-note-replies": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA auth error (401) on /api/CRMNoteReply: HTTP 401: "
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "crm-note-replies"
+    },
+    "crm-notes": {
+      "cud": [
+        {
+          "id": 13,
+          "ok": true,
+          "payload": {
+            "note": "halocli-dev-probe-d077f3-note"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "crm-notes"
+    },
+    "custom-tables": {
+      "cud": [
+        {
+          "id": 1007,
+          "ok": true,
+          "payload": {
+            "clear_on_close": false,
+            "columns": 1,
+            "customextratableid": 0,
+            "customtable_orderby": 0,
+            "data_entry_type": 0,
+            "db_name": "Faults",
+            "import_folder": "",
+            "linkto_table_id": 0,
+            "modal_size": 2,
+            "name": "haloclidevprobed077f3name",
+            "primary_field_1": 0,
+            "primary_field_2": 0,
+            "reporting_period": 0,
+            "table_type": 0
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'db_name' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'linkto_table_id' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'import_folder' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'clear_on_close' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'modal_size' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'primary_field_1' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'primary_field_2' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'customextratableid' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'customtable_orderby' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'columns' is not part of the custom-tables write shape; Halo will receive it as-is",
+            "field 'reporting_period' is not part of the custom-tables write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/CustomTable: {\"ClassName\":\"System.Exception\",\"Message\":\"Invalid Name\",\"Data\":null,\"InnerException\":null,\"HelpURL\":null,\"StackTraceString\":null,\"RemoteStackTraceString\":null,\"RemoteStackIndex\":0,\"ExceptionMethod\":null,\"HResult\":-2146233088,\"Source\":null,\"WatsonB"
+          ],
+          "ok": false,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "partial",
+      "resource": "custom-tables"
+    },
+    "email-template-variables": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "variable": "halocli-dev-probe-d077f3-variable"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "email-template-variables"
+    },
+    "email-templates": {
+      "cud": [
+        {
+          "id": -103,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "email-templates"
+    },
+    "faq-lists": {
+      "cud": [
+        {
+          "id": 6,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "faq-lists"
+    },
+    "field-groups": {
+      "cud": [
+        {
+          "id": 38,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "field-groups"
+    },
+    "field-infos": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/FieldInfo: \"No matching custom table\""
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "field-infos"
+    },
+    "fields": {
+      "cud": [
+        {
+          "id": 149,
+          "ok": true,
+          "payload": {
+            "access_level": 2,
+            "datafrom": 0,
+            "datalength": 0,
+            "idstring": "Computer Name=",
+            "inactiveupdatetype": 0,
+            "integration_precedence_type": 1,
+            "issoftware": false,
+            "kind": "T",
+            "lookup": 0,
+            "mandatory": false,
+            "moveupdatedefault": "",
+            "moveupdatetype": 0,
+            "name": "halocli-dev-probe-d077f3-name",
+            "order_values_alphanumerically": true,
+            "parenttype_id": 0,
+            "sequence": 1,
+            "showonactivity": false,
+            "showoncalendar": false,
+            "systemuse": -1,
+            "url": "",
+            "validate": "X"
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'validate' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'systemuse' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'url' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'idstring' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'datafrom' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'datalength' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'issoftware' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'sequence' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'lookup' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'showoncalendar' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'moveupdatetype' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'inactiveupdatetype' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'moveupdatedefault' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'showonactivity' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'parenttype_id' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'order_values_alphanumerically' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'access_level' is not part of the fields write shape; Halo will receive it as-is",
+            "field 'integration_precedence_type' is not part of the fields write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "list-search fallback hit (detail route errors on this endpoint)",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/Field/149: \"Field kind must be specified\""
+          ],
+          "ok": false,
+          "phase": "delete"
+        }
+      ],
+      "outcome": "partial",
+      "resource": "fields"
+    },
+    "holidays": {
+      "cud": [
+        {
+          "id": "008d280c-94fd-459f-2040-08df219167cb",
+          "ok": true,
+          "payload": {
+            "agent_id": 0,
+            "agent_name": "",
+            "allday": true,
+            "date": "2026-10-03T17:11:56",
+            "duration": 0.0,
+            "end_date": "2025-05-05T00:00:00",
+            "entity": 0,
+            "entity_id": -1,
+            "holiday_type": 1,
+            "isrecurring": false,
+            "name": "halocli-dev-probe-d077f3-name",
+            "risk": 0.0,
+            "workday_id": 1,
+            "workday_name": "Default Working Hours"
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'workday_id' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'end_date' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'allday' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'holiday_type' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'agent_id' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'agent_name' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'entity' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'isrecurring' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'entity_id' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'risk' is not part of the holidays write shape; Halo will receive it as-is",
+            "field 'workday_name' is not part of the holidays write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "holidays"
+    },
+    "item-groups": {
+      "cud": [
+        {
+          "id": 7,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "item-groups"
+    },
+    "item-stocks": {
+      "cud": [
+        {
+          "id": 9,
+          "ok": true,
+          "payload": {
+            "cost": 18.0,
+            "date": "2026-10-03T17:11:56",
+            "item_assettype_id": 0,
+            "item_id": 17,
+            "item_name": "Microsoft 365 Business Premium",
+            "purchaseorder_id": 0,
+            "quantity_in": 99999.0,
+            "quantity_issued": 0.0,
+            "quantity_remaining": 99999.0,
+            "salesorder_id": 0,
+            "stocklocation_id": 20,
+            "stocklocation_name": "Stock Room",
+            "supplier_id": 10,
+            "supplier_name": "Microsoft",
+            "ticket_id": 0
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'item_assettype_id' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'stocklocation_id' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'stocklocation_name' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'date' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'quantity_in' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'quantity_issued' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'quantity_remaining' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'supplier_id' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'purchaseorder_id' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'salesorder_id' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'ticket_id' is not part of the item-stocks write shape; Halo will receive it as-is",
+            "field 'supplier_name' is not part of the item-stocks write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/ItemStock: \"These records cannot be edited. Only new records can be added\""
+          ],
+          "ok": false,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "partial",
+      "resource": "item-stocks"
+    },
+    "item-suppliers": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "item_id": 1,
+            "supplier_id": 18
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "item-suppliers"
+    },
+    "kb": {
+      "cud": [
+        {
+          "id": 33,
+          "ok": true,
+          "payload": {
+            "description": "halocli-dev-probe-d077f3-description",
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "kb"
+    },
+    "lookups": {
+      "cud": [
+        {
+          "id": 5,
+          "ok": true,
+          "payload": {
+            "custom1": "",
+            "custom2": "",
+            "lookupid": 47,
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'custom1' is not part of the lookups write shape; Halo will receive it as-is",
+            "field 'custom2' is not part of the lookups write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "list-search fallback hit (detail route errors on this endpoint)",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/Lookup/5: \"lookupid must be specified\""
+          ],
+          "ok": false,
+          "phase": "delete"
+        }
+      ],
+      "outcome": "partial",
+      "resource": "lookups"
+    },
+    "organisations": {
+      "cud": [
+        {
+          "id": 2,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "organisations"
+    },
+    "outcomes": {
+      "cud": [
+        {
+          "id": 97,
+          "ok": true,
+          "payload": {
+            "action_item_to_issue": 0,
+            "action_resets_response": false,
+            "actiongroup": 1,
+            "actionvisibility": true,
+            "addactionstolinked": 3,
+            "ai_improve_agent_note_default_on": true,
+            "ai_model": "gpt-3.5-turbo",
+            "ai_operation": 0,
+            "approval_process_id": 0,
+            "assetsearchtext": "",
+            "automation_runbook_trigger": 0,
+            "automation_runbookname": "",
+            "azure_action": 0,
+            "azure_connection_id": 0,
+            "bccfollowers": false,
+            "buttonimage": 1,
+            "buttonname": "halocli-dev-probe-d077f3-buttonname",
+            "callscreencallscript": 0,
+            "ccoverride": "",
+            "chargerate": 0,
+            "child_emailtemplate_id": 0,
+            "child_template_id": 0,
+            "child_ticket_type_id": 0,
+            "colour": "#fcdc00",
+            "colour_type": 2,
+            "config_type": 0,
+            "create_issue_type": 0,
+            "createchildticketortemplate": 0,
+            "customurl": "",
+            "default_asset_status": -1,
+            "default_asset_type": 0,
+            "default_distribution_list": -1,
+            "default_linkedticket_status": 0,
+            "default_note": "",
+            "default_opp_closure_cat": -1,
+            "default_send_jira_note": false,
+            "default_send_to_pagerduty": false,
+            "defaultagent": 0,
+            "defaultagent_name": "",
+            "defaultappointmentstatus": 0,
+            "defaultappointmenttype": 0,
+            "defaultcommunicationmethod": 0,
+            "defaultmanhrs": 0.0,
+            "defaultnonbill": 0.0,
+            "defaultpriority": 0,
+            "defaultsupplier_id": -1,
+            "defaultteam": "",
+            "defaultuserdef": 0,
+            "dontshowscreen": false,
+            "email_editing": 0,
+            "email_preview_option": -1,
+            "emailtemplate_id": 0,
+            "excludeFromDynamicLists": false,
+            "fieldvisible": "NNNNNNNNNNNNYNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "follow": false,
+            "followersccbcc": 2,
+            "hidden": false,
+            "hide_header_button": false,
+            "hideactionfromcandi": false,
+            "hidecloserequest": true,
+            "hidefromuser": true,
+            "hidesendemail": true,
+            "hidesendsms": true,
+            "hotkey": "a",
+            "icon": "pencil-square",
+            "includeattachmentstype": 0,
+            "includecc": true,
+            "includeto": true,
+            "isimportant": false,
+            "labellong": "Re-Assign (Re-Assign)",
+            "logtimeunits": 0,
+            "minattachments": 0,
+            "mustaddnote": false,
+            "mustassign": false,
+            "new_ticket_attachments": false,
+            "new_ticket_default_user_type": 0,
+            "newactiondisplay": -1,
+            "newactiondisplaysize": 2,
+            "newdetailsfromsource": false,
+            "newstatus": 0,
+            "newsummaryfromsource": false,
+            "outcome": "halocli-dev-probe-d077f3-outcome",
+            "override_from_mailbox_id": -1,
+            "overridetemplatename": "",
+            "parentdefaultuser": 0,
+            "pdftemplate_id": -1,
+            "related_note_visibility": 0,
+            "replytype": 0,
+            "report_attach_csv": false,
+            "report_attach_json": false,
+            "report_attach_pdf": true,
+            "report_attach_xls": false,
+            "reportid": 0,
+            "requesttype": 0,
+            "respondtype": 2,
+            "run_ai_insights": false,
+            "script_id": 0,
+            "script_name": "",
+            "sendemail": 2,
+            "sendsms": 2,
+            "sendsurvey": 0,
+            "sequence": 61,
+            "setdetailsfromnewticket": false,
+            "show_action_history_on_new_action": 0,
+            "show_email_fields": true,
+            "show_on_child": 0,
+            "show_on_parent": 0,
+            "showattachmentstouser": false,
+            "showautorelease": true,
+            "showevenifnochild": false,
+            "showfollowcheckbox": false,
+            "showhidecheckbox": false,
+            "showimportantcheckbox": false,
+            "showsendinstagram": false,
+            "showsendsurvey": false,
+            "showslacheckbox": false,
+            "showslacheckbox_mandatory": false,
+            "skip_pending_closure": false,
+            "slaholdischecked": false,
+            "slareleaseischecked": false,
+            "submitlabeloverride": "",
+            "supplieremailintellisense": 0,
+            "sync_to_halo_api": 0,
+            "synctodynamics": false,
+            "synctosap": false,
+            "systemid": 1,
+            "tagreleasetype": 0,
+            "tfstype": "",
+            "todo_template_id": -1,
+            "tooverride": "",
+            "translate_before_sending": false,
+            "update_dynamic_email_list": false,
+            "update_parent_attachment_type": 0,
+            "useremailintellisense": 0,
+            "usetimer": true,
+            "worddocid": 0,
+            "worddocpath": "",
+            "workflow_id": 0,
+            "workflow_step_id": 0
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'outcome' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'labellong' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'sequence' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hidden' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'systemid' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'dontshowscreen' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'respondtype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'update_parent_attachment_type' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'sendemail' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'sendsms' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'actionvisibility' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'child_template_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'createchildticketortemplate' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'child_ticket_type_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'tfstype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'icon' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'actiongroup' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'colour_type' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'newstatus' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'slaholdischecked' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'emailtemplate_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'slareleaseischecked' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultuserdef' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultmanhrs' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultnonbill' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'approval_process_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hidefromuser' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'fieldvisible' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hotkey' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'buttonimage' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hidesendemail' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hidesendsms' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hidecloserequest' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultagent' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultagent_name' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultpriority' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultteam' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'includecc' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'includeto' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_note' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'mustassign' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'requesttype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'mustaddnote' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'worddocid' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'worddocpath' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'synctosap' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'tooverride' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'ccoverride' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'workflow_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'workflow_step_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'synctodynamics' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showhidecheckbox' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showslacheckbox' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showimportantcheckbox' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'isimportant' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showfollowcheckbox' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'follow' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultappointmentstatus' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'reportid' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'report_attach_pdf' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'report_attach_xls' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'report_attach_csv' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'report_attach_json' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'todo_template_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'child_emailtemplate_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_linkedticket_status' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'script_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'script_name' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'usetimer' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'update_dynamic_email_list' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'skip_pending_closure' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'newsummaryfromsource' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'newdetailsfromsource' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'show_email_fields' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'logtimeunits' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'callscreencallscript' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'pdftemplate_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'excludeFromDynamicLists' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'automation_runbook_trigger' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'automation_runbookname' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'setdetailsfromnewticket' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hideactionfromcandi' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'bccfollowers' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'followersccbcc' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showevenifnochild' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'replytype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'parentdefaultuser' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'assetsearchtext' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'action_resets_response' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showattachmentstouser' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'customurl' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'useremailintellisense' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'supplieremailintellisense' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'azure_action' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'azure_connection_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultsupplier_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_asset_type' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showautorelease' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_asset_status' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'tagreleasetype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'ai_operation' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'ai_model' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_opp_closure_cat' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'translate_before_sending' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_send_to_pagerduty' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'minattachments' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultappointmenttype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showsendsurvey' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'sendsurvey' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showsendinstagram' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'showslacheckbox_mandatory' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'ai_improve_agent_note_default_on' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'defaultcommunicationmethod' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'related_note_visibility' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'override_from_mailbox_id' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'create_issue_type' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'submitlabeloverride' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_send_jira_note' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'config_type' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'show_on_parent' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'show_on_child' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'newactiondisplay' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'newactiondisplaysize' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'hide_header_button' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'new_ticket_attachments' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'run_ai_insights' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'email_editing' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'default_distribution_list' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'addactionstolinked' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'show_action_history_on_new_action' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'sync_to_halo_api' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'action_item_to_issue' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'overridetemplatename' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'new_ticket_default_user_type' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'includeattachmentstype' is not part of the outcomes write shape; Halo will receive it as-is",
+            "field 'email_preview_option' is not part of the outcomes write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "outcomes"
+    },
+    "pdf-templates": {
+      "cud": [
+        {
+          "id": 31,
+          "ok": true,
+          "payload": {
+            "colour": "#0f1b31",
+            "colour_type": 1,
+            "config_source_type": 0,
+            "file_type": 0,
+            "footerc": "{page} of {total-pages}",
+            "footerheight": 0,
+            "footerishtml": false,
+            "headerheight": 0,
+            "headerishtml": false,
+            "includefooter": true,
+            "includeheader": false,
+            "margin": 10,
+            "name": "halocli-dev-probe-d077f3-name",
+            "orientation": 0,
+            "override_attachment_name": "",
+            "pdf_media_type": 0,
+            "portal_display_type": 2,
+            "reportingperiod": 100,
+            "show_bundled_lines": 0,
+            "type": 50,
+            "width": 1024
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'orientation' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'margin' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'includeheader' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'headerishtml' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'headerheight' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'includefooter' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'footerc' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'footerishtml' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'footerheight' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'colour_type' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'width' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'config_source_type' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'reportingperiod' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'pdf_media_type' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'show_bundled_lines' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'override_attachment_name' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'portal_display_type' is not part of the pdf-templates write shape; Halo will receive it as-is",
+            "field 'file_type' is not part of the pdf-templates write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "pdf-templates"
+    },
+    "priorities": {
+      "cud": [
+        {
+          "id": "073c01c3-17e3-4ee3-e3cb-08df219248c6",
+          "ok": true,
+          "payload": {
+            "colour": "#fe9200",
+            "endofday": false,
+            "enterslaexcuse": false,
+            "firstresponsetime": 0.0,
+            "firstresponseunits": "H",
+            "fixendofday": false,
+            "fixtime": 1.5,
+            "fixunits": "H",
+            "ishidden": false,
+            "name": "halocli-dev-probe-d077f3-name",
+            "priorityid": 2,
+            "responseendofday": false,
+            "responsestartofday": false,
+            "responsestartofdaytime": "00:00:00",
+            "responsetime": 0.75,
+            "responseunits": "H",
+            "setfixtostartdate": false,
+            "setfixtotargetdate": false,
+            "slaid": 3,
+            "startofday": false,
+            "startofdaytime": "00:00:00",
+            "workdaysoverride": -1
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'priorityid' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'fixtime' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'fixunits' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'enterslaexcuse' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'responsetime' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'responseunits' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'ishidden' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'fixendofday' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'responseendofday' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'workdaysoverride' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'responsestartofday' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'responsestartofdaytime' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'startofday' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'startofdaytime' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'setfixtostartdate' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'setfixtotargetdate' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'firstresponsetime' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'firstresponseunits' is not part of the priorities write shape; Halo will receive it as-is",
+            "field 'endofday' is not part of the priorities write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/Priority/073c01c3-17e3-4ee3-e3cb-08df219248c6: \"Priority 'halocli-dev-probe-d077f3-name-v2' has Tickets linked to it. Please give these tickets another Priority before deleting or mark the Priority as inactive.\""
+          ],
+          "first_error": "HaloPSA validation error (400) on /api/Priority/073c01c3-17e3-4ee3-e3cb-08df219248c6: \"Priority 'halocli-dev-probe-d077f3-name-v2' has Tickets linked to it. Please give these tickets another Priority ",
+          "inactive_retry": true,
+          "ok": false,
+          "phase": "delete"
+        }
+      ],
+      "outcome": "partial",
+      "resource": "priorities"
+    },
+    "product-components": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "product-components"
+    },
+    "products": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "products"
+    },
+    "qualifications": {
+      "cud": [
+        {
+          "id": 3,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "qualifications"
+    },
+    "release-note-groups": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "release-note-groups"
+    },
+    "release-pipelines": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "release-pipelines"
+    },
+    "release-types": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "release-types"
+    },
+    "releases": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "releases"
+    },
+    "service-categories": {
+      "cud": [
+        {
+          "id": 16,
+          "ok": true,
+          "payload": {
+            "icon": "https://clidev.trial.usehalo.com/api/attachment/image/A836727B-E150-4138-BB1A-4176E8B4C020",
+            "important": false,
+            "long_name": "Users and Services",
+            "name": "halocli-dev-probe-d077f3-name",
+            "parent_id": 0,
+            "seq": 10,
+            "summary": "halocli-dev-probe-d077f3-summary",
+            "userlevel": 1
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'userlevel' is not part of the service-categories write shape; Halo will receive it as-is",
+            "field 'seq' is not part of the service-categories write shape; Halo will receive it as-is",
+            "field 'icon' is not part of the service-categories write shape; Halo will receive it as-is",
+            "field 'parent_id' is not part of the service-categories write shape; Halo will receive it as-is",
+            "field 'long_name' is not part of the service-categories write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "service-categories"
+    },
+    "services": {
+      "cud": [
+        {
+          "id": 114,
+          "ok": true,
+          "payload": {
+            "assettype_id": 0,
+            "business_owner_cab_id": 0,
+            "business_owner_id": 0,
+            "checkminutes": -1,
+            "compliance_owner_cab_id": 0,
+            "compliance_owner_id": 0,
+            "cost": 0.0,
+            "criticality": 0,
+            "estimated_delivery": 0,
+            "failalwaysnewrequest": false,
+            "failcreaterequest": false,
+            "icon": "https://clidev.trial.usehalo.com/api/attachment/image/15CCC737-2428-4295-B487-E4F68CE3BAAD",
+            "incident_template_id": 0,
+            "incident_tickettype_id": 0,
+            "incidentdetail_shownewreqscreen": true,
+            "incidentdetail_type": 0,
+            "incidentdetail_url": "",
+            "incidentdetails_id": 1029,
+            "name": "halocli-dev-probe-d077f3-name",
+            "newincidenttype": 2,
+            "newservicereqtype": 0,
+            "override_site_id": 0,
+            "pricingrange": 0.0,
+            "relatedworkdayid": 0,
+            "requestdetail_shownewreqscreen": true,
+            "requestdetail_type": 0,
+            "requestdetail_url": "",
+            "requestdetails_id": 11,
+            "screenafterlogging": 0,
+            "sequence": 11,
+            "service_category_id": 9,
+            "service_category_name": "Hardware",
+            "service_template_id": 0,
+            "service_tickettype_id": 13,
+            "service_url": "",
+            "serviceshownewreqscreen": true,
+            "showintechcatalog": true,
+            "showinusercatalog": true,
+            "subscribable": true,
+            "summary": "halocli-dev-probe-d077f3-summary",
+            "technical_owner_cab_id": 0,
+            "technical_owner_id": 0,
+            "trackstatus": false,
+            "use": "service",
+            "workdays": 0
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'summary' is not part of the services write shape; Halo will receive it as-is",
+            "field 'sequence' is not part of the services write shape; Halo will receive it as-is",
+            "field 'showinusercatalog' is not part of the services write shape; Halo will receive it as-is",
+            "field 'showintechcatalog' is not part of the services write shape; Halo will receive it as-is",
+            "field 'trackstatus' is not part of the services write shape; Halo will receive it as-is",
+            "field 'service_category_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'service_category_name' is not part of the services write shape; Halo will receive it as-is",
+            "field 'business_owner_cab_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'technical_owner_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'technical_owner_cab_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'compliance_owner_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'compliance_owner_cab_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'cost' is not part of the services write shape; Halo will receive it as-is",
+            "field 'estimated_delivery' is not part of the services write shape; Halo will receive it as-is",
+            "field 'subscribable' is not part of the services write shape; Halo will receive it as-is",
+            "field 'assettype_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'service_tickettype_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'serviceshownewreqscreen' is not part of the services write shape; Halo will receive it as-is",
+            "field 'service_template_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'newservicereqtype' is not part of the services write shape; Halo will receive it as-is",
+            "field 'incident_tickettype_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'incident_template_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'newincidenttype' is not part of the services write shape; Halo will receive it as-is",
+            "field 'relatedworkdayid' is not part of the services write shape; Halo will receive it as-is",
+            "field 'requestdetails_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'requestdetail_url' is not part of the services write shape; Halo will receive it as-is",
+            "field 'requestdetail_shownewreqscreen' is not part of the services write shape; Halo will receive it as-is",
+            "field 'requestdetail_type' is not part of the services write shape; Halo will receive it as-is",
+            "field 'screenafterlogging' is not part of the services write shape; Halo will receive it as-is",
+            "field 'pricingrange' is not part of the services write shape; Halo will receive it as-is",
+            "field 'override_site_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'failcreaterequest' is not part of the services write shape; Halo will receive it as-is",
+            "field 'workdays' is not part of the services write shape; Halo will receive it as-is",
+            "field 'checkminutes' is not part of the services write shape; Halo will receive it as-is",
+            "field 'failalwaysnewrequest' is not part of the services write shape; Halo will receive it as-is",
+            "field 'criticality' is not part of the services write shape; Halo will receive it as-is",
+            "field 'use' is not part of the services write shape; Halo will receive it as-is",
+            "field 'icon' is not part of the services write shape; Halo will receive it as-is",
+            "field 'service_url' is not part of the services write shape; Halo will receive it as-is",
+            "field 'incidentdetails_id' is not part of the services write shape; Halo will receive it as-is",
+            "field 'incidentdetail_url' is not part of the services write shape; Halo will receive it as-is",
+            "field 'incidentdetail_shownewreqscreen' is not part of the services write shape; Halo will receive it as-is",
+            "field 'incidentdetail_type' is not part of the services write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "services"
+    },
+    "sites": {
+      "cud": [
+        {
+          "id": 44,
+          "ok": true,
+          "payload": {
+            "client_id": 33,
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "sites"
+    },
+    "slas": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/SLA: \"Priority Description must not be blank\""
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "slas"
+    },
+    "statuses": {
+      "cud": [
+        {
+          "id": 32,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "statuses"
+    },
+    "stock-bins": {
+      "cud": [
+        {
+          "id": 6,
+          "ok": true,
+          "payload": {
+            "dont_add_to_order": false,
+            "name": "halocli-dev-probe-d077f3-name",
+            "parent_id": 0,
+            "parent_name": "",
+            "sequence": 1,
+            "site_id": 19,
+            "site_name": "Warehouse"
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'site_id' is not part of the stock-bins write shape; Halo will receive it as-is",
+            "field 'dont_add_to_order' is not part of the stock-bins write shape; Halo will receive it as-is",
+            "field 'parent_name' is not part of the stock-bins write shape; Halo will receive it as-is",
+            "field 'site_name' is not part of the stock-bins write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "stock-bins"
+    },
+    "suppliers": {
+      "cud": [
+        {
+          "id": 18,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "suppliers"
+    },
+    "tags": {
+      "cud": [
+        {
+          "id": 29,
+          "ok": true,
+          "payload": {
+            "text": "halocli-dev-probe-d077f3-text"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "tags"
+    },
+    "teams": {
+      "cud": [
+        {
+          "id": 14,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "teams"
+    },
+    "ticket-areas": {
+      "cud": [
+        {
+          "id": 16,
+          "ok": true,
+          "payload": {
+            "agents_with_no_tickets_display_type": 0,
+            "allow_ticket_type_selection": 0,
+            "area_use": 0,
+            "default_columns_id": 5,
+            "default_filter_id": -1,
+            "default_itil_ticket_type": -1,
+            "default_template_group_id": -1,
+            "default_ticket_type": 1,
+            "default_view": "",
+            "default_view_selectedid": -1,
+            "enableprojecttreeview": false,
+            "entity_plural": "Tickets",
+            "entity_singular": "Ticket",
+            "group_agents_by_status": true,
+            "icon": "ticket",
+            "name": "halocli-dev-probe-d077f3-name",
+            "selectservice": 0,
+            "sequence": 11,
+            "show_agent_status_groups": true,
+            "shownewticketbutton": true,
+            "showtabondetailsscreens": true
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'sequence' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'entity_singular' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'entity_plural' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'icon' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'default_filter_id' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'default_view' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'default_view_selectedid' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'default_ticket_type' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'default_itil_ticket_type' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'default_template_group_id' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'selectservice' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'enableprojecttreeview' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'showtabondetailsscreens' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'shownewticketbutton' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'allow_ticket_type_selection' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'group_agents_by_status' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'show_agent_status_groups' is not part of the ticket-areas write shape; Halo will receive it as-is",
+            "field 'agents_with_no_tickets_display_type' is not part of the ticket-areas write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "ticket-areas"
+    },
+    "ticket-type-groups": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-d077f3-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "ticket-type-groups"
+    },
+    "ticket-types": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/TicketType: {\"ClassName\":\"System.Exception\",\"Message\":\"A database error occurred (515) - Cannot insert the value NULL into column 'RTAppointmentDefaultBody', table 'D_CLIdev.dbo.REQUESTTYPE'; column does not allow nulls. INSERT fails..\",\"Data\":null,\"InnerExcept"
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "ticket-types"
+    },
+    "tickets": {
+      "cud": [
+        {
+          "id": 2908,
+          "ok": true,
+          "payload": {
+            "summary": "halocli-dev-probe-d077f3-summary"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "tickets"
+    },
+    "timesheet-events": {
+      "cud": [
+        {
+          "errors": [
+            "HaloCLIError: HaloPSA validation error (400) on /api/TimesheetEvent: {\"ClassName\":\"System.Exception\",\"Message\":\"A database error occurred (515) - Cannot insert the value NULL into column 'TSEeventid', table 'D_CLIdev.dbo.TimesheetEvent'; column does not allow nulls. INSERT fails..\",\"Data\":null,\"InnerException\":nu"
+          ],
+          "ok": false,
+          "phase": "create",
+          "update": false
+        }
+      ],
+      "outcome": "create-failed",
+      "resource": "timesheet-events"
+    },
+    "to-do-groups": {
+      "cud": [
+        {
+          "id": 4,
+          "ok": true,
+          "payload": {
+            "text": "halocli-dev-probe-d077f3-text"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "to-do-groups"
+    },
+    "to-dos": {
+      "cud": [
+        {
+          "id": 1,
+          "ok": true,
+          "payload": {
+            "text": "halocli-dev-probe-d077f3-text",
+            "ticket_id": 2908
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "no get route (assumed; create response carried the id)",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        }
+      ],
+      "left_in_place": "POST-only resource: no delete route by contract",
+      "outcome": "proven-pending-cleanup",
+      "resource": "to-dos"
+    },
+    "users": {
+      "cud": [
+        {
+          "id": 79,
+          "ok": true,
+          "payload": {
+            "client_id": 33,
+            "emailaddress": "halocli-dev-probe-example.invalid",
+            "firstname": "halocli-dev-probe-d077f3-firstname",
+            "name": "halocli-dev-probe-d077f3-name",
+            "site_id": 1,
+            "surname": "halocli-dev-probe-d077f3-surname"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "users"
+    },
+    "workdays": {
+      "cud": [
+        {
+          "id": 3,
+          "ok": true,
+          "payload": {
+            "alldayssame": false,
+            "end": "1901-01-01T17:00:00",
+            "endfriday": "1901-01-01T16:30:00",
+            "endmonday": "1901-01-01T17:00:00",
+            "endsaturday": "1899-12-30T17:00:00",
+            "endsunday": "1899-12-30T17:00:00",
+            "endthursday": "1901-01-01T17:00:00",
+            "endtuesday": "1901-01-01T17:00:00",
+            "endwednesday": "1901-01-01T17:00:00",
+            "incfriday": true,
+            "incmonday": true,
+            "incsaturday": false,
+            "incsunday": false,
+            "incthursday": true,
+            "inctuesday": true,
+            "incwednesday": true,
+            "name": "halocli-dev-probe-d077f3-name",
+            "start": "1901-01-01T09:00:00",
+            "startfriday": "1901-01-01T09:00:00",
+            "startmonday": "1901-01-01T09:00:00",
+            "startsaturday": "1899-12-30T09:00:00",
+            "startsunday": "1899-12-30T09:00:00",
+            "startthursday": "1901-01-01T09:00:00",
+            "starttuesday": "1901-01-01T09:00:00",
+            "startwednesday": "1901-01-01T09:00:00",
+            "summary": "halocli-dev-probe-d077f3-summary",
+            "timezone": ""
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'summary' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'timezone' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'incmonday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'inctuesday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'incwednesday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'incthursday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'incfriday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'incsaturday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'incsunday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endmonday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endtuesday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endwednesday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endthursday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endfriday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endsaturday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'endsunday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'startmonday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'starttuesday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'startwednesday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'startthursday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'startfriday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'startsaturday' is not part of the workdays write shape; Halo will receive it as-is",
+            "field 'startsunday' is not part of the workdays write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "workdays"
+    }
+  },
+  "summary": {
+    "left_post_only": [
+      "agent-check-ins",
+      "call-log",
+      "to-dos"
+    ],
+    "leftovers": [
+      "agent-check-ins",
+      "call-log",
+      "fields",
+      "lookups",
+      "priorities",
+      "to-dos"
+    ],
+    "outcomes": {
+      "create-failed": 9,
+      "partial": 5,
+      "proven": 47,
+      "proven-pending-cleanup": 3
+    },
+    "resources": 64
+  }
+}
