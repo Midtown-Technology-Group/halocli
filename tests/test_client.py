@@ -103,3 +103,18 @@ async def test_request_keeps_profile_timeout_unless_one_is_given() -> None:
 
     explicit_ext = seen["/api/Report/1"]
     assert explicit_ext["connect"] == 120.0, explicit_ext
+
+
+def test_client_prefers_profile_resolved_name() -> None:
+    """A profile resolved via the single-profile fallback carries its real
+    config key, which must win over the passed name (it is the token cache
+    key)."""
+    from halocli.client import HaloClient
+    from halocli.config import HaloProfile
+
+    resolved = HaloProfile(tenant_url="https://x.example.com", client_id="i", profile_name="thomas")
+    assert HaloClient(resolved, profile_name="default").profile_name == "thomas"
+
+    plain = HaloProfile(tenant_url="https://x.example.com", client_id="i")
+    assert HaloClient(plain, profile_name="default").profile_name == "default"
+    assert HaloClient(plain, profile_name="other").profile_name == "other"

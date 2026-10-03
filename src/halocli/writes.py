@@ -58,11 +58,16 @@ def validate_write(
     for key in required:
         if _is_missing(payload, key):
             problems.append(f"missing required field '{key}' to {verb} {resource.name}")
-    if not update and not _is_missing(payload, "id"):
-        problems.append(
-            "create payload must not include 'id'; Halo treats POST-with-id as an "
-            "update — use the update command or remove 'id'"
-        )
+    if not update:
+        # Only None/"" count as absent (per the docstring): a whitespace-only
+        # id would still ride along on the wire and make Halo treat the POST
+        # as an update - refuse it as concrete instead of "resolving" it.
+        concrete_id = payload.get("id")
+        if concrete_id is not None and concrete_id != "":
+            problems.append(
+                "create payload must not include 'id'; Halo treats POST-with-id as an "
+                "update — use the update command or remove 'id'"
+            )
     return problems
 
 

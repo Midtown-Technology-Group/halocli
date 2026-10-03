@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import difflib
 import json
 import mimetypes
 import re
@@ -21,9 +22,10 @@ from halocli.config import AuthMode, HaloProfile, load_profile, save_profile, up
 from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload
-from halocli.output import render, render_error
+from halocli.output import render, render_error, warn
 from halocli.labels import hydrate_items
 from halocli.resources import RESOURCES, HaloResource, ResourceOperation
+from halocli.schema import load_spec
 from halocli.schema import validate_request as validate_schema_request
 from halocli.token_cache import KeyringTokenCache, TokenCache
 from halocli.writes import delete_resource, execute_write
@@ -31,6 +33,7 @@ from halocli.todo import (
     GraphMicrosoftTodoRepository,
     HaloTodoRepository,
     JsonMicrosoftTodoRepository,
+    appointment_payload,
     import_tasks,
     preview_import,
 )
@@ -1282,7 +1285,16 @@ def todo_add(
     owner: Annotated[int | None, typer.Option("--owner")] = None,
     due: Annotated[str | None, typer.Option("--due")] = None,
     tag: Annotated[list[str] | None, typer.Option("--tag")] = None,
+    apply: Annotated[
+        bool, typer.Option("--apply", help="Execute the write (requires --yes).")
+    ] = False,  # noqa: A002
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Confirm the write (requires --apply).")
+    ] = False,
 ) -> None:
+    # Preview-first like every other write surface (README contract); this
+    # command used to fire unconditionally, which contradicted it.
+    execute = _resolve_apply(apply, yes)
     _run(
         _todo_add(
             title=title,
@@ -1292,8 +1304,68 @@ def todo_add(
             owner=owner,
             due=date.fromisoformat(due) if due else None,
             tags=tag or [],
+            execute=execute,
         )
     )
+
+
+@todo_app.command("list")
+def todo_list(
+    status: Annotated[
+        str,
+        typer.Option("--status", help="'open' (default; complete_status != 0), 'done', or 'all'."),
+    ] = "open",
+    mine: Annotated[bool, typer.Option("--mine", help="Only my todos (the acting agent).")] = False,
+    client_id: Annotated[int | None, typer.Option("--client-id")] = None,
+    ticket_id: Annotated[int | None, typer.Option("--ticket-id")] = None,
+    tag: Annotated[str | None, typer.Option("--tag")] = None,
+    search: Annotated[
+        str | None, typer.Option("--search", "-q", help="Substring match on title/description.")
+    ] = None,
+    max_records: Annotated[int, typer.Option("--max-records")] = 200,
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    if status not in {"open", "done", "all"}:
+        raise typer.BadParameter("--status must be 'open', 'done' or 'all'.")
+    _run(
+        _todo_list(
+            status=status,
+            mine=mine,
+            client_id=client_id,
+            ticket_id=ticket_id,
+            tag=tag,
+            search=search,
+            max_records=max_records,
+            profile=profile,
+            output=output,
+        )
+    )
+
+
+@todo_app.command("get")
+def todo_get(
+    item_id: str,
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    _run(_todo_get(item_id=item_id, profile=profile, output=output))
+
+
+@todo_app.command("complete")
+def todo_complete(
+    item_id: str,
+    apply: Annotated[
+        bool, typer.Option("--apply", help="Execute the completion (requires --yes).")
+    ] = False,  # noqa: A002
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Confirm the completion (requires --apply).")
+    ] = False,
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    execute = _resolve_apply(apply, yes)
+    _run(_todo_complete(item_id=item_id, profile=profile, output=output, execute=execute))
 
 
 @todo_app.command("web")
@@ -1506,6 +1578,34 @@ async def _auth_login_exchange(
     )
 
 
+def _warn_unknown_list_params(resource: HaloResource, params: dict[str, str]) -> None:
+    """Halo silently IGNORES undocumented query params - warn instead of lying.
+
+    /Tickets alone documents 194 params; a typo like `assigned_to` returns
+    the entire tenant as if the filter worked. Close matches come from the
+    spec (e.g. assigned_to -> agent_id). Warnings never fail the command:
+    undocumented-but-working params exist.
+    """
+    if not params:
+        return
+    spec = load_spec()
+    if not spec:
+        return
+    op = spec.get("paths", {}).get(resource.endpoint, {}).get("get") or {}
+    documented = {p.get("name") for p in op.get("parameters", []) if p.get("name")}
+    for key in params:
+        if key in documented:
+            continue
+        # High cutoff: a misleading guess is worse than none (semantic gaps
+        # like assigned_to vs agent_id don't survive it; clinet_id does).
+        match = difflib.get_close_matches(key, sorted(documented), n=1, cutoff=0.72)
+        hint = f" - did you mean '{match[0]}'?" if match else ""
+        warn(
+            f"--param {key} is not documented for GET {resource.endpoint}; "
+            f"Halo will most likely ignore it.{hint}"
+        )
+
+
 async def _list_resource(
     *,
     resource: HaloResource,
@@ -1521,6 +1621,7 @@ async def _list_resource(
 ) -> None:
     if resource.name == "tickets" and open_only:
         params["open_only"] = "true"
+    _warn_unknown_list_params(resource, params)
     # --all opts out of the default record ceiling; explicit --max-* always wins.
     effective_max_records = max_records
     if not fetch_all and effective_max_records is None and max_pages is None:
@@ -1827,17 +1928,122 @@ async def _todo_add(
     owner: int | None,
     due: date | None,
     tags: list[str],
+    execute: bool,
 ) -> None:
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
-        todo = await HaloTodoRepository(client).create(
+        repository = HaloTodoRepository(client)
+        if not execute:
+            # Preview shows the EXACT wire payload; resolving the default owner
+            # is a read (network), never a write - the POST stays gated.
+            resolved_owner = owner if owner is not None else await repository._current_agent_id()
+            preview = appointment_payload(
+                title=title,
+                description=description,
+                owner=resolved_owner,
+                due=due,
+                priority="normal",
+                client_id=None,
+                site_id=None,
+                ticket_id=None,
+                tags=tags,
+                source_metadata={"source": "halocli"},
+            )
+            render(
+                {
+                    "ok": True,
+                    "apply": False,
+                    "resource": "todos",
+                    "payload": normalize_halo_result(preview),
+                    "hint": "Pass --apply --yes to create this todo.",
+                },
+                output=output,
+            )
+            return
+        todo = await repository.create(
             title=title,
             description=description,
             owner=owner,
             due=due,
             tags=tags,
         )
-    render({"ok": True, "todo": normalize_halo_result(todo)}, output=output)
+    render(
+        {"ok": True, "apply": True, "resource": "todos", "todo": normalize_halo_result(todo)},
+        output=output,
+    )
+
+
+async def _todo_list(
+    *,
+    status: str,
+    mine: bool,
+    client_id: int | None,
+    ticket_id: int | None,
+    tag: str | None,
+    search: str | None,
+    max_records: int,
+    profile: str,
+    output: str,
+) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        todos = await HaloTodoRepository(client).list(
+            status=None if status == "all" else status,
+            mine=mine,
+            client_id=client_id,
+            ticket_id=ticket_id,
+            tag=tag,
+            q=search,
+            max_records=max_records,
+        )
+    render(
+        {"resource": "todos", "count": len(todos), "items": normalize_halo_result(todos)},
+        output=output,
+        table_fields=("id", "title", "status", "due_date", "priority", "owner"),
+    )
+
+
+async def _todo_get(*, item_id: str, profile: str, output: str) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        item = await HaloTodoRepository(client).get(item_id)
+    render(
+        {"resource": "todos", "id": item_id, "item": normalize_halo_result(item)},
+        output=output,
+        table_fields=("id", "title", "status", "due_date", "priority", "owner"),
+    )
+
+
+async def _todo_complete(*, item_id: str, profile: str, output: str, execute: bool) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        repository = HaloTodoRepository(client)
+        # Read first: previews stay useful (title shown) and a missing id
+        # fails loudly BEFORE any write attempt.
+        existing = await repository.get(item_id)
+        if not execute:
+            render(
+                {
+                    "ok": True,
+                    "apply": False,
+                    "resource": "todos",
+                    "todo": normalize_halo_result(existing),
+                    "payload": {
+                        "id": existing.get("id"),
+                        "is_task": True,
+                        "complete_status": 0,  # Halo convention: 0 = done, -1 = open
+                        "complete_date": "<set at apply time>",
+                    },
+                    "hint": "Pass --apply --yes to complete this todo.",
+                },
+                output=output,
+            )
+            return
+        completed = await repository.complete(item_id)
+    render(
+        {"ok": True, "apply": True, "resource": "todos", "todo": normalize_halo_result(completed)},
+        output=output,
+    )
 
 
 async def _todo_import_ms_apply(

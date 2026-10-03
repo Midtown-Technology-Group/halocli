@@ -31,6 +31,11 @@ def render_error(data: dict[str, Any]) -> None:
     print(json.dumps(data, indent=2, sort_keys=True, default=str), file=sys.stderr)
 
 
+def warn(message: str) -> None:
+    """Non-fatal operator warning on stderr (kept out of JSON payloads)."""
+    error_console.print(f"[yellow]warning:[/yellow] {message}")
+
+
 def _render_table(items: list[dict], *, table_fields: tuple[str, ...] | None = None) -> None:
     table = Table(show_header=True, header_style="bold")
     columns = _columns(items, table_fields=table_fields)

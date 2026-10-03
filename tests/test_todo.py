@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from typer.testing import CliRunner
 
@@ -366,3 +368,204 @@ async def test_halo_repository_reads_time_entry_history_for_todo() -> None:
         "/TimesheetEvent",
         {"todo_id": 123, "client_id": 12, "ticket_id": 12345, "page_size": 50},
     )
+
+
+# ---------------------------------------------------------- server-side list
+
+
+def _task(task_id: int, *, complete_status: int = -1) -> dict:
+    return {
+        "id": task_id,
+        "is_task": True,
+        "complete_status": complete_status,
+        "subject": f"Task {task_id}",
+        "agent_id": 37,
+        "start_date": "2026-04-26",
+    }
+
+
+class _AppointmentPages:
+    """Fake raw() serving /Appointment pages keyed by page_no (records calls)."""
+
+    def __init__(self, pages: dict[int, list[dict]]) -> None:
+        self.pages = pages
+        self.calls: list[dict] = []
+
+    async def raw(self, method, path, *, params=None, body=None):
+        self.calls.append({"method": method, "path": path, "params": dict(params or {})})
+        assert method == "GET" and path == "/Appointment"
+        return {"appointments": self.pages.get(int((params or {}).get("page_no") or 1), [])}
+
+
+@pytest.mark.asyncio
+async def test_todo_list_uses_documented_server_filters(monkeypatch) -> None:
+    """Proven live: tasksonly/hidecompleted/agents/page_no are honored; agent_id is NOT."""
+    monkeypatch.setattr(
+        HaloTodoRepository,
+        "_current_agent_id",
+        lambda self: _async_value(37),
+    )
+    client = _AppointmentPages({1: [_task(i) for i in range(100)]})
+    todos = await HaloTodoRepository(client).list(status="open", max_records=200)
+
+    params = client.calls[0]["params"]
+    assert params["tasksonly"] == "true"
+    assert params["hidecompleted"] == "true"
+    assert params["page_no"] == "1"
+    assert "agent_id" not in params  # undocumented -> silently ignored by Halo
+    assert len(todos) == 100
+    assert all(t["status"] == "open" for t in todos)
+
+
+@pytest.mark.asyncio
+async def test_todo_list_mine_uses_agents_param(monkeypatch) -> None:
+    monkeypatch.setattr(
+        HaloTodoRepository,
+        "_current_agent_id",
+        lambda self: _async_value(37),
+    )
+    client = _AppointmentPages({1: [_task(i) for i in range(100)]})
+    await HaloTodoRepository(client).list(mine=True, max_records=10)
+
+    params = client.calls[0]["params"]
+    assert params["agents"] == "37"
+    assert "agent_id" not in params
+
+
+@pytest.mark.asyncio
+async def test_todo_list_pages_past_the_first_window() -> None:
+    """The old client-side filter read only the first200 appointments;
+    server-side task paging must aggregate across pages."""
+    pages = {
+        1: [_task(i) for i in range(100)],
+        2: [_task(i) for i in range(100, 180)],
+    }
+    client = _AppointmentPages(pages)
+    todos = await HaloTodoRepository(client).list(status="open", max_records=200)
+
+    assert len(todos) == 180  # both pages aggregated
+    assert {t["id"] for t in todos} == set(range(180))
+
+
+@pytest.mark.asyncio
+async def test_todo_list_repeated_page_stops_the_loop() -> None:
+    """A paging-ignored endpoint must not duplicate (the issue #24 lesson)."""
+    pages = {1: [_task(i) for i in range(100)]}  # every page returns page 1
+    client = _AppointmentPages(pages)
+    todos = await HaloTodoRepository(client).list(status="open", max_records=200)
+
+    assert len(todos) == 100
+    assert len({t["id"] for t in todos}) == 100  # no duplicates
+    assert len(client.calls) == 2  # page1 + the identical page2, then stop
+
+
+@pytest.mark.asyncio
+async def test_todo_list_done_filters_client_side_without_hidecompleted() -> None:
+    rows = [_task(1, complete_status=-1), _task(2, complete_status=0), _task(3, complete_status=0)]
+    client = _AppointmentPages({1: rows})
+    todos = await HaloTodoRepository(client).list(status="done", max_records=50)
+
+    assert "hidecompleted" not in client.calls[0]["params"]
+    assert {t["id"] for t in todos} == {2, 3}
+    assert all(t["status"] == "done" for t in todos)
+
+
+def _async_value(value):
+    async def _inner(self=None):
+        return value
+
+    return _inner()
+
+
+# ------------------------------------------------------------- CLI gate tests
+
+
+def _mock_appointments(monkeypatch, *, row: dict) -> list[dict]:
+    """Serve /auth/token, GET/POST /Appointment; record requests."""
+    import httpx
+
+    async_client = httpx.AsyncClient
+    seen: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/auth/token":
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        path = request.url.path  # HaloClient prefixes /api
+        if "/Appointment/" in path and request.method == "GET":
+            return httpx.Response(200, json=row)
+        if path.endswith("/Appointment") and request.method == "POST":
+            seen.append({"post": True, "body": request.content.decode("utf-8")[:400]})
+            return httpx.Response(200, json={"id": row.get("id", 1)})
+        if path.endswith("/Appointment") and request.method == "GET":
+            seen.append({"get_appointments": True})
+            return httpx.Response(200, json={"appointments": [row]})
+        return httpx.Response(404, json={"error": f"unexpected {path}"})
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "halocli.client.httpx.AsyncClient",
+        lambda *args, **kwargs: async_client(transport=transport),
+    )
+    monkeypatch.setenv("HALO_TENANT_URL", "https://halo.example.com")
+    monkeypatch.setenv("HALO_CLIENT_ID", "id")
+    monkeypatch.setenv("HALO_CLIENT_SECRET", "secret")
+    return seen
+
+
+def test_todo_complete_preview_makes_no_write(monkeypatch) -> None:
+    seen = _mock_appointments(monkeypatch, row=_task(10257))
+
+    result = runner.invoke(app, ["todo", "complete", "10257"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["apply"] is False
+    assert payload["payload"]["complete_status"] == 0  # Halo: 0 = done
+    assert "--apply --yes" in payload["hint"]
+    assert not any("post" in entry for entry in seen)  # zero writes
+
+
+def test_todo_complete_requires_both_flags(monkeypatch) -> None:
+    seen = _mock_appointments(monkeypatch, row=_task(10257))
+
+    result = runner.invoke(app, ["todo", "complete", "10257", "--apply"])
+
+    assert result.exit_code != 0
+    assert not any("post" in entry for entry in seen)
+
+
+def test_todo_complete_apply_fires_the_post(monkeypatch) -> None:
+    seen = _mock_appointments(monkeypatch, row=_task(10257))
+
+    result = runner.invoke(app, ["todo", "complete", "10257", "--apply", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["apply"] is True
+    posts = [entry for entry in seen if "post" in entry]
+    assert len(posts) == 1
+    assert '"complete_status":0' in posts[0]["body"].replace(" ", "")
+
+
+def test_todo_add_preview_makes_no_write(monkeypatch) -> None:
+    seen = _mock_appointments(monkeypatch, row=_task(1))
+    monkeypatch.setattr(HaloTodoRepository, "_current_agent", lambda self: _async_value({"id": 37}))
+
+    result = runner.invoke(app, ["todo", "add", "Preview only task"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["apply"] is False
+    assert payload["payload"]["agent_id"] == 37  # owner resolved for a true preview
+    assert "--apply --yes" in payload["hint"]
+    assert not any("post" in entry for entry in seen)
+
+
+def test_todo_add_apply_fires_the_post(monkeypatch) -> None:
+    seen = _mock_appointments(monkeypatch, row=_task(1))
+    monkeypatch.setattr(HaloTodoRepository, "_current_agent", lambda self: _async_value({"id": 37}))
+
+    result = runner.invoke(app, ["todo", "add", "Real task", "--apply", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert any("post" in entry for entry in seen)
