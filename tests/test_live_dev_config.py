@@ -102,3 +102,31 @@ def test_env_mode_builds_client_credentials_profile(monkeypatch) -> None:
     assert profile.auth_mode == "client_credentials"
     assert profile.client_secret == "secret"
     assert name == "dev-verification"
+
+
+def test_live_module_opts_out_of_isolation() -> None:
+    """The live module must carry the real_state marker: profile mode needs
+    the real config + real credential store, which the autouse isolation
+    fixture otherwise redirects to tmp (this exact failure sent the first
+    campaign run looking for 'configured: none')."""
+    marks = lvd.pytestmark
+    if not isinstance(marks, list):
+        marks = [marks]
+    names = {m.name for m in marks}
+    assert "real_state" in names
+    assert "skipif" in names
+
+
+def test_skip_isolation_predicate_only_for_marked_nodes() -> None:
+    from conftest import skip_isolation
+
+    class _Node:
+        def __init__(self, marker: object | None) -> None:
+            self._marker = marker
+
+        def get_closest_marker(self, name: str):  # noqa: ANN001
+            return self._marker if name == "real_state" else None
+
+    sentinel = object()
+    assert skip_isolation(_Node(sentinel)) is True
+    assert skip_isolation(_Node(None)) is False

@@ -1,4 +1,44 @@
 {
+  "clidev.trial.usehalo.com": {
+    "beliefs": {
+      "halocli": "0.11.0",
+      "ledger_totals": {},
+      "registry_resources": 181,
+      "spec_info_version": "v2",
+      "spec_operations": 1455,
+      "spec_paths": 927,
+      "spec_sha256": "e4961ac880de2a3a035af9c159c015a261843337843213f346fd4115af8f73c2"
+    },
+    "captured_at": "2026-10-03T20:32:01+00:00",
+    "halo": {
+      "agent_count": 0,
+      "agent_url": "https://clidev.trial.usehalo.com",
+      "app_name": "Halo PSA",
+      "app_version": "2.250.32",
+      "auth_url": "https://clidev.trial.usehalo.com/auth",
+      "database_version": "2250",
+      "dbid": "967b49e2-8da1-4209-a4dc-f60bf653d9a3",
+      "hosted_group": "USDEMODB2-TRIALS1",
+      "incoming_service_url": "https://clidev.trial.usehalo.com/api/$ENDPOINT",
+      "last_login": "2026-10-03T20:30:58",
+      "last_task_run": "2026-10-03T20:31:18",
+      "licensed_agent_count": 0,
+      "mobileapp_enabled": true,
+      "nhserver_version": "1364.01",
+      "online_agent_count": 0,
+      "portal_url": "https://clidev.trial.usehalo.com/portal/",
+      "teams_chat_profile": "",
+      "teamsbot_enabled": false,
+      "tenant_id": "CLIdev",
+      "trial_expiry": "2026-11-02T00:00:00",
+      "using_event_service": true,
+      "using_incoming_service": true,
+      "using_outgoing_service": true,
+      "using_scheduling_service": true
+    },
+    "profile": "dev",
+    "tenant_id": "CLIdev"
+  },
   "midtowntg.halopsa.com": {
     "beliefs": {
       "halocli": "0.11.0",
