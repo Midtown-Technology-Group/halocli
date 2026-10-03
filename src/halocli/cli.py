@@ -22,6 +22,7 @@ from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload
 from halocli.output import render, render_error
+from halocli.labels import hydrate_items
 from halocli.resources import RESOURCES, HaloResource, ResourceOperation
 from halocli.schema import validate_request as validate_schema_request
 from halocli.token_cache import KeyringTokenCache, TokenCache
@@ -770,6 +771,14 @@ def _resource_command(resource: HaloResource):
             ),
         ] = False,
         param: Annotated[list[str] | None, typer.Option("--param")] = None,
+        no_labels: Annotated[
+            bool,
+            typer.Option(
+                "--no-labels",
+                help="Skip resolving foreign-key ids to tenant labels "
+                "(status_id stays bare; a few extra lookup reads are skipped).",
+            ),
+        ] = False,
     ) -> None:
         if fetch_all and (max_records is not None or max_pages is not None):
             raise typer.BadParameter("--all cannot be combined with --max-records/--max-pages.")
@@ -784,6 +793,7 @@ def _resource_command(resource: HaloResource):
                 max_records=max_records,
                 fetch_all=fetch_all,
                 params=_parse_params(param or []),
+                no_labels=no_labels,
             )
         )
 
@@ -794,8 +804,16 @@ def _resource_command(resource: HaloResource):
             item_id: str,
             profile: Annotated[str, typer.Option("--profile")] = "default",
             output: Annotated[str, typer.Option("--output", "-o")] = "json",
+            no_labels: Annotated[
+                bool,
+                typer.Option(
+                    "--no-labels",
+                    help="Skip resolving foreign-key ids to tenant labels.",
+                ),
+            ] = False,
         ) -> None:
-            _run(_get_resource(resource=resource, item_id=item_id, profile=profile, output=output))
+            _run(_get_resource(resource=resource, item_id=item_id, profile=profile,
+                               output=output, no_labels=no_labels))
 
     if resource.supports_create:
 
@@ -1433,6 +1451,7 @@ async def _list_resource(
     max_records: int | None,
     fetch_all: bool,
     params: dict[str, str],
+    no_labels: bool = False,
 ) -> None:
     if resource.name == "tickets" and open_only:
         params["open_only"] = "true"
@@ -1452,7 +1471,13 @@ async def _list_resource(
             stats=stats,
             **params,
         )
+        # Hydrate tenant labels for bare foreign keys (status_id ->
+        # status_name) so operators never need a mapping table. Opt out with
+        # --no-labels; skipped entirely when there is nothing to resolve.
+        labels_added = await hydrate_items(client, rows, enabled=not no_labels)
     payload: dict[str, Any] = {"resource": resource.name, "count": len(rows), "items": rows}
+    if labels_added:
+        payload["labels_added"] = labels_added
     if stats.get("paging_ignored"):
         # Halo answered page 2 with page 1 verbatim (issue #24): the endpoint
         # ignores paging. The duplicate was never appended, and one
@@ -1483,15 +1508,18 @@ async def _get_resource(
     item_id: str,
     profile: str,
     output: str,
+    no_labels: bool = False,
 ) -> None:
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
         item = await client.get_resource(resource.name, item_id)
-    render(
-        {"resource": resource.name, "id": item_id, "item": normalize_halo_result(item)},
-        output=output,
-        table_fields=resource.table_fields,
-    )
+        labels_added = await hydrate_items(client, [item] if isinstance(item, dict) else [],
+                                           enabled=not no_labels)
+    payload: dict[str, Any] = {"resource": resource.name, "id": item_id,
+                               "item": normalize_halo_result(item)}
+    if labels_added:
+        payload["labels_added"] = labels_added
+    render(payload, output=output, table_fields=resource.table_fields)
 
 
 def _resolve_apply(apply: bool, yes: bool) -> bool:
@@ -1530,7 +1558,13 @@ async def _write_resource(
         return await execute_write(None, resource, payload, update=update, apply=False)
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
-        return await execute_write(client, resource, payload, update=update, apply=True)
+        result = await execute_write(client, resource, payload, update=update, apply=True)
+        # Post-apply results echo Halo's row (often bare ids): hydrate labels
+        # where a live client exists. Previews stay untouched (zero-network).
+        inner = result.get("result")
+        if isinstance(inner, dict):
+            await hydrate_items(client, [inner])
+        return result
 
 
 async def _delete_command(

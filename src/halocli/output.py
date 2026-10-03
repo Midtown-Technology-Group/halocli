@@ -7,6 +7,8 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
+from halocli.labels import RESOLVERS, label_key_for
+
 
 console = Console()
 error_console = Console(stderr=True)
@@ -43,7 +45,7 @@ def _columns(items: list[dict], *, table_fields: tuple[str, ...] | None = None) 
     if table_fields:
         present = [column for column in table_fields if any(column in item for item in items)]
         if present:
-            return present[:6]
+            return _prefer_labels(present, items)[:6]
     preferred = ["id", "summary", "name", "status_name", "client_name", "agent_name"]
     present = [column for column in preferred if any(column in item for item in items)]
     if present:
@@ -51,3 +53,22 @@ def _columns(items: list[dict], *, table_fields: tuple[str, ...] | None = None) 
     if not items:
         return ["id", "name"]
     return list(items[0].keys())[:6]
+
+
+def _prefer_labels(columns: list[str], items: list[dict]) -> list[str]:
+    """Show the hydrated label instead of the raw id column (table only).
+
+    JSON keeps every key; this is presentation: `status_id` renders as
+    `status_name` once hydration actually resolved it for these rows.
+    """
+    out: list[str] = []
+    for column in columns:
+        if column.endswith("_id") and column in RESOLVERS:
+            label_key = label_key_for(column)
+            if label_key not in columns and any(label_key in item for item in items):
+                if label_key not in out:
+                    out.append(label_key)
+                continue
+        if column not in out:
+            out.append(column)
+    return out
