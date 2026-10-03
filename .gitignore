@@ -21,3 +21,4 @@ scripts/*
 !scripts/get_backlog_probes_pass2.py
 !scripts/evidence_probes.py
 !scripts/check_spec_currency.py
+!scripts/release.py
