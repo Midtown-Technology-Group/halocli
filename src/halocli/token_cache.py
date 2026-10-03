@@ -51,7 +51,9 @@ class TokenCache:
         return True
 
     def _profile_path(self, profile_name: str) -> Path:
-        safe_name = "".join(char if char.isalnum() or char in {"-", "_"} else "_" for char in profile_name)
+        safe_name = "".join(
+            char if char.isalnum() or char in {"-", "_"} else "_" for char in profile_name
+        )
         return self.cache_dir / f"{safe_name}.json"
 
 

@@ -42,7 +42,9 @@ jobs:
         run: python -m pytest -q
 
       - name: Lint
-        run: python -m ruff check .
+        run: |
+          python -m ruff check .
+          python -m ruff format --check .
 
       - name: CLI smoke test
         run: |

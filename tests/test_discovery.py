@@ -45,7 +45,9 @@ async def test_discovery_classifies_client_credentials_only() -> None:
 
 @pytest.mark.asyncio
 async def test_discovery_classifies_unknown_when_no_signal() -> None:
-    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(404))) as http:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda request: httpx.Response(404))
+    ) as http:
         result = await discover_auth("https://halo.example.com", http=http)
 
     assert result.status == DiscoveryStatus.UNKNOWN

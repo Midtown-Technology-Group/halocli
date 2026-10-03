@@ -45,9 +45,12 @@ def test_catalog_limit_is_honored() -> None:
 
 def test_serve_lists_tools_over_stdio() -> None:
     stdin = io.StringIO(
-        json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
-        + json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
-        + json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n"
+        json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+        + "\n"
+        + json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        + "\n"
+        + json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        + "\n"
     )
     stdout = io.StringIO()
     mcp_server.main(input_stream=stdin, output_stream=stdout)
@@ -88,9 +91,7 @@ def test_write_validation_failure_exits_nonzero_in_preview() -> None:
 def test_write_requires_both_apply_and_yes() -> None:
     payload = json.dumps({"summary": "half confirmed"})
     for flags in (["--apply"], ["--yes"]):
-        result = runner.invoke(
-            app, ["tickets", "create", "--data", payload, *flags]
-        )
+        result = runner.invoke(app, ["tickets", "create", "--data", payload, *flags])
         assert result.exit_code != 0
         assert "--apply --yes" in plain(result.output)
 
@@ -139,9 +140,7 @@ def test_raw_refuses_unknown_endpoint_via_spec() -> None:
 def test_raw_no_validate_bypasses_spec_check() -> None:
     # Without a profile this now fails at config load instead of spec validation,
     # proving the spec check was skipped.
-    result = runner.invoke(
-        app, ["raw", "GET", "/DefinitelyNotARealEndpoint", "--no-validate"]
-    )
+    result = runner.invoke(app, ["raw", "GET", "/DefinitelyNotARealEndpoint", "--no-validate"])
 
     assert result.exit_code == 1
     output = plain(result.output)

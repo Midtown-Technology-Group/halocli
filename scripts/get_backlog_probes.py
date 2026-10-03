@@ -21,6 +21,7 @@ skipped unless --force is given.
 
     python scripts/get_backlog_probes.py [--batch-size 25] [--pause 0.5] [--force]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -78,9 +79,7 @@ def spec_optional_params(path: str) -> list[str]:
     spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     op = spec.get("paths", {}).get(path, {}).get("get", {})
     return [
-        p.get("name")
-        for p in op.get("parameters", [])
-        if p.get("name") and not p.get("required")
+        p.get("name") for p in op.get("parameters", []) if p.get("name") and not p.get("required")
     ]
 
 
@@ -103,8 +102,15 @@ def fallback_attempts(path: str, documented: list[str]) -> list[dict]:
         for value in KNOWN_VALUES.get(name, [value_for(name)]):
             attempts.append({name: value})
     # scope fallbacks (skip ones already attempted above)
-    for name in ("client_id", "toplevel_id", "agent_id", "site_id",
-                 "supplier_id", "department_id", "fault_id"):
+    for name in (
+        "client_id",
+        "toplevel_id",
+        "agent_id",
+        "site_id",
+        "supplier_id",
+        "department_id",
+        "fault_id",
+    ):
         if name in documented:
             continue
         for value in KNOWN_VALUES[name][:1]:
@@ -123,11 +129,14 @@ def describe_body(body) -> dict:
                 envelope, rows = key, value
                 break
         if envelope is None:
-            return {"envelope": "<object>", "rows": None, "row_keys": None,
-                    "record_count": None}
+            return {"envelope": "<object>", "rows": None, "row_keys": None, "record_count": None}
     else:
-        return {"envelope": f"<{type(body).__name__}>", "rows": None,
-                "row_keys": None, "record_count": None}
+        return {
+            "envelope": f"<{type(body).__name__}>",
+            "rows": None,
+            "row_keys": None,
+            "record_count": None,
+        }
 
     keys = None
     if rows:
@@ -141,8 +150,7 @@ def describe_body(body) -> dict:
             record_count = int(body.get("record_count"))
         except (TypeError, ValueError):
             record_count = None
-    return {"envelope": envelope, "rows": len(rows), "row_keys": keys,
-            "record_count": record_count}
+    return {"envelope": envelope, "rows": len(rows), "row_keys": keys, "record_count": record_count}
 
 
 async def try_attempt(client, path: str, extra: dict) -> dict:
@@ -155,7 +163,8 @@ async def try_attempt(client, path: str, extra: dict) -> dict:
         return {
             "params": extra,
             "status": f"error:{getattr(exc, 'category', type(exc).__name__)}"
-            if status is None else status,
+            if status is None
+            else status,
             "ms": int((time.monotonic() - started) * 1000),
             "error": (str(exc) or type(exc).__name__)[:200],
         }
@@ -236,7 +245,8 @@ async def run(args) -> int:
             if record.get("rows"):
                 # re-fetch the winner to capture a real id (bounded count=1)
                 body = await client.request(
-                    "GET", path,
+                    "GET",
+                    path,
                     params={**BOUND_PARAMS, **(record["winner_params"] or {})},
                     timeout=REQUEST_TIMEOUT,
                 )
@@ -254,26 +264,30 @@ async def run(args) -> int:
                 if first_id is not None:
                     try:
                         detail = await client.request(
-                            "GET", f"{path}/{first_id}", params={},
+                            "GET",
+                            f"{path}/{first_id}",
+                            params={},
                             timeout=REQUEST_TIMEOUT,
                         )
                         record["id_probe"] = {
-                            "id": first_id, "status": 200,
+                            "id": first_id,
+                            "status": 200,
                             "envelope": describe_body(detail)["envelope"],
                         }
                     except Exception as exc:
                         status = getattr(exc, "status_code", None)
                         record["id_probe"] = {
                             "id": first_id,
-                            "status": status if status is not None
+                            "status": status
+                            if status is not None
                             else f"error:{getattr(exc, 'category', type(exc).__name__)}",
                         }
 
             results[key] = record
             winner = record.get("winner_params")
             print(
-                f'[{index}/{len(pending)}] {key} -> rows={record.get("rows")} '
-                f'params={winner} id_probe={record.get("id_probe", {}).get("status") if record.get("id_probe") else "-"}',
+                f"[{index}/{len(pending)}] {key} -> rows={record.get('rows')} "
+                f"params={winner} id_probe={record.get('id_probe', {}).get('status') if record.get('id_probe') else '-'}",
                 flush=True,
             )
             RESULTS_PATH.write_text(

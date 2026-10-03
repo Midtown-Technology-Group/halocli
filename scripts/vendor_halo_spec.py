@@ -99,19 +99,13 @@ def trim(node: Any, *, property_names: bool = False) -> Any:
         for key, value in node.items():
             if not property_names and (key.startswith("x-") or key in DROP_KEYS):
                 continue
-            if (
-                isinstance(value, str)
-                and not property_names
-                and key in ("description", "summary")
-            ):
+            if isinstance(value, str) and not property_names and key in ("description", "summary"):
                 value = _clip(value)
                 if not value:
                     continue
             elif isinstance(value, (dict, list)):
                 # A properties map's VALUES are schemas -> trim them with keyword rules.
-                value = trim(
-                    value, property_names=key == "properties" and not property_names
-                )
+                value = trim(value, property_names=key == "properties" and not property_names)
                 if (
                     isinstance(value, list)
                     and not value
@@ -245,9 +239,7 @@ _OVERLAY_SCHEMA_TARGET = re.compile(
 )
 
 
-def _overlay_operation(
-    spec: dict[str, Any], path: str, method: str, target: str
-) -> dict[str, Any]:
+def _overlay_operation(spec: dict[str, Any], path: str, method: str, target: str) -> dict[str, Any]:
     item = spec.get("paths", {}).get(path)
     operation = item.get(method) if isinstance(item, dict) else None
     if not isinstance(operation, dict):

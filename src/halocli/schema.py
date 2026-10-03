@@ -275,9 +275,7 @@ def _match_path(spec: dict, path: str) -> tuple[str, dict] | None:
     for tpl in _templates(spec):
         if len(tpl.pieces) != count:
             continue
-        if all(
-            _match_segment(pieces, seg) for pieces, seg in zip(tpl.pieces, segments)
-        ):
+        if all(_match_segment(pieces, seg) for pieces, seg in zip(tpl.pieces, segments)):
             return tpl.template, tpl.path_item
     return None
 

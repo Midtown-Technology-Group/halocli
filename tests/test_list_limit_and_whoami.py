@@ -274,7 +274,9 @@ def _mock_halo_ignoring_paging(
     return seen
 
 
-def test_list_recovers_single_page_when_halo_ignores_paging(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_list_recovers_single_page_when_halo_ignores_paging(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # The issue #24 symptom: 150 items, 50 distinct. After the fix: the full
     # 133 via one count=<total> recovery, flagged, zero duplicates.
     seen = _mock_halo_ignoring_paging(monkeypatch, total=133, honor_count=True)
@@ -291,7 +293,9 @@ def test_list_recovers_single_page_when_halo_ignores_paging(monkeypatch: pytest.
     assert seen and seen[-1].get("count") == "133"
 
 
-def test_list_reports_paging_ignored_when_count_is_ignored_too(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_list_reports_paging_ignored_when_count_is_ignored_too(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # count ignored as well: page 1 stands alone, flagged and honestly truncated.
     _mock_halo_ignoring_paging(monkeypatch, total=133, honor_count=False)
 
@@ -337,8 +341,13 @@ def test_small_result_is_not_reported_as_truncated(monkeypatch: pytest.MonkeyPat
 def _seed_token(scope: str) -> None:
     KeyringTokenCache().save(
         "default",
-        {"access_token": "tok", "expires_at": 9999999999.0, "expires_in": 3600,
-         "scope": scope, "token_type": "Bearer"},
+        {
+            "access_token": "tok",
+            "expires_at": 9999999999.0,
+            "expires_in": 3600,
+            "scope": scope,
+            "token_type": "Bearer",
+        },
     )
 
 
@@ -350,8 +359,13 @@ def test_whoami_reports_granted_scope(monkeypatch: pytest.MonkeyPatch) -> None:
             return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
         return httpx.Response(
             200,
-            json={"id": 37, "name": "Thomas Bray", "email": "t@example.com",
-                  "team": "Infrastructure", "is_agent": True},
+            json={
+                "id": 37,
+                "name": "Thomas Bray",
+                "email": "t@example.com",
+                "team": "Infrastructure",
+                "is_agent": True,
+            },
         )
 
     transport = httpx.MockTransport(handler)

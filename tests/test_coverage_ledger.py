@@ -46,7 +46,9 @@ def test_ledger_is_fresh() -> None:
     """The committed ledger must match a fresh generation (spec/policy/registry)."""
     result = subprocess.run(
         [sys.executable, str(BUILD_SCRIPT), "--check"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -93,9 +95,7 @@ def test_ledger_dispositions_are_sound(ledger: dict) -> None:
 def test_first_class_via_maps_to_real_commands(ledger: dict) -> None:
     """Every 'via' command must name a resource or operation that exists."""
     resource_names = {r.name for r in RESOURCES}
-    operation_keys = {
-        f"{r.name} {op.name}" for r in RESOURCES for op in r.operations
-    }
+    operation_keys = {f"{r.name} {op.name}" for r in RESOURCES for op in r.operations}
     verbs = {"list", "get", "create", "update", "delete", "create/update"}
     for entry in ledger["operations"]:
         if entry["disposition"] != "first-class":

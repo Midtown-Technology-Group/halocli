@@ -233,9 +233,7 @@ async def test_declared_json_body_that_fails_to_parse_still_raises() -> None:
         token = token_if_needed(request)
         if token is not None:
             return token
-        return httpx.Response(
-            200, content=b'{"id":', headers={"content-type": "application/json"}
-        )
+        return httpx.Response(200, content=b'{"id":', headers={"content-type": "application/json"})
 
     async with client_for(handler) as client:
         with pytest.raises(ValueError):

@@ -47,9 +47,7 @@ def main() -> int:
         if report.get("write_mismatches"):
             failures.append(f"{len(report['write_mismatches'])} write mismatch(es)")
         if report.get("operation_mismatches"):
-            failures.append(
-                f"{len(report['operation_mismatches'])} operation mismatch(es)"
-            )
+            failures.append(f"{len(report['operation_mismatches'])} operation mismatch(es)")
         if failures:
             print(f"FAIL: {'; '.join(failures)}", file=sys.stderr)
             return 1

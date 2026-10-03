@@ -109,9 +109,14 @@ def test_synthesized_operation_ids_follow_the_rule(spec: dict[str, Any]) -> None
     upstream = {
         op.get("operationId")
         for _method, _path, op in _operations(spec)
-        if op.get("operationId") in {"GetIntegrationCursor", "GetSeatGeekDetails", "GetUnamePresenceSubscription"}
+        if op.get("operationId")
+        in {"GetIntegrationCursor", "GetSeatGeekDetails", "GetUnamePresenceSubscription"}
     }
-    assert upstream == {"GetIntegrationCursor", "GetSeatGeekDetails", "GetUnamePresenceSubscription"}
+    assert upstream == {
+        "GetIntegrationCursor",
+        "GetSeatGeekDetails",
+        "GetUnamePresenceSubscription",
+    }
 
     checked = 0
     for method, path, op in _operations(spec):
@@ -119,7 +124,9 @@ def test_synthesized_operation_ids_follow_the_rule(spec: dict[str, Any]) -> None
         if operation_id in upstream:
             continue
         assert re.fullmatch(r"[a-z0-9_]+", operation_id), f"odd chars in {operation_id!r}"
-        assert operation_id.startswith(f"{method}_"), f"{operation_id} does not start with {method}_"
+        assert operation_id.startswith(f"{method}_"), (
+            f"{operation_id} does not start with {method}_"
+        )
         checked += 1
     assert checked > 1400  # nearly every operation is synthesized
 
@@ -160,12 +167,8 @@ def test_overlay_file_shape() -> None:
         # $.paths[...].<method>.parameters[?@.name=='x'].description, and
         # $.components.schemas.X.properties.y.description (all standard JSONPath;
         # test_overlay_targets_are_standard_jsonpath proves it).
-        on_path = target.startswith("$.paths[") and target.endswith(
-            (".summary", ".description")
-        )
-        on_schema = target.startswith("$.components.schemas.") and target.endswith(
-            ".description"
-        )
+        on_path = target.startswith("$.paths[") and target.endswith((".summary", ".description"))
+        on_schema = target.startswith("$.components.schemas.") and target.endswith(".description")
         assert on_path or on_schema, f"unrecognised overlay target: {target}"
         assert isinstance(action["update"], str) and action["update"].strip()
 
@@ -237,9 +240,17 @@ def test_apply_overlay_fill_if_missing(vendor_mod: Any) -> None:
 def test_apply_overlay_rejects_bad_targets(vendor_mod: Any) -> None:
     mini = {"paths": {"/Tickets": {"get": {}}}}
     with pytest.raises(ValueError, match="unsupported overlay target"):
-        vendor_mod.apply_overlay(mini, {"overlay": "1.0.0", "actions": [{"target": "$.components", "update": "x"}]})
+        vendor_mod.apply_overlay(
+            mini, {"overlay": "1.0.0", "actions": [{"target": "$.components", "update": "x"}]}
+        )
     with pytest.raises(ValueError, match="not in spec"):
-        vendor_mod.apply_overlay(mini, {"overlay": "1.0.0", "actions": [{"target": "$.paths['/Nope'].get.summary", "update": "x"}]})
+        vendor_mod.apply_overlay(
+            mini,
+            {
+                "overlay": "1.0.0",
+                "actions": [{"target": "$.paths['/Nope'].get.summary", "update": "x"}],
+            },
+        )
     with pytest.raises(ValueError, match="overlay version"):
         vendor_mod.apply_overlay(mini, {"overlay": "9.9.9", "actions": []})
 
@@ -253,8 +264,12 @@ def test_apply_overlay_fills_parameter_and_property_descriptions(vendor_mod: Any
                 "get": {
                     "parameters": [
                         {"name": "loadreport", "in": "query", "schema": {"type": "boolean"}},
-                        {"name": "includedetails", "in": "query", "description": "upstream text",
-                         "schema": {"type": "boolean"}},
+                        {
+                            "name": "includedetails",
+                            "in": "query",
+                            "description": "upstream text",
+                            "schema": {"type": "boolean"},
+                        },
                     ]
                 }
             }
@@ -274,14 +289,22 @@ def test_apply_overlay_fills_parameter_and_property_descriptions(vendor_mod: Any
         "overlay": "1.0.0",
         "info": {"title": "t"},
         "actions": [
-            {"target": "$.paths['/Report/{id}'].get.parameters[?@.name=='loadreport'].description",
-             "update": "execute the report"},
-            {"target": "$.paths['/Report/{id}'].get.parameters[?@.name=='includedetails'].description",
-             "update": "must not overwrite upstream"},
-            {"target": "$.components.schemas.AnalyzerProfile.properties.sql.description",
-             "update": "raw T-SQL"},
-            {"target": "$.components.schemas.AnalyzerProfile.properties.name.description",
-             "update": "must not overwrite upstream"},
+            {
+                "target": "$.paths['/Report/{id}'].get.parameters[?@.name=='loadreport'].description",
+                "update": "execute the report",
+            },
+            {
+                "target": "$.paths['/Report/{id}'].get.parameters[?@.name=='includedetails'].description",
+                "update": "must not overwrite upstream",
+            },
+            {
+                "target": "$.components.schemas.AnalyzerProfile.properties.sql.description",
+                "update": "raw T-SQL",
+            },
+            {
+                "target": "$.components.schemas.AnalyzerProfile.properties.name.description",
+                "update": "must not overwrite upstream",
+            },
         ],
     }
 
@@ -306,23 +329,41 @@ def test_apply_overlay_rejects_unknown_parameter_and_property(vendor_mod: Any) -
     with pytest.raises(ValueError, match="parameter not in spec"):
         vendor_mod.apply_overlay(
             mini,
-            {"overlay": "1.0.0",
-             "actions": [{"target": "$.paths['/Report/{id}'].get.parameters[?@.name=='gone'].description",
-                          "update": "x"}]},
+            {
+                "overlay": "1.0.0",
+                "actions": [
+                    {
+                        "target": "$.paths['/Report/{id}'].get.parameters[?@.name=='gone'].description",
+                        "update": "x",
+                    }
+                ],
+            },
         )
     with pytest.raises(ValueError, match="schema property not in spec"):
         vendor_mod.apply_overlay(
             mini,
-            {"overlay": "1.0.0",
-             "actions": [{"target": "$.components.schemas.AnalyzerProfile.properties.gone.description",
-                          "update": "x"}]},
+            {
+                "overlay": "1.0.0",
+                "actions": [
+                    {
+                        "target": "$.components.schemas.AnalyzerProfile.properties.gone.description",
+                        "update": "x",
+                    }
+                ],
+            },
         )
     with pytest.raises(ValueError, match="schema property not in spec"):
         vendor_mod.apply_overlay(
             mini,
-            {"overlay": "1.0.0",
-             "actions": [{"target": "$.components.schemas.Missing.properties.x.description",
-                          "update": "x"}]},
+            {
+                "overlay": "1.0.0",
+                "actions": [
+                    {
+                        "target": "$.components.schemas.Missing.properties.x.description",
+                        "update": "x",
+                    }
+                ],
+            },
         )
 
 
@@ -363,7 +404,10 @@ def test_report_interface_prose_documented(spec: dict[str, Any]) -> None:
 def test_synthesize_operation_ids_rule(vendor_mod: Any) -> None:
     mini = {
         "paths": {
-            "/Tickets": {"get": {"summary": "s"}, "post": {"operationId": "UpstreamId", "summary": "s"}},
+            "/Tickets": {
+                "get": {"summary": "s"},
+                "post": {"operationId": "UpstreamId", "summary": "s"},
+            },
             "/Invoice/PDF/{id}": {"post": {"summary": "s"}},
         }
     }

@@ -7,6 +7,7 @@ identical, exit 1 on drift (re-run scripts/vendor_halo_spec.py then).
 
     python scripts/check_spec_currency.py [--url URL]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,8 +46,10 @@ def main() -> int:
     for path, m in removed:
         print(f"  - {m.upper()} {path}")
     if added or removed:
-        print("DRIFT: re-run scripts/vendor_halo_spec.py, reconcile new ops "
-              "in coverage_policy.json, regenerate the ledger and overlay prose")
+        print(
+            "DRIFT: re-run scripts/vendor_halo_spec.py, reconcile new ops "
+            "in coverage_policy.json, regenerate the ledger and overlay prose"
+        )
         return 1
     print("NO DRIFT: vendored spec is operation-for-operation current")
     return 0

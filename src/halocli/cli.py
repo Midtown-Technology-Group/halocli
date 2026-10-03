@@ -43,6 +43,7 @@ todo_app = typer.Typer(help="Create and preview lightweight Halo Todo tasks.")
 app.add_typer(auth_app, name="auth")
 app.add_typer(todo_app, name="todo")
 
+
 def main() -> None:
     app()
 
@@ -206,8 +207,12 @@ def _operation_command(resource: HaloResource, op: ResourceOperation):
         ] = None,
         profile: Annotated[str, typer.Option("--profile")] = "default",
         output: Annotated[str, typer.Option("--output", "-o")] = "json",
-        apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,
-        yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+        apply: Annotated[
+            bool, typer.Option("--apply", help="Execute the write (requires --yes).")
+        ] = False,
+        yes: Annotated[
+            bool, typer.Option("--yes", help="Confirm the write (requires --apply).")
+        ] = False,
     ) -> None:
         # Usage guards run before anything else: a wrong shape must never reach
         # the network or even load a profile.
@@ -215,8 +220,7 @@ def _operation_command(resource: HaloResource, op: ResourceOperation):
             expected = ", ".join(op.args)
             expected_part = f": {expected}" if expected else ""
             raise typer.BadParameter(
-                f"{op.name} expects {len(op.args)} path argument(s){expected_part}; "
-                f"got {len(args)}"
+                f"{op.name} expects {len(op.args)} path argument(s){expected_part}; got {len(args)}"
             )
         if not op.write and data is not None:
             raise typer.BadParameter("--data is only valid for write operations")
@@ -294,20 +298,42 @@ def _operation_command(resource: HaloResource, op: ResourceOperation):
 # creation was verified live (new id, distinct guid, source unchanged after).
 REPORT_IDENTITY_FIELDS = frozenset(
     {
-        "_canupdate", "alreadyconverted", "apiquery_id", "builtinid",
-        "created_by", "csv_attachment_id", "csv_attachment_link", "date_created",
-        "guid", "id", "is_onlinerepository_report", "is_published",
-        "json_attachment_id", "json_attachment_link", "last_updated",
-        "last_updated_by", "local_library_id", "online_datasource_id", "online_id",
-        "pdf_attachment_id", "published_id", "systemreportid",
-        "xls_attachment_id", "xls_attachment_link",
+        "_canupdate",
+        "alreadyconverted",
+        "apiquery_id",
+        "builtinid",
+        "created_by",
+        "csv_attachment_id",
+        "csv_attachment_link",
+        "date_created",
+        "guid",
+        "id",
+        "is_onlinerepository_report",
+        "is_published",
+        "json_attachment_id",
+        "json_attachment_link",
+        "last_updated",
+        "last_updated_by",
+        "local_library_id",
+        "online_datasource_id",
+        "online_id",
+        "pdf_attachment_id",
+        "published_id",
+        "systemreportid",
+        "xls_attachment_id",
+        "xls_attachment_link",
     }
 )
 
 # Fields compared before/after the clone to prove the source was not modified.
 REPORT_SOURCE_FIELDS = (
-    "guid", "name", "sql", "description", "availablefields",
-    "is_published", "published_id",
+    "guid",
+    "name",
+    "sql",
+    "description",
+    "availablefields",
+    "is_published",
+    "published_id",
 )
 
 # Halo's execution wrapper returns at most this many rows (measured: 50,000
@@ -353,8 +379,7 @@ def _report_run_command(resource: HaloResource, op: ResourceOperation):
             expected = ", ".join(op.args)
             expected_part = f": {expected}" if expected else ""
             raise typer.BadParameter(
-                f"{op.name} expects {len(op.args)} path argument(s){expected_part}; "
-                f"got {len(args)}"
+                f"{op.name} expects {len(op.args)} path argument(s){expected_part}; got {len(args)}"
             )
         if limit < 1:
             raise typer.BadParameter("--limit must be at least 1")
@@ -572,8 +597,12 @@ def _report_clone_command(resource: HaloResource, op: ResourceOperation):
         name: Annotated[str, typer.Option("--name", help="Name for the new report.")],
         profile: Annotated[str, typer.Option("--profile")] = "default",
         output: Annotated[str, typer.Option("--output", "-o")] = "json",
-        apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,  # noqa: A002
-        yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+        apply: Annotated[
+            bool, typer.Option("--apply", help="Execute the write (requires --yes).")
+        ] = False,  # noqa: A002
+        yes: Annotated[
+            bool, typer.Option("--yes", help="Confirm the write (requires --apply).")
+        ] = False,
     ) -> None:
         if not name.strip():
             raise typer.BadParameter("--name must not be empty")
@@ -661,7 +690,8 @@ async def _run_report_clone(
         before = await client.request("GET", source_path)
         if not isinstance(before, dict):
             payload.update(
-                ok=False, category="validation",
+                ok=False,
+                category="validation",
                 error=f"GET {source_path} did not return a report object",
             )
             return payload
@@ -675,7 +705,8 @@ async def _run_report_clone(
             created = created[0] if created else {}
         if not isinstance(created, dict) or created.get("id") is None:
             payload.update(
-                ok=False, category="validation",
+                ok=False,
+                category="validation",
                 error="POST did not return the created report (no id)",
                 hint=(
                     "Halo answered without returning the new record, so a copy "
@@ -721,10 +752,7 @@ async def _run_report_clone(
     )
     changed = []
     if isinstance(after_source, dict):
-        changed = [
-            f for f in REPORT_SOURCE_FIELDS
-            if after_source.get(f) != before.get(f)
-        ]
+        changed = [f for f in REPORT_SOURCE_FIELDS if after_source.get(f) != before.get(f)]
     else:
         changed = ["<source re-read failed>"]
     payload["source_unchanged"] = not changed
@@ -732,9 +760,7 @@ async def _run_report_clone(
         payload["source_changed_fields"] = changed
     copied_sql = isinstance(verified, dict) and verified.get("sql") == before.get("sql")
     payload["sql_copied"] = copied_sql
-    payload["applied_name"] = (
-        isinstance(verified, dict) and verified.get("name") == name
-    )
+    payload["applied_name"] = isinstance(verified, dict) and verified.get("name") == name
 
     if not payload["source_unchanged"] or not copied_sql or not payload["applied_name"]:
         payload.update(
@@ -812,18 +838,31 @@ def _resource_command(resource: HaloResource):
                 ),
             ] = False,
         ) -> None:
-            _run(_get_resource(resource=resource, item_id=item_id, profile=profile,
-                               output=output, no_labels=no_labels))
+            _run(
+                _get_resource(
+                    resource=resource,
+                    item_id=item_id,
+                    profile=profile,
+                    output=output,
+                    no_labels=no_labels,
+                )
+            )
 
     if resource.supports_create:
 
         @resource_app.command("create")
         def create_command(
-            data: Annotated[str, typer.Option("--data", help="JSON file path or inline JSON object.")],
+            data: Annotated[
+                str, typer.Option("--data", help="JSON file path or inline JSON object.")
+            ],
             profile: Annotated[str, typer.Option("--profile")] = "default",
             output: Annotated[str, typer.Option("--output", "-o")] = "json",
-            apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,  # noqa: A002
-            yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+            apply: Annotated[
+                bool, typer.Option("--apply", help="Execute the write (requires --yes).")
+            ] = False,  # noqa: A002
+            yes: Annotated[
+                bool, typer.Option("--yes", help="Confirm the write (requires --apply).")
+            ] = False,
         ) -> None:
             execute = _resolve_apply(apply, yes)
             payload = _require_payload(_load_data_argument(data))
@@ -843,11 +882,17 @@ def _resource_command(resource: HaloResource):
         @resource_app.command("update")
         def update_command(
             item_id: str,
-            data: Annotated[str, typer.Option("--data", help="JSON file path or inline JSON object.")],
+            data: Annotated[
+                str, typer.Option("--data", help="JSON file path or inline JSON object.")
+            ],
             profile: Annotated[str, typer.Option("--profile")] = "default",
             output: Annotated[str, typer.Option("--output", "-o")] = "json",
-            apply: Annotated[bool, typer.Option("--apply", help="Execute the write (requires --yes).")] = False,  # noqa: A002
-            yes: Annotated[bool, typer.Option("--yes", help="Confirm the write (requires --apply).")] = False,
+            apply: Annotated[
+                bool, typer.Option("--apply", help="Execute the write (requires --yes).")
+            ] = False,  # noqa: A002
+            yes: Annotated[
+                bool, typer.Option("--yes", help="Confirm the write (requires --apply).")
+            ] = False,
         ) -> None:
             execute = _resolve_apply(apply, yes)
             payload = dict(_require_payload(_load_data_argument(data)))
@@ -870,8 +915,12 @@ def _resource_command(resource: HaloResource):
             item_id: str,
             profile: Annotated[str, typer.Option("--profile")] = "default",
             output: Annotated[str, typer.Option("--output", "-o")] = "json",
-            apply: Annotated[bool, typer.Option("--apply", help="Execute the delete (requires --yes).")] = False,  # noqa: A002
-            yes: Annotated[bool, typer.Option("--yes", help="Confirm the delete (requires --apply).")] = False,
+            apply: Annotated[
+                bool, typer.Option("--apply", help="Execute the delete (requires --yes).")
+            ] = False,  # noqa: A002
+            yes: Annotated[
+                bool, typer.Option("--yes", help="Confirm the delete (requires --apply).")
+            ] = False,
         ) -> None:
             execute = _resolve_apply(apply, yes)
             result = _run(
@@ -894,7 +943,9 @@ def _resource_command(resource: HaloResource):
                 f"operation {resource.name}.{operation.name} names unknown handler "
                 f"{operation.handler!r} (known: {sorted(_OPERATION_HANDLERS)})"
             )
-        callback = handler(resource, operation) if handler else _operation_command(resource, operation)
+        callback = (
+            handler(resource, operation) if handler else _operation_command(resource, operation)
+        )
         resource_app.command(operation.name, help=_operation_help(operation))(callback)
 
     return resource_app
@@ -922,6 +973,7 @@ def _split_spec_problems(problems: list[str]) -> tuple[list[str], list[str]]:
     startswith-only version refused every array-body warning instead, breaking
     the documented spec_warnings flow (issue #28).
     """
+
     def is_warning(problem: str) -> bool:
         stripped = _SPEC_BODY_PREFIX.sub("", problem, count=1)
         return stripped.startswith("warning: ")
@@ -1130,8 +1182,7 @@ async def _run_search_live(
             ok=False,
             category="validation",
             error=(
-                "Unexpected response shape from Halo: expected an array, got "
-                f"{type(body).__name__}"
+                f"Unexpected response shape from Halo: expected an array, got {type(body).__name__}"
             ),
         )
         return payload
@@ -1149,7 +1200,9 @@ async def _run_search_live(
         items=body[:limit],
     )
     if len(body) > limit:
-        payload["hint"] = f"Showing {limit} of {len(body)} matches; pass --limit {len(body)} for all."
+        payload["hint"] = (
+            f"Showing {limit} of {len(body)} matches; pass --limit {len(body)} for all."
+        )
     elif not body:
         payload["hint"] = "No matches. Broaden the term or check the spelling."
     return payload
@@ -1157,7 +1210,9 @@ async def _run_search_live(
 
 @app.command()
 def serve(
-    host: Annotated[str, typer.Option("--host", help="Bind address for stdio (ignored; reserved).")] = "stdio",
+    host: Annotated[
+        str, typer.Option("--host", help="Bind address for stdio (ignored; reserved).")
+    ] = "stdio",
 ) -> None:
     """Run the code-mode MCP server on stdin/stdout (newline-delimited JSON-RPC 2.0)."""
     from halocli import mcp_server
@@ -1175,9 +1230,14 @@ def todo_import_ms(
     apply: Annotated[bool, typer.Option("--apply", help="Create Halo Todo records.")] = False,  # noqa: A002
     complete_source: Annotated[
         bool,
-        typer.Option("--complete-source", help="Mark each Microsoft To Do task complete after a successful Halo import."),
+        typer.Option(
+            "--complete-source",
+            help="Mark each Microsoft To Do task complete after a successful Halo import.",
+        ),
     ] = False,
-    profile: Annotated[str, typer.Option("--profile", help="Halo profile used when --apply is set.")] = "default",
+    profile: Annotated[
+        str, typer.Option("--profile", help="Halo profile used when --apply is set.")
+    ] = "default",
     output: Annotated[str, typer.Option("--output", "-o")] = "json",
 ) -> None:
     if complete_source and not apply:
@@ -1246,11 +1306,15 @@ def todo_web(
     try:
         import uvicorn
     except ModuleNotFoundError as exc:
-        raise typer.BadParameter("Install halocli with the web extra: pip install 'halocli[web]'.") from exc
+        raise typer.BadParameter(
+            "Install halocli with the web extra: pip install 'halocli[web]'."
+        ) from exc
 
     from halocli.todo_web import create_halo_todo_api
 
-    typer.echo(f"Starting Halo Todo API at http://{host}:{port} (docs at http://{host}:{port}/docs)")
+    typer.echo(
+        f"Starting Halo Todo API at http://{host}:{port} (docs at http://{host}:{port}/docs)"
+    )
     uvicorn.run(create_halo_todo_api(profile=profile), host=host, port=port, reload=reload)
 
 
@@ -1364,9 +1428,7 @@ async def _auth_whoami(*, profile: str, output: str, check: list[str]) -> None:
         )
     if probes:
         payload["checks"] = probes
-        payload["checks_all_reachable"] = all(
-            entry.get("reachable") for entry in probes
-        )
+        payload["checks_all_reachable"] = all(entry.get("reachable") for entry in probes)
     render(payload, output=output)
 
 
@@ -1377,7 +1439,9 @@ async def _auth_discover(*, tenant_url: str, profile: str | None, save: bool, ou
         if not profile:
             raise typer.BadParameter("--save requires --profile.")
         if result.status != DiscoveryStatus.INTERACTIVE_SUPPORTED:
-            raise typer.BadParameter("Discovery did not confirm interactive support; profile was not updated.")
+            raise typer.BadParameter(
+                "Discovery did not confirm interactive support; profile was not updated."
+            )
         update_profile(
             profile,
             {
@@ -1413,7 +1477,9 @@ async def _auth_login_exchange(
     if halo_profile.client_secret:
         data["client_secret"] = halo_profile.client_secret
     async with httpx.AsyncClient(timeout=halo_profile.timeout) as http:
-        response = await http.post(halo_profile.token_endpoint or halo_profile.auth_token_url, data=data)
+        response = await http.post(
+            halo_profile.token_endpoint or halo_profile.auth_token_url, data=data
+        )
     if response.status_code >= 300:
         err = RuntimeError(f"HTTP {response.status_code}: {response.text[:500]}")
         err.response = response  # type: ignore[attr-defined]
@@ -1513,10 +1579,14 @@ async def _get_resource(
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
         item = await client.get_resource(resource.name, item_id)
-        labels_added = await hydrate_items(client, [item] if isinstance(item, dict) else [],
-                                           enabled=not no_labels)
-    payload: dict[str, Any] = {"resource": resource.name, "id": item_id,
-                               "item": normalize_halo_result(item)}
+        labels_added = await hydrate_items(
+            client, [item] if isinstance(item, dict) else [], enabled=not no_labels
+        )
+    payload: dict[str, Any] = {
+        "resource": resource.name,
+        "id": item_id,
+        "item": normalize_halo_result(item),
+    }
     if labels_added:
         payload["labels_added"] = labels_added
     render(payload, output=output, table_fields=resource.table_fields)
