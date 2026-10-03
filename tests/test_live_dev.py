@@ -1,17 +1,27 @@
 """Opt-in LIVE write verification against a throwaway dev tenant.
 
 Every test in this module FIRES REAL WRITES. They run only when a dev
-tenant is configured via environment variables, so CI and default local
-runs skip them entirely:
+tenant is configured, so CI and default local runs skip them entirely.
 
-    HALO_DEV_TENANT_URL=https://<you>.halopsa.com
+Preferred (native profile, same shape as prod - no secrets in env):
+
+    halocli configure --profile dev --tenant-url https://<you>.trial.usehalo.com \\
+      --auth-mode halo-interactive --client-id <app id>
+    halocli auth discover --tenant-url https://<you>.trial.usehalo.com --profile dev --save
+    halocli auth login --profile dev
+    $env:HALO_DEV_PROFILE = "dev"
+    pytest tests/test_live_dev.py -v
+
+Headless alternative (client-credentials secret in env):
+
+    HALO_DEV_TENANT_URL=https://<you>.trial.usehalo.com
     HALO_DEV_CLIENT_ID=...
     HALO_DEV_CLIENT_SECRET=...
     pytest tests/test_live_dev.py -v
 
 Ground rules enforced here, not by convention:
 - the tenant must NOT be the production host (a loud refusal, so these
-  can never be pointed at midtowntg by accident);
+  can never be pointed at midtowntg by accident - checked in both modes);
 - every test cleans up after itself (create -> verify -> delete), so the
   trial stays tidy across campaign reruns;
 - records are named with a recognizable prefix for any manual sweep.
@@ -24,43 +34,76 @@ import uuid
 
 import pytest
 
-from halocli.config import HaloProfile
+from halocli.config import HaloProfile, load_profile
 from halocli.resources import get_resource
 from halocli.writes import delete_resource, execute_write
 
 ENV_KEYS = ("HALO_DEV_TENANT_URL", "HALO_DEV_CLIENT_ID", "HALO_DEV_CLIENT_SECRET")
+PROFILE_ENV = "HALO_DEV_PROFILE"
 PROD_HOST = "midtowntg.halopsa.com"
 
+
+def _active_mode() -> str | None:
+    """Profile mode wins when both are set: it is the house style."""
+    if os.environ.get(PROFILE_ENV):
+        return "profile"
+    if all(os.environ.get(k) for k in ENV_KEYS):
+        return "env"
+    return None
+
+
 pytestmark = pytest.mark.skipif(
-    not all(os.environ.get(k) for k in ENV_KEYS),
-    reason="dev tenant not configured (HALO_DEV_* env vars absent - see the "
-    "dev-tenant setup issue for the trial flow)",
+    _active_mode() is None,
+    reason="dev tenant not configured (set HALO_DEV_PROFILE=<name> for the "
+    "native-profile path, or the HALO_DEV_TENANT_URL/CLIENT_ID/CLIENT_SECRET "
+    "env trio - see the dev-tenant setup issue for the trial flow)",
 )
 
 PROBE_PREFIX = "halocli-dev-probe-"
 
 
-def dev_profile() -> HaloProfile:
-    """Build the dev profile from env - with a hard refusal of prod."""
-    url = os.environ["HALO_DEV_TENANT_URL"].rstrip("/")
-    host = url.split("//", 1)[-1].split("/", 1)[0]
+def _refuse_prod(tenant_url: str) -> None:
+    host = tenant_url.split("//", 1)[-1].split("/", 1)[0]
     if PROD_HOST in host:
         raise AssertionError(
-            f"HALO_DEV_TENANT_URL points at PRODUCTION ({host}); live write "
+            f"dev tenant URL points at PRODUCTION ({host}); live write "
             "verification must never target the production tenant"
         )
-    return HaloProfile(
-        tenant_url=url,
-        client_id=os.environ["HALO_DEV_CLIENT_ID"],
-        client_secret=os.environ["HALO_DEV_CLIENT_SECRET"],
-        auth_mode="client_credentials",
+
+
+def dev_profile() -> tuple[HaloProfile, str]:
+    """Resolve (profile, profile_name), with a hard refusal of prod.
+
+    Profile mode loads the named native profile - whatever auth mode it
+    carries (halo_interactive tokens come from the OS credential store;
+    nothing secret lives in env). Env mode keeps the original
+    client-credentials path for headless runs.
+    """
+    mode = _active_mode()
+    assert mode is not None  # guarded by pytestmark
+    if mode == "profile":
+        name = os.environ[PROFILE_ENV]
+        profile = load_profile(name)
+        _refuse_prod(profile.tenant_url)
+        return profile, name
+    url = os.environ["HALO_DEV_TENANT_URL"].rstrip("/")
+    _refuse_prod(url)
+    return (
+        HaloProfile(
+            tenant_url=url,
+            client_id=os.environ["HALO_DEV_CLIENT_ID"],
+            client_secret=os.environ["HALO_DEV_CLIENT_SECRET"],
+            auth_mode="client_credentials",
+        ),
+        "dev-verification",
     )
 
 
 async def _client():
     from halocli.client import HaloClient
 
-    return HaloClient(dev_profile(), profile_name="dev-verification")
+    profile, name = dev_profile()
+    return HaloClient(profile, profile_name=name)
 
 
 @pytest.mark.asyncio
