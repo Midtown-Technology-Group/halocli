@@ -9,7 +9,7 @@
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "9a6721932c02741136008341062e83b5e55aff5c50e6ef116880e327d839f7f2",
+  "policy_sha256": "848b084544e371e0fdd9ec8c849493b8b1903d113658b9b1e3ae94762b43c13b",
   "spec_sha256": "6bc442506e86ea0522fc23f946f144b9e1def29df3ebca032c09a6ddd7d2d2a1",
   "sweep": {
    "entries": 797,
@@ -478,14 +478,14 @@
   {
    "disposition": "dormant",
    "method": "get",
-   "note": "live404 bare GET (sweep 2026-10-02); no sub-route/params found - re-probe before promoting",
+   "note": "live404 bare GET and with ?appointment_id= on the trial (2026-10-03); no sub-route in the spec. Sibling POST answers 400 wanting a single Appointment OBJECT (array rejected) - GET route likely absent",
    "path": "/Appointment/Booking",
    "via": ""
   },
   {
    "disposition": "deliberately-raw",
    "method": "post",
-   "note": "booking fires attendee invites and can update tickets (_send/_force/_dont_update_ticket flags); the appointments surface is recipe-driven (completion recipe live-proven) - booking stays raw (final, evidence:190-prop POST schema 2026-10-02)",
+   "note": "booking fires attendee invites and can update tickets (_send/_force/_dont_update_ticket flags); the appointments surface is recipe-driven (completion recipe live-proven) - booking stays raw (final, evidence:190-prop POST schema 2026-10-02; array body rejected - wants a single Appointment object, trial probe 2026-10-03)",
    "path": "/Appointment/Booking",
    "via": ""
   },
@@ -9494,14 +9494,14 @@
   {
    "disposition": "dormant",
    "method": "get",
-   "note": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build",
+   "note": "live404 on midtowntg (GET sweep 2026-10-02) AND live404 on the clidev trial with an interactive agent token (2026-10-03) - DTC's reference documents it as 'currently authenticated User' (no params), so the route is absent for agent tokens on both builds; user-scoped-token path unproven",
    "path": "/Users/me",
    "via": ""
   },
   {
    "disposition": "dormant",
    "method": "get",
-   "note": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build",
+   "note": "live404 on midtowntg (2026-10-02) and live404 on the trial bare + uname=/user_id= params (2026-10-03); undocumented even in DTC's API reference - route absent or non-public",
    "path": "/Users/onbehalf",
    "via": ""
   },

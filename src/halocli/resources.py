@@ -417,15 +417,22 @@ RESOURCES: tuple[HaloResource, ...] = (
         aliases=("action",),
         table_fields=("id", "ticket_id", "who", "note"),
         # POST /Actions creates a ticket action/note (ticket_id set, no id) or updates
-        # one (id set); DELETE /Actions/{id} exists. Instance config may additionally
-        # require outcome/outcome_id for some action types, so only ticket_id + note are
-        # enforced here.
+        # one (id set); DELETE /Actions/{id} exists. LIVE EVIDENCE 2026-10-03 on the
+        # trial (scripts/issue73_probe.py): create REQUIRES outcome_id - a bare
+        # ticket_id+note gets "An Outcome must be entered", and the outcome must be
+        # AGENT-ACCESSIBLE (id11 "Re-Assign" -> "You do not have access to this
+        # Action"; id21 "Escalate" -> ok). The documented new_* change fields mutate
+        # the ticket (impact3->2, urgency3->1, priority4->2 verified; safety flags
+        # sendemail=false/sendsms=false/dont_do_rules=true keep it contained).
+        # DELETE requires a ticket_id QUERY param ("ticket_id must be included when
+        # deleting an Action") which the generic delete path cannot send yet - the
+        # delete leg400s until delete-params support exists (issue #73).
         create_endpoint="/Actions",
         update_endpoint="/Actions",
-        required_create_fields=("ticket_id", "note"),
+        required_create_fields=("ticket_id", "note", "outcome_id"),
         required_update_fields=("id",),
         supports_delete=True,
-        write_preview_fields=("id", "ticket_id", "note", "outcome", "hiddenfromuser"),
+        write_preview_fields=("id", "ticket_id", "note", "outcome_id", "outcome", "hiddenfromuser"),
     ),
     HaloResource(
         "statuses",

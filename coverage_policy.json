@@ -2629,15 +2629,15 @@
   "op_overrides": {
     "GET /Users/me": {
       "disposition": "dormant",
-      "reason": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build"
+      "reason": "live404 on midtowntg (GET sweep 2026-10-02) AND live404 on the clidev trial with an interactive agent token (2026-10-03) - DTC's reference documents it as 'currently authenticated User' (no params), so the route is absent for agent tokens on both builds; user-scoped-token path unproven"
     },
     "GET /Users/onbehalf": {
       "disposition": "dormant",
-      "reason": "live404 on midtowntg (GET sweep 2026-10-02) - route absent on this tenant build"
+      "reason": "live404 on midtowntg (2026-10-02) and live404 on the trial bare + uname=/user_id= params (2026-10-03); undocumented even in DTC's API reference - route absent or non-public"
     },
     "GET /Appointment/Booking": {
       "disposition": "dormant",
-      "reason": "live404 bare GET (sweep 2026-10-02); no sub-route/params found - re-probe before promoting"
+      "reason": "live404 bare GET and with ?appointment_id= on the trial (2026-10-03); no sub-route in the spec. Sibling POST answers 400 wanting a single Appointment OBJECT (array rejected) - GET route likely absent"
     },
     "GET /DashboardLinks/FilterValues": {
       "disposition": "dormant",
@@ -2681,7 +2681,7 @@
     },
     "POST /Appointment/Booking": {
       "disposition": "deliberately-raw",
-      "reason": "booking fires attendee invites and can update tickets (_send/_force/_dont_update_ticket flags); the appointments surface is recipe-driven (completion recipe live-proven) - booking stays raw (final, evidence:190-prop POST schema 2026-10-02)"
+      "reason": "booking fires attendee invites and can update tickets (_send/_force/_dont_update_ticket flags); the appointments surface is recipe-driven (completion recipe live-proven) - booking stays raw (final, evidence:190-prop POST schema 2026-10-02; array body rejected - wants a single Appointment object, trial probe 2026-10-03)"
     },
     "POST /Appointment/Generate": {
       "disposition": "deliberately-raw",

@@ -258,6 +258,15 @@ server's `Retry-After` honored, and the default ceilings keep ordinary use
 far under budget — sequential fetches are why a full `--all` walk of even a
 137k-row tenant stays comfortably inside the limit.
 
+**Bulk is a bounded client-side loop — Halo has no bulk API** (DTC's own
+"Bulk Updates" tooling is PowerShell looping over the REST API). The
+HaloCLI pattern: page through targets with `list` (`--param` filters +
+`--max-records`), build payloads from what you read, preview every write
+(zero network), then apply sequentially with `--apply --yes` — which the
+rate limit above rewards. A first-class JSONL bulk driver is an open
+decision (issue #73): whatever shape it takes inherits the
+preview-all-then-apply contract so a bulk run is never a blind blast.
+
 Some endpoints ignore paging entirely (`/CRMNote` answers every `page_no` with
 page 1). The list loop detects the repeated page, never appends it, recovers
 the full set with one `count=<total>` request, and reports
