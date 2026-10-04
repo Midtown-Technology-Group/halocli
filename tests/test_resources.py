@@ -326,7 +326,7 @@ def test_ticket_and_action_write_shapes() -> None:
     assert tickets.supports_delete is True
 
     actions = get_resource("actions")
-    assert actions.required_create_fields == ("ticket_id", "note")
+    assert actions.required_create_fields == ("ticket_id", "note", "outcome_id")
     assert "note" in actions.write_preview_fields
 
 
