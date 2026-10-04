@@ -419,6 +419,32 @@ via validation-400, 149 backlog candidates now live-200, plus the 401/403/404/
 500/timeout findings that produced the `dormant` flips above). The sweep
 runner is structurally write-free (GET-only code path).
 
+## Release & Version Tracking
+
+Three committed artifacts keep "what build runs where, and what's out
+there" answerable offline:
+
+- **`halo_version_snapshot.json`** — per-instance `/InstanceInfo`
+  captures with our belief-state (spec sha, op counts) at capture time.
+  Current record: `midtowntg` (prod) and `dtcdev.halopsa.com` — the
+  swagger upstream we vendor from — both run **2.236.133** on stable
+  tracks, while the `clidev` trial runs **2.250.32**. Re-run with
+  `python scripts/halo_version_snapshot.py --profile dev` (or
+  `--public-url` for credential-less instances — `/InstanceInfo` answers
+  without auth on these builds).
+- **`halo_release_ladder.json`** — the community release ladder parsed
+  from [usehalo.co](https://www.usehalo.co/) (community-run, not
+  affiliated with Halo): versions with Stable/Beta/Unreleased status and
+  dates, plus `current: {latest_stable, latest_beta, latest_unreleased}`.
+  Re-run `python scripts/release_ladder.py` when releases move.
+- **The track nuance that matters**: hosted-group *names* mislead
+  (`USDEMODB2-TRIALS1` is not the beta track) — the ladder shows2.250
+  went **Stable on 28 Sept 2026**, so the trial runs a *current GA build*
+  ahead of prod, not a beta. Conversely `check_spec_currency` compares us
+  to *dtcdev* (stable2.236) — surface newer than that (2.252+ beta,2.254/2.256
+  unreleased) is spec-uncovered by definition; trial probes are the only
+  lens on it, and the snapshot's drift flags mark stale captures.
+
 ## Endpoint Discovery
 
 Two kinds of search, split at 1.0.0:

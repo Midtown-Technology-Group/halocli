@@ -27,6 +27,7 @@ scripts/*
 !scripts/dev_write_sweep.py
 !scripts/advanced_config_probes.py
 !scripts/reporting_api_probe.py
+!scripts/release_ladder.py
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py
 !scripts/issue73_probe.py
