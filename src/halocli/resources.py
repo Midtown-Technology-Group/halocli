@@ -171,6 +171,21 @@ RESOURCES: tuple[HaloResource, ...] = (
         ),
     ),
     HaloResource(
+        "client-cache",
+        "/ClientCache",
+        aliases=("clientcache",),
+        # Promoted from junk ("vestigial-looking") on live+field evidence:
+        # the dispatch portal's post-login bootstrap calls
+        # GET /ClientCache?iscachebuild=true for ONE payload holding agent,
+        # statuses, tickettypes, ticketareas, fieldinfos, agents, lookups,
+        # fields, mailboxes and more (live probe2026-10-03 on the trial).
+        # The response is a multi-array blob, not a row list: table output
+        # shows the first array; use `halocli raw GET /ClientCache --param
+        # iscachbuild=true` for the whole shape.
+        table_fields=("id",),
+        supports_get=False,
+    ),
+    HaloResource(
         "clients",
         "/Client",
         aliases=("client",),

@@ -26,3 +26,4 @@ scripts/*
 !scripts/halo_version_snapshot.py
 !scripts/dev_write_sweep.py
 !scripts/advanced_config_probes.py
+!scripts/reporting_api_probe.py

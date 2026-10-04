@@ -514,6 +514,47 @@ Ideas adapted from Servosity's msp-skills halopsa CLI (Apache-2.0) — the
 SELECT-only guard stance and the hand-written digest concept; every field
 note above was re-proven against our own tenant.
 
+## Ad-hoc SQL Through Halo's Reporting API
+
+Halo has no SQL endpoint — it executes SQL through the **reporting
+API**, and the contract is peculiar enough to write down (live-confirmed
+on the trial 2026-10-03; distilled from
+[Mtg-Thomas/HaloSQLStudio](https://github.com/Mtg-Thomas/HaloSQLStudio)):
+
+```powershell
+# the body is a ONE-ELEMENT ARRAY; _testonly runs it without saving
+halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM tickets", "_testonly": true, "_loadreportonly": true}]'
+```
+
+- **Errors are HTTP 200**: read `report.load_error`; success is
+  `loaded: true` with `available_columns[]` (`name`, `data_type`) and
+  `report.rows[]` (objects keyed by column name, values as strings).
+- **One statement only** (a second fails: *"Incorrect syntax near ';'"*,
+  proven live) and **no `--` comments** (also rejected live — use
+  `/* */` block comments).
+- **View compatibility:** SQL you *save* as a report backs a Halo VIEW —
+  no CTEs, window functions (`ROW_NUMBER`, `LAG`, …), `OFFSET/FETCH`,
+  `ORDER BY` *inside view definitions*, temp objects, hints or `EXEC`.
+  Ad-hoc `_testonly` execution was more lenient on our trial
+  (2.250.32 accepted `ORDER BY`), so treat the view rules as the
+  save-time constraint and the two-statement/`--` rules as universal.
+- **Scopes are their own permission set**: `read:reporting
+  edit:reporting` on the API application (plus `offline_access` for
+  refresh) — separate from `all:standard`.
+- **Variables** are substituted *client-side before sending*:
+  `$agentid`, `$siteid`, `$clientid` (plain numeric ids only) and
+  `@startdate`, `@enddate` (quoted `'YYYY-MM-DD'`); left empty, Halo
+  substitutes the logged-in context.
+- **Metadata is SQL too**: tables/columns via
+  `INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo'`; the saved-report
+  list via `SELECT … FROM AnalyzerProfile JOIN LOOKUP ON (APGroupID+1)=fcode AND fid=41`.
+- **Saving**: `POST /report` (lowercase!) with `[{sql, name,
+  description, id?}]` → `{id}` (`id` present = update).
+- **Running saved reports** is `halocli reports run` (first-class:
+  retries disabled because a timeout would re-run an expensive query —
+  Halo's 504 is a gateway deadline, not a blip). The same never-retry
+  rule applies to ad-hoc `_testonly` executions.
+
 ## Advanced Configuration: Workflows, Runbooks & Rules
 
 These surfaces are **deliberately raw** (see Endpoint Coverage): they are
@@ -584,6 +625,42 @@ money-adjacent rules (user-accepted stance). **The exception that was
 promoted:** custom fields (`fields`, `field-groups`, `field-infos`,
 `custom-tables`) are first-class with preview/apply — schema authoring
 was proven safe on the trial and now ships with required-field evidence.
+
+## Quick-Work Recipes (field-tested in the dispatch portal)
+
+Distilled from
+[Mtg-Thomas/halodispatchportal](https://github.com/Mtg-Thomas/halodispatchportal)
+— the handrolled pathways a production dispatch tool relies on:
+
+- **One-call bootstrap**: `GET /ClientCache?iscachebuild=true` returns
+  agent, statuses, ticket types, ticket areas, field infos, agents,
+  lookups, fields and mailboxes in a single payload — enough to power
+  every picker without N round trips. Now first-class:
+  `halocli client-cache list` (promoted from *junk* on this evidence —
+  the live probe is in `scripts/reporting_api_probe.py`).
+- **Saved lists as filters**: Halo's lists have no AND/OR/grouping, so
+  the portal flattens them: `GET /viewlists?showcounts=true&domain=reqs
+  &type=reqs&ticketarea_id=<area>&utcoffset=<min>` → pick `list_id`s →
+  `GET /Tickets?...&list_id=<L>` (one request per list, then merge and
+  dedupe client-side). `ViewFilter` is optional — the filter id already
+  rides on the list row.
+- **Appointment writes are partial patches over one array-wrapped POST**:
+  move = `{id, start_date, end_date, agent_id}`; resize =
+  `{id, start_date?, end_date?}`; **complete = `{id,
+  complete_status: 0, complete_notehtml, complete_timetaken}`** —
+  completion rides the *appointment* (0 = done, 1 = in progress — the
+  same convention our write sweep proved), never a ticket status write.
+- **Minimal ticket create** (numbers may travel as strings):
+  `[{tickettype_id, summary, details_html, impact, urgency,
+  category_1, team, agent_id, user_id}]`; add `id` to update.
+- **Appointment defaults worth knowing**: `event_type: "a"`,
+  `reminderminutes: 15`, `agent_status: 1`,
+  `open_appointment_status: 0`, `appointment_location: 0`; the
+  appointment type id came from `lookup?lookupid=63` — a *tenant
+  convention*, verify yours before copying.
+- **`utcoffset` is minutes EAST of UTC** (240 = US/Eastern) — sign
+  matters; the portal flips JavaScript's `getTimezoneOffset()` to get
+  it.
 
 ## MCP Server (Code Mode)
 
