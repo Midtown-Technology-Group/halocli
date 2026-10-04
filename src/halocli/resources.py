@@ -2025,8 +2025,22 @@ RESOURCES: tuple[HaloResource, ...] = (
     HaloResource(
         "workflows",
         "/Workflow",
-        # Sweep 2026-10-02: envelope '<bare array>', 8 rows, GET/{id} -> 400 (route-verified)
+        # Sweep 2026-10-02 said "GET/{id} -> 400" - corrected live2026-10-03:
+        # GET /Workflow/{id} answers200 bare and404 for missing ids (the400
+        # was a bad-id artifact). WRITES PROMOTED on a full round-trip
+        # (scripts/workflow_create_probe.py): sanitized in-box document
+        # (KB Draft id18: strip top id/guid, stage id/guid/translations, step
+        # guid/fdid, action id/flow_id; repoint flow_ids to0; force
+        # active=false to stay inert) POSTed as a one-element array ->
+        # created id19 -> GET verified -> DELETE verified gone.
+        # POST-with-id = UPDATE (house convention), so creates must strip id.
         table_fields=("id", "name", "active", "guid", "notinuse"),
+        create_endpoint="/Workflow",
+        update_endpoint="/Workflow",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "active"),
     ),
     HaloResource(
         "workflow-targets",

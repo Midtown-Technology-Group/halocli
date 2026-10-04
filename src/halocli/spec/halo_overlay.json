@@ -2680,6 +2680,26 @@
       "target": "$.paths['/ClientCache'].get.description",
       "description": "curated description for a surfaced operation",
       "update": "Returns the whole client-side bootstrap cache in one response: agent, statuses, ticket types, ticket areas, field infos, agents, lookups, fields, mailboxes and more. Pass iscachbuild=true to force a rebuild. Promoted from junk on field evidence (the dispatch portal's first post-login call) plus a live probe on the trial (2026-10-03)."
+    },
+    {
+      "target": "$.paths['/Workflow'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create a workflow, or update it when id is set"
+    },
+    {
+      "target": "$.paths['/Workflow'].post.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Takes the full workflow document (stages, steps, actions, flow chart) as a one-element array. Strip all identity fields to create - top id/guid, stage id/guid/translations, step guid/fdid, action id/flow_id - and set flow_id links to0; Halo reassigns them. POST with id set updates instead. Keep active=false unless the workflow should engage live tickets. Proven by full round-trip on the trial2026-10-03 (scripts/workflow_create_probe.py)."
+    },
+    {
+      "target": "$.paths['/Workflow/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a workflow by id"
+    },
+    {
+      "target": "$.paths['/Workflow/{id}'].delete.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Removes the workflow. Delete-verified after a trial round-trip (2026-10-03); GET /Workflow/{id} then answers404."
     }
   ]
 }
