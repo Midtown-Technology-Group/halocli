@@ -82,12 +82,35 @@ def main() -> int:
         default="default",
         help="HaloCLI profile to connect with (default resolves a single profile).",
     )
+    parser.add_argument(
+        "--public-url",
+        default=None,
+        help="Probe /InstanceInfo WITHOUT auth (some builds answer publicly) - "
+        "for instances you hold no credentials for, e.g. the spec upstream.",
+    )
     args = parser.parse_args()
 
-    host, info = asyncio.run(_instance_info(args.profile))
+    if args.public_url:
+        import urllib.request
+
+        base = args.public_url.rstrip("/")
+        req = urllib.request.Request(
+            f"{base}/api/InstanceInfo",
+            headers={"User-Agent": "halocli-version-snapshot/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            info = json.loads(resp.read().decode("utf-8"))
+        host = base.split("//", 1)[-1].split("/", 1)[0]
+        source = "public unauthenticated InstanceInfo"
+        profile_name = "(none - public probe)"
+    else:
+        host, info = asyncio.run(_instance_info(args.profile))
+        source = "authenticated via profile"
+        profile_name = args.profile
     entry = {
         "captured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "profile": args.profile,
+        "profile": profile_name,
+        "source": source,
         "tenant_id": info.get("tenant_id"),
         "halo": info,
         "beliefs": _belief_state(),

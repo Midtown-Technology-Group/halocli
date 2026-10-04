@@ -39,6 +39,51 @@
     "profile": "dev",
     "tenant_id": "CLIdev"
   },
+  "dtcdev.halopsa.com": {
+    "beliefs": {
+      "halocli": "0.11.0",
+      "ledger_totals": {},
+      "registry_resources": 182,
+      "spec_info_version": "v2",
+      "spec_operations": 1455,
+      "spec_paths": 927,
+      "spec_sha256": "6bc442506e86ea0522fc23f946f144b9e1def29df3ebca032c09a6ddd7d2d2a1"
+    },
+    "captured_at": "2026-10-04T03:29:56+00:00",
+    "halo": {
+      "agent_count": 0,
+      "agent_url": "https://dtcdev.halopsa.com",
+      "app_name": "Halo PSA",
+      "app_version": "2.236.133",
+      "auth_url": "https://dtcdev.halopsa.com/auth",
+      "automation_service_url": "https://dtcdev.halopsa.com/api/$ENDPOINT",
+      "chat_service_url": "https://dtcdev.halopsa.com/api",
+      "database_version": "2236",
+      "dbid": "e11efbfd-8c69-4856-beab-32080fb1e337",
+      "hosted_group": "usSB3-STABLE2",
+      "incoming_service_url": "https://dtcdev.halopsa.com/api/$ENDPOINT",
+      "last_login": "2026-10-02T21:21:53",
+      "last_task_run": "2026-10-04T03:29:47",
+      "licensed_agent_count": 0,
+      "mobileapp_enabled": true,
+      "nhserver_version": "1364.03",
+      "online_agent_count": 0,
+      "outgoing_service_url": "https://dtcdev.halopsa.com/api/$ENDPOINT",
+      "portal_url": "https://dtcdev.halopsa.com/portal/",
+      "report_service_url": "https://dtcdev.halopsa.com/api/$ENDPOINT",
+      "schedule_service_url": "https://dtcdev.halopsa.com/api/$ENDPOINT",
+      "teams_chat_profile": "",
+      "teamsbot_enabled": false,
+      "tenant_id": "dtcteamdev",
+      "using_event_service": true,
+      "using_incoming_service": true,
+      "using_outgoing_service": true,
+      "using_scheduling_service": true
+    },
+    "profile": "(none - public probe)",
+    "source": "public unauthenticated InstanceInfo",
+    "tenant_id": "dtcteamdev"
+  },
   "midtowntg.halopsa.com": {
     "beliefs": {
       "halocli": "0.11.0",
