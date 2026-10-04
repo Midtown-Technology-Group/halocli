@@ -514,6 +514,77 @@ Ideas adapted from Servosity's msp-skills halopsa CLI (Apache-2.0) — the
 SELECT-only guard stance and the hand-written digest concept; every field
 note above was re-proven against our own tenant.
 
+## Advanced Configuration: Workflows, Runbooks & Rules
+
+These surfaces are **deliberately raw** (see Endpoint Coverage): they are
+*trigger/side-effect configuration* — a misconfigured rule or workflow
+fires notifications, automations and status changes across the whole
+tenant, not against one record. Raw stays the contract, but "raw" does
+not mean "undocumented": the shapes below are captured live from the
+trial (evidence: `advanced_config_evidence.json`, re-run with
+`python scripts/advanced_config_probes.py --profile dev`).
+
+**The safe method** (identical for every raw surface):
+
+1. Read the real object first — never author from imagination:
+   ```powershell
+   halocli workflows list
+   halocli raw GET "/Workflow/3" --param includedetails=true   # full document
+   halocli raw GET /workflowstep --param includecriteriainfo=true
+   halocli raw GET "/TicketRules/12" --param includedetails=true
+   ```
+2. Build the payload from what you read (copy the shape, change the
+   intent), then **preview** — zero network, spec-validated:
+   `halocli raw POST /Workflow --data @payload.json` (no `--apply`).
+3. Fire with **`--apply --yes`, against the trial first** — these
+   objects react to live tenant traffic the moment they are active.
+4. Verify by re-reading (and watch `/Automation` — the run log — to see
+   what your change actually did).
+
+**Mental model** (proven shapes):
+
+- **Workflow** (`/Workflow`) is a container: list rows are thin
+  (`id, name, active, note`); `GET /Workflow/{id}?includedetails=true`
+  returns the whole document — `stages[]` (sequence positions),
+  `steps[]` (each with `isstart/isend`, `steptype`, `duration`,
+  `pipeline_stage_id`, and its `actions[]`), `targets[]`,
+  `always_allow_actions[]`, and a `flow_chart_json` string (the visual
+  designer's canvas — keep whatever you read unless you mean to redraw
+  it).
+- **Step actions** are where the power sits (read them standalone via
+  `/workflowstep`): each action carries `action_id/outcome`, branching
+  `conditions[]`, approvals (`approval_result`), todos, time-limit
+  actions, **runbook bindings (`automation_runbook_name`) with
+  `runbook_variable_mappings[]`**, and chat bindings. Editing a
+  workflow means round-tripping this document.
+- **Rules** (`/TicketRules`, `/EventRule`) are the triggers: `criteria[]`
+  rows (`tablename` + `fieldname` + `value_*`, with `partialmatch` /
+  `matchseparatedvalues` semantics), optional `criteria_groups` and
+  `database_lookups[]`, then the mutation set (`new_agent_id`,
+  `new_priority_id`, `new_status_id`, `new_sla_id`, `new_template_id`,
+  **`new_workflow_id`** — this is how a rule routes a ticket *into* a
+  workflow), ordered by `precedence` with `stopmatching` as the
+  short-circuit flag, plus `outcome_id` (the button outcome that fires
+  it) and `events[]` for event rules.
+- **`/Automation` is the run log, not the definition**: rows record what
+  fired (`workflow_id/step/seq`, `runbook_name`, `ticket_id`, `status`,
+  `error`, retries, and a `trace[]` of log lines on the detail read).
+  Use it to audit; **`POST /Automation/{runbookId}` (body
+  `{"formCollection": {...}}`) is the manual runbook execution entry** —
+  a real side effect, so preview first and trial first.
+- **`/workflowstep` is GET-only in the spec** — steps are edited as part
+  of the workflow document, not via their own endpoint.
+
+**What stays raw, per family** (final reasons in `coverage_policy.json`):
+rules/workflows/automations (side effects above), `EmailRule`
+(outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL),
+integration plumbing (`IntegrationData/*` — sync state, not operator
+input), `ScreenLayout`/`View*` (per-agent UI chrome), and the
+money-adjacent rules (user-accepted stance). **The exception that was
+promoted:** custom fields (`fields`, `field-groups`, `field-infos`,
+`custom-tables`) are first-class with preview/apply — schema authoring
+was proven safe on the trial and now ships with required-field evidence.
+
 ## MCP Server (Code Mode)
 
 `halocli serve` runs a code-mode MCP server over stdio (newline-delimited
