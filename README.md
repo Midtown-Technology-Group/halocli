@@ -251,6 +251,13 @@ complete result never carries them. Pass `--all` to fetch every record, or set
 `--max-records`/`--max-pages` explicitly. `--all` cannot be combined with those
 two flags.
 
+**Halo's rate limit: 700 API requests per rolling 5 minutes** (Fair Use
+Policy — exceeding it returns `429 Too Many Requests`; native/Halo-internal
+integrations are exempt). HaloCLI already treats429 as retryable with the
+server's `Retry-After` honored, and the default ceilings keep ordinary use
+far under budget — sequential fetches are why a full `--all` walk of even a
+137k-row tenant stays comfortably inside the limit.
+
 Some endpoints ignore paging entirely (`/CRMNote` answers every `page_no` with
 page 1). The list loop detects the repeated page, never appends it, recovers
 the full set with one `count=<total>` request, and reports
