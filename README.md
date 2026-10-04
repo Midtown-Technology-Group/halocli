@@ -444,6 +444,17 @@ there" answerable offline:
   to *dtcdev* (stable2.236) — surface newer than that (2.252+ beta,2.254/2.256
   unreleased) is spec-uncovered by definition; trial probes are the only
   lens on it, and the snapshot's drift flags mark stale captures.
+- **The uncovered axis, quantified**: each instance serves its *own*
+  swagger, and `python scripts/trial_spec_diff.py` diffs it against our
+  vendored spec. Trial (2.250.32) vs vendored (2.236): **961 vs 927
+  paths,1507 vs1455 ops —52 new ops,0 removed** (full CRUD families:
+  CrayonDetails, DeviceFlow, DistributorInvoice, OrderChange,
+  CustomButtonAction, JuniperMistDetails, PiiDetection, PeriodicHistory…)
+  plus param drift (`POST /Attachment/image` gains
+  `_dont_fire_automations`). Evidence: `trial_spec_diff.json`; re-run
+  after any instance update to measure the next delta. These ops enter
+  the ledger only after dtcdev upgrades and a re-vendor shows DRIFT —
+  until then they are documented, not classified.
 
 ## Endpoint Discovery
 

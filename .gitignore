@@ -28,6 +28,7 @@ scripts/*
 !scripts/advanced_config_probes.py
 !scripts/reporting_api_probe.py
 !scripts/release_ladder.py
+!scripts/trial_spec_diff.py
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py
 !scripts/issue73_probe.py
