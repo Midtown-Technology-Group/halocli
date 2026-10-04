@@ -546,8 +546,12 @@ halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM 
   `@startdate`, `@enddate` (quoted `'YYYY-MM-DD'`); left empty, Halo
   substitutes the logged-in context.
 - **Metadata is SQL too**: tables/columns via
-  `INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo'`; the saved-report
-  list via `SELECT … FROM AnalyzerProfile JOIN LOOKUP ON (APGroupID+1)=fcode AND fid=41`.
+  `INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo'`. Listing saved
+  reports does NOT need SQL though — REST exists:
+  `GET /ReportRepository` (params include `loadreport`,
+  `reportingperiod*`, `report_access_token`, `reportgroup_id`); the
+  `AnalyzerProfile JOIN LOOKUP … fid=41` query is the fallback trick
+  SQLStudio uses from inside the SQL console itself.
 - **Saving**: `POST /report` (lowercase!) with `[{sql, name,
   description, id?}]` → `{id}` (`id` present = update).
 - **Running saved reports** is `halocli reports run` (first-class:
