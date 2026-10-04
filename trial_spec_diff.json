@@ -1,0 +1,238 @@
+{
+  "trial_url": "https://clidev.trial.usehalo.com/api/swagger/v2/swagger.json",
+  "trial_info": {
+    "title": "Halo API",
+    "description": "The HaloITSM, HaloPSA and HaloCRM REST API",
+    "version": "v2"
+  },
+  "trial_paths": 961,
+  "trial_ops": 1507,
+  "vendored_paths": 927,
+  "vendored_ops": 1455,
+  "trial_sha256": "38c99cc5d1057306",
+  "vendored_sha256": "6bc442506e86ea05",
+  "new_ops_in_trial": [
+    {
+      "path": "/AIMatchingGroups",
+      "method": "get"
+    },
+    {
+      "path": "/Asset/DiagramDetails",
+      "method": "get"
+    },
+    {
+      "path": "/Attachment/MigrateToS3",
+      "method": "post"
+    },
+    {
+      "path": "/Chat/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/ChatMessage/{chat_id}/{msg_id}",
+      "method": "delete"
+    },
+    {
+      "path": "/ClientPrepay/Expiry",
+      "method": "post"
+    },
+    {
+      "path": "/Control/DeprecatedFields",
+      "method": "get"
+    },
+    {
+      "path": "/CrayonDetails",
+      "method": "get"
+    },
+    {
+      "path": "/CrayonDetails",
+      "method": "post"
+    },
+    {
+      "path": "/CrayonDetails/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/CrayonDetails/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/CrayonOrganisation",
+      "method": "get"
+    },
+    {
+      "path": "/CustomButtonAction",
+      "method": "get"
+    },
+    {
+      "path": "/CustomButtonAction",
+      "method": "post"
+    },
+    {
+      "path": "/CustomButtonAction/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/CustomButtonAction/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/CustomIntegrationMethodValue",
+      "method": "post"
+    },
+    {
+      "path": "/CustomIntegrationMethodValue/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/CustomIntegrationMethodValue/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/DeviceFlow",
+      "method": "get"
+    },
+    {
+      "path": "/DeviceFlow",
+      "method": "post"
+    },
+    {
+      "path": "/DeviceFlow/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/DeviceFlow/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/DistributorInvoice",
+      "method": "get"
+    },
+    {
+      "path": "/DistributorInvoice",
+      "method": "post"
+    },
+    {
+      "path": "/DistributorInvoice/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/DistributorInvoice/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/Expense/review",
+      "method": "post"
+    },
+    {
+      "path": "/IncomingEvent/ProcessQuery",
+      "method": "post"
+    },
+    {
+      "path": "/IntegrationData/Delete/Stripe/paymentmethod",
+      "method": "delete"
+    },
+    {
+      "path": "/IntegrationData/Post/ConnectwiseRmm/Switch",
+      "method": "post"
+    },
+    {
+      "path": "/JuniperMistDetails",
+      "method": "get"
+    },
+    {
+      "path": "/JuniperMistDetails",
+      "method": "post"
+    },
+    {
+      "path": "/JuniperMistDetails/{id}",
+      "method": "delete"
+    },
+    {
+      "path": "/JuniperMistDetails/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/MO/c",
+      "method": "post"
+    },
+    {
+      "path": "/OrderChange",
+      "method": "get"
+    },
+    {
+      "path": "/OrderChange",
+      "method": "post"
+    },
+    {
+      "path": "/PeriodicHistory",
+      "method": "get"
+    },
+    {
+      "path": "/PiiDetection",
+      "method": "get"
+    },
+    {
+      "path": "/PiiDetection",
+      "method": "post"
+    },
+    {
+      "path": "/PiiDetection/{id}",
+      "method": "get"
+    },
+    {
+      "path": "/PipelineStages",
+      "method": "get"
+    },
+    {
+      "path": "/QuickBooksDetails/ClearCache",
+      "method": "post"
+    },
+    {
+      "path": "/QuoteChange",
+      "method": "get"
+    },
+    {
+      "path": "/QuoteChange",
+      "method": "post"
+    },
+    {
+      "path": "/RecurringInvoice/lines",
+      "method": "get"
+    },
+    {
+      "path": "/SalesOrder/updatelines",
+      "method": "post"
+    },
+    {
+      "path": "/SupplierOrderChange",
+      "method": "get"
+    },
+    {
+      "path": "/SupplierOrderChange",
+      "method": "post"
+    },
+    {
+      "path": "/ToDo/{id}/seq/{seq}",
+      "method": "delete"
+    },
+    {
+      "path": "/ToDo/{id}/seq/{seq}",
+      "method": "get"
+    }
+  ],
+  "missing_from_trial": [],
+  "param_drift": {
+    "GET /FAQLists": [
+      "third_party_id"
+    ],
+    "POST /Attachment/image": [
+      "_dont_fire_automations",
+      "atareanoteid",
+      "atdoctype",
+      "atexpirydate",
+      "canned_text_copy",
+      "migrate_to_s3"
+    ]
+  }
+}
