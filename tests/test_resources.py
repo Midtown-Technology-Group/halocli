@@ -41,6 +41,7 @@ WRITE_RESOURCES = (
     "crm-notes",
     "users",
     "canned-text",
+    "workflows",
     "timesheet-events",
     # Writes-batch-1 (1.7.0): config/reference entities with spec-verified
     # POST + DELETE /{id}. Never fired at the tenant (verification: spec).
@@ -140,7 +141,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 64
+    assert len(WRITE_RESOURCES) == 65
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name

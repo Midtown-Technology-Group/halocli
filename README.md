@@ -557,11 +557,14 @@ halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM 
 
 ## Advanced Configuration: Workflows, Runbooks & Rules
 
-These surfaces are **deliberately raw** (see Endpoint Coverage): they are
-*trigger/side-effect configuration* — a misconfigured rule or workflow
-fires notifications, automations and status changes across the whole
-tenant, not against one record. Raw stays the contract, but "raw" does
-not mean "undocumented": the shapes below are captured live from the
+These surfaces are *trigger/side-effect configuration* — a misconfigured
+rule or workflow fires notifications, automations and status changes
+across the whole tenant, not against one record, which is why the family
+was kept raw for so long. **Workflows are now promoted to first-class**
+(preview/apply create, update and delete) after a full round-trip on the
+trial — see "Creating a workflow" below; rules, event rules and
+automations stay raw behind the deliberate gate. Raw never meant
+"undocumented": the shapes below are captured live from the
 trial (evidence: `advanced_config_evidence.json`, re-run with
 `python scripts/advanced_config_probes.py --profile dev`).
 
@@ -616,15 +619,59 @@ trial (evidence: `advanced_config_evidence.json`, re-run with
 - **`/workflowstep` is GET-only in the spec** — steps are edited as part
   of the workflow document, not via their own endpoint.
 
+### Creating a workflow (first-class — the proven recipe)
+
+```powershell
+halocli workflows get 18 --param includedetails=true   # read Halo's own example first
+# ...copy that document and edit intent, applying the sanitize list...
+halocli workflows create --data @workflow.json          # preview: zero network
+halocli workflows create --data @workflow.json --apply --yes
+halocli workflows delete <id> --apply --yes
+```
+
+The in-box library is the best teacher: the trial ships ten Halo-shipped
+workflows (Incident Management —5 steps/45 actions; KB Draft Workflow —
+the small one used as the template). The crux is **sanitizing**, because
+Halo's POST-with-id = update convention means identity must never ride
+along: strip top-level `id`/`guid`/`in_use`/`notinuse`, stage
+`id`/`guid`/`translations`, step `guid`/`fdid`, action `id`/`flow_id`;
+repoint `flow_id` links to `0`; and **force `active: false`** so the new
+workflow is inert until you deliberately activate it (nothing references
+it, so it can never fire on live traffic). Proven end-to-end 2026-10-03:
+created id 19 from KB Draft's document, GET-verified (stages/steps/
+actions/flow chart all carried), DELETE-verified gone
+(`scripts/workflow_create_probe.py`).
+
+### Runbooks: where the definitions live
+
+- **The method library is readable**: `GET /CustomIntegrationMethod`
+  (43 methods on the trial — e.g. *"OpenAI: Analyse End-User Sentiment"*
+  with base URL, path, auth type) plus `GET /CustomIntegrationMethodValue`
+  (step input/output mappings) and `GET /IntegrationRunbookVariableGroup`
+  (the variable palette — "Ticket Variables" → `faults`).
+- **Execution and history**: `POST /Automation/{runbookId}` (body
+  `{"formCollection": {...}}`) triggers a run; `GET /Automation` is the
+  per-run log (`workflow_*`, `runbook_*`, `status`, `error`, `trace[]` —
+  runs fired by tickets our sweep created appear there).
+- **Definitions are UI/JSON territory**: the official guide
+  (<https://www.usehalo.com/guides/1630>) documents *Configuration >
+  Integrations > Custom Integrations > Integration Runbooks* with
+  **Import from JSON** as the interchange format — there is no spec
+  endpoint for the definition itself, so we encode the shape knowledge
+  rather than inventing a route. Workflow step automations (trigger
+  types: immediate / N minutes after / N days before a date field, plus
+  sequencing since 2.228) are covered by
+  <https://www.usehalo.com/guides/2355>.
+
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
-rules/workflows/automations (side effects above), `EmailRule`
+rules/event-rules/automations (side effects above), `EmailRule`
 (outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL),
 integration plumbing (`IntegrationData/*` — sync state, not operator
 input), `ScreenLayout`/`View*` (per-agent UI chrome), and the
-money-adjacent rules (user-accepted stance). **The exception that was
-promoted:** custom fields (`fields`, `field-groups`, `field-infos`,
-`custom-tables`) are first-class with preview/apply — schema authoring
-was proven safe on the trial and now ships with required-field evidence.
+money-adjacent rules (user-accepted stance). **Promoted twice on live
+evidence:** custom fields (schema authoring) and now workflows
+(round-trip create → verify → delete) — both keep preview/apply as the
+deliberate gate.
 
 ## Quick-Work Recipes (field-tested in the dispatch portal)
 

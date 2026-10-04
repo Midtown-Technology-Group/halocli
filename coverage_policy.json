@@ -3387,14 +3387,6 @@
       "disposition": "deliberately-raw",
       "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
     },
-    "POST /Workflow": {
-      "disposition": "deliberately-raw",
-      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
-    },
-    "DELETE /Workflow/{id}": {
-      "disposition": "deliberately-raw",
-      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
-    },
     "POST /WorkflowTarget": {
       "disposition": "deliberately-raw",
       "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
