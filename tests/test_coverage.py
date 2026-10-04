@@ -65,16 +65,19 @@ def test_classify_operation_does_not_steal_other_kinds() -> None:
     assert resource is not None
     assert resource.name == "tickets"
 
-    # …and a non-registry root stays uncurated.
-    kind, resource = coverage.classify_path("/ClientCache")
+    # ...and a non-registry root stays uncurated. (ClientCache used to be
+    # the example here until field evidence promoted it to a resource.)
+    kind, resource = coverage.classify_path("/ChatProfile")
     assert kind == "uncurated"
     assert resource is None
 
 
 def test_classify_prefix_collision_is_uncurated() -> None:
-    # Real spec path: starts with /Client but is a different resource entirely.
-    # The trailing-slash guard must keep it out of `nested`-under-clients.
-    kind, resource = coverage.classify_path("/ClientCache")
+    # Real spec path: starts with /Address (a registry root) but is a
+    # different resource entirely. The trailing-slash guard must keep it
+    # out of `nested`-under-address. (ClientCache - the original fixture -
+    # was promoted to first-class on dispatch-portal evidence.)
+    kind, resource = coverage.classify_path("/Addressbook")
     assert kind == "uncurated"
     assert resource is None
 

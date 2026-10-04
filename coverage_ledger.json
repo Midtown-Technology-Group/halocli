@@ -4,13 +4,13 @@
    "backlog": 8,
    "deliberately-raw": 908,
    "dormant": 10,
-   "first-class": 506,
-   "junk": 23
+   "first-class": 507,
+   "junk": 22
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1455,
-  "policy_sha256": "db3c2d87d9d4142ca211b8b2511e3b46758616d6731be80aa314f3059d90a368",
-  "spec_sha256": "e4961ac880de2a3a035af9c159c015a261843337843213f346fd4115af8f73c2",
+  "policy_sha256": "faee848036679936e8a9d2fe604632e36bf693c480af741520e042778a7ad2ee",
+  "spec_sha256": "09925e9acc98976314fb3130e71fa02c096c0c0f9833f611450139f072af4555",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -1680,11 +1680,11 @@
    "via": "halocli clients get"
   },
   {
-   "disposition": "junk",
+   "disposition": "first-class",
    "method": "get",
-   "note": "undocumented GET cache dump; vestigial-looking",
+   "note": "",
    "path": "/ClientCache",
-   "via": ""
+   "via": "halocli client-cache list"
   },
   {
    "disposition": "first-class",

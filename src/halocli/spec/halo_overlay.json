@@ -2670,6 +2670,16 @@
       "target": "$.paths['/Users/prefs'].post.description",
       "description": "curated description for a surfaced operation",
       "update": "Persists id/lang/theme/userdetails for a user; spec-verified, never fired at the tenant (verification: spec)."
+    },
+    {
+      "target": "$.paths['/ClientCache'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "One-shot configuration cache dump"
+    },
+    {
+      "target": "$.paths['/ClientCache'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Returns the whole client-side bootstrap cache in one response: agent, statuses, ticket types, ticket areas, field infos, agents, lookups, fields, mailboxes and more. Pass iscachbuild=true to force a rebuild. Promoted from junk on field evidence (the dispatch portal's first post-login call) plus a live probe on the trial (2026-10-03)."
     }
   ]
 }
