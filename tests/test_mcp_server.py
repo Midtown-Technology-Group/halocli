@@ -202,10 +202,10 @@ def test_halo_resources_dumps_full_catalog() -> None:
     assert by_name["quotations"]["aliases"] == ["quotation", "quotes", "quote"]
 
 
-def test_halo_resources_dumps_all_182_resources_with_operations() -> None:
+def test_halo_resources_dumps_all_185_resources_with_operations() -> None:
     """halo_resources lists the whole registry with per-resource operations."""
     _, payload = call_tool("halo_resources", {})
-    assert payload["count"] == 182
+    assert payload["count"] == 185
     by_name = {entry["name"]: entry for entry in payload["resources"]}
 
     pdf_ops = [op for op in by_name["invoices"]["operations"] if op["name"] == "pdf"]

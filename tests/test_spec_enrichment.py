@@ -110,10 +110,22 @@ def test_synthesized_operation_ids_follow_the_rule(spec: dict[str, Any]) -> None
         op.get("operationId")
         for _method, _path, op in _operations(spec)
         if op.get("operationId")
-        in {"GetIntegrationCursor", "GetSeatGeekDetails", "GetUnamePresenceSubscription"}
+        in {
+            "GetCrayonDetails",
+            "GetDistributorInvoice",
+            "GetIntegrationCursor",
+            "GetPiiDetection",
+            "GetPrepayHistory",
+            "GetSeatGeekDetails",
+            "GetUnamePresenceSubscription",
+        }
     }
     assert upstream == {
+        "GetCrayonDetails",
+        "GetDistributorInvoice",
         "GetIntegrationCursor",
+        "GetPiiDetection",
+        "GetPrepayHistory",
         "GetSeatGeekDetails",
         "GetUnamePresenceSubscription",
     }
@@ -426,7 +438,7 @@ def test_synthesize_operation_ids_rule(vendor_mod: Any) -> None:
 def test_spec_meta_records_enrichment(spec: dict[str, Any]) -> None:
     meta = spec["_meta"]
     assert meta["operation_ids_synthesized"] >= 1452
-    assert meta["operation_ids_upstream"] == 3
+    assert meta["operation_ids_upstream"] == 7
     overlay_meta = meta["overlay"]
     assert overlay_meta["file"] == "halo_overlay.json"
     # fill-if-missing: an action targeting prose upstream now provides lands in

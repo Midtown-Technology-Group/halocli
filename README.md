@@ -454,7 +454,9 @@ there" answerable offline:
   `_dont_fire_automations`). Evidence: `trial_spec_diff.json`; re-run
   after any instance update to measure the next delta. These ops enter
   the ledger only after dtcdev upgrades and a re-vendor shows DRIFT —
-  until then they are documented, not classified.
+  until then they are documented, not classified. (First fulfillment: the
+2026-10-05 re-vendor absorbed exactly those52 - dtcdev reached trial parity
+at1,507 ops,13 new roots classified through the policy segments.)
 
 ## Endpoint Discovery
 
@@ -717,22 +719,41 @@ actions/flow chart all carried), DELETE-verified gone
 - **Definitions are UI/JSON territory**: the official guide
   (<https://www.usehalo.com/guides/1630>) documents *Configuration >
   Integrations > Custom Integrations > Integration Runbooks* with
-  **Import from JSON** as the interchange format — there is no spec
-  endpoint for the definition itself, so we encode the shape knowledge
-  rather than inventing a route. Workflow step automations (trigger
+  **Import from JSON** as the interchange format — and the endpoint is
+  genuinely absent: `/IntegrationRunbook`, `/Runbook` and
+  `/Automation/Runbook` all answer 404/400 on the trial (probed
+  2026-10-05), so we encode the shape knowledge rather than inventing
+  a route. Workflow step automations (trigger
   types: immediate / N minutes after / N days before a date field, plus
   sequencing since 2.228) are covered by
   <https://www.usehalo.com/guides/2355>.
+
+**Building integrations & methods (promoted, round-trip proven
+2026-10-05):**
+
+```powershell
+halocli custom-integrations create --data '[{"name": "My Integration"}]'            # minimal shape, proven
+halocli custom-integration-methods create --data '[{"integration_id": 15, "name": "Call API", "path": "/probe", "method": 1}]'
+halocli custom-integration-methods get <id>                                          # detail = body_mappings, headers, output_variables, uri_params
+halocli custom-integration-methods delete <id> --apply --yes                          # children first, then the integration
+```
+
+Create is a one-element array (house wire contract); integration delete
+was verified clean with methods removed first. The method *library* and
+the variable palette are readable first-class too
+(`custom-integration-methods list`, `runbook-variable-groups list` —
+the {value,label} palette like `"faults"` / "Ticket Variables").
 
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
 rules/event-rules/automations (side effects above), `EmailRule`
 (outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL),
 integration plumbing (`IntegrationData/*` — sync state, not operator
 input), `ScreenLayout`/`View*` (per-agent UI chrome), and the
-money-adjacent rules (user-accepted stance). **Promoted twice on live
-evidence:** custom fields (schema authoring) and now workflows
-(round-trip create → verify → delete) — both keep preview/apply as the
-deliberate gate.
+money-adjacent rules (user-accepted stance). **Promoted on live
+evidence, three families now:** custom fields (schema authoring),
+workflows (round-trip create → verify → delete), and custom
+integrations + their methods (cascade round-trip) — all keep
+preview/apply as the deliberate gate.
 
 ## Quick-Work Recipes (field-tested in the dispatch portal)
 

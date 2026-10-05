@@ -2700,6 +2700,56 @@
       "target": "$.paths['/Workflow/{id}'].delete.description",
       "description": "curated description for a surfaced operation",
       "update": "Removes the workflow. Delete-verified after a trial round-trip (2026-10-03); GET /Workflow/{id} then answers404."
+    },
+    {
+      "target": "$.paths['/CustomIntegration'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List custom integrations (outbound connection definitions)"
+    },
+    {
+      "target": "$.paths['/CustomIntegration'].get.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "Returns custom integration definitions: auth configuration (authorization type, grant type, URLs, scope, bearer placement, JWT settings), resource base URL with {{variable}} placeholders, module and version fields. Promoted from raw on a create-verify-delete round-trip (trial,2026-10-05)."
+    },
+    {
+      "target": "$.paths['/CustomIntegration'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a custom integration"
+    },
+    {
+      "target": "$.paths['/CustomIntegration'].post.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "One-element array of integration definitions; id present = update. Proven minimal create shape: [{name}] (trial round-trip2026-10-05). Runbook definitions are separate - they have no API endpoint (UI Import-from-JSON)."
+    },
+    {
+      "target": "$.paths['/CustomIntegration/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a custom integration"
+    },
+    {
+      "target": "$.paths['/CustomIntegration/{id}'].delete.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "Removes the integration definition. Delete-verified on the trial (2026-10-05); methods linked to it should be deleted first."
+    },
+    {
+      "target": "$.paths['/CustomIntegrationMethod'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update an integration method"
+    },
+    {
+      "target": "$.paths['/CustomIntegrationMethod'].post.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "One-element array of method definitions. Proven create shape: [{integration_id, name, path, method}] (cascade round-trip on the trial,2026-10-05). Detail reads carry body_mappings, headers, output_variables and uri_params - the runbook building material."
+    },
+    {
+      "target": "$.paths['/CustomIntegrationMethod/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete an integration method"
+    },
+    {
+      "target": "$.paths['/CustomIntegrationMethod/{id}'].delete.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "Removes the method. Delete-verified on the trial (2026-10-05)."
     }
   ]
 }

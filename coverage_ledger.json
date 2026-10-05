@@ -1,16 +1,16 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 8,
-   "deliberately-raw": 906,
+   "backlog": 16,
+   "deliberately-raw": 936,
    "dormant": 10,
-   "first-class": 509,
-   "junk": 22
+   "first-class": 519,
+   "junk": 26
   },
   "generated_by": "scripts/build_coverage_ledger.py",
-  "operation_count": 1455,
-  "policy_sha256": "848b084544e371e0fdd9ec8c849493b8b1903d113658b9b1e3ae94762b43c13b",
-  "spec_sha256": "6bc442506e86ea0522fc23f946f144b9e1def29df3ebca032c09a6ddd7d2d2a1",
+  "operation_count": 1507,
+  "policy_sha256": "386fc364e3d7fcd8eb601f50e47dc6fb6ea08436ed584bf9ffa69b6e4850f4ae",
+  "spec_sha256": "b6423f8922b1f826219a347e61eeea76594ecd7089eb8a9925b2f92cc9c82658",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -27,6 +27,13 @@
   }
  },
  "operations": [
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "AI matching-group config (new upstream surface); AI plumbing family, raw (new upstream surface /AIMatchingGroups; classified on discovery)",
+   "path": "/AIMatchingGroups",
+   "via": ""
+  },
   {
    "disposition": "deliberately-raw",
    "method": "get",
@@ -658,6 +665,13 @@
    "via": "halocli assets create/update"
   },
   {
+   "disposition": "backlog",
+   "method": "get",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/Asset/DiagramDetails",
+   "via": ""
+  },
+  {
    "disposition": "first-class",
    "method": "get",
    "note": "",
@@ -831,6 +845,13 @@
    "note": "",
    "path": "/Attachment/GetS3PresignedURL",
    "via": "halocli attachments presign-url"
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/Attachment/MigrateToS3",
+   "via": ""
   },
   {
    "disposition": "first-class",
@@ -1562,6 +1583,13 @@
   },
   {
    "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "live-chat sessions (portal realtime plumbing); raw",
+   "path": "/Chat/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
    "method": "get",
    "note": "live-chat sessions (portal realtime plumbing); raw",
    "path": "/Chat/{id}",
@@ -1600,6 +1628,13 @@
    "method": "post",
    "note": "live-chat messaging (+IsTyping); portal plumbing, raw",
    "path": "/ChatMessage/IsTyping",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "live-chat messaging (+IsTyping); portal plumbing, raw",
+   "path": "/ChatMessage/{chat_id}/{msg_id}",
    "via": ""
   },
   {
@@ -1740,6 +1775,13 @@
    "method": "post",
    "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/ClientPrepay",
+   "via": ""
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/ClientPrepay/Expiry",
    "via": ""
   },
   {
@@ -2075,6 +2117,13 @@
    "disposition": "deliberately-raw",
    "method": "get",
    "note": "instance config mega-schema + ClearCache/UpdateEnc/setup; system surface",
+   "path": "/Control/DeprecatedFields",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "instance config mega-schema + ClearCache/UpdateEnc/setup; system surface",
    "path": "/Control/Teams",
    "via": ""
   },
@@ -2119,6 +2168,41 @@
    "note": "",
    "path": "/CostCentres/{id}",
    "via": "halocli cost-centres get"
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonDetails; classified on discovery)",
+   "path": "/CrayonDetails",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonDetails; classified on discovery)",
+   "path": "/CrayonDetails",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonDetails; classified on discovery)",
+   "path": "/CrayonDetails/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonDetails; classified on discovery)",
+   "path": "/CrayonDetails/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonOrganisation; classified on discovery)",
+   "path": "/CrayonOrganisation",
+   "via": ""
   },
   {
    "disposition": "junk",
@@ -2184,6 +2268,34 @@
    "via": "halocli custom-buttons get"
   },
   {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "custom-button action payloads; trigger/side-effect configuration (raw keeps the deliberate gate) (new upstream surface /CustomButtonAction; classified on discovery)",
+   "path": "/CustomButtonAction",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "custom-button action payloads; trigger/side-effect configuration (raw keeps the deliberate gate) (new upstream surface /CustomButtonAction; classified on discovery)",
+   "path": "/CustomButtonAction",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "custom-button action payloads; trigger/side-effect configuration (raw keeps the deliberate gate) (new upstream surface /CustomButtonAction; classified on discovery)",
+   "path": "/CustomButtonAction/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "custom-button action payloads; trigger/side-effect configuration (raw keeps the deliberate gate) (new upstream surface /CustomButtonAction; classified on discovery)",
+   "path": "/CustomButtonAction/{id}",
+   "via": ""
+  },
+  {
    "disposition": "junk",
    "method": "post",
    "note": "POST-only, no summary; audit sink, vestigial-looking",
@@ -2191,66 +2303,87 @@
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "outbound integration definitions (59p); integration plumbing",
+   "note": "",
    "path": "/CustomIntegration",
-   "via": ""
+   "via": "halocli custom-integrations list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "post",
-   "note": "outbound integration definitions (59p); integration plumbing",
+   "note": "",
    "path": "/CustomIntegration",
-   "via": ""
+   "via": "halocli custom-integrations create/update"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "outbound integration definitions (59p); integration plumbing",
+   "note": "",
    "path": "/CustomIntegration/{id}",
-   "via": ""
+   "via": "halocli custom-integrations delete"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "outbound integration definitions (59p); integration plumbing",
+   "note": "",
    "path": "/CustomIntegration/{id}",
-   "via": ""
+   "via": "halocli custom-integrations get"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "outbound integration methods; integration plumbing",
+   "note": "",
    "path": "/CustomIntegrationMethod",
-   "via": ""
+   "via": "halocli custom-integration-methods list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "post",
-   "note": "outbound integration methods; integration plumbing",
+   "note": "",
    "path": "/CustomIntegrationMethod",
-   "via": ""
+   "via": "halocli custom-integration-methods create/update"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "outbound integration methods; integration plumbing",
+   "note": "",
    "path": "/CustomIntegrationMethod/{id}",
-   "via": ""
+   "via": "halocli custom-integration-methods delete"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "outbound integration methods; integration plumbing",
+   "note": "",
    "path": "/CustomIntegrationMethod/{id}",
-   "via": ""
+   "via": "halocli custom-integration-methods get"
   },
   {
    "disposition": "junk",
    "method": "get",
    "note": "single undocumented GET under integration family; vestigial",
    "path": "/CustomIntegrationMethodValue",
+   "via": ""
+  },
+  {
+   "disposition": "junk",
+   "method": "post",
+   "note": "single undocumented GET under integration family; vestigial",
+   "path": "/CustomIntegrationMethodValue",
+   "via": ""
+  },
+  {
+   "disposition": "junk",
+   "method": "delete",
+   "note": "single undocumented GET under integration family; vestigial",
+   "path": "/CustomIntegrationMethodValue/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "junk",
+   "method": "get",
+   "note": "single undocumented GET under integration family; vestigial",
+   "path": "/CustomIntegrationMethodValue/{id}",
    "via": ""
   },
   {
@@ -2485,6 +2618,34 @@
    "via": ""
   },
   {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "OAuth device-flow records; auth plumbing, raw (new upstream surface /DeviceFlow; classified on discovery)",
+   "path": "/DeviceFlow",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "OAuth device-flow records; auth plumbing, raw (new upstream surface /DeviceFlow; classified on discovery)",
+   "path": "/DeviceFlow",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "OAuth device-flow records; auth plumbing, raw (new upstream surface /DeviceFlow; classified on discovery)",
+   "path": "/DeviceFlow/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "OAuth device-flow records; auth plumbing, raw (new upstream surface /DeviceFlow; classified on discovery)",
+   "path": "/DeviceFlow/{id}",
+   "via": ""
+  },
+  {
    "disposition": "first-class",
    "method": "get",
    "note": "",
@@ -2546,6 +2707,34 @@
    "note": "",
    "path": "/DistributionListsLog/{id}",
    "via": "halocli distribution-list-logs get"
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "distributor invoice integration detail; billing-adjacent + plumbing, raw (new upstream surface /DistributorInvoice; classified on discovery)",
+   "path": "/DistributorInvoice",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "distributor invoice integration detail; billing-adjacent + plumbing, raw (new upstream surface /DistributorInvoice; classified on discovery)",
+   "path": "/DistributorInvoice",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "distributor invoice integration detail; billing-adjacent + plumbing, raw (new upstream surface /DistributorInvoice; classified on discovery)",
+   "path": "/DistributorInvoice/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "distributor invoice integration detail; billing-adjacent + plumbing, raw (new upstream surface /DistributorInvoice; classified on discovery)",
+   "path": "/DistributorInvoice/{id}",
+   "via": ""
   },
   {
    "disposition": "junk",
@@ -2930,6 +3119,13 @@
    "method": "post",
    "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/Expense",
+   "via": ""
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/Expense/review",
    "via": ""
   },
   {
@@ -3578,6 +3774,13 @@
   },
   {
    "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "inbound event queue (+POST /Process); plumbing",
+   "path": "/IncomingEvent/ProcessQuery",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
    "method": "delete",
    "note": "inbound event queue (+POST /Process); plumbing",
    "path": "/IncomingEvent/{id}",
@@ -3791,6 +3994,13 @@
    "method": "post",
    "note": "156-op per-vendor sync tree (Get/Import/Send/Link); integration plumbing, raw",
    "path": "/IntegrationData/ClearLicenceKeyCache/MicrosoftCSP",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "156-op per-vendor sync tree (Get/Import/Send/Link); integration plumbing, raw",
+   "path": "/IntegrationData/Delete/Stripe/paymentmethod",
    "via": ""
   },
   {
@@ -4714,6 +4924,13 @@
    "disposition": "deliberately-raw",
    "method": "post",
    "note": "156-op per-vendor sync tree (Get/Import/Send/Link); integration plumbing, raw",
+   "path": "/IntegrationData/Post/ConnectwiseRmm/Switch",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "156-op per-vendor sync tree (Get/Import/Send/Link); integration plumbing, raw",
    "path": "/IntegrationData/Post/GoogleCalendars",
    "via": ""
   },
@@ -4998,18 +5215,18 @@
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "runbook variable mapping (GET-only); plumbing",
+   "note": "",
    "path": "/IntegrationRunbookVariableGroup",
-   "via": ""
+   "via": "halocli runbook-variable-groups list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "runbook variable mapping (GET-only); plumbing",
+   "note": "",
    "path": "/IntegrationRunbookVariableGroup/{id}",
-   "via": ""
+   "via": "halocli runbook-variable-groups get"
   },
   {
    "disposition": "deliberately-raw",
@@ -5439,6 +5656,34 @@
    "via": "halocli journeys get"
   },
   {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "vendor integration details (Juniper Mist); integration plumbing, raw (new upstream surface /JuniperMistDetails; classified on discovery)",
+   "path": "/JuniperMistDetails",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "vendor integration details (Juniper Mist); integration plumbing, raw (new upstream surface /JuniperMistDetails; classified on discovery)",
+   "path": "/JuniperMistDetails",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "delete",
+   "note": "vendor integration details (Juniper Mist); integration plumbing, raw (new upstream surface /JuniperMistDetails; classified on discovery)",
+   "path": "/JuniperMistDetails/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "vendor integration details (Juniper Mist); integration plumbing, raw (new upstream surface /JuniperMistDetails; classified on discovery)",
+   "path": "/JuniperMistDetails/{id}",
+   "via": ""
+  },
+  {
    "disposition": "first-class",
    "method": "get",
    "note": "",
@@ -5779,6 +6024,13 @@
    "method": "get",
    "note": "marketing click-tracking with 1-letter routes (/MO/b, /MO/r); nonsensical",
    "path": "/MO/b",
+   "via": ""
+  },
+  {
+   "disposition": "junk",
+   "method": "post",
+   "note": "marketing click-tracking with 1-letter routes (/MO/b, /MO/r); nonsensical",
+   "path": "/MO/c",
    "via": ""
   },
   {
@@ -6391,6 +6643,20 @@
    "via": "halocli opportunities get"
   },
   {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "purchasing order-change flow; billing/money stance (user-accepted), raw (new upstream surface /OrderChange; classified on discovery)",
+   "path": "/OrderChange",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "purchasing order-change flow; billing/money stance (user-accepted), raw (new upstream surface /OrderChange; classified on discovery)",
+   "path": "/OrderChange",
+   "via": ""
+  },
+  {
    "disposition": "junk",
    "method": "get",
    "note": "single undocumented GET, no params/schema; vestigial",
@@ -6633,6 +6899,41 @@
    "method": "get",
    "note": "GET-only duplicate of /PdfTemplate (same summaries)",
    "path": "/PdfTemplateRepository/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "periodic-history read (new upstream surface); not yet curated - candidate first-class read (new upstream surface /PeriodicHistory; classified on discovery)",
+   "path": "/PeriodicHistory",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "PII-detection config (AI/security family); raw (new upstream surface /PiiDetection; classified on discovery)",
+   "path": "/PiiDetection",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "PII-detection config (AI/security family); raw (new upstream surface /PiiDetection; classified on discovery)",
+   "path": "/PiiDetection",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "PII-detection config (AI/security family); raw (new upstream surface /PiiDetection; classified on discovery)",
+   "path": "/PiiDetection/{id}",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
+   "note": "workflow pipeline stage config; trigger/side-effect family, raw (new upstream surface /PipelineStages; classified on discovery)",
+   "path": "/PipelineStages",
    "via": ""
   },
   {
@@ -6980,6 +7281,13 @@
   },
   {
    "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
+   "path": "/QuickBooksDetails/ClearCache",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
    "method": "delete",
    "note": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
    "path": "/QuickBooksDetails/{id}",
@@ -7044,6 +7352,20 @@
   {
    "disposition": "deliberately-raw",
    "method": "get",
+   "note": "quotation change flow; billing/money stance (user-accepted), raw (new upstream surface /QuoteChange; classified on discovery)",
+   "path": "/QuoteChange",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "quotation change flow; billing/money stance (user-accepted), raw (new upstream surface /QuoteChange; classified on discovery)",
+   "path": "/QuoteChange",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
    "note": "*Details family rule: per-vendor integration config (credentials/tokens); deliberately-raw",
    "path": "/RaynetDetails",
    "via": ""
@@ -7088,6 +7410,13 @@
    "method": "post",
    "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/RecurringInvoice/Lines",
+   "via": ""
+  },
+  {
+   "disposition": "backlog",
+   "method": "get",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/RecurringInvoice/lines",
    "via": ""
   },
   {
@@ -7613,6 +7942,13 @@
    "method": "post",
    "note": "billing/money stance (user-accepted): money records and billing-adjacent configuration stay raw - raw's preview + spec validation is the deliberate-operator surface; first-class sugar would normalize financial mutations",
    "path": "/SalesOrder/View",
+   "via": ""
+  },
+  {
+   "disposition": "backlog",
+   "method": "post",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/SalesOrder/updatelines",
    "via": ""
   },
   {
@@ -8570,6 +8906,20 @@
   {
    "disposition": "deliberately-raw",
    "method": "get",
+   "note": "supplier order-change flow; billing/money stance (user-accepted), raw (new upstream surface /SupplierOrderChange; classified on discovery)",
+   "path": "/SupplierOrderChange",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "post",
+   "note": "supplier order-change flow; billing/money stance (user-accepted), raw (new upstream surface /SupplierOrderChange; classified on discovery)",
+   "path": "/SupplierOrderChange",
+   "via": ""
+  },
+  {
+   "disposition": "deliberately-raw",
+   "method": "get",
    "note": "*Details family rule: per-vendor integration config (credentials/tokens); GET/{id} summary wrongly says IngramMicroDetails",
    "path": "/SynnexDetails",
    "via": ""
@@ -9252,6 +9602,20 @@
    "note": "",
    "path": "/ToDo",
    "via": "halocli to-dos create/update"
+  },
+  {
+   "disposition": "backlog",
+   "method": "delete",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/ToDo/{id}/seq/{seq}",
+   "via": ""
+  },
+  {
+   "disposition": "backlog",
+   "method": "get",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
+   "path": "/ToDo/{id}/seq/{seq}",
+   "via": ""
   },
   {
    "disposition": "first-class",
