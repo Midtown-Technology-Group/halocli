@@ -276,13 +276,35 @@ async def apply_outputs(
                                     )
                                     mr = r[0] if isinstance(r, list) and r else r
                                     mid = mr.get("id") if isinstance(mr, dict) else None
-                                    created.append(
-                                        {
-                                            "id": mid,
-                                            "name": m.get("name"),
-                                            "bind_phase": m.get("_bind_phase"),
-                                        }
-                                    )
+                                    entry = {
+                                        "id": mid,
+                                        "name": m.get("name"),
+                                        "bind_phase": m.get("_bind_phase"),
+                                    }
+                                    if mid is not None:
+                                        # BEHAVIORAL check: _test executes the
+                                        # method's real HTTP call (bounded ladder
+                                        # for the exact payload shape)
+                                        for t_body in (
+                                            {"id": mid, "_test": True},
+                                            {
+                                                "id": mid,
+                                                "_test": True,
+                                                "_test_runbook_variables": [],
+                                            },
+                                        ):
+                                            try:
+                                                tr = await client.request(
+                                                    "POST",
+                                                    "/CustomIntegrationMethod",
+                                                    json_body=[t_body],
+                                                    timeout=90,
+                                                )
+                                                entry["test_response"] = str(tr)[:400]
+                                                break
+                                            except Exception as texc:  # noqa: BLE001
+                                                entry["test_error"] = str(texc)[:250]
+                                    created.append(entry)
                                     if mid is not None and m.get("name"):
                                         method_ids[str(m["name"])] = mid
                                 except Exception as exc:  # noqa: BLE001
@@ -303,8 +325,38 @@ async def apply_outputs(
             wid = record.get("id")
             if not wid or record.get("create_error"):
                 continue
+            _, name = key.split(":", 1)
             inputs = record.get("_inputs") or {}
             record.update(await _fire_runbook(client, str(wid), inputs))
+            # branch leg 2 (notmet): the DOCUMENT is authoritative for
+            # <<var>>, so the blanked-input path needs a second runbook
+            # created fresh (create beats merge-update for input vars).
+            raw_payload = json.loads(Path(record["file"]).read_text(encoding="utf-8"))
+            blank_inputs: dict[str, str] = {}
+            has_array = False
+            for v in raw_payload.get("input_variables") or []:
+                value = str(v.get("value") or "")
+                try:
+                    parsed: Any = json.loads(value)
+                except (ValueError, TypeError):
+                    parsed = None
+                if isinstance(parsed, list) and parsed:
+                    v["value"] = "[]"  # valid empty array: "" throws in criteria
+                    has_array = True
+                blank_inputs[str(v.get("key"))] = str(v.get("value") or "")
+            if has_array and isinstance(record.get("runlog"), dict):
+                rec2 = await _create_runbook(client, raw_payload, f"{name}-notmet", method_ids, {})
+                record["branch_create"] = {
+                    k: rec2.get(k)
+                    for k in ("id", "shape_winner", "verify", "category_group")
+                    if k in rec2
+                }
+                bid = rec2.get("id")
+                if bid:
+                    record["branch_runbook_id"] = bid
+                    record["branch_fire_notmet"] = await _fire_runbook(
+                        client, str(bid), blank_inputs
+                    )
 
         # ---- phase 3: cleanup (reverse) --------------------------------
         for key in sorted(files, reverse=True):
@@ -313,7 +365,9 @@ async def apply_outputs(
                 continue
             try:
                 if key.startswith("runbook:") and record.get("id"):
-                    await client.request("DELETE", f"/Webhook/{record['id']}", timeout=30)
+                    rids = [record["id"], record.get("branch_runbook_id")]
+                    for rid in [r for r in rids if r]:
+                        await client.request("DELETE", f"/Webhook/{rid}", timeout=30)
                     record["cleanup"] = await _gone(
                         client, "DELETE check", f"/Webhook/{record['id']}"
                     )
@@ -346,6 +400,43 @@ async def _gone(client: Any, label: str, path: str) -> str:
         return "STILL READABLE"
     except Exception:  # noqa: BLE001
         return "deleted (clean)"
+
+
+async def _resolve_runbook_group(client: Any, category: str) -> dict[str, Any]:
+    """Match a Bifrost category against Halo runbook groups (lookup -4).
+
+    Fetches unfiltered and filters client-side (the ``lookupid`` query
+    param returned0 rows for every value probed). Returns the matched
+    group_id or a record of what was available so the evidence shows an
+    honest miss - the trial defines no -4 groups (all runbooks carry
+    group_id -1), and lookup creation is server-blocked there.
+    """
+    try:
+        body = await client.request("GET", "/Lookup", params={"count": "500"}, timeout=45)
+        rows = (
+            body
+            if isinstance(body, list)
+            else next((v for v in body.values() if isinstance(v, list)), [])
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"category": category, "error": str(exc)[:200]}
+    groups = [r for r in rows if str(r.get("lookupid")) == "-4"]
+    for r in groups:
+        if str(r.get("name") or "").lower() == category.lower():
+            return {
+                "category": category,
+                "matched": r.get("name"),
+                "group_id": r.get("id"),
+                "row": {k: r.get(k) for k in ("lookupid", "id", "name", "value2")},
+            }
+    return {
+        "category": category,
+        "group_id": None,
+        "lookup_-4_rows": len(groups),
+        "note": "no matching group; runs default to group_id -1"
+        if not groups
+        else "groups exist but none match",
+    }
 
 
 async def _create_runbook(
@@ -382,6 +473,13 @@ async def _create_runbook(
     out["_inputs"] = {
         str(v.get("key")): str(v.get("value") or "") for v in doc.get("input_variables") or []
     }
+    # category sidecar -> Halo runbook group (lookup -4, matched live)
+    category = payload.get("_category")
+    if category:
+        resolved = await _resolve_runbook_group(client, str(category))
+        out["category_group"] = resolved
+        if resolved.get("group_id") is not None:
+            doc["group_id"] = resolved["group_id"]
     if warnings:
         out["binding_warnings"] = warnings
 
@@ -424,17 +522,27 @@ async def _create_runbook(
         )
         steps = full.get("steps") if isinstance(full, dict) else None
         edges = sum(len(s.get("actions") or []) for s in (steps or []))
+        edge_names = sorted(
+            {
+                a.get("action_name")
+                for s in steps or []
+                for a in s.get("actions") or []
+                if a.get("action_name")
+            }
+        )
         bound = [s.get("step_id") for s in (steps or []) if s.get("auto_action_type") is not None]
         out["verify"] = {
             "type": full.get("type") if isinstance(full, dict) else None,
             "steps": len(steps) if isinstance(steps, list) else steps,
             "expected_steps": len(doc.get("steps") or []),
             "edges": edges,
+            "edge_names": edge_names,
             "bound_steps": bound,
             "input_variables": len(full.get("input_variables") or [])
             if isinstance(full, dict)
             else None,
             "start_type": full.get("runbook_start_type") if isinstance(full, dict) else None,
+            "group_id": full.get("group_id") if isinstance(full, dict) else None,
         }
     except Exception as exc:  # noqa: BLE001
         out["verify"] = {"error": str(exc)[:200]}
@@ -490,27 +598,52 @@ async def _fire_runbook(
         out["trigger_fire"] = f"error: {str(exc)[:300]}"
         return out
 
-    # capture the run: list poll first, by-id fallback (the list window
-    # evicts completed rows under load - observed on the trial)
+    # capture the run: find the new row once, then FOLLOW it to a
+    # terminal state (a mid-run row reads status1 with an empty error -
+    # observed capturing step5 mid-flight at ~2.6s). Snapshots record
+    # the evolution so running-vs-failed is never a guess.
+    evolution: list[dict[str, Any]] = []
     found: dict | None = None
-    for _ in range(8):
+    row_id = None
+    for attempt in range(12):
         await asyncio.sleep(2)
-        rows = [r for r in await runlog_list() if r.get("id") not in before]
-        mine = [r for r in rows if r.get("runbook_id") == wid]
-        if mine:
-            found = mine[0]
-            break
-        top = max((r.get("id") or 0 for r in rows), default=0)
-        for cand in range(top, max(top - 15, 0), -1):
-            try:
-                d2 = await client.request("GET", f"/Automation/{cand}", timeout=20)
-            except Exception:  # noqa: BLE001
-                continue
-            if isinstance(d2, dict) and d2.get("runbook_id") == wid:
-                found = d2
+        if row_id is None:
+            rows = [r for r in await runlog_list() if r.get("id") not in before]
+            mine = [r for r in rows if r.get("runbook_id") == wid]
+            if mine:
+                row_id = mine[0].get("id")
+            else:
+                top = max((r.get("id") or 0 for r in rows), default=0)
+                for cand in range(top, max(top - 15, 0), -1):
+                    try:
+                        d2 = await client.request("GET", f"/Automation/{cand}", timeout=20)
+                    except Exception:  # noqa: BLE001
+                        continue
+                    if isinstance(d2, dict) and d2.get("runbook_id") == wid:
+                        row_id = d2.get("id")
+                        break
+        if row_id is None:
+            continue
+        try:
+            snap = await client.request("GET", f"/Automation/{row_id}", timeout=20)
+        except Exception:  # noqa: BLE001
+            continue
+        if isinstance(snap, dict):
+            found = snap
+            evolution.append(
+                {
+                    "t_s": (attempt + 1) * 2,
+                    "status": snap.get("status"),
+                    "step": snap.get("runbook_step"),
+                    "step_name": snap.get("runbook_step_name"),
+                    "exec": snap.get("steps_executed"),
+                    "error": (snap.get("error") or "")[:80],
+                }
+            )
+            # status1 = running (or failed-with-error); leave only when a
+            # terminal signature shows: status !=1, or an error landed
+            if (snap.get("status") or 1) != 1 or (snap.get("error") or ""):
                 break
-        if found:
-            break
     if found:
         out["runlog"] = {
             k: found.get(k)
@@ -522,8 +655,11 @@ async def _fire_runbook(
                 "runbook_step",
                 "runbook_step_name",
                 "iteration",
+                "execution_time",
+                "timestamp",
             )
         }
+        out["evolution"] = evolution
     else:
         out["runlog"] = "row not found (list window + by-id scan)"
     return out

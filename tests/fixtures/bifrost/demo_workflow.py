@@ -38,6 +38,8 @@ async def process_one(item) -> dict:
 async def sync_things(client, limit: int = 10, items: tuple[str, ...] = ("a", "b")) -> dict:
     await asyncio.sleep(1)
     await fetch_remote(client)
-    for item in items:
-        await process_one(item)
+    if items:
+        for item in items:
+            await asyncio.sleep(1)
+            await process_one(item)
     return {"limit": limit}
