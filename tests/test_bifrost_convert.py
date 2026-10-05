@@ -393,12 +393,23 @@ def test_guard_notmet_targets_step_after_guard() -> None:
     assert target["name"] == "sleep 1s"
 
 
-def test_guard_with_else_flattens_with_note() -> None:
+def test_else_branch_translates_both_arms() -> None:
     conv = convert_workflow({}, ELSE_SOURCE, "with_else")
     assert conv.ok
     steps = conv.payload["steps"]
-    assert not any(s.get("steptype") == 1 for s in steps)  # no condition emitted
-    assert any("flattened" in n for n in conv.notes)
+    cond = next(s for s in steps if s.get("steptype") == 1)
+    met, notmet = cond["actions"]
+    success = next(s for s in steps if s["name"] == "Success")
+    # met -> then-arm (fetch_remote hop), notmet -> else-arm (fallback hop)
+    then_step = next(s for s in steps if s["name"] == "fetch_remote")
+    else_step = next(s for s in steps if s["name"] == "fallback")
+    assert met["end_step"] == then_step["step_id"]
+    assert notmet["end_step"] == else_step["step_id"]
+    # the then-arm's edge SKIPS the else arm straight to after (Success)
+    assert then_step["actions"][0]["end_step"] == success["step_id"]
+    # the else-arm falls through to Success naturally
+    assert else_step["actions"][0]["end_step"] == success["step_id"]
+    assert any("translated" in n for n in conv.notes)
 
 
 def test_non_array_guard_stays_flattened() -> None:
@@ -411,6 +422,82 @@ def test_non_array_guard_stays_flattened() -> None:
     steps = conv.payload["steps"]
     assert not any(s.get("steptype") == 1 for s in steps)
     assert any("did not fit" in n for n in conv.notes)
+
+
+ELSE_LOOP_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Loop else")
+async def guarded_loop_else(client, items: list[str] | None = None) -> dict:
+    if items:
+        for item in items:
+            await asyncio.sleep(1)
+    else:
+        await fallback(client)
+    return {}
+"""
+
+
+def test_then_arm_ending_in_loop_skips_else_from_iter_end() -> None:
+    """The loop-end case: the then-arm's LAST rendered node is iter_end,
+    not the last body node - the skip must fire there."""
+    conv = convert_workflow({}, ELSE_LOOP_SOURCE, "guarded_loop_else")
+    assert conv.ok
+    steps = conv.payload["steps"]
+    cond = next(s for s in steps if s.get("steptype") == 1)
+    iter_end = next(s for s in steps if s.get("auto_action") == 13)
+    else_step = next(s for s in steps if s["name"] == "fallback")
+    success = next(s for s in steps if s["name"] == "Success")
+    assert cond["actions"][1]["end_step"] == else_step["step_id"]  # notmet -> else
+    # the loop's "Iteration finished" edge skips the else arm -> Success
+    finished = next(a for a in iter_end["actions"] if a["seq"] == 1)
+    assert finished["end_step"] == success["step_id"]
+
+
+def test_triggers_become_sidecar_with_note() -> None:
+    conv = convert_workflow({}, API_SOURCE, "sync_things", triggers=["New Ticket Logged", "Closed"])
+    assert conv.ok
+    assert conv.payload["_triggers"] == ["New Ticket Logged", "Closed"]
+    assert any("triggers" in n and "Notification" in n for n in conv.notes)
+
+
+def test_event_name_matching_normalizes_catalog_forms() -> None:
+    from halocli.bifrost_convert import match_event, normalize_event_name
+
+    catalog = [
+        {
+            "lookupid": 64,
+            "id": 1,
+            "name": "New $#request Logged - Assigned to Recipient",
+            "value2": "New $#request Logged",
+        },
+        {
+            "lookupid": 64,
+            "id": 3,
+            "name": "New $#request Logged - All",
+            "value2": "New $#request Logged",
+        },
+        {"lookupid": 64, "id": 39, "name": "Closed - All", "value2": "Closed"},
+        {
+            "lookupid": 64,
+            "id": 76,
+            "name": "$#request Status Changed  - All",
+            "value2": "$#request Status Changed",
+        },
+    ]
+    assert normalize_event_name("New $#request Logged - All") == "new ticket logged"
+    # the bound-row form matches - and the "- All" scope WINS over the
+    # earlier Assigned-to-Recipient row that shares value2 (eventno1 vs3:
+    # binding1 fired nothing on the trial until this preference landed)
+    assert match_event(catalog, "New Ticket Logged")["id"] == 3
+    # exact + suffix-stripped forms
+    assert match_event(catalog, "Closed")["id"] == 39
+    assert match_event(catalog, "closed - all")["id"] == 39
+    # placeholder substitution on the other side too
+    assert match_event(catalog, "ticket status changed")["id"] == 76
+    # honest miss
+    assert match_event(catalog, "No Such Event") is None
 
 
 def test_classify_does_not_descend_into_callee_args() -> None:

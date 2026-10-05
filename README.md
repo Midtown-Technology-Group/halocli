@@ -822,16 +822,23 @@ values: `("a","b")` → `["a", "b"]`).
 
 Verified live (`bifrost_conversion_evidence.json`, self-cleaning
 three-phase apply — create → fire → cleanup): the demo workflow now
-exercises **every primitive including the branch**, twice:
-- integration id → method id wired into step2 (`bound_steps:[2]`,
-  `_test` accepted) → runbook 9 steps / **11 edges / all 9 edge names
-  persisted correctly** (`edge_names` in verify) →
-- **met leg** (items `["a","b"]`): runlog **2493 — status 2, step
-  "Success", 3.8s** (loop ran: the two 1s body sleeps show in
-  `execution_time`);
-- **notmet leg** (items `[]`, fresh runbook): runlog **2494 — status 2,
-  step "Success", 1.6s** — the timing contrast (3.8s vs 1.6s) is the
-  per-element iteration-multiplicity proof;
+exercises **every primitive, every branch arm, and native event
+triggering**, in one run:
+- integration → method id wired into step2 (`bound_steps:[2]`,
+  `_test` accepted) → runbook **10 steps / 12 edges / all 9 edge names
+  persisted correctly** (`edge_names` in verify);
+- **met leg** (items `["a","b"]`): runlog **2528 — status 2, step
+  "Success", 3.7s** (loop ran: the two 1s body sleeps show in
+  `execution_time`, and the then-arm's loop-end **skips the else
+  arm** to Success);
+- **notmet leg** (items `[]`, fresh runbook): runlog **2529 — status 2,
+  step "Success", 1.6s** — falls into the **`fallback` else-arm**; the
+  timing contrast (3.7s vs 1.6s) is the per-element
+  iteration-multiplicity proof;
+- **native event trigger**: `--triggers "New Ticket Logged"` resolved
+  eventno3 via lookup64 → `POST /Notification` binding (guid null) →
+  one probe ticket → **runlog 2532 — status 2, step "Success"** (the
+  Bifrost-subscriber loop, cut over to Halo-native triggering);
 - `--apply` follows running rows to terminal status with an evolution
   trace (a mid-run row reads `status:1` with an empty error — early
   captures were just mid-flight); category resolves via lookup -4 at
@@ -855,9 +862,25 @@ is the `<<request>>` object; **`<<var>>` expressions read the
 document's own input values** (trial-observed: formCollection alone
 does not populate `<<items>>`), which is what `--form` patches.
 Execution appears in `GET /Automation` keyed by
-`runbook_id`/`runbook_name`, with `steps_executed`/`runbook_step`
-(under load the list evicts rows — the apply probe falls back to
-by-id fetch).
+`runbook_id`/`runbook_name`, with `steps_executed`/`runbook_step`.
+**Runlog pagination gotcha (trial-measured): `?count=N` returns the
+*oldest* N rows** — once the table outgrows your count, new runs are
+invisible to the poll. Read `count=1000` (the table self-rotates around
+~60 rows) and fall back to by-id fetches anchored on the *full* list.
+
+**Internal triggers (`--triggers`, live-proven)**: Bifrost's
+subscriber model cuts over to Halo-native triggering —
+`--triggers "New Ticket Logged"` resolves names against **lookup 64**
+(205 event rows; match normalizes the `$#request`/`- All` catalog
+forms and *prefers the `- All` scope* — the Assigned-variant shares
+`value2` and silently never fires) and writes **`POST /Notification`
+bindings** `{guid: null, eventno, name, type: -2, delivery_method: 6,
+webhook_id: <runbook>}`. Two hard-won rules: **never copy a template
+row's guid** (it upserts the template and hijacks its owner — one trial
+runbook lost a binding before it was restored), and `events[]` on the
+Webhook create is a **read-joined view** (silently dropped on POST) —
+Notification rows are the writable side. Proof: binding + one
+API-created ticket → runlog **2532, status 2**.
 
 Egress caveat (measured, not assumed): an `aa6` step routes only when
 its HTTP call actually answers — Halo's servers reached
@@ -866,11 +889,12 @@ found"), so point demo integrations at endpoints your Halo instance can
 reach.
 
 Honesty notes (what does **not** transfer): the Python logic itself —
-**else-less guards on list/tuple params now translate to real Halo
-condition steps (both legs fire-proven)**, but `else` branches and
-guards on non-array values still flatten to the linear success path
-(noted per conversion; Halo's `steptype1`+act12 could take their
-criteria in a later pass); `effects`/`enforced_bounds`/secrets become
+**if/else guards on list/tuple params translate to real Halo condition
+steps with BOTH arms fire-proven** (met → guarded body, notmet → else
+arm; a then-arm ending in a loop skips the else from its `iter_end`),
+but guards on non-array values still flatten to the linear success path
+(noted per conversion; their criteria shapes are not yet mapped);
+`effects`/`enforced_bounds`/secrets become
 `conversion_report.json` notes (Halo has no field: secrets → header /
 certificate config in the UI); category → `group_id` needs the tenant
 to define lookup -4 groups (none on the trial); method extraction only

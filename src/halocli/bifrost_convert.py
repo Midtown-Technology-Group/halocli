@@ -60,13 +60,23 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   has-elements criteria (tablename ``runbookvariable``, fieldname
   ``<<var>>``, type5 - Azure Onboarding's GroupSelected? shape), edges
   action12 "Condition met" -> guarded body / "Condition not met" ->
-  the first step after the guard. BOTH legs fire-proven on the trial
-  (met: runlog 2493 status2 3.8s through the loop; notmet: runlog
-  2494 status2 1.6s skipping it). CRITICAL: approval_result drives the
-  persisted action_name (1=positive, 0=negative) - the server rewrites
-  names from it on save, so every failure/false edge MUST send
-  approval_result:0 or it collapses to the positive name and never
-  routes (the same rule governs act17/act22/act23 second edges).
+  the else arm (or after the guard when there is none); a then-arm
+  ending in a loop skips the else from its iter_end node. BOTH arms
+  fire-proven on the trial (met: runlog 2528 status2 3.7s through the
+  loop; notmet: runlog 2529 status2 1.6s through the else arm).
+  CRITICAL: approval_result drives the persisted action_name (1=
+  positive, 0=negative) - the server rewrites names from it on save,
+  so every failure/false edge MUST send approval_result:0 or it
+  collapses to the positive name and never routes (the same rule
+  governs act17/act22/act23 second edges).
+- internal triggers: ``triggers=[names]`` becomes a sidecar the apply
+  resolves against lookup64 (event catalog; prefer the "- All" scope)
+  and binds via POST /Notification {guid: null, eventno, type: -2,
+  delivery_method: 6, webhook_id} - NEVER copy a template guid (it
+  upserts the template row and hijacks its owner). Trial-proven:
+  eventno3 binding + one API-created ticket -> runlog 2532 status2.
+  Webhook-create ``events[]`` is a read-joined view (dropped on POST);
+  Notification rows are the writable side.
 
 Fidelity stance: the converter emits this executable graph (phases ->
 hops or method-bound API-call steps, detected loops -> iteration pairs,
@@ -380,8 +390,10 @@ class Phase:
     method_name: str | None = None  # unresolved binding -> sidecar
     in_loop: bool = False
     array_var: str | None = None  # loop target (input variable name)
-    # condition phases (else-less `if <array param>:` guards):
-    branch_span: int | None = None  # guarded raw-phase count (classify side)
+    # condition phases (else-less `if <array param>:` guards AND
+    # if/else where both arms carry awaits):
+    branch_span: int | None = None  # guarded (then-arm) raw-phase count
+    else_span: int | None = None  # else-arm raw-phase count (None = no else)
     notmet_target: int | None = None  # plan-space step id (build side)
 
 
@@ -554,24 +566,28 @@ def classify_phases(
     for stmt in func.body:
         if (
             isinstance(stmt, ast.If)
-            and not stmt.orelse
             and isinstance(stmt.test, ast.Name)
             and stmt.test.id in array_params
         ):
-            # else-less truthiness guard on an array param -> Halo
-            # condition step (translated only when the body carries awaits)
+            # array-param guard: translate whether or not there is an else
+            # (both arms must carry awaits to earn steps)
             start = len(phases)
             for sub in stmt.body:
                 walk(sub, False, None)
-            span = len(phases) - start
-            if span:
+            then_span = len(phases) - start
+            else_start = len(phases)
+            for sub in stmt.orelse:
+                walk(sub, False, None)
+            else_span = len(phases) - else_start
+            if then_span or else_span:
                 phases.insert(
                     start,
                     Phase(
                         "condition",
                         f"if {stmt.test.id}:",
                         array_var=stmt.test.id,
-                        branch_span=span,
+                        branch_span=then_span,
+                        else_span=else_span if else_span else None,
                     ),
                 )
             continue
@@ -649,6 +665,8 @@ def build_runbook_steps(
     plan: list[tuple[str, Phase | None]] = []
     raw_to_plan: dict[int, int] = {}
     pending_conditions: list[tuple[Phase, int]] = []
+    pending_skips: list[tuple[int, int]] = []  # (then-last raw, after-else raw)
+    loop_end_pos: dict[int, int] = {}  # last body raw -> its iter_end pos
     raw = 0
     i = 0
     while i < len(phases):
@@ -670,6 +688,10 @@ def build_runbook_steps(
             plan.append(("iter_end", body[-1] if body else None))
             # targeting the loop's first raw phase lands on iter_begin
             raw_to_plan[raw_start] = begin_pos
+            if body:
+                # a skip whose then-arm ENDS with this loop must jump from
+                # the iter_end node, not from the last body node
+                loop_end_pos[raw - 1] = len(plan) - 1
             # share the array var with the marker phases (they render the
             # <<var>> message); body phases ignore array_var when hopping
             for kind, ph in plan:
@@ -679,6 +701,15 @@ def build_runbook_steps(
         plan.append(("plain", p))
         if p.kind == "condition":
             pending_conditions.append((p, raw + 1 + (p.branch_span or 0)))
+            if p.else_span:
+                # the then-arm's last node must skip the else arm entirely
+                # (with an empty then-arm the condition node itself skips)
+                pending_skips.append(
+                    (
+                        raw + (p.branch_span or 0),
+                        raw + (p.branch_span or 0) + p.else_span + 1,
+                    )
+                )
         raw_to_plan[raw] = len(plan) - 1
         raw += 1
         i += 1
@@ -702,6 +733,19 @@ def build_runbook_steps(
         kind in ("plain", "body") and ph is not None and ph.kind == "api" for kind, ph in plan
     )
     fail_id = success_id + 1 if has_fail else None
+
+    # then-arm skips: the last node of a then-arm that HAS an else must
+    # jump over the else arm (a then-arm ending in a loop skips from its
+    # iter_end node; an empty then-arm makes the condition itself skip)
+    skip_map: dict[int, int] = {}
+    for then_last_raw, target_raw in pending_skips:
+        pos = loop_end_pos.get(then_last_raw)
+        if pos is None:
+            pos = raw_to_plan.get(then_last_raw)
+        if pos is None:
+            continue
+        tpos = raw_to_plan.get(target_raw)
+        skip_map[pos + 1] = tpos + 1 if tpos is not None else success_id
 
     def edge(action_type: int, action_name: str, start: int, end: int, seq: int) -> dict:
         # approval_result DRIVES the persisted name: the server rewrites
@@ -728,6 +772,9 @@ def build_runbook_steps(
     for idx, (kind, ph) in enumerate(plan, start=1):
         is_last_plan = idx == n
         next_id = idx + 1 if not is_last_plan else success_id
+        skip = skip_map.get(idx)
+        if skip is not None:
+            next_id = skip  # then-arm end jumps over the else arm
         if kind == "iter_begin":
             msg = f"<<{ph.array_var}>>" if ph and ph.array_var else None
             steps.append(
@@ -853,6 +900,7 @@ def convert_workflow(
     source: str | None = None,
     function_name: str | None = None,
     phase_bindings: dict[str, int | str] | None = None,
+    triggers: list[str] | None = None,
 ) -> Conversion:
     """Bifrost workflow -> POST /Webhook type:1 runbook document.
 
@@ -1008,6 +1056,14 @@ def convert_workflow(
         payload["_phase_bindings"] = sidecar  # apply-only; stripped before POST
     if category:
         payload["_category"] = category  # apply resolves group_id via lookup -4
+    if triggers:
+        payload["_triggers"] = list(triggers)  # apply binds via POST /Notification
+        notes.append(
+            f"triggers {list(triggers)} -> Halo event bindings via POST /Notification "
+            "(resolved against lookup64 at apply; the runbook then runs natively on "
+            "those events - trial-proven: eventno3 binding + one API-created ticket "
+            "-> runlog status2)"
+        )
     return Conversion(payload, notes)
 
 
@@ -1016,6 +1072,58 @@ def _has_branches(func: ast.AsyncFunctionDef | ast.FunctionDef) -> bool:
         if isinstance(node, (ast.If, ast.IfExp)):
             return True
     return False
+
+
+# --- trigger bindings (Bifrost event subscribers -> Halo events) ----------
+
+_EVENT_PLACEHOLDERS = (
+    ("$#request", "ticket"),
+    ("$#technician", "agent"),
+)
+
+
+def normalize_event_name(name: str) -> str:
+    """Normalize a Halo event name for matching (catalog vs bound forms).
+
+    The lookup64 catalog carries i18n placeholders and an "- All" suffix
+    ("New $#request Logged - All") while bound notifications carry the
+    substituted base ("New Ticket Logged") - lowercase, strip the suffix,
+    and substitute the observed placeholders.
+    """
+    s = str(name).lower().strip()
+    if s.endswith(" - all"):
+        s = s[: -len(" - all")].strip()
+    for ph, word in _EVENT_PLACEHOLDERS:
+        s = s.replace(ph.lower(), word)
+    return " ".join(s.split())
+
+
+def match_event(catalog: list[dict], wanted: str) -> dict | None:
+    """Resolve an event name against lookup64 rows -> {id, name}.
+
+    Scope matters: several rows share the same value2 base with
+    different scopes ("... - All" vs "... - Assigned to Recipient") and
+    the working bindings all use the ``- All`` variant (trial: eventno3
+    fires for every new ticket). Preference: exact name -> normalized
+    match on an ``- All`` row -> any normalized match. None = honest
+    miss (the caller records it with the catalog sample).
+    """
+    target = normalize_event_name(wanted)
+    exact = all_match = any_match = None
+    for row in catalog:
+        name = str(row.get("name") or "")
+        values = [name] + ([str(row["value2"])] if row.get("value2") else [])
+        is_all = name.lower().endswith(" - all")
+        for cand in values:
+            if cand.lower().strip() == str(wanted).lower().strip() and exact is None:
+                exact = {"id": row.get("id"), "name": cand}
+            if normalize_event_name(cand) == target:
+                hit = {"id": row.get("id"), "name": cand}
+                if is_all and all_match is None:
+                    all_match = hit
+                if any_match is None:
+                    any_match = hit
+    return exact or all_match or any_match
 
 
 def sanitize_for_import(doc: dict) -> dict:

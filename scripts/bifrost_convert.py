@@ -55,6 +55,7 @@ from halocli.bifrost_convert import (  # noqa: E402
     convert_methods,
     convert_workflow,
     extract_http_methods,
+    match_event,
 )
 
 PROBE = "haloclidevprobe"
@@ -196,7 +197,10 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
             if m.get("bind_phase") and m.get("name")
         }
         auto.update(phase_bindings)
-        conv: Conversion = convert_workflow(row, source, function, phase_bindings=auto or None)
+        triggers = [t.strip() for t in (args.triggers or "").split(",") if t.strip()]
+        conv: Conversion = convert_workflow(
+            row, source, function, phase_bindings=auto or None, triggers=triggers or None
+        )
         name = str(row.get("name") or (function or "workflow"))
         if conv.ok:
             p = out_dir / f"runbook__{_slug(name)}.json"
@@ -345,7 +349,12 @@ async def apply_outputs(
                     has_array = True
                 blank_inputs[str(v.get("key"))] = str(v.get("value") or "")
             if has_array and isinstance(record.get("runlog"), dict):
-                rec2 = await _create_runbook(client, raw_payload, f"{name}-notmet", method_ids, {})
+                # no _triggers on the twin: one binding set is enough for
+                # the proof, and cleanup only tracks the main runbook's
+                branch_payload = {k: v for k, v in raw_payload.items() if k != "_triggers"}
+                rec2 = await _create_runbook(
+                    client, branch_payload, f"{name}-notmet", method_ids, {}
+                )
                 record["branch_create"] = {
                     k: rec2.get(k)
                     for k in ("id", "shape_winner", "verify", "category_group")
@@ -357,6 +366,11 @@ async def apply_outputs(
                     record["branch_fire_notmet"] = await _fire_runbook(
                         client, str(bid), blank_inputs
                     )
+            # event-trigger proof: bindings must fire natively on a Halo
+            # event (trial-proven pattern: eventno3 + API-created ticket
+            # -> runlog status2)
+            if record.get("trigger_binding_ids"):
+                record["trigger_proof"] = await _event_proof(client, str(wid))
 
         # ---- phase 3: cleanup (reverse) --------------------------------
         for key in sorted(files, reverse=True):
@@ -365,6 +379,14 @@ async def apply_outputs(
                 continue
             try:
                 if key.startswith("runbook:") and record.get("id"):
+                    # children first: trigger bindings, then both runbooks
+                    for trig_id in record.get("trigger_binding_ids") or []:
+                        try:
+                            await client.request("DELETE", f"/Notification/{trig_id}", timeout=30)
+                        except Exception as exc:  # noqa: BLE001
+                            record.setdefault("cleanup_errors", []).append(
+                                f"binding {trig_id}: {str(exc)[:130]}"
+                            )
                     rids = [record["id"], record.get("branch_runbook_id")]
                     for rid in [r for r in rids if r]:
                         await client.request("DELETE", f"/Webhook/{rid}", timeout=30)
@@ -439,6 +461,121 @@ async def _resolve_runbook_group(client: Any, category: str) -> dict[str, Any]:
     }
 
 
+async def _event_catalog(client: Any) -> list[dict]:
+    """lookup64 = Halo's event catalog (205 rows: id=eventno, name/value2)."""
+    try:
+        body = await client.request("GET", "/Lookup", params={"count": "1000"}, timeout=45)
+    except Exception:  # noqa: BLE001
+        return []
+    rows = (
+        body
+        if isinstance(body, list)
+        else next((v for v in body.values() if isinstance(v, list)), [])
+    )
+    return [r for r in rows if str(r.get("lookupid")) == "64"]
+
+
+def _bound_name(raw: str) -> str:
+    """Catalog -> bound-row name: strip '- All', substitute i18n tokens."""
+    s = raw
+    if s.lower().endswith(" - all"):
+        s = s[: -len(" - all")]
+    for ph, word in (("$#request", "Ticket"), ("$#technician", "Agent")):
+        s = s.replace(ph, word)
+    return s
+
+
+async def _event_proof(client: Any, wid: str) -> dict[str, Any]:
+    """Trigger proof: one probe ticket -> native Halo event -> our run.
+
+    Request-economical (list-poll + ONE bounded by-id sweep) and always
+    deletes the probe ticket it created.
+    """
+    out: dict[str, Any] = {}
+    tid = None
+    try:
+        tr = await client.request(
+            "POST",
+            "/Tickets",
+            json_body=[{"summary": f"{PROBE} trigger proof"}],
+            timeout=60,
+        )
+        trow = tr[0] if isinstance(tr, list) and tr else tr
+        tid = trow.get("id") if isinstance(trow, dict) else None
+        out["ticket"] = tid
+    except Exception as exc:  # noqa: BLE001
+        out["ticket_error"] = str(exc)[:220]
+        return out
+
+    async def runlog_list() -> list[dict]:
+        log = await client.request("GET", "/Automation", params={"count": "1000"}, timeout=45)
+        return (
+            log
+            if isinstance(log, list)
+            else next((v for v in log.values() if isinstance(v, list)), [])
+        )
+
+    rows = await runlog_list()
+    before = {r.get("id") for r in rows}
+    hit = None
+    for attempt in range(34):  # ~100s: observed event latency ~79s
+        await asyncio.sleep(3)
+        rows = await runlog_list()
+        hit = next(
+            (r for r in rows if r.get("id") not in before and r.get("runbook_id") == wid),
+            None,
+        )
+        if hit:
+            break
+        if attempt % 3 == 2:
+            # periodic by-id sweep over the full-list top (the row can
+            # out-run an end-only sweep by seconds)
+            top = max((r.get("id") or 0) for r in rows) if rows else 0
+            for cand in range(top, max(top - 6, 0), -1):
+                try:
+                    d2 = await client.request("GET", f"/Automation/{cand}", timeout=20)
+                except Exception:  # noqa: BLE001
+                    continue
+                if (
+                    isinstance(d2, dict)
+                    and d2.get("runbook_id") == wid
+                    and d2.get("id") not in before
+                ):
+                    hit = d2
+                    break
+        if hit:
+            break
+    # follow the found row to a terminal state (list-matches can read
+    # mid-flight status1 with an empty error - observed at ~1.6s)
+    if isinstance(hit, dict) and hit.get("id") is not None:
+        rid = hit.get("id")
+        for _ in range(15):
+            if (hit.get("status") or 1) != 1 or (hit.get("error") or ""):
+                break
+            await asyncio.sleep(2)
+            try:
+                nxt = await client.request("GET", f"/Automation/{rid}", timeout=20)
+            except Exception:  # noqa: BLE001
+                continue
+            if isinstance(nxt, dict):
+                hit = nxt
+    out["runlog"] = (
+        {
+            k: hit.get(k)
+            for k in ("id", "status", "error", "steps_executed", "runbook_step", "execution_time")
+        }
+        if isinstance(hit, dict)
+        else "no event-driven run observed (~100s)"
+    )
+    if tid is not None:
+        try:
+            await client.request("DELETE", f"/Tickets/{tid}", timeout=30)
+            out["ticket_cleanup"] = "deleted"
+        except Exception as exc:  # noqa: BLE001
+            out["ticket_cleanup"] = str(exc)[:160]
+    return out
+
+
 async def _create_runbook(
     client: Any,
     payload: dict,
@@ -482,7 +619,6 @@ async def _create_runbook(
             doc["group_id"] = resolved["group_id"]
     if warnings:
         out["binding_warnings"] = warnings
-
     base = {**doc, "name": f"{PROBE}-{name}"[:80], "type": 1, "active": False}
     ladders: list[tuple[str, dict]] = [
         # lead with the public-endpoint shape: Bifrost triggers Halo runbooks
@@ -514,6 +650,49 @@ async def _create_runbook(
         out["create_error"] = "all ladder rungs rejected"
         return out
     out["id"] = wid
+
+    # trigger bindings: _triggers names -> lookup64 catalog -> fresh
+    # POST /Notification rows (guid ALWAYS null: a copied template guid
+    # upserts the template row and hijacks its owner - trial-lesson)
+    triggers = payload.get("_triggers") or []
+    if triggers:
+        catalog = await _event_catalog(client)
+        resolved: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        binding_ids: list[int] = []
+        for t in triggers:
+            m = match_event(catalog, t)
+            if not m or m.get("id") is None:
+                unresolved.append(t)
+                continue
+            clean = _bound_name(str(m.get("name") or t))
+            try:
+                nr = await client.request(
+                    "POST",
+                    "/Notification",
+                    json_body=[
+                        {
+                            "guid": None,
+                            "eventno": m["id"],
+                            "name": clean,
+                            "type": -2,
+                            "delivery_method": 6,
+                            "agent_id": 0,
+                            "webhook_id": wid,
+                        }
+                    ],
+                    timeout=60,
+                )
+                nrow = nr[0] if isinstance(nr, list) and nr else nr
+                bid = nrow.get("id") if isinstance(nrow, dict) else None
+                if bid is not None:
+                    binding_ids.append(bid)
+                resolved.append({"eventno": m["id"], "name": clean, "binding_id": bid})
+            except Exception as exc:  # noqa: BLE001
+                unresolved.append(f"{t}: {str(exc)[:180]}")
+        out["triggers"] = {"resolved": resolved, "unresolved": unresolved}
+        if binding_ids:
+            out["trigger_binding_ids"] = binding_ids
 
     # verify the graph as it persisted (steps + edge counts + bindings)
     try:
@@ -574,7 +753,7 @@ async def _fire_runbook(
     pairs = [{"Key": k, "Value": v} for k, v in inputs.items()]
 
     async def runlog_list() -> list[dict]:
-        log = await client.request("GET", "/Automation", params={"count": "50"}, timeout=45)
+        log = await client.request("GET", "/Automation", params={"count": "1000"}, timeout=45)
         return (
             log
             if isinstance(log, list)
@@ -605,16 +784,20 @@ async def _fire_runbook(
     evolution: list[dict[str, Any]] = []
     found: dict | None = None
     row_id = None
-    for attempt in range(12):
-        await asyncio.sleep(2)
+    for attempt in range(34):  # ~100s: trial latency observed up to 79s
+        await asyncio.sleep(3)
         if row_id is None:
-            rows = [r for r in await runlog_list() if r.get("id") not in before]
+            all_rows = await runlog_list()
+            rows = [r for r in all_rows if r.get("id") not in before]
             mine = [r for r in rows if r.get("runbook_id") == wid]
             if mine:
                 row_id = mine[0].get("id")
-            else:
-                top = max((r.get("id") or 0 for r in rows), default=0)
-                for cand in range(top, max(top - 15, 0), -1):
+            elif attempt % 3 == 2:
+                # periodic by-id sweep anchored on the FULL list (the
+                # new-only filter reads top=0 when no other runs land,
+                # which silently skipped this scan - trial bug9)
+                top = max((r.get("id") or 0) for r in all_rows) if all_rows else 0
+                for cand in range(top, max(top - 6, 0), -1):
                     try:
                         d2 = await client.request("GET", f"/Automation/{cand}", timeout=20)
                     except Exception:  # noqa: BLE001
@@ -682,6 +865,13 @@ def main() -> int:
     parser.add_argument(
         "--phase-bindings",
         help='JSON {phase: method_id | "Method Name"} for aa6 step wiring',
+    )
+    parser.add_argument(
+        "--triggers",
+        default="",
+        help="comma-separated Halo event names to bind as runbook triggers "
+        '(e.g. "New Ticket Logged,Closed") - resolved against lookup64 and '
+        "written as POST /Notification bindings at apply",
     )
     parser.add_argument("--out", default="./halo_out", help="output directory")
     parser.add_argument("--apply", action="store_true", help="round-trip payloads on a tenant")
