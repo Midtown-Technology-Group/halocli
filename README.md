@@ -606,7 +606,11 @@ halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM 
   `AnalyzerProfile JOIN LOOKUP … fid=41` query is the fallback trick
   SQLStudio uses from inside the SQL console itself.
 - **Saving**: `POST /report` (lowercase!) with `[{sql, name,
-  description, id?}]` → `{id}` (`id` present = update).
+  description, id?}]` → `{id}` (`id` present = update). A second shipped
+  working shape exists (PowerShell HaloAPI module):
+  `[{id:0, name:"", sql, apiquery_id:0, _testonly:false,
+  _loadreportonly:true}]` — both execute; both surface failures through
+  `report.load_error` (the PS module throws on it, we parse it).
 - **Running saved reports** is `halocli reports run` (first-class:
   retries disabled because a timeout would re-run an expensive query —
   Halo's 504 is a gateway deadline, not a blip). The same never-retry
@@ -765,6 +769,14 @@ Distilled from
 - **`utcoffset` is minutes EAST of UTC** (240 = US/Eastern) — sign
   matters; the portal flips JavaScript's `getTimezoneOffset()` to get
   it.
+- **Undelete a ticket** (recipe live-proven 2026-10-05): after a
+  `DELETE`, `POST /Tickets` with `[{id, "_recover": true,
+  "_validate_updates": true}]` restores it. The spec carries `_recover`
+  and `_validate_updates` (and sibling `_reclose`) only as nullable
+  booleans — no client encodes the *semantics*, which we took from
+  homotechsual/HaloAPI's `Restore-HaloTicket` and round-trip-proven on
+  the trial: create → delete → 404 → recover → restored intact → delete
+  again (`scripts/ticket_recover_probe.py`).
 
 ## MCP Server (Code Mode)
 
