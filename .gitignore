@@ -30,6 +30,7 @@ scripts/*
 !scripts/release_ladder.py
 !scripts/trial_spec_diff.py
 !scripts/ticket_recover_probe.py
+!scripts/custom_tables_full.py
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py
 !scripts/issue73_probe.py

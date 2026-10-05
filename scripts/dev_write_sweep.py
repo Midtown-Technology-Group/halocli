@@ -338,10 +338,15 @@ class Sweeper:
 
     async def build(self, resource, update: bool) -> dict[str, Any]:
         payload: dict[str, Any] = {}
-        if resource.name in COPY_LIST:
-            payload.update(self.copy_sample(resource.name))
-        payload.update(self.needle(resource.name))
-        payload.update(await self.extras(resource.name))
+        # custom-tables UPDATE: the server DERIVES db_name ("CT"+name) and
+        # rejects a resent stale db_name with "Invalid Name" (matrix-proven
+        # 2026-10-05): updates use the minimal proven shape {id, name} only.
+        minimal_update = update and resource.name == "custom-tables"
+        if not minimal_update:
+            if resource.name in COPY_LIST:
+                payload.update(self.copy_sample(resource.name))
+            payload.update(self.needle(resource.name))
+            payload.update(await self.extras(resource.name))
         fields = list(resource.required_create_fields)
         for field in fields:
             if field.lower() == "id":
@@ -351,10 +356,10 @@ class Sweeper:
         if update:
             primary = next((f for f in fields if f.lower() in TEXTY | {"note"}), None)
             if primary:
-                base = (
-                    alnum_marker(primary) if resource.name == "custom-tables" else marker(primary)
-                )
-                payload[primary] = base + "-v2"
+                if minimal_update:
+                    payload = {primary: alnum_marker(primary) + "v2"}
+                else:
+                    payload[primary] = marker(primary) + "-v2"
             payload["id"] = self.leftovers.get(resource.name) or self.ids.get(resource.name)
         return payload
 

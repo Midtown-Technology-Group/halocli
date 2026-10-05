@@ -769,6 +769,14 @@ Distilled from
 - **`utcoffset` is minutes EAST of UTC** (240 = US/Eastern) — sign
   matters; the portal flips JavaScript's `getTimezoneOffset()` to get
   it.
+- **Custom tables, end-to-end** (all live-proven 2026-10-05): names
+  reject hyphens (alnum only); `db_name` is server-derived (`CT`+name)
+  — **never resend it on update** (the server answers *"Invalid Name"*);
+  updates are the minimal `{id, name}`. **Data rows** ride the
+  definition endpoint: `POST /CustomTable` with `[{id, _add_rows:
+  [{column_1: "..."}]}]` (the PS-module recipe — no `/CustomTableData`
+  endpoint exists in any swagger). Row *read-back* is not part of the
+  detail response — open question, recorded with the evidence.
 - **Undelete a ticket** (recipe live-proven 2026-10-05): after a
   `DELETE`, `POST /Tickets` with `[{id, "_recover": true,
   "_validate_updates": true}]` restores it. The spec carries `_recover`

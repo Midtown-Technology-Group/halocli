@@ -1365,9 +1365,17 @@ RESOURCES: tuple[HaloResource, ...] = (
             "customextratableid",
             "customtable_orderby",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (fired live on the dev trial 2026-10-03 at the
-        # tenant - create+update fired live on the dev trial 2026-10-03; delete server-blocked; verification: live-dev-partial; evidence: dev_write_results.json). Required = the primary display
-        # column observed on live rows (house assumption: the spec
+        # Writes: PROVEN full CUD on the dev trial (create -> verify ->
+        # update -> delete, dev_write_results.json; scripts/
+        # custom_tables_full.py + matrix probes 2026-10-05). Rules learned:
+        # - names reject hyphens ("Invalid Name"; alnum only);
+        # - db_name is SERVER-derived ("CT"+name): resend it on update and
+        #   the server rejects with "Invalid Name" - updates use the minimal
+        #   proven shape {id, name};
+        # - data rows: POST /CustomTable [{id, _add_rows: [{...}]}] works
+        #   (PS-module recipe, live-proven); row READ-back is not in the
+        #   detail response (open question, recorded).
+        # Required = the primary display column (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/CustomTable",
         update_endpoint="/CustomTable",
@@ -1535,9 +1543,14 @@ RESOURCES: tuple[HaloResource, ...] = (
             "addunknown",
             "calculation",
         ),
-        # Writes: spec-verified POST + DELETE /{id} (never fired at the
-        # tenant - verification: spec). Required = the primary display
-        # column observed on live rows (house assumption: the spec
+        # Writes: spec-verified POST + DELETE /{id} - create NOT yet proven:
+        # the custom-table link stays opaque after8 candidate shapes
+        # (scripts/custom_tables_full.py,2026-10-05: customextratableid as
+        # int (fresh CT-derived id and legacy ids), table_id+table_guid+
+        # table_name trio, table_guid alone, customextratableid=guid) - all
+        # "No matching custom table"; no trial field-info carries a nonzero
+        # link. verification: spec; evidence: dev_write_results.json.
+        # Required = the primary display column (house assumption: the spec
         # declares no required fields anywhere).
         create_endpoint="/FieldInfo",
         update_endpoint="/FieldInfo",
