@@ -2,26 +2,26 @@
   "tenant": "clidev.trial.usehalo.com",
   "applied": {
     "integration:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out3\\integration__bifrost-probe-sink.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out5\\integration__bifrost-probe-sink.json",
       "create": {
-        "id": 29
+        "id": 36
       },
       "verify": true,
       "methods": [
         {
-          "id": 67,
+          "id": 74,
           "name": "Instance Info GET",
           "bind_phase": "fetch_remote",
-          "test_response": "{'id': 67, 'guid': 'fc0e2569-5907-4c1d-91ea-23919fa86600', 'integration_id': 29, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
+          "test_response": "{'id': 74, 'guid': '68ed7865-69b3-4a89-b94c-c6d658ed54a5', 'integration_id': 36, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
         }
       ],
       "cleanup": "methods + integration deleted"
     },
     "methods:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out3\\methods__bifrost-probe-sink.json"
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out5\\methods__bifrost-probe-sink.json"
     },
     "runbook:sync_things": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out3\\runbook__sync_things.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out5\\runbook__sync_things.json",
       "_inputs": {
         "client": "",
         "limit": "10",
@@ -35,14 +35,27 @@
       },
       "shape_winner": "converted_public_active",
       "attempts": [
-        "converted_public_active: ok id=6ba063ca-0731-4326-9bad-8af19f2c7cce"
+        "converted_public_active: ok id=d41fb1e6-c8d0-4377-95a8-416061896da2"
       ],
-      "id": "6ba063ca-0731-4326-9bad-8af19f2c7cce",
+      "id": "d41fb1e6-c8d0-4377-95a8-416061896da2",
+      "triggers": {
+        "resolved": [
+          {
+            "eventno": 3,
+            "name": "New Ticket Logged",
+            "binding_id": 23
+          }
+        ],
+        "unresolved": []
+      },
+      "trigger_binding_ids": [
+        23
+      ],
       "verify": {
         "type": 1,
-        "steps": 9,
-        "expected_steps": 9,
-        "edges": 11,
+        "steps": 10,
+        "expected_steps": 10,
+        "edges": 12,
         "edge_names": [
           "Condition met",
           "Condition not met",
@@ -80,42 +93,34 @@
         ]
       },
       "runlog": {
-        "id": 2493,
+        "id": 2528,
         "status": 2,
         "error": "",
         "steps_executed": 4,
-        "runbook_step": 8,
+        "runbook_step": 9,
         "runbook_step_name": null,
         "iteration": 0,
-        "execution_time": 3796,
-        "timestamp": "2026-10-05T21:40:50.45"
+        "execution_time": 3690,
+        "timestamp": "2026-10-05T22:45:31.977"
       },
       "evolution": [
         {
           "t_s": 2,
-          "status": 1,
-          "step": 5,
-          "step_name": null,
-          "exec": 1,
-          "error": ""
-        },
-        {
-          "t_s": 4,
           "status": 2,
-          "step": 8,
+          "step": 9,
           "step_name": null,
           "exec": 4,
           "error": ""
         }
       ],
       "branch_create": {
-        "id": "58697d1c-ca6f-4eb5-8500-bde399a5491b",
+        "id": "16c10d17-23e3-4321-a97a-e1778dbd7f35",
         "shape_winner": "converted_public_active",
         "verify": {
           "type": 1,
-          "steps": 9,
-          "expected_steps": 9,
-          "edges": 11,
+          "steps": 10,
+          "expected_steps": 10,
+          "edges": 12,
           "edge_names": [
             "Condition met",
             "Condition not met",
@@ -141,7 +146,7 @@
           "note": "no matching group; runs default to group_id -1"
         }
       },
-      "branch_runbook_id": "58697d1c-ca6f-4eb5-8500-bde399a5491b",
+      "branch_runbook_id": "16c10d17-23e3-4321-a97a-e1778dbd7f35",
       "branch_fire_notmet": {
         "trigger_fire": {
           "ok": true,
@@ -162,26 +167,38 @@
           ]
         },
         "runlog": {
-          "id": 2494,
+          "id": 2529,
           "status": 2,
           "error": "",
-          "steps_executed": 3,
-          "runbook_step": 8,
+          "steps_executed": 4,
+          "runbook_step": 9,
           "runbook_step_name": null,
           "iteration": 0,
-          "execution_time": 1563,
-          "timestamp": "2026-10-05T21:40:56.463"
+          "execution_time": 1561,
+          "timestamp": "2026-10-05T22:45:37.57"
         },
         "evolution": [
           {
             "t_s": 2,
             "status": 2,
-            "step": 8,
+            "step": 9,
             "step_name": null,
-            "exec": 3,
+            "exec": 4,
             "error": ""
           }
         ]
+      },
+      "trigger_proof": {
+        "ticket": 2926,
+        "runlog": {
+          "id": 2532,
+          "status": 2,
+          "error": "",
+          "steps_executed": 4,
+          "runbook_step": 9,
+          "execution_time": 4278
+        },
+        "ticket_cleanup": "deleted"
       },
       "cleanup": "deleted (clean)"
     }

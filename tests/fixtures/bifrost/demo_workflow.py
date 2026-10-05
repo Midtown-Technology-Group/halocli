@@ -28,6 +28,10 @@ async def process_one(item) -> dict:
     """Loop body callee."""
 
 
+async def fallback(client) -> dict:
+    """Else-arm callee: runs when the guard is false."""
+
+
 @workflow(
     name="Bifrost Demo: Sync Things",
     description="Wait, call the probe sink once, then iterate the input list.",
@@ -42,4 +46,6 @@ async def sync_things(client, limit: int = 10, items: tuple[str, ...] = ("a", "b
         for item in items:
             await asyncio.sleep(1)
             await process_one(item)
+    else:
+        await fallback(client)
     return {"limit": limit}
