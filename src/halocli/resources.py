@@ -1362,8 +1362,9 @@ RESOURCES: tuple[HaloResource, ...] = (
         # The document = auth config (authorizationtype/granttype/urls/scope/
         # bearer*/jwt/resourcebaseurl with {{vars}}) + access_control and
         # headers_to_sign on detail. Runbook definitions are NOT part of this
-        # document (and have no endpoint at all - see the README runbooks
-        # section).
+        # document - they live at /Webhook with type=1 (see the webhooks
+        # entry + scripts/runbook_build_probe.py; the earlier "endpoint-
+        # absent" claim was a guess-path artifact, corrected 2026-10-05).
         table_fields=("id", "name", "authorizationtype", "granttype"),
         create_endpoint="/CustomIntegration",
         update_endpoint="/CustomIntegration",
@@ -2132,7 +2133,31 @@ RESOURCES: tuple[HaloResource, ...] = (
             "auto_action",
         ),
     ),
-    HaloResource("webhooks", "/Webhook", aliases=("webhook",), table_fields=("id", "name", "url")),
+    HaloResource(
+        "webhooks",
+        "/Webhook",
+        aliases=("webhook",),
+        # Runbooks are THIS endpoint with type=1 (decoded from the trial's
+        # config SPA: the Integration Runbooks page loads endpoint "Webhook"
+        # with params.type=1, and "Import from JSON" posts {...steps,
+        # _is_new:true}). Full CUD round-trip proven on the trial
+        # (scripts/runbook_build_probe.py, 2026-10-05): create {name, type:1,
+        # steps:[]} -> GET verify (in the type=1 list) -> update {id, name} ->
+        # DELETE clean; the UI-exact import (export doc -> sanitize steps:
+        # id/fdid/chatprofile_id -> null, actions/step_conditions likewise ->
+        # POST) carried 4/4 steps with the source intact.
+        # Conditional validation: type=0 (ordinary webhook) demands a valid
+        # url; type=1 does not (bare {name} -> "Please enter a valid URL").
+        # Execution stays POST /Automation/{runbookId}; the variable palette
+        # stays runbook-variable-groups (GET-only).
+        table_fields=("id", "name", "type", "url", "active"),
+        create_endpoint="/Webhook",
+        update_endpoint="/Webhook",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "type", "url", "active"),
+    ),
     HaloResource(
         "workdays",
         "/Workday",

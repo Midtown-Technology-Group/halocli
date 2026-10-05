@@ -10,10 +10,11 @@ Cascade round-trip on the trial (inert probe objects, deleted in reverse):
 3. GET verify both (detail keys), then DELETE method -> integration ->
    verify gone.
 
-Runbook DEFINITIONS are NOT probed: no endpoint exists (spec has only
-IntegrationRunbookVariableGroup; /IntegrationRunbook, /Runbook,
-/Automation/Runbook all404 - recorded by integration_family_probe.py).
-The UI's "Import from JSON" is the documented interchange.
+Runbook definitions are NOT probed here: they live at /Webhook with
+type=1 - see scripts/runbook_build_probe.py for the verified build
+path (the /IntegrationRunbook, /Runbook, /Automation/Runbook guesses
+in integration_family_probe.py all404/400; the real endpoint was
+decoded from the trial's config SPA).
 
     python scripts/integration_create_probe.py [--profile dev]
 """

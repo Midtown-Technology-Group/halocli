@@ -2489,7 +2489,7 @@
     "Webhook": {
       "disposition": "covered",
       "reason": "registry-covered (resources.py)",
-      "evidence": "List of Webhook",
+      "evidence": "List of Webhook; RUNBOOKS = this endpoint with type=1 - full CUD round-trip proven on the trial 2026-10-05 (runbook_build_probe.py: create/verify/update/delete clean + UI-exact JSON import carrying 4/4 steps)",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
@@ -3469,14 +3469,6 @@
     "DELETE /ViewLists/{id}": {
       "disposition": "deliberately-raw",
       "reason": "per-agent UI state (views, dashboards, saved forecasts): cosmetic and agent-scoped - raw; low value as a first-class command"
-    },
-    "POST /Webhook": {
-      "disposition": "deliberately-raw",
-      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
-    },
-    "DELETE /Webhook/{id}": {
-      "disposition": "deliberately-raw",
-      "reason": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate"
     },
     "POST /WorkflowTarget": {
       "disposition": "deliberately-raw",

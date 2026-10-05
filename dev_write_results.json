@@ -3,17 +3,17 @@
     "halocli": "0.11.0",
     "partial": false,
     "profile": "dev",
-    "run_token": "1a85f5",
-    "started_at": "2026-10-05T14:28:21+00:00",
+    "run_token": "60a6d8",
+    "started_at": "2026-10-05T16:09:28+00:00",
     "tenant": "clidev.trial.usehalo.com",
-    "updated_at": "2026-10-05T14:29:18+00:00"
+    "updated_at": "2026-10-05T16:10:20+00:00"
   },
   "results": {
     "actions": {
       "cud": [
         {
           "errors": [
-            "HaloCLIError: HaloPSA validation error (400) on /api/Actions: {\"[0].outcome_id\":[\"Could not convert string to integer: halocli-dev-probe-1a85f5-outcome_id. Path '[0].outcome_id', line 1, position 139.\"]}"
+            "HaloCLIError: HaloPSA validation error (400) on /api/Actions: {\"[0].outcome_id\":[\"Could not convert string to integer: halocli-dev-probe-60a6d8-outcome_id. Path '[0].outcome_id', line 1, position 139.\"]}"
           ],
           "ok": false,
           "phase": "create",
@@ -26,11 +26,11 @@
     "address": {
       "cud": [
         {
-          "id": 49,
+          "id": 53,
           "ok": true,
           "payload": {
-            "line1": "halocli-dev-probe-1a85f5-line1",
-            "site_id": 47
+            "line1": "halocli-dev-probe-60a6d8-line1",
+            "site_id": 53
           },
           "phase": "create",
           "update": false
@@ -58,7 +58,7 @@
     "agent-check-ins": {
       "cud": [
         {
-          "id": 12,
+          "id": 14,
           "ok": true,
           "payload": {
             "agent_id": 3
@@ -88,7 +88,7 @@
           "ok": true,
           "payload": {
             "email": "halocli-dev-probe-example.invalid",
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -116,7 +116,7 @@
     "appointments": {
       "cud": [
         {
-          "id": 54,
+          "id": 56,
           "ok": true,
           "payload": {
             "agents": [
@@ -125,9 +125,9 @@
                 "use": "agent"
               }
             ],
-            "end_date": "2026-10-05T11:28:33",
-            "start_date": "2026-10-05T10:28:33",
-            "subject": "halocli-dev-probe-1a85f5-subject"
+            "end_date": "2026-10-05T13:09:36",
+            "start_date": "2026-10-05T12:09:36",
+            "subject": "halocli-dev-probe-60a6d8-subject"
           },
           "phase": "create",
           "update": false
@@ -178,7 +178,7 @@
             "items_in_group_no_consign": false,
             "kaseyaid": "",
             "moveassetonrequest": false,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "qbo_item_type": -1,
             "sequence": 51,
             "showasequip": false,
@@ -409,7 +409,7 @@
             "manufacturer": 2,
             "manufacturer_tab": -1,
             "monthlycost": 0.0,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "notes_tab": -1,
             "notes_visibility": 1,
             "owningbusinessapp_tab": -1,
@@ -589,7 +589,7 @@
           "ok": true,
           "payload": {
             "assettype_id": 131,
-            "client_id": 35
+            "client_id": 39
           },
           "phase": "create",
           "update": false
@@ -617,10 +617,10 @@
     "budget-types": {
       "cud": [
         {
-          "id": 10,
+          "id": 12,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -651,7 +651,7 @@
           "id": 5,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -679,10 +679,10 @@
     "call-log": {
       "cud": [
         {
-          "id": 5,
+          "id": 7,
           "ok": true,
           "payload": {
-            "summary": "halocli-dev-probe-1a85f5-summary"
+            "summary": "halocli-dev-probe-60a6d8-summary"
           },
           "phase": "create",
           "update": false
@@ -708,7 +708,7 @@
           "id": 2,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -739,8 +739,8 @@
           "id": 3,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name",
-            "text": "halocli-dev-probe-1a85f5-text"
+            "name": "halocli-dev-probe-60a6d8-name",
+            "text": "halocli-dev-probe-60a6d8-text"
           },
           "phase": "create",
           "update": false
@@ -777,13 +777,13 @@
             "include_note": false,
             "itilrequesttype": 0,
             "level1": "Software Reinstall",
-            "name": "halocli-dev-probe-1a85f5-name",
-            "note": "halocli-dev-probe-1a85f5-note",
+            "name": "halocli-dev-probe-60a6d8-name",
+            "note": "halocli-dev-probe-60a6d8-note",
             "priority_id": -1,
             "sla_id": -1,
             "type_id": 2,
             "user_note": "",
-            "value": "halocli-dev-probe-1a85f5-value"
+            "value": "halocli-dev-probe-60a6d8-value"
           },
           "phase": "create",
           "update": false,
@@ -839,10 +839,10 @@
     "clients": {
       "cud": [
         {
-          "id": 35,
+          "id": 39,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -887,7 +887,7 @@
           "id": 1,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -932,7 +932,7 @@
           "id": 4,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -977,7 +977,7 @@
           "id": 13,
           "ok": true,
           "payload": {
-            "note": "halocli-dev-probe-1a85f5-note"
+            "note": "halocli-dev-probe-60a6d8-note"
           },
           "phase": "create",
           "update": false
@@ -1002,6 +1002,71 @@
       "outcome": "proven",
       "resource": "crm-notes"
     },
+    "custom-integration-methods": {
+      "cud": [
+        {
+          "id": 58,
+          "ok": true,
+          "payload": {
+            "integration_id": 17,
+            "method": 1,
+            "name": "halocli-dev-probe-60a6d8-name",
+            "path": "halocli-dev-probe-60a6d8-path"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "custom-integration-methods"
+    },
+    "custom-integrations": {
+      "cud": [
+        {
+          "id": 17,
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-60a6d8-name"
+          },
+          "phase": "create",
+          "update": false
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "custom-integrations"
+    },
     "custom-tables": {
       "cud": [
         {
@@ -1017,7 +1082,7 @@
             "import_folder": "",
             "linkto_table_id": 0,
             "modal_size": 2,
-            "name": "haloclidevprobe1a85f5name",
+            "name": "haloclidevprobe60a6d8name",
             "primary_field_1": 0,
             "primary_field_2": 0,
             "reporting_period": 0,
@@ -1062,10 +1127,10 @@
     "email-template-variables": {
       "cud": [
         {
-          "id": 5,
+          "id": 7,
           "ok": true,
           "payload": {
-            "variable": "halocli-dev-probe-1a85f5-variable"
+            "variable": "halocli-dev-probe-60a6d8-variable"
           },
           "phase": "create",
           "update": false
@@ -1096,7 +1161,7 @@
           "id": -103,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -1127,7 +1192,7 @@
           "id": 6,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -1158,7 +1223,7 @@
           "id": 38,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -1200,7 +1265,7 @@
     "fields": {
       "cud": [
         {
-          "id": 150,
+          "id": 152,
           "ok": true,
           "payload": {
             "access_level": 2,
@@ -1215,7 +1280,7 @@
             "mandatory": false,
             "moveupdatedefault": "",
             "moveupdatetype": 0,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "order_values_alphanumerically": true,
             "parenttype_id": 0,
             "sequence": 1,
@@ -1260,7 +1325,7 @@
         },
         {
           "errors": [
-            "HaloCLIError: HaloPSA validation error (400) on /api/Field/150: \"Field kind must be specified\""
+            "HaloCLIError: HaloPSA validation error (400) on /api/Field/152: \"Field kind must be specified\""
           ],
           "ok": false,
           "phase": "delete"
@@ -1272,20 +1337,20 @@
     "holidays": {
       "cud": [
         {
-          "id": "25d37948-dbfd-4e23-6aeb-08df22ecf632",
+          "id": "0af7e750-b818-4733-0e14-08df22fb1468",
           "ok": true,
           "payload": {
             "agent_id": 0,
             "agent_name": "",
             "allday": true,
-            "date": "2026-10-05T10:28:45",
+            "date": "2026-10-05T12:09:48",
             "duration": 0.0,
             "end_date": "2025-05-05T00:00:00",
             "entity": 0,
             "entity_id": -1,
             "holiday_type": 1,
             "isrecurring": false,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "risk": 0.0,
             "workday_id": 1,
             "workday_name": "Default Working Hours"
@@ -1329,10 +1394,10 @@
     "item-groups": {
       "cud": [
         {
-          "id": 8,
+          "id": 10,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -1360,11 +1425,11 @@
     "item-stocks": {
       "cud": [
         {
-          "id": 10,
+          "id": 12,
           "ok": true,
           "payload": {
             "cost": 18.0,
-            "date": "2026-10-05T10:28:46",
+            "date": "2026-10-05T12:09:49",
             "item_assettype_id": 0,
             "item_id": 17,
             "item_name": "Microsoft 365 Business Premium",
@@ -1426,7 +1491,7 @@
           "ok": true,
           "payload": {
             "item_id": 1,
-            "supplier_id": 19
+            "supplier_id": 21
           },
           "phase": "create",
           "update": false
@@ -1457,8 +1522,8 @@
           "id": 33,
           "ok": true,
           "payload": {
-            "description": "halocli-dev-probe-1a85f5-description",
-            "name": "halocli-dev-probe-1a85f5-name"
+            "description": "halocli-dev-probe-60a6d8-description",
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -1486,13 +1551,13 @@
     "lookups": {
       "cud": [
         {
-          "id": 6,
+          "id": 8,
           "ok": true,
           "payload": {
             "custom1": "",
             "custom2": "",
             "lookupid": 47,
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false,
@@ -1513,7 +1578,7 @@
         },
         {
           "errors": [
-            "HaloCLIError: HaloPSA validation error (400) on /api/Lookup/6: \"lookupid must be specified\""
+            "HaloCLIError: HaloPSA validation error (400) on /api/Lookup/8: \"lookupid must be specified\""
           ],
           "ok": false,
           "phase": "delete"
@@ -1528,7 +1593,7 @@
           "id": 2,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -1575,7 +1640,7 @@
             "azure_connection_id": 0,
             "bccfollowers": false,
             "buttonimage": 1,
-            "buttonname": "halocli-dev-probe-1a85f5-buttonname",
+            "buttonname": "halocli-dev-probe-60a6d8-buttonname",
             "callscreencallscript": 0,
             "ccoverride": "",
             "chargerate": 0,
@@ -1640,7 +1705,7 @@
             "newdetailsfromsource": false,
             "newstatus": 0,
             "newsummaryfromsource": false,
-            "outcome": "halocli-dev-probe-1a85f5-outcome",
+            "outcome": "halocli-dev-probe-60a6d8-outcome",
             "override_from_mailbox_id": -1,
             "overridetemplatename": "",
             "parentdefaultuser": 0,
@@ -1863,7 +1928,7 @@
     "pdf-templates": {
       "cud": [
         {
-          "id": 32,
+          "id": 34,
           "ok": true,
           "payload": {
             "colour": "#0f1b31",
@@ -1878,7 +1943,7 @@
             "includefooter": true,
             "includeheader": false,
             "margin": 10,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "orientation": 0,
             "override_attachment_name": "",
             "pdf_media_type": 0,
@@ -1934,7 +1999,7 @@
     "priorities": {
       "cud": [
         {
-          "id": "bb5d3d73-4652-44c8-8ad3-08df22ecedd1",
+          "id": "830d9449-bd4e-4910-8c00-08df22fb0c92",
           "ok": true,
           "payload": {
             "colour": "#fe9200",
@@ -1946,7 +2011,7 @@
             "fixtime": 1.5,
             "fixunits": "H",
             "ishidden": false,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "priorityid": 2,
             "responseendofday": false,
             "responsestartofday": false,
@@ -1996,9 +2061,9 @@
         },
         {
           "errors": [
-            "HaloCLIError: HaloPSA validation error (400) on /api/Priority/bb5d3d73-4652-44c8-8ad3-08df22ecedd1: \"Priority 'halocli-dev-probe-1a85f5-name-v2' has Tickets linked to it. Please give these tickets another Priority before deleting or mark the Priority as inactive.\""
+            "HaloCLIError: HaloPSA validation error (400) on /api/Priority/830d9449-bd4e-4910-8c00-08df22fb0c92: \"Priority 'halocli-dev-probe-60a6d8-name-v2' has Tickets linked to it. Please give these tickets another Priority before deleting or mark the Priority as inactive.\""
           ],
-          "first_error": "HaloPSA validation error (400) on /api/Priority/bb5d3d73-4652-44c8-8ad3-08df22ecedd1: \"Priority 'halocli-dev-probe-1a85f5-name-v2' has Tickets linked to it. Please give these tickets another Priority ",
+          "first_error": "HaloPSA validation error (400) on /api/Priority/830d9449-bd4e-4910-8c00-08df22fb0c92: \"Priority 'halocli-dev-probe-60a6d8-name-v2' has Tickets linked to it. Please give these tickets another Priority ",
           "inactive_retry": true,
           "ok": false,
           "phase": "delete"
@@ -2013,7 +2078,7 @@
           "id": 1,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2044,7 +2109,7 @@
           "id": 1,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2075,7 +2140,7 @@
           "id": 3,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2103,10 +2168,10 @@
     "release-note-groups": {
       "cud": [
         {
-          "id": 5,
+          "id": 7,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2134,10 +2199,10 @@
     "release-pipelines": {
       "cud": [
         {
-          "id": 5,
+          "id": 7,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2168,7 +2233,7 @@
           "id": 4,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2199,7 +2264,7 @@
           "id": 1,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2233,10 +2298,10 @@
             "icon": "https://clidev.trial.usehalo.com/api/attachment/image/A836727B-E150-4138-BB1A-4176E8B4C020",
             "important": false,
             "long_name": "Users and Services",
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "parent_id": 0,
             "seq": 10,
-            "summary": "halocli-dev-probe-1a85f5-summary",
+            "summary": "halocli-dev-probe-60a6d8-summary",
             "userlevel": 1
           },
           "phase": "create",
@@ -2293,7 +2358,7 @@
             "incidentdetail_type": 0,
             "incidentdetail_url": "",
             "incidentdetails_id": 1029,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "newincidenttype": 2,
             "newservicereqtype": 0,
             "override_site_id": 0,
@@ -2314,7 +2379,7 @@
             "showintechcatalog": true,
             "showinusercatalog": true,
             "subscribable": true,
-            "summary": "halocli-dev-probe-1a85f5-summary",
+            "summary": "halocli-dev-probe-60a6d8-summary",
             "technical_owner_cab_id": 0,
             "technical_owner_id": 0,
             "trackstatus": false,
@@ -2392,11 +2457,11 @@
     "sites": {
       "cud": [
         {
-          "id": 47,
+          "id": 53,
           "ok": true,
           "payload": {
-            "client_id": 35,
-            "name": "halocli-dev-probe-1a85f5-name"
+            "client_id": 39,
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2441,7 +2506,7 @@
           "id": 32,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2469,11 +2534,11 @@
     "stock-bins": {
       "cud": [
         {
-          "id": 7,
+          "id": 9,
           "ok": true,
           "payload": {
             "dont_add_to_order": false,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "parent_id": 0,
             "parent_name": "",
             "sequence": 1,
@@ -2512,10 +2577,10 @@
     "suppliers": {
       "cud": [
         {
-          "id": 19,
+          "id": 21,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2546,7 +2611,7 @@
           "id": 29,
           "ok": true,
           "payload": {
-            "text": "halocli-dev-probe-1a85f5-text"
+            "text": "halocli-dev-probe-60a6d8-text"
           },
           "phase": "create",
           "update": false
@@ -2577,7 +2642,7 @@
           "id": 14,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2605,7 +2670,7 @@
     "ticket-areas": {
       "cud": [
         {
-          "id": 17,
+          "id": 19,
           "ok": true,
           "payload": {
             "agents_with_no_tickets_display_type": 0,
@@ -2623,7 +2688,7 @@
             "entity_singular": "Ticket",
             "group_agents_by_status": true,
             "icon": "ticket",
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "selectservice": 0,
             "sequence": 11,
             "show_agent_status_groups": true,
@@ -2679,7 +2744,7 @@
           "id": 1,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2721,10 +2786,10 @@
     "tickets": {
       "cud": [
         {
-          "id": 2914,
+          "id": 2916,
           "ok": true,
           "payload": {
-            "summary": "halocli-dev-probe-1a85f5-summary"
+            "summary": "halocli-dev-probe-60a6d8-summary"
           },
           "phase": "create",
           "update": false
@@ -2766,10 +2831,10 @@
     "to-do-groups": {
       "cud": [
         {
-          "id": 5,
+          "id": 7,
           "ok": true,
           "payload": {
-            "text": "halocli-dev-probe-1a85f5-text"
+            "text": "halocli-dev-probe-60a6d8-text"
           },
           "phase": "create",
           "update": false
@@ -2800,8 +2865,8 @@
           "id": 1,
           "ok": true,
           "payload": {
-            "text": "halocli-dev-probe-1a85f5-text",
-            "ticket_id": 2914
+            "text": "halocli-dev-probe-60a6d8-text",
+            "ticket_id": 2916
           },
           "phase": "create",
           "update": false
@@ -2824,15 +2889,15 @@
     "users": {
       "cud": [
         {
-          "id": 83,
+          "id": 91,
           "ok": true,
           "payload": {
-            "client_id": 35,
+            "client_id": 39,
             "emailaddress": "halocli-dev-probe-example.invalid",
-            "firstname": "halocli-dev-probe-1a85f5-firstname",
-            "name": "halocli-dev-probe-1a85f5-name",
+            "firstname": "halocli-dev-probe-60a6d8-firstname",
+            "name": "halocli-dev-probe-60a6d8-name",
             "site_id": 1,
-            "surname": "halocli-dev-probe-1a85f5-surname"
+            "surname": "halocli-dev-probe-60a6d8-surname"
           },
           "phase": "create",
           "update": false
@@ -2857,6 +2922,42 @@
       "outcome": "proven",
       "resource": "users"
     },
+    "webhooks": {
+      "cud": [
+        {
+          "id": "60b2ec55-fabe-417a-b354-40d962ef8031",
+          "ok": true,
+          "payload": {
+            "name": "halocli-dev-probe-60a6d8-name",
+            "steps": [],
+            "type": 1
+          },
+          "phase": "create",
+          "update": false,
+          "warnings": [
+            "field 'steps' is not part of the webhooks write shape; Halo will receive it as-is"
+          ]
+        },
+        {
+          "note": "get by id ok",
+          "ok": true,
+          "phase": "verify-create"
+        },
+        {
+          "ok": true,
+          "phase": "update",
+          "update": true
+        },
+        {
+          "note": "get after delete confirms gone",
+          "ok": true,
+          "phase": "delete",
+          "verify_gone": true
+        }
+      ],
+      "outcome": "proven",
+      "resource": "webhooks"
+    },
     "workdays": {
       "cud": [
         {
@@ -2879,7 +2980,7 @@
             "incthursday": true,
             "inctuesday": true,
             "incwednesday": true,
-            "name": "halocli-dev-probe-1a85f5-name",
+            "name": "halocli-dev-probe-60a6d8-name",
             "start": "1901-01-01T09:00:00",
             "startfriday": "1901-01-01T09:00:00",
             "startmonday": "1901-01-01T09:00:00",
@@ -2888,7 +2989,7 @@
             "startthursday": "1901-01-01T09:00:00",
             "starttuesday": "1901-01-01T09:00:00",
             "startwednesday": "1901-01-01T09:00:00",
-            "summary": "halocli-dev-probe-1a85f5-summary",
+            "summary": "halocli-dev-probe-60a6d8-summary",
             "timezone": ""
           },
           "phase": "create",
@@ -2945,7 +3046,7 @@
           "id": 19,
           "ok": true,
           "payload": {
-            "name": "halocli-dev-probe-1a85f5-name"
+            "name": "halocli-dev-probe-60a6d8-name"
           },
           "phase": "create",
           "update": false
@@ -2991,9 +3092,9 @@
     "outcomes": {
       "create-failed": 9,
       "partial": 5,
-      "proven": 48,
+      "proven": 51,
       "proven-pending-cleanup": 3
     },
-    "resources": 65
+    "resources": 68
   }
 }

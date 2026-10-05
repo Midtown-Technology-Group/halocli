@@ -2,15 +2,15 @@
  "_meta": {
   "disposition_counts": {
    "backlog": 16,
-   "deliberately-raw": 936,
+   "deliberately-raw": 934,
    "dormant": 10,
-   "first-class": 519,
+   "first-class": 521,
    "junk": 26
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1507,
-  "policy_sha256": "386fc364e3d7fcd8eb601f50e47dc6fb6ea08436ed584bf9ffa69b6e4850f4ae",
-  "spec_sha256": "b6423f8922b1f826219a347e61eeea76594ecd7089eb8a9925b2f92cc9c82658",
+  "policy_sha256": "fd1b00929e3dc4e57c0c60066bedd0ce2ef7884fc3a50e5f02bb728d3abc9b57",
+  "spec_sha256": "86caaa6593ba27430c1f4d30d7f0a120b8d544d1a0b44f177d40f1cab32b728f",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -10157,18 +10157,18 @@
    "via": "halocli webhooks list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "post",
-   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
+   "note": "",
    "path": "/Webhook",
-   "via": ""
+   "via": "halocli webhooks create/update"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "delete",
-   "note": "trigger/side-effect configuration (automations, workflows, notifications, subscriptions, bulk actions, recurring jobs): a first-class create command would make side-effecting config too easy to fire - raw keeps the deliberate gate",
+   "note": "",
    "path": "/Webhook/{id}",
-   "via": ""
+   "via": "halocli webhooks delete"
   },
   {
    "disposition": "first-class",

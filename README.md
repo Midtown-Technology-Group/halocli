@@ -716,14 +716,26 @@ actions/flow chart all carried), DELETE-verified gone
   `{"formCollection": {...}}`) triggers a run; `GET /Automation` is the
   per-run log (`workflow_*`, `runbook_*`, `status`, `error`, `trace[]` —
   runs fired by tickets our sweep created appear there).
-- **Definitions are UI/JSON territory**: the official guide
-  (<https://www.usehalo.com/guides/1630>) documents *Configuration >
-  Integrations > Custom Integrations > Integration Runbooks* with
-  **Import from JSON** as the interchange format — and the endpoint is
-  genuinely absent: `/IntegrationRunbook`, `/Runbook` and
-  `/Automation/Runbook` all answer 404/400 on the trial (probed
-  2026-10-05), so we encode the shape knowledge rather than inventing
-  a route. Workflow step automations (trigger
+- **Definitions are `/Webhook` with `type:1` — the verified build path
+  (2026-10-05, corrected)**: the config SPA's *Integration Runbooks*
+  page loads endpoint `Webhook` with `params.type=1` (ordinary webhooks
+  are `type:0`), and `GET /Webhook/{id}?includedetails=true` returns the
+  whole definition — `steps[]` (actions, `runbook_variable_mappings`,
+  `flow_chart_json`, `input_variables`). Full CUD round-trip proven on
+  the trial (`scripts/runbook_build_probe.py`): create
+  `[{name, type:1, steps:[]}]` → shows in the `type=1` list → update →
+  delete clean; **updates merge** (a `{id, name}`-only POST renamed an
+  imported runbook and left all 4 steps intact). The official guide's
+  **Import from JSON** (<https://www.usehalo.com/guides/1630>) is the
+  same endpoint after a client-side sanitize — null each step's
+  `id`/`fdid`/`chatprofile_id` (and action/step_condition `id`s), then
+  `POST {..., steps, _is_new:true}` (the probe carried 4/4 steps with
+  the source untouched). Conditional validation: `type:0` demands a
+  valid `url` (bare `{name}` → *"Please enter a valid URL"*), `type:1`
+  does not. The earlier "endpoint-absent" claim was a guess-path
+  artifact — `/IntegrationRunbook`, `/Runbook` and
+  `/Automation/Runbook` do answer 404/400, but the real route was there
+  all along. Workflow step automations (trigger
   types: immediate / N minutes after / N days before a date field, plus
   sequencing since 2.228) are covered by
   <https://www.usehalo.com/guides/2355>.
@@ -744,16 +756,33 @@ the variable palette are readable first-class too
 (`custom-integration-methods list`, `runbook-variable-groups list` —
 the {value,label} palette like `"faults"` / "Ticket Variables").
 
+**Building runbooks (promoted 2026-10-05, full-CUD proven):**
+
+```powershell
+halocli webhooks create --data '[{"name": "My Runbook", "type": 1, "steps": []}]'   # runbook = Webhook type:1, proven
+halocli webhooks update <guid> --data '{"name": "Renamed"}' --apply --yes           # merges - steps untouched (proven)
+halocli webhooks delete <guid> --apply --yes                                         # steps ride the document
+halocli webhooks list                                                                # add ?type=1 via list filters / raw GET
+```
+
+Same endpoint as ordinary webhooks — `type:1` is the runbook
+discriminator (a bare `{name}` create would default to `type:0` and be
+rejected for missing `url`). To *clone* an existing runbook the way the
+UI's Import-from-JSON does: `GET /Webhook/{id}?includedetails=true`,
+null the step/action ids per the sanitize recipe above, and POST the
+document with `_is_new:true`.
+
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
 rules/event-rules/automations (side effects above), `EmailRule`
 (outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL),
 integration plumbing (`IntegrationData/*` — sync state, not operator
 input), `ScreenLayout`/`View*` (per-agent UI chrome), and the
 money-adjacent rules (user-accepted stance). **Promoted on live
-evidence, three families now:** custom fields (schema authoring),
-workflows (round-trip create → verify → delete), and custom
-integrations + their methods (cascade round-trip) — all keep
-preview/apply as the deliberate gate.
+evidence, four families now:** custom fields (schema authoring),
+workflows (round-trip create → verify → delete), custom
+integrations + their methods (cascade round-trip), and runbooks —
+the `/Webhook type:1` build path including the JSON-import clone
+(all keep preview/apply as the deliberate gate).
 
 ## Quick-Work Recipes (field-tested in the dispatch portal)
 
