@@ -350,13 +350,17 @@ def test_build_report_candidates_have_samples_and_relations() -> None:
 def test_build_report_candidates_drop_fully_declared_roots() -> None:
     """Roots whose nested paths are all declared operations leave the candidates.
 
-    Attachment (7), Tickets (7) and Invoice (5) had every nested spec path declared
-    as a ResourceOperation, so they are first-class now and must not show up as
+    Tickets (7) and Invoice (5) had every nested spec path declared as a
+    ResourceOperation, so they are first-class now and must not show up as
     curation work; `candidates_total` keeps counting the other roots.
+    Attachment LEFT the dropped set again on the 2026-10-05 upstream
+    re-vendor: dtcdev added POST /Attachment/MigrateToS3 (undeclared) -
+    tracked for declaration in issue #84, deliberately not asserted here
+    either way.
     """
     report = coverage.build_report(top=50)
     roots = {c["root"] for c in report["candidates"]}
-    for root in ("Attachment", "Tickets", "Invoice"):
+    for root in ("Tickets", "Invoice"):
         assert root not in roots
     assert report["candidates_total"] > 50
     assert len(report["candidates"]) == 50

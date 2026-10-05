@@ -1354,6 +1354,50 @@ RESOURCES: tuple[HaloResource, ...] = (
         table_fields=("id", "top_max"),
     ),
     HaloResource(
+        "custom-integrations",
+        "/CustomIntegration",
+        # Promoted from raw ("outbound integration definitions... plumbing")
+        # on live evidence: create {name} -> GET verify -> DELETE clean on the
+        # trial (scripts/integration_create_probe.py, 2026-10-05; id15).
+        # The document = auth config (authorizationtype/granttype/urls/scope/
+        # bearer*/jwt/resourcebaseurl with {{vars}}) + access_control and
+        # headers_to_sign on detail. Runbook definitions are NOT part of this
+        # document (and have no endpoint at all - see the README runbooks
+        # section).
+        table_fields=("id", "name", "authorizationtype", "granttype"),
+        create_endpoint="/CustomIntegration",
+        update_endpoint="/CustomIntegration",
+        required_create_fields=("name",),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "name", "authorizationtype", "granttype"),
+    ),
+    HaloResource(
+        "custom-integration-methods",
+        "/CustomIntegrationMethod",
+        # Cascade round-trip proven on the trial (2026-10-05): create
+        # {integration_id, name, path, method} against a probe integration
+        # (id15 -> method id57), GET verify, DELETE reverse. Method detail
+        # carries the runbook building material: body_mappings, headers,
+        # output_variables, uri_params (values ride as a nested list).
+        table_fields=("id", "integration_id", "name", "path", "method"),
+        create_endpoint="/CustomIntegrationMethod",
+        update_endpoint="/CustomIntegrationMethod",
+        required_create_fields=("integration_id", "name", "path", "method"),
+        required_update_fields=("id",),
+        supports_delete=True,
+        write_preview_fields=("id", "integration_id", "name", "path", "method"),
+    ),
+    HaloResource(
+        "runbook-variable-groups",
+        "/IntegrationRunbookVariableGroup",
+        # GET-only in the spec (no POST): the runbook variable palette
+        # ({value,label} rows - e.g. "faults" / "Ticket Variables"). Live45
+        # rows on the trial (scripts/integration_family_probe.py).
+        table_fields=("value", "label"),
+        supports_get=True,
+    ),
+    HaloResource(
         "custom-tables",
         "/CustomTable",
         # Sweep 2026-10-02: envelope '<bare array>', 31 rows, GET/{id} -> 400 (route-verified)

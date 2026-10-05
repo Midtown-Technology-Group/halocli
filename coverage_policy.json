@@ -611,16 +611,16 @@
       "methods": "POST"
     },
     "CustomIntegration": {
-      "disposition": "deliberately-raw",
-      "reason": "outbound integration definitions (59p); integration plumbing",
-      "evidence": "Get one OutboundIntegration",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "Get one OutboundIntegration; create->verify->delete round-trip proven on the trial 2026-10-05 (integration_create_probe.py: POST {name} only)",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
     "CustomIntegrationMethod": {
-      "disposition": "deliberately-raw",
-      "reason": "outbound integration methods; integration plumbing",
-      "evidence": "List of OutboundIntegrationMethod",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of OutboundIntegrationMethod; cascade round-trip proven on the trial 2026-10-05 (integration_id+name+path+method, verified, deleted reverse)",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
@@ -1129,9 +1129,9 @@
       "methods": "DELETE,GET,POST"
     },
     "IntegrationRunbookVariableGroup": {
-      "disposition": "deliberately-raw",
-      "reason": "runbook variable mapping (GET-only); plumbing",
-      "evidence": "List of IntegrationRunbookVariableGroup",
+      "disposition": "covered",
+      "reason": "registry-covered (resources.py)",
+      "evidence": "List of IntegrationRunbookVariableGroup; read-first-class promotion2026-10-05 (45-row palette proven on the trial)",
       "ops": 2,
       "methods": "GET"
     },
@@ -2616,6 +2616,97 @@
       "disposition": "covered",
       "reason": "registry-covered (phase-2 batch 2, 2026-10-02; sweep-evidenced reads)",
       "evidence": "List of FlowDetail",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "AIMatchingGroups": {
+      "disposition": "deliberately-raw",
+      "reason": "AI matching-group config (new upstream surface); AI plumbing family, raw (new upstream surface /AIMatchingGroups; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "CrayonDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonDetails; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "CrayonOrganisation": {
+      "disposition": "deliberately-raw",
+      "reason": "vendor integration details (Crayon marketplace); integration plumbing, raw (new upstream surface /CrayonOrganisation; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "CustomButtonAction": {
+      "disposition": "deliberately-raw",
+      "reason": "custom-button action payloads; trigger/side-effect configuration (raw keeps the deliberate gate) (new upstream surface /CustomButtonAction; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "DeviceFlow": {
+      "disposition": "deliberately-raw",
+      "reason": "OAuth device-flow records; auth plumbing, raw (new upstream surface /DeviceFlow; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "DistributorInvoice": {
+      "disposition": "deliberately-raw",
+      "reason": "distributor invoice integration detail; billing-adjacent + plumbing, raw (new upstream surface /DistributorInvoice; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "SupplierOrderChange": {
+      "disposition": "deliberately-raw",
+      "reason": "supplier order-change flow; billing/money stance (user-accepted), raw (new upstream surface /SupplierOrderChange; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "OrderChange": {
+      "disposition": "deliberately-raw",
+      "reason": "purchasing order-change flow; billing/money stance (user-accepted), raw (new upstream surface /OrderChange; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "QuoteChange": {
+      "disposition": "deliberately-raw",
+      "reason": "quotation change flow; billing/money stance (user-accepted), raw (new upstream surface /QuoteChange; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 2,
+      "methods": "GET,POST"
+    },
+    "JuniperMistDetails": {
+      "disposition": "deliberately-raw",
+      "reason": "vendor integration details (Juniper Mist); integration plumbing, raw (new upstream surface /JuniperMistDetails; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "PeriodicHistory": {
+      "disposition": "deliberately-raw",
+      "reason": "periodic-history read (new upstream surface); not yet curated - candidate first-class read (new upstream surface /PeriodicHistory; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 1,
+      "methods": "GET"
+    },
+    "PiiDetection": {
+      "disposition": "deliberately-raw",
+      "reason": "PII-detection config (AI/security family); raw (new upstream surface /PiiDetection; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
+      "ops": 4,
+      "methods": "GET,POST"
+    },
+    "PipelineStages": {
+      "disposition": "deliberately-raw",
+      "reason": "workflow pipeline stage config; trigger/side-effect family, raw (new upstream surface /PipelineStages; classified on discovery)",
+      "evidence": "new in vendored spec after the dtcdev re-vendor (2026-10-05)",
       "ops": 1,
       "methods": "GET"
     }

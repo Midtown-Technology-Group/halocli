@@ -42,6 +42,8 @@ WRITE_RESOURCES = (
     "users",
     "canned-text",
     "workflows",
+    "custom-integrations",
+    "custom-integration-methods",
     "timesheet-events",
     # Writes-batch-1 (1.7.0): config/reference entities with spec-verified
     # POST + DELETE /{id}. Never fired at the tenant (verification: spec).
@@ -127,7 +129,7 @@ def test_registry_resources_have_endpoints_and_table_fields() -> None:
 
 def test_registry_still_constructs_all_resources() -> None:
     """The registry size is pinned; a new resource must update this deliberately."""
-    assert len(RESOURCES) == 182
+    assert len(RESOURCES) == 185
     # Backward compatibility: a resource with no write metadata stays read-only.
     plain = HaloResource("plain", "/Plain")
     assert plain.create_endpoint is None
@@ -141,7 +143,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 65
+    assert len(WRITE_RESOURCES) == 67
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
