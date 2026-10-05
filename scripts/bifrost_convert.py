@@ -336,6 +336,11 @@ async def apply_outputs(
             # <<var>>, so the blanked-input path needs a second runbook
             # created fresh (create beats merge-update for input vars).
             raw_payload = json.loads(Path(record["file"]).read_text(encoding="utf-8"))
+            # --form overrides apply to the twin too (before array blanking)
+            for v in raw_payload.get("input_variables") or []:
+                key = str(v.get("key"))
+                if key in form_overrides:
+                    v["value"] = form_overrides[key]
             blank_inputs: dict[str, str] = {}
             has_array = False
             for v in raw_payload.get("input_variables") or []:
