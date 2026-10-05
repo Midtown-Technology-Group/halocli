@@ -3,27 +3,34 @@
 
 Offline (no network, safe anywhere):
 
-    python scripts/bifrost_convert.py \\
-        --integrations path/to/.bifrost/integrations.yaml --integration NinjaOne \\
-        --workflow-file functions/voicemail_routing.py --function inspect_voicemail_customer \\
-        --workflows-yaml path/to/.bifrost/workflows.yaml \\
-        --methods methods.yaml \\
+    python scripts/bifrost_convert.py ^
+        --integrations <bifrost>/.bifrost/integrations.yaml --integration NinjaOne ^
+        --methods demo_methods.yaml ^
+        --workflow-file functions/voicemail_routing.py --function inspect_voicemail_customer ^
+        --phase-bindings bindings.json ^
         --out ./halo_out
 
 Writes ``halo_out/`` with:
 - ``integration__<name>.json``   POST /CustomIntegration body (one-element array)
-- ``methods__<name>.json``       POST /CustomIntegrationMethod bodies (cascade)
-- ``runbook__<name>.json``       POST /Webhook {type:1} body (runbook document)
+- ``methods__<name>.json``       POST /CustomIntegrationMethod bodies (cascade;
+                                 ``_bind_phase`` marks runbook wiring for --apply)
+- ``runbook__<name>.json``       POST /Webhook {type:1} body - an EXECUTABLE
+                                 graph (steps + action edges, proven by
+                                 scripts/runbook_chain_matrix.py); an
+                                 ``_phase_bindings`` sidecar maps step ids to
+                                 method names when the id is not yet known
 - ``conversion_report.json``     every note: what stayed human, what moved
 
-``--apply --profile dev`` additionally round-trips every generated payload
-against the trial (create -> verify -> [trigger fire] -> delete, self-cleaning,
-production-refusing) and writes ``bifrost_conversion_evidence.json``: the
-runbook create uses a bounded ladder if the structural steps are rejected,
-recording which shape the server accepted.  The runbook is created with
-runbook_start_type=1 (public endpoint) and fired once via
-``POST /Automation/{id}`` - the external-trigger verification that mirrors
-how Bifrost itself would start Halo runbooks.
+``--apply --profile dev`` round-trips everything against the trial in three
+phases so bindings are alive when it matters (production is refused):
+
+1. create: integrations -> methods (ids captured) -> runbooks
+   (``_phase_bindings`` resolved to the created method ids and stripped)
+2. fire:   POST /Automation/{id} with formCollection from the runbook's own
+   input_variables (plus ``--form key=value`` overrides), then a runlog
+   capture (list poll, by-id fallback) recording steps_executed /
+   runbook_step / status / error
+3. cleanup: reverse order - runbooks, methods, integrations (self-cleaning)
 
     python scripts/bifrost_convert.py ... --apply --profile dev
 """
@@ -113,6 +120,9 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
     report: dict[str, Any] = {"integrations": [], "methods": [], "workflows": []}
     files: dict[str, Path] = {}
 
+    phase_bindings: dict[str, int | str] = {}
+    if args.phase_bindings:
+        phase_bindings = json.loads(Path(args.phase_bindings).read_text(encoding="utf-8"))
     # integrations
     for entry in _integrations_entries(args):
         conv = convert_integration(entry)
@@ -125,8 +135,9 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
 
     # methods (explicit file, or extracted from a module)
     methods: list[dict] = []
+    all_entries = _integrations_entries(args)
     method_owner = args.methods_integration or (
-        _integrations_entries(args)[0].get("name") if _integrations_entries(args) else None
+        str(all_entries[0].get("name")) if all_entries else None
     )
     if args.methods:
         doc = _load_structured(Path(args.methods))
@@ -139,8 +150,9 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
                 "source": str(args.extract_module),
                 "extracted": len(methods),
                 "note": (
-                    'literal client.<verb>("/path") calls only - assembled/f-string URLs '
-                    "cannot be extracted; list those methods explicitly via --methods"
+                    'literal/assembled client.<verb>("/path") calls only - fully '
+                    "dynamic URLs cannot be extracted; list those methods explicitly "
+                    "via --methods"
                 ),
             }
         )
@@ -166,7 +178,15 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
     # workflow -> runbook
     if args.workflow_file or args.workflows_yaml:
         row, source, function = _workflow_args(args)
-        conv: Conversion = convert_workflow(row, source, function)
+        # methods' bind_phase entries auto-wire their phase -> method name;
+        # an explicit --phase-bindings file wins over the auto derivation
+        auto = {
+            str(m["bind_phase"]): str(m["name"])
+            for m in methods
+            if m.get("bind_phase") and m.get("name")
+        }
+        auto.update(phase_bindings)
+        conv: Conversion = convert_workflow(row, source, function, phase_bindings=auto or None)
         name = str(row.get("name") or (function or "workflow"))
         if conv.ok:
             p = out_dir / f"runbook__{_slug(name)}.json"
@@ -188,8 +208,12 @@ def _slug(name: str) -> str:
 
 
 async def apply_outputs(
-    files: dict[str, Path], profile_name: str, evidence_path: Path
+    files: dict[str, Path],
+    profile_name: str,
+    evidence_path: Path,
+    form_overrides: dict[str, str],
 ) -> dict[str, Any]:
+    """Three phases: create -> fire -> cleanup (bindings alive at fire time)."""
     from halocli.client import HaloClient
     from halocli.config import load_profile
 
@@ -199,20 +223,20 @@ async def apply_outputs(
         raise SystemExit("refusing: profile points at PRODUCTION")
 
     ev: dict[str, Any] = {"tenant": host, "applied": {}}
+    method_ids: dict[str, int] = {}
     async with HaloClient(profile, profile_name=profile_name) as client:
+        # ---- phase 1: create (no deletes yet) --------------------------
         for key, path in sorted(files.items()):
             kind, name = key.split(":", 1)
             body = json.loads(path.read_text(encoding="utf-8"))
             record: dict[str, Any] = {"file": str(path)}
+            ev["applied"][key] = record
             try:
                 if kind == "integration":
                     item = body[0] if isinstance(body, list) else body
                     item = {**item, "name": f"{PROBE}-{name}"[:60]}
                     resp = await client.request(
-                        "POST",
-                        "/CustomIntegration",
-                        json_body=[item],
-                        timeout=60,
+                        "POST", "/CustomIntegration", json_body=[item], timeout=60
                     )
                     row = resp[0] if isinstance(resp, list) and resp else resp
                     iid = row.get("id") if isinstance(row, dict) else None
@@ -221,8 +245,10 @@ async def apply_outputs(
                         doc = await client.request("GET", f"/CustomIntegration/{iid}", timeout=30)
                         record["verify"] = isinstance(doc, dict) and doc.get(
                             "authorizationtype"
-                        ) == (body[0] if isinstance(body, list) else body).get("authorizationtype")
-                        # cascade: methods against this integration
+                        ) == item.get("authorizationtype")
+                        record["_integration_id"] = iid
+                        # cascade: methods against this integration (kept
+                        # alive until phase 3; ids feed runbook bindings)
                         mkey = next((k for k in files if k.startswith("methods:")), None)
                         if mkey:
                             methods = json.loads(files[mkey].read_text(encoding="utf-8"))
@@ -239,39 +265,115 @@ async def apply_outputs(
                                         timeout=45,
                                     )
                                     mr = r[0] if isinstance(r, list) and r else r
-                                    created.append({"id": mr.get("id"), "name": m.get("name")})
+                                    mid = mr.get("id") if isinstance(mr, dict) else None
+                                    created.append(
+                                        {
+                                            "id": mid,
+                                            "name": m.get("name"),
+                                            "bind_phase": m.get("_bind_phase"),
+                                        }
+                                    )
+                                    if mid is not None and m.get("name"):
+                                        method_ids[str(m["name"])] = mid
                                 except Exception as exc:  # noqa: BLE001
                                     created.append({"name": m.get("name"), "error": str(exc)[:200]})
                             record["methods"] = created
-                            for c in created:
-                                if c.get("id") is not None:
-                                    try:
-                                        await client.request(
-                                            "DELETE",
-                                            f"/CustomIntegrationMethod/{c['id']}",
-                                            timeout=30,
-                                        )
-                                    except Exception:  # noqa: BLE001
-                                        record.setdefault("cleanup_errors", []).append(
-                                            f"method {c['id']}"
-                                        )
-                        await client.request("DELETE", f"/CustomIntegration/{iid}", timeout=30)
-                        record["cleanup"] = "integration deleted"
                 elif kind == "runbook":
-                    record.update(await _apply_runbook(client, body, name))
-                # (methods-only files apply through their integration above)
+                    record.update(
+                        await _create_runbook(client, body, name, method_ids, form_overrides)
+                    )
+                # methods files apply through their integration above
             except Exception as exc:  # noqa: BLE001
                 record["error"] = str(exc)[:400]
-            ev["applied"][key] = record
 
-    evidence_path.write_text(json.dumps(ev, indent=2) + "\n", encoding="utf-8")
+        # ---- phase 2: fire (method ids alive) --------------------------
+        for key, record in ev["applied"].items():
+            if not key.startswith("runbook:"):
+                continue
+            wid = record.get("id")
+            if not wid or record.get("create_error"):
+                continue
+            inputs = record.get("_inputs") or {}
+            record.update(await _fire_runbook(client, str(wid), inputs))
+
+        # ---- phase 3: cleanup (reverse) --------------------------------
+        for key in sorted(files, reverse=True):
+            record = ev["applied"].get(key)
+            if not record:
+                continue
+            try:
+                if key.startswith("runbook:") and record.get("id"):
+                    await client.request("DELETE", f"/Webhook/{record['id']}", timeout=30)
+                    record["cleanup"] = await _gone(
+                        client, "DELETE check", f"/Webhook/{record['id']}"
+                    )
+                elif key.startswith("integration:") and record.get("_integration_id"):
+                    iid = record.pop("_integration_id")
+                    for c in record.get("methods") or []:
+                        if c.get("id") is not None:
+                            try:
+                                await client.request(
+                                    "DELETE", f"/CustomIntegrationMethod/{c['id']}", timeout=30
+                                )
+                            except Exception as exc:  # noqa: BLE001
+                                record.setdefault("cleanup_errors", []).append(
+                                    f"method {c['id']}: {str(exc)[:120]}"
+                                )
+                    await client.request("DELETE", f"/CustomIntegration/{iid}", timeout=30)
+                    record["cleanup"] = "methods + integration deleted"
+            except Exception as exc:  # noqa: BLE001
+                record.setdefault("cleanup_errors", []).append(str(exc)[:200])
+
+    evidence_path.write_text(json.dumps(ev, indent=2, default=str) + "\n", encoding="utf-8")
     return ev
 
 
-async def _apply_runbook(client: Any, payload: dict, name: str) -> dict[str, Any]:
-    """Create with a bounded shape ladder, verify, fire the public trigger, delete."""
+async def _gone(client: Any, label: str, path: str) -> str:
+    try:
+        await client.request("GET", path, timeout=30)
+        return "STILL READABLE"
+    except Exception:  # noqa: BLE001
+        return "deleted (clean)"
+
+
+async def _create_runbook(
+    client: Any,
+    payload: dict,
+    name: str,
+    method_ids: dict[str, int],
+    input_overrides: dict[str, str],
+) -> dict[str, Any]:
+    """Resolve bindings, apply input overrides, create, verify the graph.
+
+    ``input_overrides`` (--form) patch the DOCUMENT's input variable
+    values before create: ``<<var>>`` expressions resolve from the
+    document, not from formCollection (trial-observed - formCollection
+    is the ``<<request>>`` payload).
+    """
     out: dict[str, Any] = {}
-    base = {**payload, "name": f"{PROBE}-{name}"[:80], "type": 1, "active": False}
+    doc: dict[str, Any] = {k: v for k, v in payload.items() if not k.startswith("_")}
+    sidecar = payload.get("_phase_bindings") or {}
+    warnings = []
+    for step in doc.get("steps") or []:
+        mname = sidecar.get(str(step.get("step_id")))
+        if mname:
+            if mname in method_ids:
+                step["auto_action_type"] = method_ids[mname]
+            else:
+                warnings.append(
+                    f"step {step.get('step_id')} wanted method {mname!r} - not created; "
+                    "left unbound (aa6 without a method fails at fire time)"
+                )
+    for v in doc.get("input_variables") or []:
+        if str(v.get("key")) in input_overrides:
+            v["value"] = input_overrides[str(v["key"])]
+    out["_inputs"] = {
+        str(v.get("key")): str(v.get("value") or "") for v in doc.get("input_variables") or []
+    }
+    if warnings:
+        out["binding_warnings"] = warnings
+
+    base = {**doc, "name": f"{PROBE}-{name}"[:80], "type": 1, "active": False}
     ladders: list[tuple[str, dict]] = [
         # lead with the public-endpoint shape: Bifrost triggers Halo runbooks
         # via POST /api/automation/{id}. ACTIVE because the probe fires it
@@ -283,34 +385,13 @@ async def _apply_runbook(client: Any, payload: dict, name: str) -> dict[str, Any
         ),
         ("converted_public", {**base, "runbook_start_type": 1, "inbound_authentication_type": 0}),
         ("converted", base),
-        (
-            "public_no_inputvars",
-            {
-                k: v
-                for k, v in {
-                    **base,
-                    "runbook_start_type": 1,
-                    "inbound_authentication_type": 0,
-                }.items()
-                if k != "input_variables"
-            },
-        ),
-        (
-            "public_empty_steps",
-            {
-                **{k: v for k, v in base.items() if k != "input_variables"},
-                "steps": [],
-                "runbook_start_type": 1,
-                "inbound_authentication_type": 0,
-            },
-        ),
         ("bare", {"name": base["name"], "type": 1, "steps": []}),
     ]
     wid = None
     attempts: list[str] = []
-    for label, doc in ladders:
+    for label, doc2 in ladders:
         try:
-            resp = await client.request("POST", "/Webhook", json_body=[doc], timeout=60)
+            resp = await client.request("POST", "/Webhook", json_body=[doc2], timeout=60)
             row = resp[0] if isinstance(resp, list) and resp else resp
             wid = row.get("id") if isinstance(row, dict) else None
             attempts.append(f"{label}: ok id={wid}")
@@ -319,82 +400,120 @@ async def _apply_runbook(client: Any, payload: dict, name: str) -> dict[str, Any
         except Exception as exc:  # noqa: BLE001
             attempts.append(f"{label}: {str(exc)[:170]}")
     out["attempts"] = attempts
-
     if wid is None:
+        out["create_error"] = "all ladder rungs rejected"
         return out
+    out["id"] = wid
 
-    # verify
+    # verify the graph as it persisted (steps + edge counts + bindings)
     try:
-        doc = await client.request(
+        full = await client.request(
             "GET", f"/Webhook/{wid}", params={"includedetails": "true"}, timeout=45
         )
-        steps = doc.get("steps") if isinstance(doc, dict) else None
+        steps = full.get("steps") if isinstance(full, dict) else None
+        edges = sum(len(s.get("actions") or []) for s in (steps or []))
+        bound = [s.get("step_id") for s in (steps or []) if s.get("auto_action_type") is not None]
         out["verify"] = {
-            "type": doc.get("type") if isinstance(doc, dict) else None,
+            "type": full.get("type") if isinstance(full, dict) else None,
             "steps": len(steps) if isinstance(steps, list) else steps,
-            "expected_steps": len(payload.get("steps") or []),
-            "input_variables": len(doc.get("input_variables") or [])
-            if isinstance(doc, dict)
+            "expected_steps": len(doc.get("steps") or []),
+            "edges": edges,
+            "bound_steps": bound,
+            "input_variables": len(full.get("input_variables") or [])
+            if isinstance(full, dict)
             else None,
-            "start_type": doc.get("runbook_start_type") if isinstance(doc, dict) else None,
+            "start_type": full.get("runbook_start_type") if isinstance(full, dict) else None,
         }
     except Exception as exc:  # noqa: BLE001
         out["verify"] = {"error": str(exc)[:200]}
+    return out
 
-    # external trigger fire (only when the public start type made it through)
+
+async def _fire_runbook(
+    client: Any,
+    wid: str,
+    inputs: dict[str, str],
+) -> dict[str, Any]:
+    """Fire the public trigger, capture the runlog.
+
+    ``inputs`` are the DOCUMENT's final input variable values (they
+    drive ``<<var>>``); they ride formCollection too so the ``<<request>>``
+    view carries the same data (trial-observed: formCollection alone does
+    NOT populate ``<<var>>`` - the document values are authoritative).
+    """
+    out: dict[str, Any] = {}
     try:
         check = await client.request("GET", f"/Webhook/{wid}", timeout=30)
-        if isinstance(check, dict) and check.get("runbook_start_type") == 1:
-            # fire + prove execution with a runlog diff (the runbook was
-            # created ACTIVE by the winning ladder rung for exactly this)
-            log = await client.request("GET", "/Automation", params={"count": "20"}, timeout=45)
-            rows = (
-                log
-                if isinstance(log, list)
-                else next((v for v in log.values() if isinstance(v, list)), [])
-            )
-            before_ids = {r.get("id") for r in rows}
-            resp = await client.request(
-                "POST",
-                f"/Automation/{wid}",
-                json_body={
-                    "formCollection": [{"Key": "halocli_probe", "Value": "bifrost-trigger"}]
-                },
-                timeout=90,
-            )
-            fired: dict[str, Any] = {"ok": True, "response": str(resp)[:300]}
-            for _ in range(6):
-                time.sleep(2)
-                log = await client.request("GET", "/Automation", params={"count": "20"}, timeout=45)
-                rows = (
-                    log
-                    if isinstance(log, list)
-                    else next((v for v in log.values() if isinstance(v, list)), [])
-                )
-                new = [r for r in rows if r.get("id") not in before_ids]
-                if new:
-                    fired["runlog_row"] = {
-                        k: new[0].get(k)
-                        for k in ("id", "runbook_id", "runbook_name", "status", "error")
-                        if k in new[0]
-                    }
-                    break
-            out["trigger_fire"] = fired
-        else:
-            out["trigger_fire"] = "skipped: runbook_start_type != 1 (shape ladder fell back)"
+        if not (isinstance(check, dict) and check.get("runbook_start_type") == 1):
+            out["trigger_fire"] = "skipped: runbook_start_type != 1 (create ladder fell back)"
+            return out
+    except Exception as exc:  # noqa: BLE001
+        out["trigger_fire"] = f"pre-check failed: {str(exc)[:200]}"
+        return out
+
+    pairs = [{"Key": k, "Value": v} for k, v in inputs.items()]
+
+    async def runlog_list() -> list[dict]:
+        log = await client.request("GET", "/Automation", params={"count": "50"}, timeout=45)
+        return (
+            log
+            if isinstance(log, list)
+            else next((v for v in log.values() if isinstance(v, list)), [])
+        )
+
+    try:
+        before = {r.get("id") for r in await runlog_list()}
+        resp = await client.request(
+            "POST",
+            f"/Automation/{wid}",
+            json_body={"formCollection": pairs},
+            timeout=120,
+        )
+        out["trigger_fire"] = {
+            "ok": True,
+            "response": str(resp)[:200],
+            "formCollection": pairs,
+        }
     except Exception as exc:  # noqa: BLE001
         out["trigger_fire"] = f"error: {str(exc)[:300]}"
+        return out
 
-    # cleanup
-    try:
-        await client.request("DELETE", f"/Webhook/{wid}", timeout=30)
-        try:
-            await client.request("GET", f"/Webhook/{wid}", timeout=30)
-            out["cleanup"] = "STILL READABLE"
-        except Exception:  # noqa: BLE001
-            out["cleanup"] = "deleted (clean)"
-    except Exception as exc:  # noqa: BLE001
-        out["cleanup"] = f"DELETE failed {str(exc)[:200]}"
+    # capture the run: list poll first, by-id fallback (the list window
+    # evicts completed rows under load - observed on the trial)
+    found: dict | None = None
+    for _ in range(8):
+        time.sleep(2)
+        rows = [r for r in await runlog_list() if r.get("id") not in before]
+        mine = [r for r in rows if r.get("runbook_id") == wid]
+        if mine:
+            found = mine[0]
+            break
+        top = max((r.get("id") or 0 for r in rows), default=0)
+        for cand in range(top, max(top - 15, 0), -1):
+            try:
+                d2 = await client.request("GET", f"/Automation/{cand}", timeout=20)
+            except Exception:  # noqa: BLE001
+                continue
+            if isinstance(d2, dict) and d2.get("runbook_id") == wid:
+                found = d2
+                break
+        if found:
+            break
+    if found:
+        out["runlog"] = {
+            k: found.get(k)
+            for k in (
+                "id",
+                "status",
+                "error",
+                "steps_executed",
+                "runbook_step",
+                "runbook_step_name",
+                "iteration",
+            )
+        }
+    else:
+        out["runlog"] = "row not found (list window + by-id scan)"
     return out
 
 
@@ -412,17 +531,37 @@ def main() -> int:
     parser.add_argument("--function", help="workflow function name")
     parser.add_argument("--workflows-yaml", help=".bifrost/workflows.yaml")
     parser.add_argument("--workflow", help="workflow name in workflows.yaml")
+    parser.add_argument(
+        "--phase-bindings",
+        help='JSON {phase: method_id | "Method Name"} for aa6 step wiring',
+    )
     parser.add_argument("--out", default="./halo_out", help="output directory")
     parser.add_argument("--apply", action="store_true", help="round-trip payloads on a tenant")
     parser.add_argument("--profile", default="dev", help="profile for --apply (prod refused)")
+    parser.add_argument(
+        "--form",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="override a runbook input variable in the document before create "
+        "(<<var>> reads the document; repeatable)",
+    )
     args = parser.parse_args()
 
     if not any(
         (args.integrations, args.integrations_json, args.workflow_file, args.workflows_yaml)
     ):
         parser.error(
-            "need at least one source: --integrations/--integrations-json/--workflow-file/--workflows-yaml"
+            "need at least one source: --integrations/--integrations-json/"
+            "--workflow-file/--workflows-yaml"
         )
+
+    form_overrides: dict[str, str] = {}
+    for pair in args.form:
+        if "=" not in pair:
+            parser.error(f"--form expects KEY=VALUE, got {pair!r}")
+        k, v = pair.split("=", 1)
+        form_overrides[k] = v
 
     out_dir = Path(args.out)
     built = build_outputs(args, out_dir)
@@ -432,7 +571,9 @@ def main() -> int:
     if args.apply:
         files = {k: Path(v) for k, v in built["files"].items()}
         ev = asyncio.run(
-            apply_outputs(files, args.profile, out_dir / "bifrost_conversion_evidence.json")
+            apply_outputs(
+                files, args.profile, out_dir / "bifrost_conversion_evidence.json", form_overrides
+            )
         )
         print(json.dumps(ev, indent=2, default=str))
     return 0

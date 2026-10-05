@@ -1,0 +1,18 @@
+# Bifrost -> Halo integration fixture for the LIVE trial demo.
+#
+# Target choice is evidence-driven (scripts/runbook_api_route_probe.py,
+# 2026-10-06): an aa6 step routes its act17 edges only when the HTTP call
+# actually answers - https://clidev.trial.usehalo.com/api/InstanceInfo
+# answers without auth (proven: status2, steps_executed2, Success), while
+# external hosts (example.com) were unreachable from Halo's cloud egress
+# ("Next step not found"). For portability in your own tenant, put your
+# instance URL here (or any endpoint your Halo servers can reach).
+integrations:
+  0e57c0de-0000-4000-8000-000000000002:
+    id: 0e57c0de-0000-4000-8000-000000000002
+    name: Bifrost Probe Sink
+    config_schema:
+      - key: base_url
+        type: string
+        required: true
+        description: Probe sink base URL (https://clidev.trial.usehalo.com)

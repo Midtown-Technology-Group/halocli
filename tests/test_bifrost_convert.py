@@ -1,4 +1,9 @@
-"""Bifrost -> Halo conversion: pure mapping tests (no network)."""
+"""Bifrost -> Halo conversion: pure mapping tests (no network).
+
+The runbook-graph assertions pin the primitives that were fire-proven on
+the trial (scripts/runbook_chain_matrix.py, runbook_chain_s6b.py):
+edge shapes, terminal wiring, iteration sentinel, method binding.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +12,9 @@ from halocli.bifrost_convert import (
     DATA_TYPE,
     GRANT_TYPE,
     METHOD_VERB,
-    build_steps,
+    Phase,
+    build_runbook_steps,
+    classify_phases,
     convert_integration,
     convert_methods,
     convert_workflow,
@@ -109,6 +116,14 @@ def test_method_verb_mapping_is_non_sequential() -> None:
     assert any("TRACE" in n for n in notes)
 
 
+def test_method_bind_phase_survives() -> None:
+    bodies, _ = convert_methods(
+        [{"name": "Probe", "path": "/probe", "method": "GET", "bind_phase": "fetch_remote"}],
+        "Sink",
+    )
+    assert bodies[0]["_bind_phase"] == "fetch_remote"
+
+
 def test_method_missing_fields_are_skipped_with_note() -> None:
     bodies, notes = convert_methods([{"name": "NoPath"}], "X")
     assert bodies == []
@@ -149,31 +164,42 @@ def test_workflow_decorator_and_signature_convert() -> None:
     keys = {v["key"]: v for v in p["input_variables"]}
     assert keys["halo_ticket_id"]["data_type"] == DATA_TYPE["int"] == 3
     assert keys["note"]["data_type"] == DATA_TYPE["string"] == 2  # |None unwrapped
-    # phases -> step chain: start + one per awaited call + end markers
+    # hop-only graph: [phase hops..., Success] - Fail only exists when an
+    # api phase can route to it (matrix: S1/S5 were [hop.., Success])
     names = [s["name"] for s in p["steps"]]
-    assert names[0] == p["name"]
+    assert names == ["halo_connection", "inspect_ticket", "Success"]
     assert p["steps"][0]["isstart"] is True
+    assert p["steps"][-1]["name"] == "Success"
     assert p["steps"][-1]["isend"] is True and p["steps"][-1]["islaststep"] is True
-    assert "halo_connection" in names and "inspect_ticket" in names
-    # description rides the first step's message (Halo has no description field)
+    # wiring: every hop carries exactly the Sleep Finished edge to the next
+    for s in p["steps"][:-1]:
+        assert len(s["actions"]) == 1
+        a = s["actions"][0]
+        assert (a["action_type"], a["action_id"], a["action_name"]) == (32, -32, "Sleep Finished")
+        assert a["start_step"] == s["step_id"]
+    assert p["steps"][0]["actions"][0]["end_step"] == 2
+    # description rides the first step's message (Halo has no description)
     assert "match its caller" in p["steps"][0]["message"]
     # structurally faithful but inert: no actions carry side effects
-    assert all(s["actions"] == [] for s in p["steps"])
+    assert all(s["actions"] and s.get("auto_action") in (21, None) for s in p["steps"][:-1])
     # everything that did not transfer is a note
     assert any("effects" in n for n in conv.notes)
     assert any("enforced_bounds" in n for n in conv.notes)
     assert any("HaloPSA" in n for n in conv.notes)
 
 
-def test_workflow_row_only_conversion() -> None:
-    # API row without source: name/description/timeout from the row alone
+def test_workflow_row_only_conversion_gets_start_hop() -> None:
     conv = convert_workflow(
         {"name": "create_customer", "description": "Create the customer", "timeout_seconds": 1800}
     )
     assert conv.ok
     assert conv.payload["name"] == "create_customer"
     assert conv.payload["input_variables"] == []
-    assert conv.payload["steps"][0]["isstart"] is True
+    steps = conv.payload["steps"]
+    assert steps[0]["name"] == "create_customer"  # neutral start hop
+    assert steps[0]["isstart"] is True
+    assert steps[-1]["name"] == "Success"
+    assert len(steps) == 2  # no Fail terminal without an api phase
 
 
 def test_workflow_missing_function_fails_cleanly() -> None:
@@ -182,17 +208,128 @@ def test_workflow_missing_function_fails_cleanly() -> None:
     assert any("not found" in n for n in conv.notes)
 
 
-def test_extract_http_methods_literal_calls_only() -> None:
+# --- primitives (fire-proven recipes) ------------------------------------
+
+API_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Sync", description="Sync things.")
+async def sync_things(client, limit: int = 10, items: list[str] | None = None) -> dict:
+    await asyncio.sleep(1)
+    await fetch_remote(client)
+    for item in items:
+        await process_one(item)
+    return {}
+"""
+
+
+def test_api_phase_binds_to_method_id_inline() -> None:
+    conv = convert_workflow({}, API_SOURCE, "sync_things", phase_bindings={"fetch_remote": 32})
+    assert conv.ok
+    p = conv.payload
+    assert "_phase_bindings" not in p  # id known inline
+    api = next(s for s in p["steps"] if s.get("auto_action") == 6)
+    assert api["auto_action_type"] == 32  # the CustomIntegrationMethod id
+    names = [(a["action_type"], a["action_name"]) for a in api["actions"]]
+    assert names == [
+        (17, "Successful Response (200 - 299)"),
+        (17, "Unsuccessful Response"),
+    ]
+    # failure edge targets the Fail terminal; Success exists too
+    fail = next(s for s in p["steps"] if s["name"] == "Fail")
+    assert api["actions"][1]["end_step"] == fail["step_id"]
+    assert fail["auto_action"] == 1
+    assert any(s["name"] == "Success" for s in p["steps"])
+
+
+def test_api_phase_sidecar_when_id_unknown() -> None:
+    conv = convert_workflow(
+        {}, API_SOURCE, "sync_things", phase_bindings={"fetch_remote": "Probe GET"}
+    )
+    assert conv.ok
+    p = conv.payload
+    api = next(s for s in p["steps"] if s.get("auto_action") == 6)
+    assert "auto_action_type" not in api  # resolved later by --apply
+    assert p["_phase_bindings"][str(api["step_id"])] == "Probe GET"
+
+
+def test_asyncio_sleep_becomes_timed_hop() -> None:
+    conv = convert_workflow({}, API_SOURCE, "sync_things")
+    steps = conv.payload["steps"]
+    sleep_step = steps[0]
+    assert sleep_step["auto_action"] == 21
+    assert sleep_step["duration"] == 1  # the asyncio.sleep(1) argument
+
+
+def test_loop_becomes_iteration_pair_with_sentinel() -> None:
+    conv = convert_workflow({}, API_SOURCE, "sync_things", phase_bindings={"fetch_remote": 1})
+    assert conv.ok
+    p = conv.payload
+    by_aa = {s.get("auto_action"): s for s in p["steps"]}
+    begin = by_aa[12]
+    end = by_aa[13]
+    # the array source rides the marker messages (proven S6b recipe)
+    assert begin["message"] == "<<items>>"
+    assert end["message"] == "<<items>>"
+    # begin edges: Has elements -> body, Has no elements -> Success
+    assert [(a["action_type"], a["action_name"]) for a in begin["actions"]] == [
+        (22, "Has elements"),
+        (22, "Has no elements"),
+    ]
+    success = next(s for s in p["steps"] if s["name"] == "Success")
+    assert begin["actions"][1]["end_step"] == success["step_id"]
+    # end edges: finished -> next, Next iteration -> -98 (loop-back)
+    assert end["actions"][1]["end_step"] == -98
+    # loop body sits between the markers
+    order = [s["step_id"] for s in p["steps"]]
+    assert order.index(begin["step_id"]) < order.index(end["step_id"])
+    body = next(s for s in p["steps"] if s["step_id"] == begin["actions"][0]["end_step"])
+    assert body["name"] == "process_one"
+
+
+def test_signature_defaults_become_input_values() -> None:
+    conv = convert_workflow({}, API_SOURCE, "sync_things")
+    values = {v["key"]: v for v in conv.payload["input_variables"]}
+    assert values["limit"]["value"] == "10"
+    assert values["items"]["value"] == ""  # None default -> empty
+    assert values["items"]["data_type"] == DATA_TYPE["Array"] == 1
+
+
+def test_branches_are_noted_not_faked() -> None:
+    src = API_SOURCE.replace(
+        "    return {}", "    if limit > 5:\n        await fetch_remote(client)\n    return {}"
+    )
+    conv = convert_workflow({}, src, "sync_things")
+    assert any("branches" in n for n in conv.notes)
+
+
+def test_classify_does_not_descend_into_callee_args() -> None:
+    phases = classify_phases  # imported for the guard below
+    conv = convert_workflow({}, WORKFLOW_SOURCE, "inspect_voicemail_customer")
+    labels = [s["name"] for s in conv.payload["steps"][:-1]]
+    assert labels == ["halo_connection", "inspect_ticket"]
+    assert phases is not None
+
+
+# --- extraction ----------------------------------------------------------
+
+
+def test_extract_http_methods_literal_and_assembled() -> None:
     src = """
-async def go(client):
+async def go(client, base):
     await client.get("/v1/devices")
     await client.post("/v1/devices", json={})
-    await client.delete(f"/v1/devices/{dev_id}")   # assembled - not extractable
+    await client.put(base + "/v1/devices/1")
+    await client.get(f"/v1/devices/{dev_id}")
+    await client.delete(dyn_url)               # fully dynamic - not extractable
 """
     found = extract_http_methods(src)
     assert [(m["method"], m["path"]) for m in found] == [
         ("GET", "/v1/devices"),
         ("POST", "/v1/devices"),
+        ("PUT", "/v1/devices/1"),
+        ("GET", "/v1/devices/"),  # literal prefix of the f-string
     ]
 
 
@@ -221,7 +358,27 @@ def test_sanitize_for_import_matches_ui_transform() -> None:
     assert out["_is_new"] is True
 
 
-def test_build_steps_bounds_phases() -> None:
-    steps = build_steps("WB", "desc", [f"call{i}" for i in range(20)])
-    assert len(steps) <= 9  # name + at most 8 phases
-    assert steps[0]["isstart"] is True
+def test_build_runbook_steps_direct_calls() -> None:
+    """Direct primitive construction: edge fields exactly as templates."""
+    steps, sidecar = build_runbook_steps(
+        "WB",
+        "desc",
+        [Phase("sleep", "rest", duration=0), Phase("api", "call", method_id=7)],
+    )
+    assert sidecar == {}
+    hop, api, success, fail = steps
+    # canonical edge fields (copied from working trial runbooks)
+    assert set(api["actions"][0]) == {
+        "action_type",
+        "action_id",
+        "action_name",
+        "start_step",
+        "end_step",
+        "seq",
+        "use_work_hours",
+        "approval_result",
+        "chat_selection_order",
+    }
+    assert api["actions"][0]["end_step"] == success["step_id"]
+    assert api["actions"][1]["end_step"] == fail["step_id"]
+    assert hop["isstart"] is True

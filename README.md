@@ -772,30 +772,51 @@ UI's Import-from-JSON does: `GET /Webhook/{id}?includedetails=true`,
 null the step/action ids per the sanitize recipe above, and POST the
 document with `_is_new:true`.
 
-**Bifrost → Halo conversion (proven 2026-10-05):**
+**Bifrost → Halo conversion (v2, live-proven 2026-10-06):**
 `scripts/bifrost_convert.py` maps Bifrost artifacts onto those proven
-surfaces — `.bifrost/integrations.yaml` (or `GET /integrations` JSON)
-→ `POST /CustomIntegration`; a method list (explicit `--methods`, or
+surfaces and now emits an **executable step graph**, not placeholders —
+`.bifrost/integrations.yaml` (or `GET /integrations` JSON) →
+`POST /CustomIntegration`; a method list (explicit `--methods`, or
 literal `client.get("/path")` extraction) →
 `POST /CustomIntegrationMethod`; and an `@workflow` Python function →
-a `type:1` runbook document:
+a `type:1` runbook whose steps run:
 
 ```powershell
 # offline: writes payloads + conversion_report.json into --out
 python scripts/bifrost_convert.py `
-    --integrations <bifrost-workspace>/.bifrost/integrations.yaml --integration NinjaOne `
-    --workflow-file <solution>/functions/voicemail_routing.py --function inspect_voicemail_customer `
+    --integrations tests/fixtures/bifrost/sink_integration.yaml `
+    --methods tests/fixtures/bifrost/demo_methods.yaml `
+    --workflow-file tests/fixtures/bifrost/demo_workflow.py --function sync_things `
     --out ./halo_out
-# add: --apply --profile dev   # trial round-trip + trigger fire (production refused)
+# add: --apply --profile dev        # trial round-trip + trigger fire (production refused)
+#      --form items='["c"]'          # override an input variable in the document
+#      --phase-bindings b.json       # {phase: method_id | "Method Name"} for aa6 wiring
 ```
 
-Verified live (`bifrost_conversion_evidence.json`): the NinjaOne
-integration created → verified → deleted (OAuth2 + AuthorizationCode
-enums, scope join, base-URL extracted from the config description); the
-voicemail runbook created with **2/2 structural steps + the Bifrost
-signature as `input_variables`**, then the **public trigger fire**
-(`POST /Automation/{id}`) landed runlog row **2468, status completed,
-no error**, and everything deleted clean. Enum tables are pinned with
+**Step primitives (every recipe fire-proven on the trial**, matrix in
+`scripts/runbook_chain_matrix.py`, iteration in `runbook_chain_s6b.py`,
+method-call routing in `runbook_api_route_probe.py`)**:
+
+| Bifrost phase | Halo primitive | edges |
+|---|---|---|
+| `await asyncio.sleep(N)` / sequencing | `steptype2, aa21` (sleep, duration N) | act32 "Sleep Finished" |
+| bound API call (`bind_phase`) | `steptype2, aa6, aat:<method id>` | act17 "Successful Response (200 - 299)" → next, "Unsuccessful Response" → Fail |
+| `for x in p:` + await | `aa12`/`aa13` pair, array source in `message:"<<p>>"` | act22 "Has elements/Has no elements", act23 "finished/Next iteration" (`end_step:-98` loop-back) |
+| return / fall-through | `steptype3` terminals: Success (no aa) / Fail (aa1) | — |
+
+Steps are a directed graph: **the `actions` are the edges**
+(`{action_type, action_id:-type, start_step, end_step, seq, ...}`) — a
+chain without them dies with *"Next step not found"*. Signature params
+become `input_variables` (annotations → data types, defaults → JSON
+values: `("a","b")` → `["a", "b"]`).
+
+Verified live (`bifrost_conversion_evidence.json`, self-cleaning
+three-phase apply — create → fire → cleanup): the demo workflow ran the
+**entire graph** — integration id24 → method id62 wired into step2
+(`bound_steps:[2]`) → runbook 7 steps/8 edges → public fire → **runlog
+row 2480: status 2 completed, steps_executed 3, final step
+"Success"**. Earlier evidence: NinjaOne's OAuth mapping round-trip, the
+voicemail runbook, and runlog2468. Enum tables are pinned with
 provenance in `halocli.bifrost_convert` (decoded from the config SPA):
 method verbs `{0:GET, 1:POST, 2:PUT, 3:DELETE, 4:PATCH}` — deliberately
 non-sequential; authorizationtype `{0:None, 1:APIKey, 2:Bearer,
@@ -810,18 +831,32 @@ Trigger facts (live-proven): the public URL is
 **active** runbook: `active:false` answers *"Unable to start
 automation"* (that is why the converter emits `active:false` and
 activation stays a deliberate act). Send JSON
-`{"formCollection": [{"Key": "...", "Value": "..."}]}`; execution
-appears in `GET /Automation` keyed by `runbook_id`/`runbook_name`.
+`{"formCollection": [{"Key": "...", "Value": "..."}]}` — that payload
+is the `<<request>>` object; **`<<var>>` expressions read the
+document's own input values** (trial-observed: formCollection alone
+does not populate `<<items>>`), which is what `--form` patches.
+Execution appears in `GET /Automation` keyed by
+`runbook_id`/`runbook_name`, with `steps_executed`/`runbook_step`
+(under load the list evicts rows — the apply probe falls back to
+by-id fetch).
 
-Honesty notes (what does **not** transfer): Python bodies become
-structural step placeholders — hand-built chains stop after step 1
-(observed *"Next step not found. Last step=1"*), so multi-step flows
-need template-derived linkage until a v2 captures it from a working
-runbook; `effects`/`enforced_bounds`/`category`/secrets become
+Egress caveat (measured, not assumed): an `aa6` step routes only when
+its HTTP call actually answers — Halo's servers reached
+`/api/InstanceInfo` (status2) but not `example.com` ("Next step not
+found"), so point demo integrations at endpoints your Halo instance can
+reach.
+
+Honesty notes (what does **not** transfer): the Python logic itself —
+Bifrost validation/branches become the linear success path (branch
+*points* are noted, not faked; Halo conditions exist as
+`steptype1`+act12 and could take translated criteria in a later pass);
+`effects`/`enforced_bounds`/`category`/secrets become
 `conversion_report.json` notes (Halo has no field: secrets → header /
 certificate config in the UI, category → the `group_id` lookup -4);
-method extraction only sees literal paths (assembled URLs need an
-explicit `--methods` list).
+method extraction only sees literal or concat-prefixed paths (fully
+dynamic URLs need an explicit `--methods` list); loop completion is
+proven but the runlog `iteration` counter stayed0 on trial runs —
+per-element counts are not yet observable from the log.
 
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
 rules/event-rules/automations (side effects above), `EmailRule`

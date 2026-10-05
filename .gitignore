@@ -35,6 +35,10 @@ scripts/*
 !scripts/integration_create_probe.py
 !scripts/runbook_build_probe.py
 !scripts/bifrost_convert.py
+!scripts/runbook_chain_matrix.py
+!scripts/runbook_chain_followup.py
+!scripts/runbook_chain_s6b.py
+!scripts/runbook_api_route_probe.py
 halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py

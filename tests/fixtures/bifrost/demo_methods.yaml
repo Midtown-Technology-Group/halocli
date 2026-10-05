@@ -1,0 +1,12 @@
+# Bifrost -> Halo methods fixture: an explicit method list with the phase
+# binding the converter wires into an aa6 step (auto_action_type = the
+# created method's id, resolved by scripts/bifrost_convert.py --apply).
+#
+# GET /api/InstanceInfo on the trial answers without auth - the one
+# endpoint proven reachable FROM Halo's own servers (route probe), so the
+# demo chain's Successful Response edge actually fires.
+methods:
+  - name: Instance Info GET
+    path: /api/InstanceInfo
+    method: GET
+    bind_phase: fetch_remote

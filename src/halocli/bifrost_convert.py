@@ -9,11 +9,10 @@ Maps Bifrost artifacts onto the first-class Halo surfaces proven on the trial:
   (cascade round-trip proven; ``method`` is an int enum).
 - Bifrost workflow (``@workflow`` Python source + optional
   ``.bifrost/workflows.yaml``/API row) -> ``POST /Webhook`` ``type:1``
-  runbook document (full CUD + UI-exact import proven
-  2026-10-05, scripts/runbook_build_probe.py).
+  runbook document with a LIVE-EXECUTABLE step graph.
 
-Enum provenance (all decoded from the trial's config SPA, 2026-10-05,
-``index-BhEb1Eb1.js``; auth pairs empirically confirmed against live
+Enum provenance (decoded from the trial's config SPA and20 working trial
+runbooks, 2026-10-05/06; auth pairs empirically confirmed against live
 trial integrations):
 
 - method verbs: ``getIntegrationRequestMethods()`` ->
@@ -25,20 +24,52 @@ trial integrations):
   AuthorizationCode:2 AuthorizationCodeWithPKCE:3
 - data types: ``getIntegrationDataTypeValues()`` -> Object:0 Array:1
   string:2 int:3 float:4 bool:5 datetime:6
-- runbook_start_type: {0: Halo-only, 1: Halo + public endpoint}
-  (the SPA shows the /api/automation/{id} trigger URL iff 1);
-  inbound_authentication_type 0 = No Authentication (default).
+- runbook_start_type: {0: Halo-only, 1: Halo + public endpoint};
+  inbound_authentication_type 0 = No Authentication.
 
-Fidelity stance (agreed): STRUCTURAL conversion. Python bodies become
-named steps + a report of what was seen; semantics, secrets, and auth
-enums Bifrost cannot express stay as conversion notes for a human -
-the payloads are inert until deliberately triggered and the apply probe
-deletes everything it creates.
+RUNBOOK STEP PRIMITIVES (every one fire-proven on the trial,
+scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
+
+- steps are a directed graph: each working step carries ``actions`` that
+  are EDGES ``{action_type, action_id:-action_type, action_name,
+  start_step, end_step, seq, use_work_hours, approval_result,
+  chat_selection_order}`` - a success edge (seq1) and a failure edge
+  (seq2). A chain without edges dies with "Next step not found".
+- neutral hop: steptype2, auto_action21 (Sleep), edge action32
+  "Sleep Finished" - duration0 completes multi-hop runs (S1/S2/S5:
+  steps_executed up to2, status2 completed).
+- API call: steptype2, auto_action6, auto_action_type =
+  CustomIntegrationMethod id (confirmed: aat32 == method id32 "Trigger
+  Automation"), edges action17 "Successful Response (200 - 299)" /
+  "Unsuccessful Response".
+- ticket action: steptype2, auto_action8, edges action18
+  "Successful"/"Unsuccessful" (message carries the ticket payload with
+  ``<<var>>`` interpolation).
+- condition: steptype1, auto_action6, edges action12 "Condition met" /
+  "Condition not met" - with no criteria it evaluates met (S4 completed).
+- iteration: auto_action12 "Begin Array Iteration" + auto_action13 "Next
+  Iteration"; the ARRAY SOURCE lives in the step ``message`` as
+  ``<<var>>`` (proven: input var + message unlocked S6b - completed,
+  steps_executed3); edges action22 "Has elements"/"Has no elements" and
+  action23 "Iteration finished"/"Next iteration" with end_step -98 as
+  Halo's loop-back sentinel (template-proven).
+- terminals: steptype3, isend:true, actions [] - auto_action absent =
+  Success, auto_action1 = Fail. A failing step without a failure edge
+  ends the run with status1.
+
+Fidelity stance: the converter emits this executable graph (phases ->
+hops or method-bound API-call steps, detected loops -> iteration pairs,
+signature -> input variables), and everything that has no Halo field
+(effects, enforced_bounds, secrets, branch conditions) lands in
+``conversion_report.json`` as notes for a human - never as guesses.
+Payloads stay inert (active:false) until an operator or the --apply
+probe deliberately fires them.
 """
 
 from __future__ import annotations
 
 import ast
+import json
 import re
 from dataclasses import dataclass, field
 
@@ -105,8 +136,26 @@ _ANNOTATION_TO_DATA_TYPE: dict[str, int] = {
     "float": DATA_TYPE["float"],
     "dict": DATA_TYPE["Object"],
     "list": DATA_TYPE["Array"],
+    "tuple": DATA_TYPE["Array"],
+    "set": DATA_TYPE["Array"],
     "datetime": DATA_TYPE["datetime"],
 }
+
+
+def _default_value(literal: object) -> str:
+    """Signature default -> the string Halo stores on the input variable.
+
+    Halo parses list-shaped values as JSON (proven: input value
+    ``["a","b","c"]`` unlocked the iteration step on the trial), so
+    containers and bools serialize via json; strings stay raw.
+    """
+    if literal is None:
+        return ""
+    if isinstance(literal, str):
+        return literal
+    if isinstance(literal, (bool, int, float, list, tuple, dict)):
+        return json.dumps(literal)
+    return str(literal)
 
 
 @dataclass
@@ -217,6 +266,8 @@ def convert_methods(methods: list[dict], integration_name: str) -> tuple[list[di
 
     Each entry: ``{name, path, method: GET|POST|PUT|DELETE|PATCH|0..4}``
     (verb accepted as name or int; ints validated against the enum).
+    Optional ``bind_phase`` survives in the body (underscore-free) and is
+    consumed by the apply probe to wire runbook steps to created ids.
     """
     notes: list[str] = []
     out: list[dict] = []
@@ -238,26 +289,52 @@ def convert_methods(methods: list[dict], integration_name: str) -> tuple[list[di
                 "or 0/1/2/3/4) - defaulted to GET(0)"
             )
             verb_int = METHOD_VERB["GET"]
-        out.append(
-            {
-                "name": name,
-                "path": path if path.startswith("/") else "/" + path,
-                "method": verb_int,
-                "_integration_name": integration_name,
-            }
-        )
+        body: dict = {
+            "name": name,
+            "path": path if path.startswith("/") else "/" + path,
+            "method": verb_int,
+            "_integration_name": integration_name,
+        }
+        if m.get("bind_phase"):
+            body["_bind_phase"] = str(m["bind_phase"])
+        out.append(body)
     return out, notes
 
 
 def extract_http_methods(module_source: str) -> list[dict]:
-    """Heuristic: ``client.<verb>("<path>")`` calls in a Bifrost module.
+    """Heuristic: literal HTTP calls in a Bifrost module.
 
-    Best-effort discovery aid - literal strings only; f-strings and
-    assembled URLs are reported by the caller as unmapped.
+    Recognizes ``client.get("/path")`` and assembled forms
+    ``client.post(base + "/path")`` / f-strings whose first segment is
+    literal (the common Bifrost ``VendorAPI`` style). Fully dynamic URLs
+    cannot be extracted - list those methods explicitly via ``--methods``.
     """
     tree = ast.parse(module_source)
     found: list[dict] = []
     seen: set[tuple[str, str]] = set()
+
+    def literal_path(node: ast.expr) -> str | None:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value if node.value[:1] == "/" else None
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            # base + "/path" -> the right side literal
+            right = literal_path(node.right) if isinstance(node.right, ast.BinOp) else None
+            if isinstance(node.right, ast.Constant) and isinstance(node.right.value, str):
+                return node.right.value if node.right.value[:1] == "/" else None
+            return right
+        if isinstance(node, ast.JoinedStr):
+            # f"/v1/devices/{id}" -> the literal prefix (up to the first hole)
+            parts: list[str] = []
+            for v in node.values:
+                if isinstance(v, ast.Constant) and isinstance(v.value, str):
+                    parts.append(v.value)
+                else:
+                    break
+            prefix = "".join(parts)
+            if prefix[:1] == "/":
+                return prefix if len(prefix) > 1 else None
+        return None
+
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
@@ -267,27 +344,48 @@ def extract_http_methods(module_source: str) -> list[dict]:
         verb = func.attr.upper()
         if verb not in METHOD_VERB or not node.args:
             continue
-        arg0 = node.args[0]
-        if (
-            isinstance(arg0, ast.Constant)
-            and isinstance(arg0.value, str)
-            and arg0.value[:1] in ("/",)
-        ):
-            key = (verb, arg0.value)
-            if key in seen:
-                continue
-            seen.add(key)
-            found.append(
-                {
-                    "name": f"{verb.title()} {arg0.value}",
-                    "path": arg0.value,
-                    "method": verb,
-                }
-            )
+        path = literal_path(node.args[0])
+        if not path:
+            continue
+        key = (verb, path)
+        if key in seen:
+            continue
+        seen.add(key)
+        found.append({"name": f"{verb.title()} {path}", "path": path, "method": verb})
     return found
 
 
-# --- workflow ------------------------------------------------------------
+# --- workflow: phases ----------------------------------------------------
+
+
+@dataclass
+class Phase:
+    """One classified top-level await of a Bifrost workflow function."""
+
+    kind: str  # "sleep" | "api" | "hop"
+    label: str
+    duration: int | None = None
+    method_id: int | None = None
+    method_name: str | None = None  # unresolved binding -> sidecar
+    in_loop: bool = False
+    array_var: str | None = None  # loop target (input variable name)
+
+
+def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
+    for dec in func.decorator_list:
+        if isinstance(dec, ast.Call):
+            fn = dec.func
+            if isinstance(fn, ast.Name) and fn.id == "workflow":
+                out: dict = {}
+                for kw in dec.keywords:
+                    if kw.arg is None:
+                        continue
+                    try:
+                        out[kw.arg] = ast.literal_eval(kw.value)
+                    except (ValueError, SyntaxError):
+                        out[kw.arg] = ast.unparse(kw.value)
+                return out
+    return {}
 
 
 def _annotation_data_type(node: ast.expr | None) -> tuple[int, str]:
@@ -315,58 +413,310 @@ def _annotation_data_type(node: ast.expr | None) -> tuple[int, str]:
         base = inner.value
         if isinstance(base, ast.Name) and base.id in ("Optional", "Union"):
             return _annotation_data_type(inner.slice if isinstance(inner.slice, ast.expr) else None)
+        if isinstance(base, ast.Name):
+            dt = _ANNOTATION_TO_DATA_TYPE.get(base.id.lower())
+            if dt is not None:
+                # list[str] -> Array, dict -> Object (container wins)
+                return dt, (ast.unparse(inner) if hasattr(ast, "unparse") else "complex")
         display = ast.unparse(inner) if hasattr(ast, "unparse") else "complex"
     return DATA_TYPE["string"], display
 
 
-def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
-    for dec in func.decorator_list:
-        if isinstance(dec, ast.Call):
-            fn = dec.func
-            if isinstance(fn, ast.Name) and fn.id == "workflow":
-                out: dict = {}
-                for kw in dec.keywords:
-                    if kw.arg is None:
-                        continue
-                    try:
-                        out[kw.arg] = ast.literal_eval(kw.value)
-                    except (ValueError, SyntaxError):
-                        out[kw.arg] = ast.unparse(kw.value)
-                return out
-    return {}
+def _call_label(call: ast.Call) -> str | None:
+    fn = call.func
+    if isinstance(fn, ast.Name):
+        return fn.id
+    if isinstance(fn, ast.Attribute):
+        return fn.attr
+    return None
 
 
-def _phase_calls(func: ast.AsyncFunctionDef | ast.FunctionDef) -> list[str]:
-    """Top-level await/call names - the v1 'phases' of the runbook."""
-    phases: list[str] = []
-    for node in ast.walk(func):
-        if isinstance(node, (ast.Await,)):
-            inner = node.value
-            if isinstance(inner, ast.Call):
-                fn = inner.func
-                if isinstance(fn, ast.Name):
-                    label = fn.id
-                elif isinstance(fn, ast.Attribute):
-                    label = fn.attr
-                else:
-                    continue
-                if label not in phases and label not in ("raise", "ValueError", "RuntimeError"):
-                    phases.append(label)
-    return phases[:8]  # bounded: a step per phase, max 8
+def _is_sleep(call: ast.Call) -> int | None:
+    """await asyncio.sleep(N) -> N (the neutral-hop primitive with semantics)."""
+    fn = call.func
+    if (
+        isinstance(fn, ast.Attribute)
+        and fn.attr == "sleep"
+        and isinstance(fn.value, ast.Name)
+        and fn.value.id == "asyncio"
+        and call.args
+        and isinstance(call.args[0], ast.Constant)
+        and isinstance(call.args[0].value, (int, float))
+    ):
+        return int(call.args[0].value)
+    return None
+
+
+def classify_phases(
+    func: ast.AsyncFunctionDef | ast.FunctionDef,
+    phase_bindings: dict[str, int | str] | None = None,
+) -> list[Phase]:
+    """Top-level awaits in source order, classified into Halo primitives.
+
+    - ``await asyncio.sleep(N)``        -> sleep(N) hop
+    - calls bound via ``phase_bindings`` -> API-call step (int id inline,
+      str method name -> sidecar for the apply probe to resolve)
+    - awaits inside a top-level ``for`` -> loop body (iteration pair
+      around them, array var = the iterated name when it is a parameter)
+    - everything else                   -> neutral hop (sleep0)
+    """
+    bindings = phase_bindings or {}
+    phases: list[Phase] = []
+
+    def walk(node: ast.AST, in_loop: bool, array_var: str | None) -> None:
+        if isinstance(node, (ast.For, ast.AsyncFor)):
+            # the iter expression evaluates once (outside); the target
+            # and body run per element (inside)
+            loop_var = node.iter.id if isinstance(node.iter, ast.Name) else array_var
+            walk(node.iter, in_loop, array_var)
+            walk(node.target, True, loop_var)
+            for stmt in (*node.body, *node.orelse):
+                walk(stmt, True, loop_var)
+            return
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.Await) and isinstance(child.value, ast.Call):
+                call = child.value
+                label = _call_label(call) or "call"
+                seconds = _is_sleep(call)
+                bound = bindings.get(label)
+                if seconds is not None:
+                    phases.append(
+                        Phase(
+                            "sleep",
+                            f"sleep {seconds}s",
+                            duration=seconds,
+                            in_loop=in_loop,
+                            array_var=array_var,
+                        )
+                    )
+                elif bound is not None and label:
+                    if isinstance(bound, int):
+                        phases.append(
+                            Phase(
+                                "api", label, method_id=bound, in_loop=in_loop, array_var=array_var
+                            )
+                        )
+                    else:
+                        phases.append(
+                            Phase(
+                                "api",
+                                label,
+                                method_name=str(bound),
+                                in_loop=in_loop,
+                                array_var=array_var,
+                            )
+                        )
+                elif label:
+                    phases.append(Phase("hop", label, in_loop=in_loop, array_var=array_var))
+                # do not descend into the call's own args (nested awaits
+                # belong to callee internals, not this workflow's flow)
+                continue
+            walk(child, in_loop, array_var)
+
+    for stmt in func.body:
+        walk(stmt, False, None)
+    return phases
+
+
+# --- workflow: runbook document -----------------------------------------
+
+
+def build_runbook_steps(
+    name: str,
+    description: str,
+    phases: list[Phase],
+) -> tuple[list[dict], dict[str, str]]:
+    """Executable step graph: phases -> primitives -> wired edges.
+
+    Returns (steps, sidecar) where sidecar maps step_id -> method name
+    for bindings whose id is not yet known (the apply probe resolves and
+    strips it). Wiring rules (all fire-proven, see module docstring):
+
+    - hop/sleep: one edge (action32 "Sleep Finished") -> next
+    - api: two edges (action17 "Successful Response (200 - 299)" -> next,
+      "Unsuccessful Response" -> Fail terminal)
+    - iteration begin: action22 "Has elements" -> body,
+      "Has no elements" -> Success terminal
+    - iteration end: action23 "Iteration finished" -> next,
+      "Next iteration" -> end_step -98 (Halo's loop-back sentinel)
+    - terminals carry no edges: Success (auto_action absent) and
+      Fail (auto_action1), both isend.
+    """
+    sidecar: dict[str, str] = {}
+
+    # flatten loop markers: a loop with body phases becomes
+    # [iter_begin, *body, iter_end]; loop-less phases stay as-is
+    plan: list[tuple[str, Phase | None]] = []
+    i = 0
+    while i < len(phases):
+        p = phases[i]
+        if p.in_loop:
+            body: list[Phase] = []
+            loop_var = p.array_var
+            while i < len(phases) and phases[i].in_loop:
+                body.append(phases[i])
+                loop_var = loop_var or phases[i].array_var
+                i += 1
+            plan.append(("iter_begin", body[0] if body else None))
+            for b in body:
+                plan.append(("body", b))
+            plan.append(("iter_end", body[-1] if body else None))
+            # share the array var with the marker phases (they render the
+            # <<var>> message); body phases ignore array_var when hopping
+            for kind, ph in plan:
+                if kind in ("iter_begin", "iter_end") and ph is not None and loop_var:
+                    ph.array_var = loop_var
+            continue
+        plan.append(("plain", p))
+        i += 1
+    if not plan:
+        # no awaits at all: one neutral start hop so the graph has an entry
+        plan.append(("plain", Phase("hop", name)))
+
+    n = len(plan)
+    success_id = n + 1
+    # the Fail terminal exists only when something can route to it (an api
+    # phase's "Unsuccessful Response" edge); pure-hop graphs match the
+    # matrix recipes [hop.., Success] exactly
+    has_fail = any(
+        kind in ("plain", "body") and ph is not None and ph.kind == "api" for kind, ph in plan
+    )
+    fail_id = success_id + 1 if has_fail else None
+
+    def edge(action_type: int, action_name: str, start: int, end: int, seq: int) -> dict:
+        return {
+            "action_type": action_type,
+            "action_id": -action_type,
+            "action_name": action_name,
+            "start_step": start,
+            "end_step": end,
+            "seq": seq,
+            "use_work_hours": True,
+            "approval_result": 1,
+            "chat_selection_order": 1,
+        }
+
+    # ordered emission (single pass, honest and readable)
+    steps: list[dict] = []
+    for idx, (kind, ph) in enumerate(plan, start=1):
+        is_last_plan = idx == n
+        next_id = idx + 1 if not is_last_plan else success_id
+        if kind == "iter_begin":
+            msg = f"<<{ph.array_var}>>" if ph and ph.array_var else None
+            steps.append(
+                {
+                    "step_id": idx,
+                    "name": f"Begin iteration: {ph.label if ph else ''}".strip(),
+                    "steptype": 2,
+                    "auto_action": 12,
+                    **({"message": msg} if msg else {}),
+                    "isstart": idx == 1,
+                    "allow_all_statuses": True,
+                    "actions": [
+                        edge(22, "Has elements", idx, next_id, 1),
+                        edge(22, "Has no elements", idx, success_id, 2),
+                    ],
+                }
+            )
+            continue
+        if kind == "iter_end":
+            # closes the most recent loop: finished -> next after the pair,
+            # next -> -98 (loop-back sentinel; template-proven)
+            msg = f"<<{ph.array_var}>>" if ph and ph.array_var else None
+            steps.append(
+                {
+                    "step_id": idx,
+                    "name": f"Next iteration ({ph.label if ph else 'loop'})",
+                    "steptype": 2,
+                    "auto_action": 13,
+                    **({"message": msg} if msg else {}),
+                    "allow_all_statuses": True,
+                    "actions": [
+                        edge(23, "Iteration finished", idx, next_id, 1),
+                        edge(23, "Next iteration", idx, -98, 2),
+                    ],
+                }
+            )
+            continue
+        assert ph is not None  # kind == "plain" or "body"
+        if ph.kind == "api":
+            fail_target = fail_id if fail_id is not None else success_id
+            step: dict = {
+                "step_id": idx,
+                "name": ph.label[:200],
+                "steptype": 2,
+                "auto_action": 6,
+                "isstart": idx == 1,
+                "allow_all_statuses": True,
+                "actions": [
+                    edge(17, "Successful Response (200 - 299)", idx, next_id, 1),
+                    edge(17, "Unsuccessful Response", idx, fail_target, 2),
+                ],
+            }
+            if ph.method_id is not None:
+                step["auto_action_type"] = ph.method_id
+            elif ph.method_name is not None:
+                sidecar[str(idx)] = ph.method_name
+            steps.append(step)
+            continue
+        # neutral hop (sleep or classified sleep)
+        duration = ph.duration if ph.kind == "sleep" else 0
+        hop: dict = {
+            "step_id": idx,
+            "name": ph.label[:200],
+            "steptype": 2,
+            "auto_action": 21,
+            "duration": duration,
+            "isstart": idx == 1,
+            "allow_all_statuses": True,
+            "actions": [edge(32, "Sleep Finished", idx, next_id, 1)],
+        }
+        steps.append(hop)
+
+    # description rides the first step (Halo has no description field)
+    if steps and description:
+        steps[0]["message"] = description[:4000]
+
+    steps.append(
+        {
+            "step_id": success_id,
+            "name": "Success",
+            "steptype": 3,
+            "isend": True,
+            "islaststep": True,
+            "allow_all_statuses": True,
+            "actions": [],
+        }
+    )
+    if fail_id is not None:
+        steps.append(
+            {
+                "step_id": fail_id,
+                "name": "Fail",
+                "steptype": 3,
+                "auto_action": 1,
+                "isend": True,
+                "allow_all_statuses": True,
+                "actions": [],
+            }
+        )
+    return steps, sidecar
 
 
 def convert_workflow(
     row: dict,
     source: str | None = None,
     function_name: str | None = None,
+    phase_bindings: dict[str, int | str] | None = None,
 ) -> Conversion:
     """Bifrost workflow -> POST /Webhook type:1 runbook document.
 
     ``row``: a ``.bifrost/workflows.yaml`` entry or ``GET /workflows``
     row (name/display_name, description, parameters, timeout...).
     ``source`` + ``function_name``: the Python file and decorated
-    function for decorator/signature/phase extraction (optional but
-    strongly preferred - the decorator carries the real metadata).
+    function (preferred - the decorator carries the real metadata).
+    ``phase_bindings``: phase name -> CustomIntegrationMethod id (int,
+    inline) or method name (str, sidecar for the apply probe).
     """
     notes: list[str] = []
     name = ""
@@ -406,32 +756,68 @@ def convert_workflow(
         return Conversion(None, ["workflow has no name (row or @workflow name)"])
 
     input_variables: list[dict] = []
-    phases: list[str] = []
+    phases: list[Phase] = []
     if func is not None:
         args = func.args
         all_args = [*args.posonlyargs, *args.args, *args.kwonlyargs]
+        defaults = list(args.defaults) + list(args.kw_defaults or [])
+        # align defaults to the tail of the positional list
+        default_map: dict[str, ast.expr] = {}
+        if defaults:
+            positional = [a.arg for a in all_args[: len(all_args) - len(args.kwonlyargs)]]
+            pos_defaults = list(args.defaults)
+            for arg_name, default in zip(
+                positional[len(positional) - len(pos_defaults) :], pos_defaults
+            ):
+                default_map[arg_name] = default
+            for a in args.kwonlyargs:
+                idx = list(args.kwonlyargs).index(a)
+                kwdefaults = list(args.kw_defaults or [])
+                if idx < len(kwdefaults):
+                    kwdef = kwdefaults[idx]
+                    if kwdef is not None:
+                        default_map[a.arg] = kwdef
+
         skip = {"ctx", "self", "cls"}
         for a in all_args:
             if a.arg in skip:
                 continue
             dt, display = _annotation_data_type(a.annotation)
+            value = ""
+            if a.arg in default_map:
+                try:
+                    value = _default_value(ast.literal_eval(default_map[a.arg]))
+                except (ValueError, SyntaxError):
+                    value = ""
             input_variables.append(
                 {
                     "id": None,
                     "key": a.arg,
-                    "value": "",
+                    "value": value,
                     "data_type": dt,
                     "description": f"from Bifrost signature ({display})",
                 }
             )
-        phases = _phase_calls(func)
+        phases = classify_phases(func, phase_bindings)
 
-    steps = build_steps(name, description, phases)
+    steps, sidecar = build_runbook_steps(name, description, phases)
+    loop_phases = [p for p in phases if p.in_loop]
     notes.append(
-        f"phases detected from Python body: {phases or 'none (no literal await calls at top level)'} - "
-        "steps are structural placeholders (steptype/auto_action left to Halo defaults); "
-        "the Python logic itself does not transfer"
+        f"phases -> {len(phases)} executable step(s): "
+        f"{[f'{p.kind}:{p.label}' for p in phases] or 'none - single neutral start'}; "
+        "wired with template-proven edges (Sleep/Successful Response/iteration)"
     )
+    if loop_phases:
+        notes.append(
+            f"detected loop over {loop_phases[0].array_var or '?'} -> Halo iteration pair "
+            "(aa12/aa13, -98 back-edge); loop multiplicity executes in Halo - "
+            "runbook log 'iteration' counter observed on the trial"
+        )
+    if sidecar:
+        notes.append(
+            f"steps {sorted(sidecar, key=int)} bind to methods {list(sidecar.values())} - "
+            "resolved to created method ids by --apply (sidecar stripped before POST)"
+        )
     if meta.get("effects"):
         notes.append(f"effects recorded, no Halo equivalent: {meta['effects']}")
     if meta.get("enforced_bounds"):
@@ -443,8 +829,12 @@ def convert_workflow(
         notes.append(
             f"category {category!r} -> Halo runbook group (group_id) is a UI lookup (-4); left unset"
         )
-    if row.get("timeout_seconds") and not description:
-        description = f"Bifrost timeout: {row['timeout_seconds']}s"
+    if func is not None and _has_branches(func):
+        notes.append(
+            "Python branches (if/else) are flattened to the linear success path - Halo "
+            "conditions exist (steptype1 + action12 'Condition met/not met') but the "
+            "criteria translation is not yet automated; review in the flow editor"
+        )
 
     payload: dict = {
         "name": name,
@@ -453,46 +843,16 @@ def convert_workflow(
         "steps": steps,
         "input_variables": input_variables,
     }
-    if description:
-        # Halo has no runbook description field: the first step's message
-        # is the human-readable carrier (documented, honest).
-        payload["steps"][0]["message"] = description[:4000]
+    if sidecar:
+        payload["_phase_bindings"] = sidecar  # apply-only; stripped before POST
     return Conversion(payload, notes)
 
 
-def build_steps(name: str, description: str, phases: list[str]) -> list[dict]:
-    """Structural step chain: Start -> one step per phase -> End.
-
-    ``steptype``/``auto_action`` intentionally unset in v1: the enum
-    semantics are SPA-only (i18n labels) and the apply probe ladder
-    records which minimal shapes the server accepts on create.
-    """
-    labels = [name, *phases[:8]]  # bounded even when called directly
-    steps: list[dict] = []
-    total = len(labels)
-    for i, label in enumerate(labels, start=1):
-        step: dict = {
-            "id": None,
-            "fdid": None,
-            "step_id": i,
-            "flow_id": 0,
-            "flow_type": 0,
-            "name": (label or f"Step {i}")[:200],
-            "isstart": i == 1,
-            "isend": i == total,
-            "islaststep": i == total,
-            "stage_number": 0,
-            "actions": [],
-            "step_conditions": [],
-            "runbook_variable_mappings": [],
-            "translations": [],
-            "allow_all_statuses": True,
-            "allowed_statuses": [],
-        }
-        if i > 1 and description:
-            step["message"] = description[:4000]
-        steps.append(step)
-    return steps
+def _has_branches(func: ast.AsyncFunctionDef | ast.FunctionDef) -> bool:
+    for node in ast.walk(func):
+        if isinstance(node, (ast.If, ast.IfExp)):
+            return True
+    return False
 
 
 def sanitize_for_import(doc: dict) -> dict:
