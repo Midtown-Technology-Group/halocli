@@ -76,7 +76,7 @@ jobs:
       # Report-only baseline (no floor yet): publishes the number we would
       # later gate on. Runs under -n auto like every other pytest invocation.
       - name: Test with coverage
-        run: python -m pytest -q --cov=halocli --cov-report=term-missing --cov-report=json:pytest-coverage.json
+        run: python -m pytest -q --cov=halocli --cov-report=term-missing --cov-report=json:pytest-coverage.json --cov-report=xml:coverage.xml
 
       - name: Upload pytest coverage
         if: always()
@@ -85,6 +85,13 @@ jobs:
           name: pytest-coverage
           path: pytest-coverage.json
           if-no-files-found: ignore
+
+      - name: Upload Sonar coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sonar-coverage
+          path: coverage.xml
+          if-no-files-found: error
 
       # Fails when registry write metadata points at endpoints the spec lacks
       # (the /Contract bug class). read_mismatches is report-only: those are
@@ -147,3 +154,15 @@ jobs:
             dist/*.tar.gz
             dist/*.whl
             dist/*sbom*.json
+
+  sonar:
+    needs: coverage
+    # Staged migration: exercise manually before disabling automatic analysis.
+    if: github.event_name == 'workflow_dispatch'
+    uses: Midtown-Technology-Group/engineering-workflows/.github/workflows/sonar.yml@bc3b6f7099177c00ac728d6d32d83fc8dcf76d84
+    with:
+      project-key: Midtown-Technology-Group_halocli
+      organization: midtown-technology-group
+      coverage-artifact: sonar-coverage
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
