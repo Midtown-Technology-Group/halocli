@@ -572,6 +572,38 @@ async def _event_proof(client: Any, wid: str) -> dict[str, Any]:
         if isinstance(hit, dict)
         else "no event-driven run observed (~100s)"
     )
+    # read back any note the aa8 step wrote (before the ticket dies):
+    # the note lands as an Action row keyed by ticket_id; marker search
+    # catches it regardless of which endpoint surfaces it
+    if tid is not None and isinstance(hit, dict) and (hit.get("status") or 0) == 2:
+        marker = "Converted by halocli"
+        readback: dict[str, Any] = {}
+        try:
+            body = await client.request(
+                "GET", "/Actions", params={"ticket_id": str(tid), "count": "50"}, timeout=45
+            )
+            arows = (
+                body
+                if isinstance(body, list)
+                else next((v for v in body.values() if isinstance(v, list)), [])
+            )
+            readback["actions_rows"] = len(arows)
+            mine = [a for a in arows if marker in json.dumps(a, default=str)]
+            readback["note_found_in_actions"] = bool(mine)
+            if mine:
+                readback["note_row"] = {
+                    k: mine[0].get(k)
+                    for k in ("id", "ticket_id", "outcome", "outcomeid", "who", "note")
+                }
+        except Exception as exc:  # noqa: BLE001
+            readback["actions_error"] = str(exc)[:160]
+        if not readback.get("note_found_in_actions"):
+            try:
+                tdoc = await client.request("GET", f"/Tickets/{tid}", timeout=30)
+                readback["note_found_in_ticket_doc"] = marker in json.dumps(tdoc, default=str)
+            except Exception as exc:  # noqa: BLE001
+                readback["ticket_error"] = str(exc)[:160]
+        out["note_readback"] = readback
     if tid is not None:
         try:
             await client.request("DELETE", f"/Tickets/{tid}", timeout=30)

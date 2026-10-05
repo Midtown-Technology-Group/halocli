@@ -820,26 +820,27 @@ chain without them dies with *"Next step not found"*. Signature params
 become `input_variables` (annotations → data types, defaults → JSON
 values: `("a","b")` → `["a", "b"]`).
 
-Verified live (`bifrost_conversion_evidence.json` + the
-`_notmet` sibling — two self-cleaning applies covering **every arm of
-every guard**):
-- integration → method id wired into step2 (`bound_steps:[2]`,
-  `_test` accepted) → runbook **13 steps / 16 edges / all 9 edge names
-  persisted correctly**;
-- **met side** (default run): items-met→loop→limit-met→Success
-  runlog **2533 — status 2, 3.7s** (then-arm's loop-end **skips the
-  else arm**); twin runlog **2534 — status 2, 1.6s** (items-notmet →
-  `fallback` else-arm); native event trigger runlog **2537 — status 2**
-  (`--triggers` → lookup64 → binding → probe ticket);
-- **notmet side** (`--form limit=3`, `bifrost_conversion_evidence_notmet.json`):
-  `limit > 5` false → **`legacy` else-arm** runlog **2543 — status 2**;
-  twin runlog **2544 — status 2** with *both* guards false (items→
-  fallback, limit→legacy); trigger runlog **2547 — status 2**;
-- `--form` applies to the twin runbook too (blanked arrays on top);
-  `--apply` follows running rows to terminal status with an evolution
-  trace (a mid-run row reads `status:1` with an empty error — early
-  captures were just mid-flight); category resolves via lookup -4 at
-  apply (trial defines no groups → honest miss, `group_id -1`). Enum tables are pinned with
+Verified live — **three committed evidence files, one self-cleaning
+apply each, covering every proof set**:
+- `bifrost_conversion_evidence_met.json` (13 steps / 16 edges / 9
+  edge names): default run — items-met→loop→limit-met→Success
+  **2533 status 2, 3.7s** (loop-end skips the else arm), twin
+  **2534 status 2** (items-notmet → `fallback`), event trigger
+  **2537 status 2**;
+- `bifrost_conversion_evidence_notmet.json`: `--form limit=3` —
+  limit-notmet → `legacy` **2543 status 2**, twin **2544 status 2**
+  (both guards false), trigger **2547 status 2**;
+- `bifrost_conversion_evidence.json` (current,14 steps / 18 edges /
+  **11 edge names** incl. act18 Successful/Unsuccessful): the
+  ticket-writer run — trigger ticket → run **2552 status 2** →
+  **`note_readback.note_found_in_actions: true`** (real Internal Note
+  row on the ticket). Its manual formCollection fires (2548/2549)
+  stop at the note step with *"Failed result reached"* — correct:
+  `<<ticket^id>>` needs ticket context, which only the trigger path
+  provides (documented, not a defect);
+- every run: `_test` method call, category resolver (trial lookup -4
+  is empty → honest `group_id -1`), full cleanup (bindings, tickets,
+  both runbooks, methods, integration). Enum tables are pinned with
 provenance in `halocli.bifrost_convert` (decoded from the config SPA):
 method verbs `{0:GET, 1:POST, 2:PUT, 3:DELETE, 4:PATCH}` — deliberately
 non-sequential; authorizationtype `{0:None, 1:APIKey, 2:Bearer,
@@ -891,6 +892,27 @@ non-array truthiness stay flattened with a note. Same decoded pack
 confirms `steptype1=Condition, 2=Action, 3=End`, `aa6`'s label
 "Execute an Integration Method", and the grant/authz/start-type
 enums. Both comparison arms are live-proven (2533 met / 2543 notmet).
+
+**Ticket-writes (`--phase-bindings`, live-proven)**: Bifrost phases
+that write to Halo become **Halo API Action** steps (`aa8`, label
+"Halo API Action") — the SPA's `auto_action_type` catalog decoded from
+its message templates: `1` create ticket, `2` update ticket,
+**`3` add note**, `4-8` client/site/user CRUD. Bind a phase:
+
+```json
+{"post_note": {"kind": "halo_note", "outcome": "Internal Note",
+               "who": "Automation", "note": "<b>Converted by halocli</b> ..."}}
+```
+
+The step's message is a raw Halo API body with `<<ticket^id>>`
+interpolated unquoted (template style), edges act18
+Successful/Unsuccessful. **Ticket context is required**: fired from the
+trigger path the note lands — evidence: runlog **2552 status 2** plus
+`note_readback.note_found_in_actions: true` (row: outcome "Internal
+Note", who "Automation", our marker text) — while a bare formCollection
+fire correctly fails at the note step (no ticket). A workflow with
+`effects: integration.write halopsa` and no binding gets a
+`conversion_report.json` suggestion instead of a guessed write.
 
 Egress caveat (measured, not assumed): an `aa6` step routes only when
 its HTTP call actually answers — Halo's servers reached

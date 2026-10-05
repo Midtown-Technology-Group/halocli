@@ -77,6 +77,17 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   eventno3 binding + one API-created ticket -> runlog 2532 status2.
   Webhook-create ``events[]`` is a read-joined view (dropped on POST);
   Notification rows are the writable side.
+- halo_note binding (``{"kind": "halo_note", outcome, who, note}``) ->
+  Halo API Action step: auto_action8 (label "Halo API Action") +
+  auto_action_type3 (SPA message-template catalog:1 create ticket,
+  2 update, 3 add note, 4-8 client/site/user CRUD), message = raw Halo
+  API body with UNQUOTED ``<<ticket^id>>``, edges act18 Successful /
+  Unsuccessful. REQUIRES TICKET CONTEXT: trigger path proven (runlog
+  2552 status2 + note read back as an Action row with our marker);
+  ticket-less formCollection fires stop at the note step ("Failed
+  result reached") - correct behavior, not a defect. Unbound
+  halopsa-write effects get a conversion_report suggestion, never a
+  guessed write.
 
 Fidelity stance: the converter emits this executable graph (phases ->
 hops or method-bound API-call steps, detected loops -> iteration pairs,
@@ -430,6 +441,8 @@ class Phase:
     method_name: str | None = None  # unresolved binding -> sidecar
     in_loop: bool = False
     array_var: str | None = None  # loop target (input variable name)
+    # halo_note phases (bound Halo API Action, aa8/aat3 add-note):
+    halo_note: dict | None = None  # {outcome, who, note} payload spec
     # condition phases (array truthiness guards AND if/else comparisons):
     branch_span: int | None = None  # guarded (then-arm) raw-phase count
     else_span: int | None = None  # else-arm raw-phase count (None = no else)
@@ -587,7 +600,19 @@ def classify_phases(
                         )
                     )
                 elif bound is not None and label:
-                    if isinstance(bound, int):
+                    if isinstance(bound, dict):
+                        # explicit action binding: {"kind": "halo_note", ...}
+                        # -> Halo API Action aa8/aat3 (add note) step
+                        phases.append(
+                            Phase(
+                                "halo_note",
+                                label,
+                                halo_note=bound,
+                                in_loop=in_loop,
+                                array_var=array_var,
+                            )
+                        )
+                    elif isinstance(bound, int):
                         phases.append(
                             Phase(
                                 "api", label, method_id=bound, in_loop=in_loop, array_var=array_var
@@ -859,7 +884,8 @@ def build_runbook_steps(
     # phase's "Unsuccessful Response" edge); pure-hop graphs match the
     # matrix recipes [hop.., Success] exactly
     has_fail = any(
-        kind in ("plain", "body") and ph is not None and ph.kind == "api" for kind, ph in plan
+        kind in ("plain", "body") and ph is not None and ph.kind in ("api", "halo_note")
+        for kind, ph in plan
     )
     fail_id = success_id + 1 if has_fail else None
 
@@ -960,6 +986,40 @@ def build_runbook_steps(
                     "actions": [
                         edge(12, "Condition met", idx, next_id, 1),
                         edge(12, "Condition not met", idx, notmet, 2),
+                    ],
+                }
+            )
+            continue
+        if ph.kind == "halo_note":
+            # Halo API Action (aa8) + auto_action_type3 = add note; the
+            # message is a raw Halo API request body (SPA template for
+            # aat3), with <<ticket^id>> interpolated UNQUOTED like the
+            # working runbooks' payloads. Edges: act18 Successful /
+            # Unsuccessful (sem-table pair for aa8).
+            spec = ph.halo_note or {}
+            note_body = json.dumps(
+                {
+                    "ticket_id": "<<ticket^id>>",
+                    "outcome": spec.get("outcome") or "Internal Note",
+                    "who": spec.get("who") or "Automation",
+                    "hiddenfromuser": True,
+                    "note_html": spec.get("note") or "Converted from Bifrost workflow by halocli",
+                },
+                indent=2,
+            ).replace('"<<ticket^id>>"', "<<ticket^id>>")
+            steps.append(
+                {
+                    "step_id": idx,
+                    "name": ph.label[:200],
+                    "steptype": 2,
+                    "auto_action": 8,
+                    "auto_action_type": 3,
+                    "isstart": idx == 1,
+                    "allow_all_statuses": True,
+                    "message": note_body,
+                    "actions": [
+                        edge(18, "Successful", idx, next_id, 1),
+                        edge(18, "Unsuccessful", idx, fail_id or success_id, 2),
                     ],
                 }
             )
@@ -1151,6 +1211,20 @@ def convert_workflow(
         )
     if meta.get("effects"):
         notes.append(f"effects recorded, no Halo equivalent: {meta['effects']}")
+        effects = meta.get("effects") or []
+        writes_halo = any(
+            isinstance(e, dict)
+            and e.get("kind") == "integration.write"
+            and str(e.get("target", "")).lower() == "halopsa"
+            for e in effects
+        )
+        if writes_halo and not any(p.kind == "halo_note" for p in phases):
+            notes.append(
+                "this workflow writes to Halo but no phase is bound to a halo_note "
+                'action - bind one via --phase-bindings {"<phase>": {"kind": '
+                '"halo_note", "outcome": "...", "note": "..."}} to emit a '
+                "Halo API Action (aa8/aat3 add-note) step in ticket context"
+            )
     if meta.get("enforced_bounds"):
         notes.append(
             f"enforced_bounds recorded, no Halo equivalent (consider infinite_loop_threshold / "

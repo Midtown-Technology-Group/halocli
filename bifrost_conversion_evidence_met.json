@@ -2,26 +2,26 @@
   "tenant": "clidev.trial.usehalo.com",
   "applied": {
     "integration:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out8\\integration__bifrost-probe-sink.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out6\\integration__bifrost-probe-sink.json",
       "create": {
-        "id": 40
+        "id": 37
       },
       "verify": true,
       "methods": [
         {
-          "id": 78,
+          "id": 75,
           "name": "Instance Info GET",
           "bind_phase": "fetch_remote",
-          "test_response": "{'id': 78, 'guid': '60bbe76f-cfc0-4043-b2a5-3f23b2eb6d83', 'integration_id': 40, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
+          "test_response": "{'id': 75, 'guid': '2e5d1f11-9500-4ca4-beab-ab6d0733a2b0', 'integration_id': 37, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
         }
       ],
       "cleanup": "methods + integration deleted"
     },
     "methods:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out8\\methods__bifrost-probe-sink.json"
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out6\\methods__bifrost-probe-sink.json"
     },
     "runbook:sync_things": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out8\\runbook__sync_things.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out6\\runbook__sync_things.json",
       "_inputs": {
         "client": "",
         "limit": "10",
@@ -35,27 +35,27 @@
       },
       "shape_winner": "converted_public_active",
       "attempts": [
-        "converted_public_active: ok id=3700389b-67d8-4fff-9d10-6f70de0c91ed"
+        "converted_public_active: ok id=685f0abd-d3db-44c0-a556-74e0f7ed67aa"
       ],
-      "id": "3700389b-67d8-4fff-9d10-6f70de0c91ed",
+      "id": "685f0abd-d3db-44c0-a556-74e0f7ed67aa",
       "triggers": {
         "resolved": [
           {
             "eventno": 3,
             "name": "New Ticket Logged",
-            "binding_id": 27
+            "binding_id": 24
           }
         ],
         "unresolved": []
       },
       "trigger_binding_ids": [
-        27
+        24
       ],
       "verify": {
         "type": 1,
-        "steps": 14,
-        "expected_steps": 14,
-        "edges": 18,
+        "steps": 13,
+        "expected_steps": 13,
+        "edges": 16,
         "edge_names": [
           "Condition met",
           "Condition not met",
@@ -64,14 +64,11 @@
           "Iteration finished",
           "Next iteration",
           "Sleep Finished",
-          "Successful",
           "Successful Response (200 - 299)",
-          "Unsuccessful",
           "Unsuccessful Response"
         ],
         "bound_steps": [
-          2,
-          12
+          2
         ],
         "input_variables": 3,
         "start_type": 1,
@@ -96,34 +93,34 @@
         ]
       },
       "runlog": {
-        "id": 2548,
-        "status": 1,
-        "error": "Failed result reached. Last step=14",
-        "steps_executed": 7,
-        "runbook_step": 1,
+        "id": 2533,
+        "status": 2,
+        "error": "",
+        "steps_executed": 6,
+        "runbook_step": 12,
         "runbook_step_name": null,
         "iteration": 0,
-        "execution_time": 3904,
-        "timestamp": "2026-10-05T23:27:01.087"
+        "execution_time": 3702,
+        "timestamp": "2026-10-05T23:07:42.94"
       },
       "evolution": [
         {
           "t_s": 2,
-          "status": 1,
-          "step": 1,
+          "status": 2,
+          "step": 12,
           "step_name": null,
-          "exec": 7,
-          "error": "Failed result reached. Last step=14"
+          "exec": 6,
+          "error": ""
         }
       ],
       "branch_create": {
-        "id": "f640456b-7a0d-4b6f-854e-cf094df806d3",
+        "id": "ac8c3638-cce4-41c5-aa8b-dd8d9aa22c2a",
         "shape_winner": "converted_public_active",
         "verify": {
           "type": 1,
-          "steps": 14,
-          "expected_steps": 14,
-          "edges": 18,
+          "steps": 13,
+          "expected_steps": 13,
+          "edges": 16,
           "edge_names": [
             "Condition met",
             "Condition not met",
@@ -132,13 +129,10 @@
             "Iteration finished",
             "Next iteration",
             "Sleep Finished",
-            "Successful",
             "Successful Response (200 - 299)",
-            "Unsuccessful",
             "Unsuccessful Response"
           ],
           "bound_steps": [
-            12,
             2
           ],
           "input_variables": 3,
@@ -152,7 +146,7 @@
           "note": "no matching group; runs default to group_id -1"
         }
       },
-      "branch_runbook_id": "f640456b-7a0d-4b6f-854e-cf094df806d3",
+      "branch_runbook_id": "ac8c3638-cce4-41c5-aa8b-dd8d9aa22c2a",
       "branch_fire_notmet": {
         "trigger_fire": {
           "ok": true,
@@ -173,48 +167,36 @@
           ]
         },
         "runlog": {
-          "id": 2549,
-          "status": 1,
-          "error": "Failed result reached. Last step=14",
-          "steps_executed": 7,
-          "runbook_step": 1,
+          "id": 2534,
+          "status": 2,
+          "error": "",
+          "steps_executed": 6,
+          "runbook_step": 12,
           "runbook_step_name": null,
           "iteration": 0,
-          "execution_time": 1511,
-          "timestamp": "2026-10-05T23:27:06.363"
+          "execution_time": 1586,
+          "timestamp": "2026-10-05T23:07:47.917"
         },
         "evolution": [
           {
             "t_s": 2,
-            "status": 1,
-            "step": 1,
+            "status": 2,
+            "step": 12,
             "step_name": null,
-            "exec": 7,
-            "error": "Failed result reached. Last step=14"
+            "exec": 6,
+            "error": ""
           }
         ]
       },
       "trigger_proof": {
-        "ticket": 2930,
+        "ticket": 2927,
         "runlog": {
-          "id": 2552,
+          "id": 2537,
           "status": 2,
           "error": "",
-          "steps_executed": 7,
-          "runbook_step": 13,
-          "execution_time": 4633
-        },
-        "note_readback": {
-          "actions_rows": 3,
-          "note_found_in_actions": true,
-          "note_row": {
-            "id": 3,
-            "ticket_id": 2930,
-            "outcome": "Internal Note",
-            "outcomeid": null,
-            "who": "Automation",
-            "note": "Converted by halocli - this note was written by a Halo API Action step emitted from a Bifrost workflow phase."
-          }
+          "steps_executed": 6,
+          "runbook_step": 12,
+          "execution_time": 4523
         },
         "ticket_cleanup": "deleted"
       },

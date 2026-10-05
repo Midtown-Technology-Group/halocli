@@ -40,6 +40,10 @@ async def legacy_step(client) -> dict:
     """limit > 5 else-arm callee."""
 
 
+async def post_note(client) -> dict:
+    """Halo-write phase callee: bind to a halo_note action (aa8/aat3)."""
+
+
 @workflow(
     name="Bifrost Demo: Sync Things",
     description="Wait, call the probe sink once, then iterate the input list.",
@@ -60,4 +64,5 @@ async def sync_things(client, limit: int = 10, items: tuple[str, ...] = ("a", "b
         await notify_step(client)
     else:
         await legacy_step(client)
+    await post_note(client)
     return {"limit": limit}
