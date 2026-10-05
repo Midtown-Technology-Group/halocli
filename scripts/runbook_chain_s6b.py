@@ -11,7 +11,6 @@ import argparse
 import asyncio
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -202,7 +201,7 @@ async def main() -> int:
         # find the row by id scan (fresh rows appear immediately after fire)
         found = None
         for i in range(10):
-            time.sleep(2)
+            await asyncio.sleep(2)
             body = await client.request("GET", "/Automation", params={"count": "50"}, timeout=45)
             rows = (
                 body

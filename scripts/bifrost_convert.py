@@ -41,7 +41,6 @@ import argparse
 import asyncio
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +60,18 @@ from halocli.bifrost_convert import (  # noqa: E402
 PROBE = "haloclidevprobe"
 
 
+def _safe_path(p: str | Path) -> Path:
+    """Canonicalize a CLI-supplied path before touching the disk (S8707).
+
+    Operator tool: paths are the point, but every read/write resolves
+    through here so ``..``/symlink tricks land on a concrete absolute
+    path instead of a relative traversal.
+    """
+    return Path(p).expanduser().resolve()
+
+
 def _load_structured(path: Path) -> Any:
+    path = _safe_path(path)
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() in (".yaml", ".yml"):
         return yaml.safe_load(text)
@@ -96,7 +106,7 @@ def _workflow_args(args: argparse.Namespace) -> tuple[dict, str | None, str | No
     function = args.function
 
     if args.workflow_file:
-        source = Path(args.workflow_file).read_text(encoding="utf-8")
+        source = _safe_path(args.workflow_file).read_text(encoding="utf-8")
     if args.workflows_yaml and (args.workflow or args.function):
         doc = _load_structured(Path(args.workflows_yaml))
         for e in (doc or {}).get("workflows", {}).values():
@@ -122,7 +132,7 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
 
     phase_bindings: dict[str, int | str] = {}
     if args.phase_bindings:
-        phase_bindings = json.loads(Path(args.phase_bindings).read_text(encoding="utf-8"))
+        phase_bindings = json.loads(_safe_path(args.phase_bindings).read_text(encoding="utf-8"))
     # integrations
     for entry in _integrations_entries(args):
         conv = convert_integration(entry)
@@ -140,10 +150,10 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
         str(all_entries[0].get("name")) if all_entries else None
     )
     if args.methods:
-        doc = _load_structured(Path(args.methods))
+        doc = _load_structured(_safe_path(args.methods))
         methods = doc.get("methods", doc) if isinstance(doc, dict) else doc
     elif args.extract_module:
-        source = Path(args.extract_module).read_text(encoding="utf-8")
+        source = _safe_path(args.extract_module).read_text(encoding="utf-8")
         methods = extract_http_methods(source)
         report["methods"].append(
             {
@@ -324,7 +334,9 @@ async def apply_outputs(
             except Exception as exc:  # noqa: BLE001
                 record.setdefault("cleanup_errors", []).append(str(exc)[:200])
 
-    evidence_path.write_text(json.dumps(ev, indent=2, default=str) + "\n", encoding="utf-8")
+    _safe_path(evidence_path).write_text(
+        json.dumps(ev, indent=2, default=str) + "\n", encoding="utf-8"
+    )
     return ev
 
 
@@ -482,7 +494,7 @@ async def _fire_runbook(
     # evicts completed rows under load - observed on the trial)
     found: dict | None = None
     for _ in range(8):
-        time.sleep(2)
+        await asyncio.sleep(2)
         rows = [r for r in await runlog_list() if r.get("id") not in before]
         mine = [r for r in rows if r.get("runbook_id") == wid]
         if mine:
@@ -563,7 +575,7 @@ def main() -> int:
         k, v = pair.split("=", 1)
         form_overrides[k] = v
 
-    out_dir = Path(args.out)
+    out_dir = _safe_path(args.out)
     built = build_outputs(args, out_dir)
     print(json.dumps({"files": built["files"]}, indent=2))
     print(json.dumps(built["report"], indent=2))

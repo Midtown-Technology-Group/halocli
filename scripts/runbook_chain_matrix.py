@@ -22,7 +22,6 @@ import argparse
 import asyncio
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -191,7 +190,7 @@ async def main() -> int:
 
             rows: list[dict] = []
             for _ in range(8):
-                time.sleep(2)
+                await asyncio.sleep(2)
                 rows = [
                     r
                     for r in await runlog()
