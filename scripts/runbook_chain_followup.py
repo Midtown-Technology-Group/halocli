@@ -17,7 +17,6 @@ import argparse
 import asyncio
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -159,7 +158,7 @@ async def main() -> int:
             rec["fire"] = str(exc)[:250]
         found = []
         for _ in range(8):
-            time.sleep(2)
+            await asyncio.sleep(2)
             body = await client.request("GET", "/Automation", params={"count": "40"}, timeout=45)
             rows2 = (
                 body
