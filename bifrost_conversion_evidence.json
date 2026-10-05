@@ -1,37 +1,73 @@
 {
   "tenant": "clidev.trial.usehalo.com",
   "applied": {
-    "integration:NinjaOne": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out\\integration__ninjaone.json",
+    "integration:Bifrost Probe Sink": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out2\\integration__bifrost-probe-sink.json",
       "create": {
-        "id": 20
+        "id": 25
       },
       "verify": true,
-      "cleanup": "integration deleted"
+      "methods": [
+        {
+          "id": 63,
+          "name": "Instance Info GET",
+          "bind_phase": "fetch_remote"
+        }
+      ],
+      "cleanup": "methods + integration deleted"
     },
-    "runbook:inspect_voicemail_customer": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out\\runbook__inspect_voicemail_customer.json",
+    "methods:Bifrost Probe Sink": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out2\\methods__bifrost-probe-sink.json"
+    },
+    "runbook:sync_things": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out2\\runbook__sync_things.json",
+      "_inputs": {
+        "client": "",
+        "limit": "10",
+        "items": "[\"a\", \"b\"]"
+      },
       "shape_winner": "converted_public_active",
       "attempts": [
-        "converted_public_active: ok id=2af5115e-ecef-4d54-b4ff-6c98fe2c9cee"
+        "converted_public_active: ok id=8040aeed-b457-454f-97ed-567378c95b30"
       ],
+      "id": "8040aeed-b457-454f-97ed-567378c95b30",
       "verify": {
         "type": 1,
-        "steps": 2,
-        "expected_steps": 2,
-        "input_variables": 1,
+        "steps": 7,
+        "expected_steps": 7,
+        "edges": 8,
+        "bound_steps": [
+          2
+        ],
+        "input_variables": 3,
         "start_type": 1
       },
       "trigger_fire": {
         "ok": true,
         "response": "None",
-        "runlog_row": {
-          "id": 2468,
-          "runbook_id": "2af5115e-ecef-4d54-b4ff-6c98fe2c9cee",
-          "runbook_name": "haloclidevprobe-inspect_voicemail_customer",
-          "status": 2,
-          "error": ""
-        }
+        "formCollection": [
+          {
+            "Key": "client",
+            "Value": ""
+          },
+          {
+            "Key": "limit",
+            "Value": "10"
+          },
+          {
+            "Key": "items",
+            "Value": "[\"a\", \"b\"]"
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2480,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 6,
+        "runbook_step_name": "Success",
+        "iteration": 0
       },
       "cleanup": "deleted (clean)"
     }
