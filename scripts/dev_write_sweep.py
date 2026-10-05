@@ -100,6 +100,7 @@ FK_MAP: dict[str, str] = {
     "status_id": "statuses",
     "priority_id": "priorities",
     "area_id": "ticket-areas",
+    "integration_id": "custom-integrations",
 }
 
 # Config masters whose full sample shape is the safest payload.
@@ -334,6 +335,17 @@ class Sweeper:
                     out.setdefault(key, event)
         if resource_name == "custom-tables":
             out.setdefault("name", alnum_marker("name"))
+        if resource_name == "webhooks":
+            # runbook shape: the default type=0 demands a valid url ("Please
+            # enter a valid URL"), type=1 (runbook) needs neither url nor
+            # _is_new (probe D2, 2026-10-05) - sweep the runbook form
+            out.setdefault("type", 1)
+            out.setdefault("steps", [])
+        if resource_name == "custom-integration-methods":
+            # 'method' is an int enum - value_for() would synthesize a
+            # rejected string ("Could not convert"); integration_id resolves
+            # through FK_MAP -> the integration this run created (cascade)
+            out.setdefault("method", 1)
         return out
 
     async def build(self, resource, update: bool) -> dict[str, Any]:

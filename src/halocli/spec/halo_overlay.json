@@ -2719,7 +2719,7 @@
     {
       "target": "$.paths['/CustomIntegration'].post.description",
       "description": "curated summary for a surfaced operation",
-      "update": "One-element array of integration definitions; id present = update. Proven minimal create shape: [{name}] (trial round-trip2026-10-05). Runbook definitions are separate - they have no API endpoint (UI Import-from-JSON)."
+      "update": "One-element array of integration definitions; id present = update. Proven minimal create shape: [{name}] (trial round-trip2026-10-05). Runbook definitions are separate records: /Webhook with type=1 (POST the document with steps; proven2026-10-05)."
     },
     {
       "target": "$.paths['/CustomIntegration/{id}'].delete.summary",
@@ -2750,6 +2750,26 @@
       "target": "$.paths['/CustomIntegrationMethod/{id}'].delete.description",
       "description": "curated summary for a surfaced operation",
       "update": "Removes the method. Delete-verified on the trial (2026-10-05)."
+    },
+    {
+      "target": "$.paths['/Webhook'].post.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Create or update a webhook or integration runbook"
+    },
+    {
+      "target": "$.paths['/Webhook'].post.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "One-element array of documents; id present = update (fields merge - a partial update leaves steps intact, proven2026-10-05). type:1 = integration runbook (the definition lives here: steps with actions, runbook_variable_mappings, flow_chart_json); type:0 = ordinary webhook and requires a valid url. The UI's Import-from-JSON posts the sanitized document with _is_new:true (step/action ids nulled). Full CUD round-trip proven on the trial: scripts/runbook_build_probe.py."
+    },
+    {
+      "target": "$.paths['/Webhook/{id}'].delete.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "Delete a webhook or integration runbook"
+    },
+    {
+      "target": "$.paths['/Webhook/{id}'].delete.description",
+      "description": "curated summary for a surfaced operation",
+      "update": "Removes the document with its steps. Delete-verified on the trial (2026-10-05) for both a minimal probe and an imported 4-step runbook."
     }
   ]
 }

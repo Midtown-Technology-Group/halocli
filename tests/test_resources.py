@@ -44,6 +44,9 @@ WRITE_RESOURCES = (
     "workflows",
     "custom-integrations",
     "custom-integration-methods",
+    # runbook promotion (2026-10-05): /Webhook type=1 IS the runbook - full
+    # CUD proven by scripts/runbook_build_probe.py
+    "webhooks",
     "timesheet-events",
     # Writes-batch-1 (1.7.0): config/reference entities with spec-verified
     # POST + DELETE /{id}. Never fired at the tenant (verification: spec).
@@ -143,7 +146,7 @@ def test_registry_still_constructs_all_resources() -> None:
 
 def test_write_metadata_present_for_write_enabled_resources() -> None:
     """Every WRITE_RESOURCES entry is full-CUD with preview starting at id."""
-    assert len(WRITE_RESOURCES) == 67
+    assert len(WRITE_RESOURCES) == 68
     for name in WRITE_RESOURCES:
         resource = get_resource(name)
         assert resource.supports_write, name
