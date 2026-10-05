@@ -32,6 +32,14 @@ async def fallback(client) -> dict:
     """Else-arm callee: runs when the guard is false."""
 
 
+async def notify_step(client) -> dict:
+    """limit > 5 then-arm callee."""
+
+
+async def legacy_step(client) -> dict:
+    """limit > 5 else-arm callee."""
+
+
 @workflow(
     name="Bifrost Demo: Sync Things",
     description="Wait, call the probe sink once, then iterate the input list.",
@@ -48,4 +56,8 @@ async def sync_things(client, limit: int = 10, items: tuple[str, ...] = ("a", "b
             await process_one(item)
     else:
         await fallback(client)
+    if limit > 5:
+        await notify_step(client)
+    else:
+        await legacy_step(client)
     return {"limit": limit}

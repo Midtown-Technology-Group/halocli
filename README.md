@@ -820,26 +820,23 @@ chain without them dies with *"Next step not found"*. Signature params
 become `input_variables` (annotations → data types, defaults → JSON
 values: `("a","b")` → `["a", "b"]`).
 
-Verified live (`bifrost_conversion_evidence.json`, self-cleaning
-three-phase apply — create → fire → cleanup): the demo workflow now
-exercises **every primitive, every branch arm, and native event
-triggering**, in one run:
+Verified live (`bifrost_conversion_evidence.json` + the
+`_notmet` sibling — two self-cleaning applies covering **every arm of
+every guard**):
 - integration → method id wired into step2 (`bound_steps:[2]`,
-  `_test` accepted) → runbook **10 steps / 12 edges / all 9 edge names
-  persisted correctly** (`edge_names` in verify);
-- **met leg** (items `["a","b"]`): runlog **2528 — status 2, step
-  "Success", 3.7s** (loop ran: the two 1s body sleeps show in
-  `execution_time`, and the then-arm's loop-end **skips the else
-  arm** to Success);
-- **notmet leg** (items `[]`, fresh runbook): runlog **2529 — status 2,
-  step "Success", 1.6s** — falls into the **`fallback` else-arm**; the
-  timing contrast (3.7s vs 1.6s) is the per-element
-  iteration-multiplicity proof;
-- **native event trigger**: `--triggers "New Ticket Logged"` resolved
-  eventno3 via lookup64 → `POST /Notification` binding (guid null) →
-  one probe ticket → **runlog 2532 — status 2, step "Success"** (the
-  Bifrost-subscriber loop, cut over to Halo-native triggering);
-- `--apply` follows running rows to terminal status with an evolution
+  `_test` accepted) → runbook **13 steps / 16 edges / all 9 edge names
+  persisted correctly**;
+- **met side** (default run): items-met→loop→limit-met→Success
+  runlog **2533 — status 2, 3.7s** (then-arm's loop-end **skips the
+  else arm**); twin runlog **2534 — status 2, 1.6s** (items-notmet →
+  `fallback` else-arm); native event trigger runlog **2537 — status 2**
+  (`--triggers` → lookup64 → binding → probe ticket);
+- **notmet side** (`--form limit=3`, `bifrost_conversion_evidence_notmet.json`):
+  `limit > 5` false → **`legacy` else-arm** runlog **2543 — status 2**;
+  twin runlog **2544 — status 2** with *both* guards false (items→
+  fallback, limit→legacy); trigger runlog **2547 — status 2**;
+- `--form` applies to the twin runbook too (blanked arrays on top);
+  `--apply` follows running rows to terminal status with an evolution
   trace (a mid-run row reads `status:1` with an empty error — early
   captures were just mid-flight); category resolves via lookup -4 at
   apply (trial defines no groups → honest miss, `group_id -1`). Enum tables are pinned with
@@ -882,6 +879,19 @@ Webhook create is a **read-joined view** (silently dropped on POST) —
 Notification rows are the writable side. Proof: binding + one
 API-created ticket → runlog **2532, status 2**.
 
+**Comparison guards translate too** (`if limit > 5:` → condition step
+with the decoded operator table): criteria `type` ids come from
+`GET /Languages/1`'s label pack — `{0: Is equal to, 1: Is not equal
+to, 2: Contains, 3: Does not contain, 5: Greater than, 6: >=, 7: <,
+8: <=, 29: Has a value, 30: Does not have a value}` — with the value
+in `value_int`/`value_float`/`value_string` by annotation type. Only
+exact-semantics shapes map (literal right-hand side, int/float/str
+params); comparisons against other names, bool guards, and bare
+non-array truthiness stay flattened with a note. Same decoded pack
+confirms `steptype1=Condition, 2=Action, 3=End`, `aa6`'s label
+"Execute an Integration Method", and the grant/authz/start-type
+enums. Both comparison arms are live-proven (2533 met / 2543 notmet).
+
 Egress caveat (measured, not assumed): an `aa6` step routes only when
 its HTTP call actually answers — Halo's servers reached
 `/api/InstanceInfo` (status2) but not `example.com` ("Next step not
@@ -889,11 +899,13 @@ found"), so point demo integrations at endpoints your Halo instance can
 reach.
 
 Honesty notes (what does **not** transfer): the Python logic itself —
-**if/else guards on list/tuple params translate to real Halo condition
-steps with BOTH arms fire-proven** (met → guarded body, notmet → else
-arm; a then-arm ending in a loop skips the else from its `iter_end`),
-but guards on non-array values still flatten to the linear success path
-(noted per conversion; their criteria shapes are not yet mapped);
+**if/else guards on list/tuple params AND literal comparisons on
+int/float/str params translate to real Halo condition steps with every
+arm live-proven** (met → guarded body, notmet → else arm; a then-arm
+ending in a loop skips the else from its `iter_end`), but comparisons
+against other variables, bool/bare non-array truthiness, and guards on
+untyped params still flatten to the linear success path (noted per
+conversion);
 `effects`/`enforced_bounds`/secrets become
 `conversion_report.json` notes (Halo has no field: secrets → header /
 certificate config in the UI); category → `group_id` needs the tenant

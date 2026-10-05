@@ -96,6 +96,46 @@ from dataclasses import dataclass, field
 
 # --- enums (provenance above) -------------------------------------------
 
+# Criteria operators - decoded from GET /Languages/1 label pack
+# (agentweb_<id> keys; ids from the SPA's getCriteriaTypeText switch,
+# labels from the pack,2026-10-06):0 Is equal to,1 Is not equal to,
+# 2 Contains,3 Does not contain,5 Greater than,6 Greater than or equal
+# to,7 Less than,8 Less than or equal to,29 Has a value,30 Does not
+# have a value,-10 To any value. type5 "Greater than" with
+# value_int:0 on an Array variable IS Halo's has-elements idiom (the
+# shape two working trial runbooks use). Other decoded labels from the
+# same pack: steptype1=Condition,2=Action,3=End (SPA
+# getChatFlowStepTypeDisplay ids5268/5269/455); aa6 label5635="Execute
+# an Integration Method" (confirms the method-binding primitive);
+# start_type0="Can only be started from Halo" (5651),1="...and from a
+# public endpoint" (5652); grant labels5577-5580 confirm the bu-freeze
+# mapping; method authorizationtype -1="Inherit from integration
+# settings",0="None".
+CRITERIA_TYPE: dict[str, int] = {
+    "eq": 0,  # Is equal to
+    "ne": 1,  # Is not equal to
+    "contains": 2,
+    "not_contains": 3,
+    "gt": 5,  # Greater than (Array + value_int0 = has elements)
+    "ge": 6,  # Greater than or equal to
+    "lt": 7,  # Less than
+    "le": 8,  # Less than or equal to
+    "has_value": 29,
+    "no_value": 30,
+}
+
+# Python compare operator -> criteria key (only exact-semantics maps;
+# bare truthiness on non-arrays stays flattened + noted)
+_COMPARE_OPS: dict[type, str] = {
+    ast.Gt: "gt",
+    ast.GtE: "ge",
+    ast.Lt: "lt",
+    ast.LtE: "le",
+    ast.Eq: "eq",
+    ast.NotEq: "ne",
+}
+_COMPARE_SYMBOLS = {"gt": ">", "ge": ">=", "lt": "<", "le": "<=", "eq": "==", "ne": "!="}
+
 METHOD_VERB: dict[str, int] = {
     "GET": 0,
     "POST": 1,
@@ -390,11 +430,11 @@ class Phase:
     method_name: str | None = None  # unresolved binding -> sidecar
     in_loop: bool = False
     array_var: str | None = None  # loop target (input variable name)
-    # condition phases (else-less `if <array param>:` guards AND
-    # if/else where both arms carry awaits):
+    # condition phases (array truthiness guards AND if/else comparisons):
     branch_span: int | None = None  # guarded (then-arm) raw-phase count
     else_span: int | None = None  # else-arm raw-phase count (None = no else)
     notmet_target: int | None = None  # plan-space step id (build side)
+    criterion_spec: dict | None = None  # typed comparison criteria (None = array has-elements)
 
 
 def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
@@ -496,8 +536,10 @@ def classify_phases(
     bindings = phase_bindings or {}
     phases: list[Phase] = []
 
-    # list/tuple-annotated params -> the only guards criteria cover (v1)
+    # list/tuple-annotated params -> bare-truthiness guards; all annotated
+    # params -> typed comparison guards (int/float/str/bool)
     array_params: set[str] = set()
+    param_types: dict[str, str] = {}
     all_args = [*func.args.posonlyargs, *func.args.args, *func.args.kwonlyargs]
     for a in all_args:
         ann = a.annotation
@@ -510,8 +552,13 @@ def classify_phases(
         if isinstance(ann, ast.Subscript) and isinstance(ann.value, ast.Name):
             if ann.value.id in ("list", "tuple", "set"):
                 array_params.add(a.arg)
-        elif isinstance(ann, ast.Name) and ann.id in ("list", "tuple", "set"):
-            array_params.add(a.arg)
+                param_types[a.arg] = "array"
+        elif isinstance(ann, ast.Name):
+            if ann.id in ("list", "tuple", "set"):
+                array_params.add(a.arg)
+                param_types[a.arg] = "array"
+            elif ann.id.lower() in ("int", "float", "str", "bool"):
+                param_types[a.arg] = ann.id.lower()
 
     def walk(node: ast.AST, in_loop: bool, array_var: str | None) -> None:
         if isinstance(node, (ast.For, ast.AsyncFor)):
@@ -563,14 +610,50 @@ def classify_phases(
                 continue
             walk(child, in_loop, array_var)
 
+    def _guard_spec(test: ast.expr) -> dict | None:
+        """`<param> <op> <constant>` on int/float/str params -> criteria spec.
+
+        Only exact-semantics maps: one comparison, signature param on the
+        left, literal constant on the right, types compatible (int/int,
+        float/int, float/float, str/str). Everything else stays flat.
+        """
+        if not isinstance(test, ast.Compare) or len(test.ops) != 1 or len(test.comparators) != 1:
+            return None
+        op = _COMPARE_OPS.get(type(test.ops[0]))
+        left, right = test.left, test.comparators[0]
+        if op is None or not isinstance(left, ast.Name):
+            return None
+        ptype = param_types.get(left.id)
+        if ptype in (None, "array", "bool"):
+            return None
+        if not isinstance(right, ast.Constant) or isinstance(right.value, bool):
+            return None
+        value = right.value
+        if ptype == "int" and not isinstance(value, int):
+            return None
+        if ptype == "float" and not isinstance(value, (int, float)):
+            return None
+        if ptype == "str" and not isinstance(value, str):
+            return None
+        return {"param": left.id, "op": op, "value": value, "value_type": ptype}
+
     for stmt in func.body:
-        if (
-            isinstance(stmt, ast.If)
-            and isinstance(stmt.test, ast.Name)
-            and stmt.test.id in array_params
-        ):
-            # array-param guard: translate whether or not there is an else
-            # (both arms must carry awaits to earn steps)
+        guard_label = None
+        spec: dict | None = None
+        array_var: str | None = None
+        if isinstance(stmt, ast.If):
+            if isinstance(stmt.test, ast.Name) and stmt.test.id in array_params:
+                guard_label = f"if {stmt.test.id}:"
+                array_var = stmt.test.id
+            else:
+                spec = _guard_spec(stmt.test)
+                if spec:
+                    guard_label = (
+                        f"if {spec['param']} {_COMPARE_SYMBOLS[spec['op']]} {spec['value']!r}:"
+                    )
+        if guard_label and isinstance(stmt, ast.If):
+            # guard with optional else: translate whether or not there is
+            # one (both arms must carry awaits to earn steps)
             start = len(phases)
             for sub in stmt.body:
                 walk(sub, False, None)
@@ -584,8 +667,9 @@ def classify_phases(
                     start,
                     Phase(
                         "condition",
-                        f"if {stmt.test.id}:",
-                        array_var=stmt.test.id,
+                        guard_label,
+                        array_var=array_var,
+                        criterion_spec=spec,
                         branch_span=then_span,
                         else_span=else_span if else_span else None,
                     ),
@@ -631,6 +715,51 @@ def _has_elements_criterion(var: str, step_id: int) -> dict:
         "flow_type": 0,
         "flow_seq": 0,
     }
+
+
+def _compare_criterion(spec: dict, step_id: int) -> dict:
+    """Typed comparison criterion (criteria operator table, /Languages/1).
+
+    ``{param, op, value, value_type}`` -> criterion with the operator id
+    from CRITERIA_TYPE (eq0/gt5/ge6/lt7/le8/ne1...) and the value in the
+    field matching the variable's type (value_int/value_float/
+    value_string), same base shape as the has-elements criterion.
+    """
+    value = spec["value"]
+    vt = spec.get("value_type") or "string"
+    crit: dict = {
+        "id": None,
+        "rule_id": 0,
+        "qualification_criteria_id": 0,
+        "fieldname": f"<<{spec['param']}>>",
+        "value_type": {"int": "int", "float": "float", "str": "string"}.get(vt, "string"),
+        "value_type_id": -1,
+        "value_int": 0,
+        "value_string": "",
+        "partialmatch": False,
+        "matchseparatedvalues": False,
+        "tablename": "runbookvariable",
+        "type": CRITERIA_TYPE[spec["op"]],
+        "flowsubdetails_criteria_id": 0,
+        "use": 0,
+        "chatprofile_id": None,
+        "chatprofile_flow_seq": step_id,
+        "timezonestring": "",
+        "match_after_start": False,
+        "match_after_target": False,
+        "eventrule_id": 0,
+        "flow_id": 0,
+        "flow_type": 0,
+        "flow_seq": 0,
+    }
+    if isinstance(value, str):
+        crit["value_string"] = value
+    elif isinstance(value, float):
+        crit["value_float"] = value
+        crit["value_int"] = int(value)
+    else:
+        crit["value_int"] = int(value)
+    return crit
 
 
 def build_runbook_steps(
@@ -823,7 +952,11 @@ def build_runbook_steps(
                     "auto_action": 6,
                     "isstart": idx == 1,
                     "allow_all_statuses": True,
-                    "step_conditions": [_has_elements_criterion(ph.array_var or "items", idx)],
+                    "step_conditions": [
+                        _compare_criterion(ph.criterion_spec, idx)
+                        if ph.criterion_spec
+                        else _has_elements_criterion(ph.array_var or "items", idx)
+                    ],
                     "actions": [
                         edge(12, "Condition met", idx, next_id, 1),
                         edge(12, "Condition not met", idx, notmet, 2),

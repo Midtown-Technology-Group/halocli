@@ -297,8 +297,10 @@ def test_signature_defaults_become_input_values() -> None:
 
 
 def test_branches_are_noted_not_faked() -> None:
+    # a guard that fits NO translation rule (call test, untyped param)
     src = API_SOURCE.replace(
-        "    return {}", "    if limit > 5:\n        await fetch_remote(client)\n    return {}"
+        "    return {}",
+        "    if is_ready(client):\n        await fetch_remote(client)\n    return {}",
     )
     conv = convert_workflow({}, src, "sync_things")
     assert any("branches" in n for n in conv.notes)
@@ -498,6 +500,67 @@ def test_event_name_matching_normalizes_catalog_forms() -> None:
     assert match_event(catalog, "ticket status changed")["id"] == 76
     # honest miss
     assert match_event(catalog, "No Such Event") is None
+
+
+COMPARE_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Compare")
+async def compare_guards(client, limit: int = 10, label: str = "x") -> dict:
+    if limit > 5:
+        await notify_step(client)
+    else:
+        await legacy_step(client)
+    if label == "x":
+        await fast_path(client)
+    return {}
+"""
+
+
+def test_comparison_guards_become_typed_criteria() -> None:
+    conv = convert_workflow({}, COMPARE_SOURCE, "compare_guards")
+    assert conv.ok
+    conds = [s for s in conv.payload["steps"] if s.get("steptype") == 1]
+    assert len(conds) == 2
+    # `limit > 5` -> criteria type5 (Greater than), value_int on int var
+    c1 = conds[0]["step_conditions"][0]
+    assert (c1["type"], c1["fieldname"], c1["value_type"], c1["value_int"]) == (
+        5,
+        "<<limit>>",
+        "int",
+        5,
+    )
+    assert conds[0]["name"] == "if limit > 5:"
+    # `label == "x"` -> type0 (Is equal to) with value_string
+    c2 = conds[1]["step_conditions"][0]
+    assert (c2["type"], c2["fieldname"], c2["value_type"], c2["value_string"]) == (
+        0,
+        "<<label>>",
+        "string",
+        "x",
+    )
+    # both conditions route with the approval_result rule + have else arms
+    for cond in conds[:1]:
+        met, notmet = cond["actions"]
+        assert (met["approval_result"], notmet["approval_result"]) == (1, 0)
+        # notmet -> the else arm (legacy_step), met -> then arm
+        legacy = next(s for s in conv.payload["steps"] if s["name"] == "legacy_step")
+        notify = next(s for s in conv.payload["steps"] if s["name"] == "notify_step")
+        assert met["end_step"] == notify["step_id"]
+        assert notmet["end_step"] == legacy["step_id"]
+
+
+def test_non_literal_comparison_stays_flat() -> None:
+    src = COMPARE_SOURCE.replace("if limit > 5:", "if limit > threshold:").replace(
+        "client, limit: int = 10", "client, limit: int = 10, threshold: int = 5"
+    )
+    conv = convert_workflow({}, src, "compare_guards")
+    assert conv.ok
+    # only the string equality translates; the Name-right comparison flattens
+    conds = [s for s in conv.payload["steps"] if s.get("steptype") == 1]
+    assert len(conds) == 1
+    assert any("flattened" in n or "did not fit" in n for n in conv.notes)
 
 
 def test_classify_does_not_descend_into_callee_args() -> None:

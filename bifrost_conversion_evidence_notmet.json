@@ -2,29 +2,29 @@
   "tenant": "clidev.trial.usehalo.com",
   "applied": {
     "integration:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out6\\integration__bifrost-probe-sink.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out7\\integration__bifrost-probe-sink.json",
       "create": {
-        "id": 37
+        "id": 39
       },
       "verify": true,
       "methods": [
         {
-          "id": 75,
+          "id": 77,
           "name": "Instance Info GET",
           "bind_phase": "fetch_remote",
-          "test_response": "{'id': 75, 'guid': '2e5d1f11-9500-4ca4-beab-ab6d0733a2b0', 'integration_id': 37, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
+          "test_response": "{'id': 77, 'guid': 'da2666f0-c307-4a81-aeb4-db864f8c9107', 'integration_id': 39, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
         }
       ],
       "cleanup": "methods + integration deleted"
     },
     "methods:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out6\\methods__bifrost-probe-sink.json"
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out7\\methods__bifrost-probe-sink.json"
     },
     "runbook:sync_things": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out6\\runbook__sync_things.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out7\\runbook__sync_things.json",
       "_inputs": {
         "client": "",
-        "limit": "10",
+        "limit": "3",
         "items": "[\"a\", \"b\"]"
       },
       "category_group": {
@@ -35,21 +35,21 @@
       },
       "shape_winner": "converted_public_active",
       "attempts": [
-        "converted_public_active: ok id=685f0abd-d3db-44c0-a556-74e0f7ed67aa"
+        "converted_public_active: ok id=8ab75696-0524-437b-8ba8-7316eab9916e"
       ],
-      "id": "685f0abd-d3db-44c0-a556-74e0f7ed67aa",
+      "id": "8ab75696-0524-437b-8ba8-7316eab9916e",
       "triggers": {
         "resolved": [
           {
             "eventno": 3,
             "name": "New Ticket Logged",
-            "binding_id": 24
+            "binding_id": 26
           }
         ],
         "unresolved": []
       },
       "trigger_binding_ids": [
-        24
+        26
       ],
       "verify": {
         "type": 1,
@@ -84,7 +84,7 @@
           },
           {
             "Key": "limit",
-            "Value": "10"
+            "Value": "3"
           },
           {
             "Key": "items",
@@ -93,15 +93,15 @@
         ]
       },
       "runlog": {
-        "id": 2533,
+        "id": 2543,
         "status": 2,
         "error": "",
         "steps_executed": 6,
         "runbook_step": 12,
         "runbook_step_name": null,
         "iteration": 0,
-        "execution_time": 3702,
-        "timestamp": "2026-10-05T23:07:42.94"
+        "execution_time": 3773,
+        "timestamp": "2026-10-05T23:09:25.543"
       },
       "evolution": [
         {
@@ -114,7 +114,7 @@
         }
       ],
       "branch_create": {
-        "id": "ac8c3638-cce4-41c5-aa8b-dd8d9aa22c2a",
+        "id": "986ee55b-17a0-4f4c-93e3-252f392a28cd",
         "shape_winner": "converted_public_active",
         "verify": {
           "type": 1,
@@ -146,7 +146,7 @@
           "note": "no matching group; runs default to group_id -1"
         }
       },
-      "branch_runbook_id": "ac8c3638-cce4-41c5-aa8b-dd8d9aa22c2a",
+      "branch_runbook_id": "986ee55b-17a0-4f4c-93e3-252f392a28cd",
       "branch_fire_notmet": {
         "trigger_fire": {
           "ok": true,
@@ -158,7 +158,7 @@
             },
             {
               "Key": "limit",
-              "Value": "10"
+              "Value": "3"
             },
             {
               "Key": "items",
@@ -167,15 +167,15 @@
           ]
         },
         "runlog": {
-          "id": 2534,
+          "id": 2544,
           "status": 2,
           "error": "",
           "steps_executed": 6,
           "runbook_step": 12,
           "runbook_step_name": null,
           "iteration": 0,
-          "execution_time": 1586,
-          "timestamp": "2026-10-05T23:07:47.917"
+          "execution_time": 1565,
+          "timestamp": "2026-10-05T23:09:31.37"
         },
         "evolution": [
           {
@@ -189,14 +189,14 @@
         ]
       },
       "trigger_proof": {
-        "ticket": 2927,
+        "ticket": 2929,
         "runlog": {
-          "id": 2537,
+          "id": 2547,
           "status": 2,
           "error": "",
           "steps_executed": 6,
           "runbook_step": 12,
-          "execution_time": 4523
+          "execution_time": 4122
         },
         "ticket_cleanup": "deleted"
       },
