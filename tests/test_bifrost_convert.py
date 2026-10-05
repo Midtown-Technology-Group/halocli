@@ -563,6 +563,58 @@ def test_non_literal_comparison_stays_flat() -> None:
     assert any("flattened" in n or "did not fit" in n for n in conv.notes)
 
 
+NOTE_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(
+    name="Demo: Note",
+    description="Writes a note.",
+    effects=[{"kind": "integration.write", "target": "halopsa"}],
+)
+async def writer(client, note_ref: str = "") -> dict:
+    await fetch_remote(client)
+    await post_note(client)
+    return {}
+"""
+
+
+def test_halo_note_binding_emits_aa8_aat3_step() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={
+            "post_note": {"kind": "halo_note", "outcome": "Internal Note", "note": "<b>hi</b>"}
+        },
+    )
+    assert conv.ok
+    steps = conv.payload["steps"]
+    note = next(s for s in steps if s.get("auto_action") == 8)
+    assert note["steptype"] == 2
+    assert note["auto_action_type"] == 3  # aat3 = add note (SPA catalog)
+    # raw Halo API body with UNQUOTED <<ticket^id>> (working-template style)
+    assert '"ticket_id": <<ticket^id>>' in note["message"]
+    assert '"outcome": "Internal Note"' in note["message"]
+    assert '"note_html": "<b>hi</b>"' in note["message"]
+    assert '"who": "Automation"' in note["message"]
+    # act18 edges with the approval_result rule + Fail terminal exists
+    assert [(a["action_type"], a["approval_result"]) for a in note["actions"]] == [
+        (18, 1),
+        (18, 0),
+    ]
+    assert any(s["name"] == "Fail" for s in steps)
+    # a halo-note graph still completes (Fail sits last when present)
+    assert any(s["name"] == "Success" for s in steps)
+    assert steps[-1]["name"] == "Fail"
+
+
+def test_halopsa_write_without_binding_gets_a_suggestion_note() -> None:
+    conv = convert_workflow({}, NOTE_SOURCE, "writer")  # no bindings
+    assert conv.ok
+    assert any("halo_note" in n and "phase-bindings" in n for n in conv.notes)
+
+
 def test_classify_does_not_descend_into_callee_args() -> None:
     phases = classify_phases  # imported for the guard below
     conv = convert_workflow({}, WORKFLOW_SOURCE, "inspect_voicemail_customer")

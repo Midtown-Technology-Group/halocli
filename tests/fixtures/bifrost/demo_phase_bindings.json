@@ -1,0 +1,8 @@
+{
+  "post_note": {
+    "kind": "halo_note",
+    "outcome": "Internal Note",
+    "who": "Automation",
+    "note": "<b>Converted by halocli</b> - this note was written by a Halo API Action step emitted from a Bifrost workflow phase."
+  }
+}
