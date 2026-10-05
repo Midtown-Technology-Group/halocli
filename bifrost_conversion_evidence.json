@@ -2,45 +2,64 @@
   "tenant": "clidev.trial.usehalo.com",
   "applied": {
     "integration:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out2\\integration__bifrost-probe-sink.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out3\\integration__bifrost-probe-sink.json",
       "create": {
-        "id": 25
+        "id": 29
       },
       "verify": true,
       "methods": [
         {
-          "id": 63,
+          "id": 67,
           "name": "Instance Info GET",
-          "bind_phase": "fetch_remote"
+          "bind_phase": "fetch_remote",
+          "test_response": "{'id': 67, 'guid': 'fc0e2569-5907-4c1d-91ea-23919fa86600', 'integration_id': 29, 'integration_baseurl': 'https://clidev.trial.usehalo.com', 'name': 'Instance Info GET', 'full_name': ': Instance Info GET', 'resource': 'https://clidev.trial.usehalo.com', 'path': '/api/InstanceInfo', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_param"
         }
       ],
       "cleanup": "methods + integration deleted"
     },
     "methods:Bifrost Probe Sink": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out2\\methods__bifrost-probe-sink.json"
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out3\\methods__bifrost-probe-sink.json"
     },
     "runbook:sync_things": {
-      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out2\\runbook__sync_things.json",
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out3\\runbook__sync_things.json",
       "_inputs": {
         "client": "",
         "limit": "10",
         "items": "[\"a\", \"b\"]"
       },
+      "category_group": {
+        "category": "Demos",
+        "group_id": null,
+        "lookup_-4_rows": 0,
+        "note": "no matching group; runs default to group_id -1"
+      },
       "shape_winner": "converted_public_active",
       "attempts": [
-        "converted_public_active: ok id=8040aeed-b457-454f-97ed-567378c95b30"
+        "converted_public_active: ok id=6ba063ca-0731-4326-9bad-8af19f2c7cce"
       ],
-      "id": "8040aeed-b457-454f-97ed-567378c95b30",
+      "id": "6ba063ca-0731-4326-9bad-8af19f2c7cce",
       "verify": {
         "type": 1,
-        "steps": 7,
-        "expected_steps": 7,
-        "edges": 8,
+        "steps": 9,
+        "expected_steps": 9,
+        "edges": 11,
+        "edge_names": [
+          "Condition met",
+          "Condition not met",
+          "Has elements",
+          "Has no elements",
+          "Iteration finished",
+          "Next iteration",
+          "Sleep Finished",
+          "Successful Response (200 - 299)",
+          "Unsuccessful Response"
+        ],
         "bound_steps": [
           2
         ],
         "input_variables": 3,
-        "start_type": 1
+        "start_type": 1,
+        "group_id": -1
       },
       "trigger_fire": {
         "ok": true,
@@ -61,13 +80,108 @@
         ]
       },
       "runlog": {
-        "id": 2480,
+        "id": 2493,
         "status": 2,
         "error": "",
-        "steps_executed": 3,
-        "runbook_step": 6,
-        "runbook_step_name": "Success",
-        "iteration": 0
+        "steps_executed": 4,
+        "runbook_step": 8,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 3796,
+        "timestamp": "2026-10-05T21:40:50.45"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 1,
+          "step": 5,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        },
+        {
+          "t_s": 4,
+          "status": 2,
+          "step": 8,
+          "step_name": null,
+          "exec": 4,
+          "error": ""
+        }
+      ],
+      "branch_create": {
+        "id": "58697d1c-ca6f-4eb5-8500-bde399a5491b",
+        "shape_winner": "converted_public_active",
+        "verify": {
+          "type": 1,
+          "steps": 9,
+          "expected_steps": 9,
+          "edges": 11,
+          "edge_names": [
+            "Condition met",
+            "Condition not met",
+            "Has elements",
+            "Has no elements",
+            "Iteration finished",
+            "Next iteration",
+            "Sleep Finished",
+            "Successful Response (200 - 299)",
+            "Unsuccessful Response"
+          ],
+          "bound_steps": [
+            2
+          ],
+          "input_variables": 3,
+          "start_type": 1,
+          "group_id": -1
+        },
+        "category_group": {
+          "category": "Demos",
+          "group_id": null,
+          "lookup_-4_rows": 0,
+          "note": "no matching group; runs default to group_id -1"
+        }
+      },
+      "branch_runbook_id": "58697d1c-ca6f-4eb5-8500-bde399a5491b",
+      "branch_fire_notmet": {
+        "trigger_fire": {
+          "ok": true,
+          "response": "None",
+          "formCollection": [
+            {
+              "Key": "client",
+              "Value": ""
+            },
+            {
+              "Key": "limit",
+              "Value": "10"
+            },
+            {
+              "Key": "items",
+              "Value": "[]"
+            }
+          ]
+        },
+        "runlog": {
+          "id": 2494,
+          "status": 2,
+          "error": "",
+          "steps_executed": 3,
+          "runbook_step": 8,
+          "runbook_step_name": null,
+          "iteration": 0,
+          "execution_time": 1563,
+          "timestamp": "2026-10-05T21:40:56.463"
+        },
+        "evolution": [
+          {
+            "t_s": 2,
+            "status": 2,
+            "step": 8,
+            "step_name": null,
+            "exec": 3,
+            "error": ""
+          }
+        ]
       },
       "cleanup": "deleted (clean)"
     }

@@ -802,7 +802,17 @@ method-call routing in `runbook_api_route_probe.py`)**:
 | `await asyncio.sleep(N)` / sequencing | `steptype2, aa21` (sleep, duration N) | act32 "Sleep Finished" |
 | bound API call (`bind_phase`) | `steptype2, aa6, aat:<method id>` | act17 "Successful Response (200 - 299)" → next, "Unsuccessful Response" → Fail |
 | `for x in p:` + await | `aa12`/`aa13` pair, array source in `message:"<<p>>"` | act22 "Has elements/Has no elements", act23 "finished/Next iteration" (`end_step:-98` loop-back) |
+| `if <array-param>:` (else-less guard) | `steptype1, aa6` + has-elements criteria (`tablename:runbookvariable`, `fieldname:"<<p>>"`, `type:5`) | act12 "Condition met" → guarded body, "Condition not met" → first step after the guard |
 | return / fall-through | `steptype3` terminals: Success (no aa) / Fail (aa1) | — |
+
+**`approval_result` drives edge names** (learned the hard way): the
+server *rewrites* `action_name` from `approval_result` on every save —
+the SPA pairs them explicitly (`1` = "Condition met"/"Successful
+Response (200 - 299)"/"Has elements", `0` = "not met"/"Unsuccessful
+Response"/"Has no elements"). Sending `1` on both edges collapsed every
+second edge to the positive name and silently broke **all** failure/
+false routing (sent-vs-persisted diffs on act12 *and* act17 proved it);
+the builder now emits `1`/`0` by seq.
 
 Steps are a directed graph: **the `actions` are the edges**
 (`{action_type, action_id:-type, start_step, end_step, seq, ...}`) — a
@@ -811,12 +821,21 @@ become `input_variables` (annotations → data types, defaults → JSON
 values: `("a","b")` → `["a", "b"]`).
 
 Verified live (`bifrost_conversion_evidence.json`, self-cleaning
-three-phase apply — create → fire → cleanup): the demo workflow ran the
-**entire graph** — integration id24 → method id62 wired into step2
-(`bound_steps:[2]`) → runbook 7 steps/8 edges → public fire → **runlog
-row 2480: status 2 completed, steps_executed 3, final step
-"Success"**. Earlier evidence: NinjaOne's OAuth mapping round-trip, the
-voicemail runbook, and runlog2468. Enum tables are pinned with
+three-phase apply — create → fire → cleanup): the demo workflow now
+exercises **every primitive including the branch**, twice:
+- integration id → method id wired into step2 (`bound_steps:[2]`,
+  `_test` accepted) → runbook 9 steps / **11 edges / all 9 edge names
+  persisted correctly** (`edge_names` in verify) →
+- **met leg** (items `["a","b"]`): runlog **2493 — status 2, step
+  "Success", 3.8s** (loop ran: the two 1s body sleeps show in
+  `execution_time`);
+- **notmet leg** (items `[]`, fresh runbook): runlog **2494 — status 2,
+  step "Success", 1.6s** — the timing contrast (3.8s vs 1.6s) is the
+  per-element iteration-multiplicity proof;
+- `--apply` follows running rows to terminal status with an evolution
+  trace (a mid-run row reads `status:1` with an empty error — early
+  captures were just mid-flight); category resolves via lookup -4 at
+  apply (trial defines no groups → honest miss, `group_id -1`). Enum tables are pinned with
 provenance in `halocli.bifrost_convert` (decoded from the config SPA):
 method verbs `{0:GET, 1:POST, 2:PUT, 3:DELETE, 4:PATCH}` — deliberately
 non-sequential; authorizationtype `{0:None, 1:APIKey, 2:Bearer,
@@ -847,16 +866,18 @@ found"), so point demo integrations at endpoints your Halo instance can
 reach.
 
 Honesty notes (what does **not** transfer): the Python logic itself —
-Bifrost validation/branches become the linear success path (branch
-*points* are noted, not faked; Halo conditions exist as
-`steptype1`+act12 and could take translated criteria in a later pass);
-`effects`/`enforced_bounds`/`category`/secrets become
+**else-less guards on list/tuple params now translate to real Halo
+condition steps (both legs fire-proven)**, but `else` branches and
+guards on non-array values still flatten to the linear success path
+(noted per conversion; Halo's `steptype1`+act12 could take their
+criteria in a later pass); `effects`/`enforced_bounds`/secrets become
 `conversion_report.json` notes (Halo has no field: secrets → header /
-certificate config in the UI, category → the `group_id` lookup -4);
-method extraction only sees literal or concat-prefixed paths (fully
-dynamic URLs need an explicit `--methods` list); loop completion is
-proven but the runlog `iteration` counter stayed0 on trial runs —
-per-element counts are not yet observable from the log.
+certificate config in the UI); category → `group_id` needs the tenant
+to define lookup -4 groups (none on the trial); method extraction only
+sees literal or concat-prefixed paths (fully dynamic URLs need an
+explicit `--methods` list); loop multiplicity is proven via
+`execution_time` contrasts but the runlog `iteration` counter stayed0
+on every trial run.
 
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
 rules/event-rules/automations (side effects above), `EmailRule`

@@ -56,6 +56,17 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
 - terminals: steptype3, isend:true, actions [] - auto_action absent =
   Success, auto_action1 = Fail. A failing step without a failure edge
   ends the run with status1.
+- condition (branch): steptype1, auto_action6, ``step_conditions`` =
+  has-elements criteria (tablename ``runbookvariable``, fieldname
+  ``<<var>>``, type5 - Azure Onboarding's GroupSelected? shape), edges
+  action12 "Condition met" -> guarded body / "Condition not met" ->
+  the first step after the guard. BOTH legs fire-proven on the trial
+  (met: runlog 2493 status2 3.8s through the loop; notmet: runlog
+  2494 status2 1.6s skipping it). CRITICAL: approval_result drives the
+  persisted action_name (1=positive, 0=negative) - the server rewrites
+  names from it on save, so every failure/false edge MUST send
+  approval_result:0 or it collapses to the positive name and never
+  routes (the same rule governs act17/act22/act23 second edges).
 
 Fidelity stance: the converter emits this executable graph (phases ->
 hops or method-bound API-call steps, detected loops -> iteration pairs,
@@ -362,13 +373,16 @@ def extract_http_methods(module_source: str) -> list[dict]:
 class Phase:
     """One classified top-level await of a Bifrost workflow function."""
 
-    kind: str  # "sleep" | "api" | "hop"
+    kind: str  # "sleep" | "api" | "hop" | "condition"
     label: str
     duration: int | None = None
     method_id: int | None = None
     method_name: str | None = None  # unresolved binding -> sidecar
     in_loop: bool = False
     array_var: str | None = None  # loop target (input variable name)
+    # condition phases (else-less `if <array param>:` guards):
+    branch_span: int | None = None  # guarded raw-phase count (classify side)
+    notmet_target: int | None = None  # plan-space step id (build side)
 
 
 def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
@@ -458,10 +472,34 @@ def classify_phases(
       str method name -> sidecar for the apply probe to resolve)
     - awaits inside a top-level ``for`` -> loop body (iteration pair
       around them, array var = the iterated name when it is a parameter)
+    - an else-less top-level ``if <array param>:`` whose body carries
+      awaits -> a Halo condition step (steptype1, criteria on
+      ``<<param>>``; translated only for list/tuple-annotated params -
+      the shape proven by two working trial runbooks)
     - everything else                   -> neutral hop (sleep0)
+
+    Branches that do not fit (else branches, non-array guards) keep the
+    linear flatten + conversion note.
     """
     bindings = phase_bindings or {}
     phases: list[Phase] = []
+
+    # list/tuple-annotated params -> the only guards criteria cover (v1)
+    array_params: set[str] = set()
+    all_args = [*func.args.posonlyargs, *func.args.args, *func.args.kwonlyargs]
+    for a in all_args:
+        ann = a.annotation
+        while isinstance(ann, ast.BinOp) and isinstance(ann.op, ast.BitOr):
+            # unwrap list[str] | None
+            sides = [ann.left, ann.right]
+            non_null = [s for s in sides if not (isinstance(s, ast.Constant) and s.value is None)]
+            ann = non_null[0] if len(non_null) == 1 else ann.left
+            break
+        if isinstance(ann, ast.Subscript) and isinstance(ann.value, ast.Name):
+            if ann.value.id in ("list", "tuple", "set"):
+                array_params.add(a.arg)
+        elif isinstance(ann, ast.Name) and ann.id in ("list", "tuple", "set"):
+            array_params.add(a.arg)
 
     def walk(node: ast.AST, in_loop: bool, array_var: str | None) -> None:
         if isinstance(node, (ast.For, ast.AsyncFor)):
@@ -514,11 +552,69 @@ def classify_phases(
             walk(child, in_loop, array_var)
 
     for stmt in func.body:
+        if (
+            isinstance(stmt, ast.If)
+            and not stmt.orelse
+            and isinstance(stmt.test, ast.Name)
+            and stmt.test.id in array_params
+        ):
+            # else-less truthiness guard on an array param -> Halo
+            # condition step (translated only when the body carries awaits)
+            start = len(phases)
+            for sub in stmt.body:
+                walk(sub, False, None)
+            span = len(phases) - start
+            if span:
+                phases.insert(
+                    start,
+                    Phase(
+                        "condition",
+                        f"if {stmt.test.id}:",
+                        array_var=stmt.test.id,
+                        branch_span=span,
+                    ),
+                )
+            continue
         walk(stmt, False, None)
     return phases
 
 
 # --- workflow: runbook document -----------------------------------------
+
+
+def _has_elements_criterion(var: str, step_id: int) -> dict:
+    """'Has elements' criterion on a runbook variable.
+
+    Shape copied from two working trial runbooks (Azure Onboarding's
+    `GroupSelected?` / `LicenseSelected?` steps): tablename
+    ``runbookvariable``, fieldname ``<<var>>``, type 5 (has-elements),
+    ids/linkage nulled the way the UI import sanitize does.
+    """
+    return {
+        "id": None,
+        "rule_id": 0,
+        "qualification_criteria_id": 0,
+        "fieldname": f"<<{var}>>",
+        "value_type": "Array",
+        "value_type_id": -1,
+        "value_int": 0,
+        "value_string": "",
+        "partialmatch": False,
+        "matchseparatedvalues": False,
+        "tablename": "runbookvariable",
+        "type": 5,
+        "flowsubdetails_criteria_id": 0,
+        "use": 0,
+        "chatprofile_id": None,
+        "chatprofile_flow_seq": step_id,
+        "timezonestring": "",
+        "match_after_start": False,
+        "match_after_target": False,
+        "eventrule_id": 0,
+        "flow_id": 0,
+        "flow_type": 0,
+        "flow_seq": 0,
+    }
 
 
 def build_runbook_steps(
@@ -545,8 +641,15 @@ def build_runbook_steps(
     sidecar: dict[str, str] = {}
 
     # flatten loop markers: a loop with body phases becomes
-    # [iter_begin, *body, iter_end]; loop-less phases stay as-is
+    # [iter_begin, *body, iter_end]; loop-less phases stay as-is.
+    # raw_to_plan maps each RAW phase index to the plan node that
+    # executes it (a loop start targets its iter_begin), so condition
+    # phases can point their "Condition not met" edge at the first plan
+    # node AFTER the guarded raw span - resolved after the pass.
     plan: list[tuple[str, Phase | None]] = []
+    raw_to_plan: dict[int, int] = {}
+    pending_conditions: list[tuple[Phase, int]] = []
+    raw = 0
     i = 0
     while i < len(phases):
         p = phases[i]
@@ -557,10 +660,16 @@ def build_runbook_steps(
                 body.append(phases[i])
                 loop_var = loop_var or phases[i].array_var
                 i += 1
+            raw_start = raw
             plan.append(("iter_begin", body[0] if body else None))
+            begin_pos = len(plan) - 1
             for b in body:
                 plan.append(("body", b))
+                raw_to_plan.setdefault(raw, len(plan) - 1)
+                raw += 1
             plan.append(("iter_end", body[-1] if body else None))
+            # targeting the loop's first raw phase lands on iter_begin
+            raw_to_plan[raw_start] = begin_pos
             # share the array var with the marker phases (they render the
             # <<var>> message); body phases ignore array_var when hopping
             for kind, ph in plan:
@@ -568,7 +677,18 @@ def build_runbook_steps(
                     ph.array_var = loop_var
             continue
         plan.append(("plain", p))
+        if p.kind == "condition":
+            pending_conditions.append((p, raw + 1 + (p.branch_span or 0)))
+        raw_to_plan[raw] = len(plan) - 1
+        raw += 1
         i += 1
+    total_raw = raw
+    for cond, notmet_raw in pending_conditions:
+        if notmet_raw >= total_raw:
+            cond.notmet_target = None  # falls to the Success terminal
+        else:
+            pos = raw_to_plan.get(notmet_raw)
+            cond.notmet_target = pos + 1 if pos is not None else None
     if not plan:
         # no awaits at all: one neutral start hop so the graph has an entry
         plan.append(("plain", Phase("hop", name)))
@@ -584,6 +704,13 @@ def build_runbook_steps(
     fail_id = success_id + 1 if has_fail else None
 
     def edge(action_type: int, action_name: str, start: int, end: int, seq: int) -> dict:
+        # approval_result DRIVES the persisted name: the server rewrites
+        # action_name from it on save (SPA pairs them explicitly:
+        # approval_result 1="Condition met"/"Successful Response"/"Has
+        # elements", 0="not met"/"Unsuccessful"/"Has no elements") -
+        # sending 1 on both edges collapsed every second edge to the
+        # positive name and broke all failure/false routing (trial-proven
+        # 2026-10-06: sent-vs-persisted diffs on act12 AND act17).
         return {
             "action_type": action_type,
             "action_id": -action_type,
@@ -592,7 +719,7 @@ def build_runbook_steps(
             "end_step": end,
             "seq": seq,
             "use_work_hours": True,
-            "approval_result": 1,
+            "approval_result": 1 if seq == 1 else 0,
             "chat_selection_order": 1,
         }
 
@@ -639,6 +766,24 @@ def build_runbook_steps(
             )
             continue
         assert ph is not None  # kind == "plain" or "body"
+        if ph.kind == "condition":
+            notmet = ph.notmet_target if ph.notmet_target is not None else success_id
+            steps.append(
+                {
+                    "step_id": idx,
+                    "name": ph.label[:200],
+                    "steptype": 1,
+                    "auto_action": 6,
+                    "isstart": idx == 1,
+                    "allow_all_statuses": True,
+                    "step_conditions": [_has_elements_criterion(ph.array_var or "items", idx)],
+                    "actions": [
+                        edge(12, "Condition met", idx, next_id, 1),
+                        edge(12, "Condition not met", idx, notmet, 2),
+                    ],
+                }
+            )
+            continue
         if ph.kind == "api":
             fail_target = fail_id if fail_id is not None else success_id
             step: dict = {
@@ -789,6 +934,11 @@ def convert_workflow(
                     value = _default_value(ast.literal_eval(default_map[a.arg]))
                 except (ValueError, SyntaxError):
                     value = ""
+            if not value and dt == DATA_TYPE["Array"]:
+                # Array variables must hold a valid JSON array: an empty
+                # string makes has-elements criteria/iteration THROW
+                # instead of evaluating false (trial-observed)
+                value = "[]"
             input_variables.append(
                 {
                     "id": None,
@@ -827,14 +977,25 @@ def convert_workflow(
         )
     if category:
         notes.append(
-            f"category {category!r} -> Halo runbook group (group_id) is a UI lookup (-4); left unset"
+            f"category {category!r} -> Halo runbook group via lookup -4 "
+            "(--apply matches it live when the tenant defines groups)"
         )
     if func is not None and _has_branches(func):
-        notes.append(
-            "Python branches (if/else) are flattened to the linear success path - Halo "
-            "conditions exist (steptype1 + action12 'Condition met/not met') but the "
-            "criteria translation is not yet automated; review in the flow editor"
-        )
+        translated = sum(1 for p in phases if p.kind == "condition")
+        if translated:
+            notes.append(
+                f"{translated} branch(es) translated to Halo condition steps "
+                "(steptype1 + action12 'Condition met/not met', has-elements criteria "
+                "on <<array params>>); else-branches and non-array guards stay "
+                "flattened to the linear success path"
+            )
+        else:
+            notes.append(
+                "Python branches (if/else) are flattened to the linear success path - "
+                "Halo conditions exist (steptype1 + action12 'Condition met/not met') "
+                "and translate for else-less `if <array param>:` guards; this function's "
+                "guards did not fit, so review in the flow editor"
+            )
 
     payload: dict = {
         "name": name,
@@ -845,6 +1006,8 @@ def convert_workflow(
     }
     if sidecar:
         payload["_phase_bindings"] = sidecar  # apply-only; stripped before POST
+    if category:
+        payload["_category"] = category  # apply resolves group_id via lookup -4
     return Conversion(payload, notes)
 
 

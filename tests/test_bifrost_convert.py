@@ -292,7 +292,7 @@ def test_signature_defaults_become_input_values() -> None:
     conv = convert_workflow({}, API_SOURCE, "sync_things")
     values = {v["key"]: v for v in conv.payload["input_variables"]}
     assert values["limit"]["value"] == "10"
-    assert values["items"]["value"] == ""  # None default -> empty
+    assert values["items"]["value"] == "[]"  # None default -> valid empty array (not "")
     assert values["items"]["data_type"] == DATA_TYPE["Array"] == 1
 
 
@@ -302,6 +302,115 @@ def test_branches_are_noted_not_faked() -> None:
     )
     conv = convert_workflow({}, src, "sync_things")
     assert any("branches" in n for n in conv.notes)
+    assert not any(p.kind == "condition" for p in classify_phases(_parse_func(src)))
+
+
+# --- branch translation (else-less array guards) -------------------------
+
+GUARDED_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Guarded", description="Guard the loop.")
+async def guarded(client, items: tuple[str, ...] = ()) -> dict:
+    if items:
+        for item in items:
+            await asyncio.sleep(1)
+            await process_one(item)
+    return {}
+"""
+
+
+GUARD_MID_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Guard mid")
+async def guarded_mid(client, items: list[str] | None = None) -> dict:
+    if items:
+        await fetch_remote(client)
+    await asyncio.sleep(1)
+    return {}
+"""
+
+
+ELSE_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Else")
+async def with_else(client, items: list[str]) -> dict:
+    if items:
+        await fetch_remote(client)
+    else:
+        await fallback(client)
+    return {}
+"""
+
+
+def _parse_func(src: str):
+    import ast
+
+    tree = ast.parse(src)
+    return next(n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)))
+
+
+def test_array_guard_becomes_condition_with_criteria() -> None:
+    conv = convert_workflow({}, GUARDED_SOURCE, "guarded")
+    assert conv.ok
+    steps = conv.payload["steps"]
+    cond = next(s for s in steps if s.get("steptype") == 1)
+    assert cond["auto_action"] == 6
+    assert cond["name"] == "if items:"
+    # criteria: the Azure-Onboarding has-elements shape on <<items>>
+    (crit,) = cond["step_conditions"]
+    assert crit["fieldname"] == "<<items>>"
+    assert crit["tablename"] == "runbookvariable"
+    assert crit["type"] == 5
+    assert crit["value_type"] == "Array"
+    assert crit["id"] is None and crit["chatprofile_id"] is None
+    # edges: met -> guarded body (the iteration begin), notmet -> Success
+    met, notmet = cond["actions"]
+    assert (met["action_type"], met["action_name"]) == (12, "Condition met")
+    assert (met["approval_result"], notmet["approval_result"]) == (1, 0)
+    begin = next(s for s in steps if s.get("auto_action") == 12)
+    assert met["end_step"] == begin["step_id"]
+    assert (notmet["action_type"], notmet["action_name"]) == (12, "Condition not met")
+    success = next(s for s in steps if s["name"] == "Success")
+    assert notmet["end_step"] == success["step_id"]  # guard is last: skip to end
+    assert any("branch(es) translated" in n for n in conv.notes)
+
+
+def test_guard_notmet_targets_step_after_guard() -> None:
+    conv = convert_workflow({}, GUARD_MID_SOURCE, "guarded_mid")
+    assert conv.ok
+    steps = conv.payload["steps"]
+    cond = next(s for s in steps if s.get("steptype") == 1)
+    notmet = cond["actions"][1]
+    target = next(s for s in steps if s["step_id"] == notmet["end_step"])
+    # the sleep AFTER the guard is the notmet target (not Success)
+    assert target["auto_action"] == 21
+    assert target["name"] == "sleep 1s"
+
+
+def test_guard_with_else_flattens_with_note() -> None:
+    conv = convert_workflow({}, ELSE_SOURCE, "with_else")
+    assert conv.ok
+    steps = conv.payload["steps"]
+    assert not any(s.get("steptype") == 1 for s in steps)  # no condition emitted
+    assert any("flattened" in n for n in conv.notes)
+
+
+def test_non_array_guard_stays_flattened() -> None:
+    src = API_SOURCE.replace(
+        "    await asyncio.sleep(1)",
+        "    if limit:\n        await asyncio.sleep(1)",
+    )
+    conv = convert_workflow({}, src, "sync_things")
+    assert conv.ok
+    steps = conv.payload["steps"]
+    assert not any(s.get("steptype") == 1 for s in steps)
+    assert any("did not fit" in n for n in conv.notes)
 
 
 def test_classify_does_not_descend_into_callee_args() -> None:
@@ -379,6 +488,9 @@ def test_build_runbook_steps_direct_calls() -> None:
         "approval_result",
         "chat_selection_order",
     }
+    # approval_result drives the persisted name (server rewrites on save):
+    # 1 = positive edge, 0 = failure/false edge
+    assert [a["approval_result"] for a in api["actions"]] == [1, 0]
     assert api["actions"][0]["end_step"] == success["step_id"]
     assert api["actions"][1]["end_step"] == fail["step_id"]
     assert hop["isstart"] is True
