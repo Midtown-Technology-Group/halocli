@@ -34,6 +34,8 @@ scripts/*
 !scripts/integration_family_probe.py
 !scripts/integration_create_probe.py
 !scripts/runbook_build_probe.py
+!scripts/bifrost_convert.py
+halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py
 !scripts/issue73_probe.py

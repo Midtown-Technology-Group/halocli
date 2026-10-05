@@ -1,0 +1,39 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "applied": {
+    "integration:NinjaOne": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out\\integration__ninjaone.json",
+      "create": {
+        "id": 20
+      },
+      "verify": true,
+      "cleanup": "integration deleted"
+    },
+    "runbook:inspect_voicemail_customer": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_out\\runbook__inspect_voicemail_customer.json",
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=2af5115e-ecef-4d54-b4ff-6c98fe2c9cee"
+      ],
+      "verify": {
+        "type": 1,
+        "steps": 2,
+        "expected_steps": 2,
+        "input_variables": 1,
+        "start_type": 1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "runlog_row": {
+          "id": 2468,
+          "runbook_id": "2af5115e-ecef-4d54-b4ff-6c98fe2c9cee",
+          "runbook_name": "haloclidevprobe-inspect_voicemail_customer",
+          "status": 2,
+          "error": ""
+        }
+      },
+      "cleanup": "deleted (clean)"
+    }
+  }
+}

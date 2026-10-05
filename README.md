@@ -772,6 +772,57 @@ UI's Import-from-JSON does: `GET /Webhook/{id}?includedetails=true`,
 null the step/action ids per the sanitize recipe above, and POST the
 document with `_is_new:true`.
 
+**Bifrost → Halo conversion (proven 2026-10-05):**
+`scripts/bifrost_convert.py` maps Bifrost artifacts onto those proven
+surfaces — `.bifrost/integrations.yaml` (or `GET /integrations` JSON)
+→ `POST /CustomIntegration`; a method list (explicit `--methods`, or
+literal `client.get("/path")` extraction) →
+`POST /CustomIntegrationMethod`; and an `@workflow` Python function →
+a `type:1` runbook document:
+
+```powershell
+# offline: writes payloads + conversion_report.json into --out
+python scripts/bifrost_convert.py `
+    --integrations <bifrost-workspace>/.bifrost/integrations.yaml --integration NinjaOne `
+    --workflow-file <solution>/functions/voicemail_routing.py --function inspect_voicemail_customer `
+    --out ./halo_out
+# add: --apply --profile dev   # trial round-trip + trigger fire (production refused)
+```
+
+Verified live (`bifrost_conversion_evidence.json`): the NinjaOne
+integration created → verified → deleted (OAuth2 + AuthorizationCode
+enums, scope join, base-URL extracted from the config description); the
+voicemail runbook created with **2/2 structural steps + the Bifrost
+signature as `input_variables`**, then the **public trigger fire**
+(`POST /Automation/{id}`) landed runlog row **2468, status completed,
+no error**, and everything deleted clean. Enum tables are pinned with
+provenance in `halocli.bifrost_convert` (decoded from the config SPA):
+method verbs `{0:GET, 1:POST, 2:PUT, 3:DELETE, 4:PATCH}` — deliberately
+non-sequential; authorizationtype `{0:None, 1:APIKey, 2:Bearer,
+3:Basic, 4:OAuth2, 5:Certificate, 6:SecretKey, 7:JWT, 8:mTLS}`;
+granttype `{0:ClientCredentials, 1:Password, 2:AuthorizationCode,
+3:PKCE}`; data types `{0:Object, 1:Array, 2:string, 3:int, 4:float,
+5:bool, 6:datetime}`.
+
+Trigger facts (live-proven): the public URL is
+`{base}/api/automation/{id}` (SPA `getRunbookTriggerURL`); it requires
+`runbook_start_type:1` (**0 = Halo-only**) and — decisively — an
+**active** runbook: `active:false` answers *"Unable to start
+automation"* (that is why the converter emits `active:false` and
+activation stays a deliberate act). Send JSON
+`{"formCollection": [{"Key": "...", "Value": "..."}]}`; execution
+appears in `GET /Automation` keyed by `runbook_id`/`runbook_name`.
+
+Honesty notes (what does **not** transfer): Python bodies become
+structural step placeholders — hand-built chains stop after step 1
+(observed *"Next step not found. Last step=1"*), so multi-step flows
+need template-derived linkage until a v2 captures it from a working
+runbook; `effects`/`enforced_bounds`/`category`/secrets become
+`conversion_report.json` notes (Halo has no field: secrets → header /
+certificate config in the UI, category → the `group_id` lookup -4);
+method extraction only sees literal paths (assembled URLs need an
+explicit `--methods` list).
+
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
 rules/event-rules/automations (side effects above), `EmailRule`
 (outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL),
