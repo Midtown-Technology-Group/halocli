@@ -157,8 +157,7 @@ jobs:
 
   sonar:
     needs: coverage
-    # Staged migration: exercise manually before disabling automatic analysis.
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     uses: Midtown-Technology-Group/engineering-workflows/.github/workflows/sonar.yml@bc3b6f7099177c00ac728d6d32d83fc8dcf76d84
     with:
       project-key: Midtown-Technology-Group_halocli

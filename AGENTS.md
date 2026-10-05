@@ -22,4 +22,4 @@ Use the shared `sonar-feedback` skill for scan routing and bounded findings.
 Repository build/test gates and operator boundaries remain authoritative.
 Repo-owned Sonar configuration separates authored source from tests. CI
 produces coverage for the scanner; unavailable coverage is not a clean result.
-Automatic analysis stays active until staged manual CI proof is ready.
+CI is the authoritative analysis mode; automatic analysis stays disabled.
