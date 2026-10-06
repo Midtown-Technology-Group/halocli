@@ -1,8 +1,8 @@
-"""Drive scripts/runbook_membership_probe.py with fakes.
+"""Drive scripts/runbook_intbool_probe.py with fakes.
 
-The LIVE16-leg run + committed membership_evidence.json pin the
-network path; these tests pin build_leg's criterion mutation, the leg
-loop, cleanup, and the verdict classifier offline.
+The LIVE16-leg run + committed intbool_guard_evidence.json pin the
+network path; these tests pin build_leg's row-override merging, the
+leg loop, cleanup, and the verdict classifier offline.
 """
 
 from __future__ import annotations
@@ -17,31 +17,30 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
-    "membr_probe", REPO / "scripts" / "runbook_membership_probe.py"
+    "intbool_probe", REPO / "scripts" / "runbook_intbool_probe.py"
 )
 assert _spec is not None and _spec.loader is not None
 probe = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(probe)
 
-# the real trial outcomes (membership_evidence.json) - the fake fire
-# replays them so the test pins the exact shipped verdict
+# the real trial outcomes (intbool_guard_evidence.json)
 REAL_EXEC = {
-    "control": 3,
-    "two_eq_or": 1,
-    "two_eq_neg": 1,
-    "in_list_b": 1,
-    "t23_single": 3,
-    "t23_csv": 3,
-    "t9_any": 1,
-    "t9_neg": 1,
-    "t23_neg_set": 1,
-    "t23_neg_single": 1,
-    "t24_notin_true": 3,
-    "t24_notin_false": 1,
-    "t23_overlap": 1,
-    "t24_overlap": 3,
-    "t23_arr_true": 1,
-    "t23_arr_false": 1,
+    "int_ctrl": 3,
+    "float_ctrl": 3,
+    "bool_ctrl": 3,
+    "intA_in": 3,
+    "intA_out": 1,
+    "intB_in": 3,
+    "intB_out": 1,
+    "int_overlap": 1,
+    "fltA_in": 1,
+    "fltA_out": 1,
+    "fltB_in": 3,
+    "fltB_out": 1,
+    "bool_t_10": 3,
+    "bool_f_10": 1,
+    "bool_t_TF": 1,
+    "bool_f_TF": 1,
 }
 
 
@@ -82,7 +81,6 @@ def test_probe_full_leg_loop_and_ship_verdict(
     )
     monkeypatch.setattr(probe.ph, "HaloClient", _FakeHalo)
 
-    # fires happen in LEGS order (the main loop) - map by sequence
     order = list(probe.LEGS)
     fire_idx = {"n": 0}
 
@@ -103,13 +101,12 @@ def test_probe_full_leg_loop_and_ship_verdict(
 
     assert asyncio.run(probe.main()) == 0
 
-    ev = json.loads((tmp_path / "membership_evidence.json").read_text(encoding="utf-8"))
+    ev = json.loads((tmp_path / "intbool_guard_evidence.json").read_text(encoding="utf-8"))
     assert set(ev["legs"]) == set(probe.LEGS)
-    assert "SHIP: type23 = in-set membership" in ev["verdict"]
-    assert "SHIP: type24 = not-in" in ev["verdict"]
+    assert "SHIP: int sets type23 with base value_type int" in ev["verdict"]
     assert "STRICT comma-set" in ev["verdict"]
-    assert "eq rows cannot express a set" in ev["verdict"]
-    assert "does NOT match element membership" in ev["verdict"]
+    assert "SHIP: float sets type23 with value_type string" in ev["verdict"]
+    assert "SHIP: bool bare truthiness = criteria5 >0 with inputs 1/0" in ev["verdict"]
     assert ev["cleanup"] == ["deleted (clean)"] * len(probe.LEGS)
 
     calls = _FakeHalo.requester.calls
@@ -118,28 +115,36 @@ def test_probe_full_leg_loop_and_ship_verdict(
     assert "verdict:" in capsys.readouterr().out
 
 
-def test_build_leg_mutates_rows_field_and_inputs() -> None:
+def test_build_leg_merges_row_overrides_and_inputs() -> None:
     doc, view = probe.build_leg(
-        "scalar", [(23, "eu,us", None), (0, "x", "<<other>>")], "t", {"a": "v"}
+        "int",
+        [{"type": 23, "value_int": 0, "value_string": "1,2"}, {"fieldname": "<<other>>"}],
+        "t",
+        {"level": "2"},
     )
     assert doc["name"].endswith("-t")
-    assert doc["runbook_start_type"] == 1
+    assert doc["active"] is True
     assert "_chains" not in doc
     rows = next(s for s in doc["steps"] if s.get("step_conditions"))["step_conditions"]
     assert [r["type"] for r in rows] == [23, 0]
-    assert rows[0]["value_string"] == "eu,us"
-    assert rows[1]["fieldname"] == "<<other>>"  # field override (array legs)
-    assert view[0]["value_string"] == "eu,us"
-    assert next(v for v in doc["input_variables"] if v["key"] == "a")["value"] == "v"
+    assert rows[0]["value_string"] == "1,2"
+    assert rows[0]["value_int"] == 0
+    assert rows[1]["fieldname"] == "<<other>>"  # field override (bool legs)
+    assert rows[0]["value_type"] == "int"  # inherited from the int-eq base
+    assert view[0]["value_string"] == "1,2"
+    assert next(v for v in doc["input_variables"] if v["key"] == "level")["value"] == "2"
 
 
-def test_verdict_flags_broken_control_and_always_met() -> None:
+def test_verdict_flags_broken_controls_and_unproven_variants() -> None:
     def ev(**overrides: Any) -> dict[str, Any]:
         table = dict(REAL_EXEC)
         table.update(overrides)
         return {"legs": {k: {"runlog": {"steps_executed": v}} for k, v in table.items()}}
 
-    assert "BROKEN PROBE" in probe.verdict(ev(control=1))
-    full = probe.verdict(ev(t23_neg_set=3))
-    assert "ALWAYS MET" in full  # negative legs distinguish real membership
-    assert "SHIP: type23" not in full
+    assert "BROKEN PROBE" in probe.verdict(ev(int_ctrl=1))
+    no_bool = probe.verdict(ev(bool_t_10=1))
+    assert "bool truthiness UNPROVEN" in no_bool
+    no_flt = probe.verdict(ev(fltB_in=1))
+    assert "float set membership UNPROVEN" in no_flt
+    substring = probe.verdict(ev(int_overlap=3))
+    assert "SUBSTRING" in substring
