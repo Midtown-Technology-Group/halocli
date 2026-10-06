@@ -1,0 +1,165 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "value-side <<b>> resolution",
+  "legs": {
+    "control": {
+      "id": "8193b904-fd9d-44b4-b9b0-f3835d2431b7",
+      "inputs": {
+        "a": "needle",
+        "b": "y"
+      },
+      "criterion": [
+        {
+          "fieldname": "<<a>>",
+          "tablename": "runbookvariable",
+          "type": 0,
+          "value_type": "string",
+          "value_string": "needle"
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "needle"
+          },
+          {
+            "Key": "b",
+            "Value": "y"
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2609,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 629,
+        "timestamp": "2026-10-06T02:49:47.477"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ]
+    },
+    "met": {
+      "id": "ce864531-61df-49e4-84fa-69811d318325",
+      "inputs": {
+        "a": "x",
+        "b": "x"
+      },
+      "criterion": [
+        {
+          "fieldname": "<<a>>",
+          "tablename": "runbookvariable",
+          "type": 0,
+          "value_type": "string",
+          "value_string": "<<b>>"
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          },
+          {
+            "Key": "b",
+            "Value": "x"
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2610,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 255,
+        "timestamp": "2026-10-06T02:49:52.317"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ]
+    },
+    "notmet": {
+      "id": "cea90963-a4e4-4b9b-873b-7466d7cb1d70",
+      "inputs": {
+        "a": "x",
+        "b": "y"
+      },
+      "criterion": [
+        {
+          "fieldname": "<<a>>",
+          "tablename": "runbookvariable",
+          "type": 0,
+          "value_type": "string",
+          "value_string": "<<b>>"
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          },
+          {
+            "Key": "b",
+            "Value": "y"
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2611,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 205,
+        "timestamp": "2026-10-06T02:49:57.123"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ]
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "verdict": "DOES NOT RESOLVE: value side compares as the literal '<<b>>' (both legs notmet)"
+}
