@@ -1522,6 +1522,36 @@ async def nested_try(client, flag: bool) -> dict:
     assert any("nested inside control flow" in n for n in conv.notes)
 
 
+def test_helper_try_gets_unsupported_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+async def risky_helper(client) -> dict:
+    try:
+        await risky(client)
+    except Exception:
+        await fallback(client)
+    return {}
+
+
+@workflow(name="Demo: Helper Try")
+async def uses_helper(client) -> dict:
+    await risky_helper(client)
+    await afterwards(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "uses_helper", phase_bindings={"risky": 1})
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    # flattened honestly: every await extracts linearly, no routing
+    assert "risky" in names and "fallback" in names and "afterwards" in names
+    risky = next(s for s in conv.payload["steps"] if s["name"] == "risky")
+    fail = next(s for s in conv.payload["steps"] if s.get("auto_action") == 1)
+    assert risky["actions"][1]["end_step"] == fail["step_id"]
+    assert any("inside inlined helper" in n and "top level" in n for n in conv.notes)
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
     steps, sidecar, chains = build_runbook_steps(
