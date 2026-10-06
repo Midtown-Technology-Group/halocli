@@ -120,12 +120,24 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   phase's success edge skips the handler, conditions whose notmet/
   else would land inside the handler retarget after-try, both paths
   converge after the try. Typed handlers map too (failure edges carry
-  no exception type - noted). else/finally/multi-handler and nested
-  trys flatten WITH notes. Probe discovery: sequencing hops MUST
+  no exception type - noted). try/ELSE maps too (v23: the else-body is
+  the success continuation; the handler's success edge SKIPS it - only
+  TRY-statement failures raise into except, Python semantics);
+  finally/multi-handler and nested trys flatten WITH notes. Probe
+  discovery: sequencing hops MUST
   carry auto_action21 + duration - a bare steptype2 hop gets "Next
   step not found". A try INSIDE an inlined helper flattens WITH a
   note (the pipeline wraps only the workflow's top level - lift the
   try for failure-edge routing).
+- await-result bindings (mapping_evidence.json): `var = await call()`
+  on an api/aa8 phase maps the response into runbook variable `var`
+  (runbook_variable_mappings, value <<response>> - CAT-MIP's shape)
+  and guards on `var` translate to has/no-value criteria (control leg
+  notmet vs mapped leg met). Guards on COMPUTED/derived values
+  (subscript aliases, locals, calls) flatten WITH a precise note -
+  the `<<var^field>>` criterion-fieldname dereference is PROVEN
+  NON-WORKING (fieldpath_evidence.json: materialization + response
+  path both work, the caret fieldname does not).
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -354,6 +366,30 @@ def _set_token(value: object) -> str:
     if isinstance(value, bool):
         return "1" if value else "0"
     return str(value)
+
+
+def _derived_root(test: ast.expr) -> str | None:
+    """Base Name a guard's primary value roots at (Compare-left / Not /
+    Subscript / Attribute / Call chains); None when there is no Name.
+
+    Guards rooted OUTSIDE the signature/mapped sets read computed
+    values - Halo criteria cannot see them (and ``<<var^field>>``
+    fieldname deref is proven non-working: fieldpath_evidence.json).
+    """
+    node: ast.expr = test
+    while True:
+        if isinstance(node, ast.Compare):
+            node = node.left
+        elif isinstance(node, ast.UnaryOp):
+            node = node.operand
+        elif isinstance(node, (ast.Subscript, ast.Attribute)):
+            node = node.value
+        elif isinstance(node, ast.Call):
+            node = node.func
+        elif isinstance(node, ast.Name):
+            return node.id
+        else:
+            return None
 
 
 # Edge pair per auto_action, decoded from Halo's OWN template graphs
@@ -642,6 +678,9 @@ class Phase:
     try_notmet: int | None = None  # retarget for a condition's notmet landing in the handler
     try_else: int | None = None  # retarget for an else-skip landing in the handler
     except_step: int | None = None  # resolved plan-space target (build side)
+    # await-result binding (mapping_evidence.json: runbook_variable_mappings
+    # materialize and conditions READ them): phase result -> runbook var
+    result_var: str | None = None
 
 
 def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
@@ -923,6 +962,10 @@ def classify_phases(
     # params -> typed comparison guards (int/float/str/bool)
     array_params: set[str] = set()
     param_types: dict[str, str] = {}
+    mapped_vars: set[str] = set()  # await results bound to runbook variables
+    arg_names: set[str] = {
+        a.arg for a in (*func.args.posonlyargs, *func.args.args, *func.args.kwonlyargs)
+    }
     all_args = [*func.args.posonlyargs, *func.args.args, *func.args.kwonlyargs]
     for a in all_args:
         ann = a.annotation
@@ -1187,6 +1230,30 @@ def classify_phases(
             )
             walk(stmt, False, None)
             return
+        if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            # await-result binding: `var = await call(...)` -> the
+            # response maps into runbook variable `var` and guards on
+            # `var` translate (proven: mappings materialize and
+            # conditions READ them - mapping_evidence.json). Only
+            # api/halo_note phases have a response to map; a hop
+            # result stays unmapped (guard stays flat + noted).
+            value = stmt.value
+            targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+            if (
+                isinstance(value, ast.Await)
+                and isinstance(value.value, ast.Call)
+                and len(targets) == 1
+                and isinstance(targets[0], ast.Name)
+            ):
+                start = len(phases)
+                walk(stmt, False, None)
+                if len(phases) > start and phases[-1].kind in ("api", "halo_note"):
+                    phases[-1].result_var = targets[0].id
+                    mapped_vars.add(targets[0].id)
+                    report.setdefault("result_vars", []).append(
+                        f"{targets[0].id} <- {phases[-1].label}"
+                    )
+                return
         if isinstance(stmt, ast.If):
             test = stmt.test
             bare = test if isinstance(test, ast.Name) else None
@@ -1240,6 +1307,34 @@ def classify_phases(
                     "value_type": "int" if ptype_bare == "bool" else ptype_bare,
                     "truthiness": True,
                 }
+            elif bare is not None and bare.id in mapped_vars:
+                # await-result bound to a runbook var -> has-value
+                # (mapping_evidence.json: mapped vars materialize and a
+                # has-value condition READS them; control = notmet)
+                guard_label = f"if {bare.id}:"
+                spec = {"param": bare.id, "op": "has_value", "value": "", "value_type": "str"}
+            elif negated and operand is not None and operand.id in mapped_vars:
+                guard_label = f"if not {operand.id}:"
+                spec = {"param": operand.id, "op": "no_value", "value": "", "value_type": "str"}
+            elif (
+                isinstance(test, ast.Compare)
+                and len(test.ops) == 1
+                and len(test.comparators) == 1
+                and isinstance(test.left, ast.Name)
+                and test.left.id in mapped_vars
+                and isinstance(test.comparators[0], ast.Constant)
+                and test.comparators[0].value is None
+                and isinstance(test.ops[0], (ast.Is, ast.IsNot))
+            ):
+                # `var is None` / `var is not None` on a mapped result
+                is_none = isinstance(test.ops[0], ast.Is)
+                guard_label = f"if {test.left.id} is {'' if is_none else 'not '}None:"
+                spec = {
+                    "param": test.left.id,
+                    "op": "no_value" if is_none else "has_value",
+                    "value": "",
+                    "value_type": "str",
+                }
             else:
                 spec = _guard_spec(stmt.test)
                 if spec:
@@ -1279,6 +1374,13 @@ def classify_phases(
                         f"{ast.unparse(stmt.test)} (array-element membership does "
                         "not execute: membership_evidence.json t23_arr_true notmet)"
                     )
+                elif isinstance(stmt, ast.If) and _derived_root(stmt.test) not in (
+                    param_types.keys() | mapped_vars | array_params | arg_names
+                ):
+                    # guard on a COMPUTED/derived value: Halo criteria read
+                    # runbook variables only and the <<var^field>> fieldname
+                    # deref is proven non-working (fieldpath_evidence.json)
+                    report.setdefault("derived_guards", []).append(ast.unparse(stmt.test)[:90])
         if guard_label and isinstance(stmt, ast.If):
             # guard with optional else: translate whether or not there is
             # one (both arms must carry awaits to earn steps)
@@ -1313,16 +1415,17 @@ def classify_phases(
             # phases in the body route edge2 to the handler's first
             # phase; the LAST body phase's success edge skips the
             # handler; conditions whose notmet/else would land inside
-            # the handler retarget after-try. One handler only -
-            # else/finally/multi-handler cannot be expressed (flattened
-            # + noted); a typed handler routes ALL failures (edges
-            # carry no exception type).
+            # the handler retarget after-try. One handler + optional
+            # else are expressible (else = success continuation,
+            # skipped by the handler path); finally/multi-handler
+            # cannot be expressed (flattened + noted); a typed handler
+            # routes ALL failures (edges carry no exception type).
             tr = stmt
-            if tr.orelse or tr.finalbody or len(tr.handlers) != 1:
+            if tr.finalbody or len(tr.handlers) != 1:
                 report.setdefault("try_unsupported", []).append(
-                    "try with else/finally or multiple handlers flattens to "
-                    "linear phases (Halo failure edges carry no exception "
-                    "type/finally) - review in the flow editor"
+                    "try with finally or multiple handlers flattens to linear "
+                    "phases (Halo failure edges carry no exception type and "
+                    "finally must run on BOTH paths) - review in the flow editor"
                 )
                 subs: list[ast.stmt] = [*tr.body]
                 for h in tr.handlers:
@@ -1336,35 +1439,51 @@ def classify_phases(
             for sub in tr.body:
                 process(sub)
             body_end = len(phases)
+            for sub in tr.orelse:
+                process(sub)
+            else_end = len(phases)
             for sub in tr.handlers[0].body:
                 process(sub)
             handlers_end = len(phases)
-            if body_end == body_start and body_end < handlers_end:
+            has_else = else_end > body_end
+            has_handler = handlers_end > else_end
+            if body_end == body_start and has_handler:
                 report.setdefault("try_unsupported", []).append(
                     "try block has no awaits - nothing can fail, so its "
                     "handler phases execute first - review in the flow editor"
                 )
-            if body_end < handlers_end:
+            if has_handler:
                 if tr.handlers[0].type is not None:
                     report.setdefault("try_notes", []).append(
                         f"except {ast.unparse(tr.handlers[0].type)}: routes ALL "
                         "failures here (Halo failure edges carry no exception type)"
                     )
-                for idx in range(body_start, body_end):
+                for idx in range(body_start, else_end):
                     p2 = phases[idx]
-                    if p2.kind in ("api", "halo_note"):
-                        p2.except_target = body_end
+                    in_try = idx < body_end
+                    if in_try and p2.kind in ("api", "halo_note"):
+                        # only TRY-statement failures raise into except;
+                        # else-body failures propagate (Python semantics)
+                        p2.except_target = else_end
                     if p2.kind == "condition":
                         notmet_raw = idx + 1 + (p2.branch_span or 0)
-                        if notmet_raw >= body_end:
+                        if not in_try:
+                            # else-body notmet must not fall into the handler
+                            if notmet_raw >= else_end:
+                                p2.try_notmet = handlers_end
+                        elif not has_else and notmet_raw >= body_end:
+                            # no else: a false condition at try-end is
+                            # NORMAL flow -> skip the handler too
                             p2.try_notmet = handlers_end
                         if p2.else_span:
                             else_tgt = idx + (p2.branch_span or 0) + p2.else_span + 1
-                            if else_tgt >= body_end:
+                            if else_tgt >= else_end:
                                 p2.try_else = handlers_end
-                if body_end > body_start:
-                    # the last body node's SUCCESS edge must skip the
-                    # handler block (both paths converge after-try)
+                if has_else and else_end > body_end:
+                    # else-last success must skip the handler block
+                    phases[else_end - 1].try_skip = handlers_end
+                elif body_end > body_start:
+                    # no else: try-last success skips the handler
                     phases[body_end - 1].try_skip = handlers_end
                 report.setdefault("try_mapped", []).append(ast.unparse(tr)[:70].replace("\n", " "))
             continue
@@ -1464,6 +1583,25 @@ def _compare_criterion(spec: dict, step_id: int) -> dict:
     else:
         crit["value_int"] = int(value)
     return crit
+
+
+def _result_mapping(var: str) -> list[dict]:
+    """runbook_variable_mappings row: whole response -> runbook var.
+
+    The shape Halo's own templates use (CAT-MIP maps ``<<response>>``;
+    materialization + condition-read proven - mapping_evidence.json).
+    """
+    return [
+        {
+            "guid": None,
+            "id": None,
+            "type": 4,
+            "data_type": 0,
+            "key": var,
+            "value": "<<response>>",
+            "mapping_type": 0,
+        }
+    ]
 
 
 def build_runbook_steps(
@@ -1813,6 +1951,8 @@ def build_runbook_steps(
                 action_step["auto_action_type"] = aat
             if message is not None:
                 action_step["message"] = message
+            if ph.result_var:
+                action_step["runbook_variable_mappings"] = _result_mapping(ph.result_var)
             # step_fields merges verbatim (ai_ability_id,
             # runbook_variable_mappings, input_values, output_variables)
             action_step.update(spec.get("step_fields") or {})
@@ -1840,6 +1980,8 @@ def build_runbook_steps(
                 step["auto_action_type"] = ph.method_id
             elif ph.method_name is not None:
                 sidecar[str(idx)] = ph.method_name
+            if ph.result_var:
+                step["runbook_variable_mappings"] = _result_mapping(ph.result_var)
             steps.append(step)
             continue
         # neutral hop (sleep or classified sleep)
@@ -2089,6 +2231,22 @@ def convert_workflow(
         notes.append(
             f"{len(classify_report['try_unsupported'])} try/except form(s) NOT mapped: "
             f"{'; '.join(classify_report['try_unsupported'])}"
+        )
+    if classify_report.get("result_vars"):
+        rv = classify_report["result_vars"]
+        notes.append(
+            f"await results bound to runbook variables ({', '.join(rv)}) - the step's "
+            "response maps via runbook_variable_mappings and guards on those names "
+            "translate to has/no-value criteria (mapping_evidence.json: materialized "
+            "+ the condition read them; control leg notmet)"
+        )
+    if classify_report.get("derived_guards"):
+        dg = classify_report["derived_guards"]
+        notes.append(
+            f"{len(dg)} guard(s) test computed/derived values ({'; '.join(dg)}) - Halo "
+            "criteria read runbook variables only and the <<var^field>> fieldname "
+            "dereference is proven non-working (fieldpath_evidence.json) - flattened; "
+            "materialize the value (bound await result) or review in the flow editor"
         )
     for p in phases:
         if p.kind == "halo_note" and p.halo_note:

@@ -990,8 +990,26 @@ control leg contrasted at **status 1**. Every failable body phase
 skips the handler; a condition whose notmet/else would land *inside*
 the handler retargets after the try; both paths converge. Typed
 handlers map with a caveat note (failure edges carry no exception
-type). **Flattened with notes**: `try/finally`, `try/else`,
-multiple handlers, and nested trys. Probe lesson recorded: sequencing
+type). **Flattened with notes**: `try/finally`,
+multiple handlers, and nested trys (**try/else now maps**: the
+else-body is the success continuation and the handler path skips it —
+only try-statement failures raise into `except`).
+
+**Await results become runbook variables** (`mapping_evidence.json`,
+probe `scripts/runbook_mapping_probe.py`): `var = await call()` on an
+api/aa8 phase maps the response into `var`
+(`runbook_variable_mappings`, value `<<response>>` — CAT-MIP's own
+shape) and **guards on `var` translate** to has/no-value criteria
+(control leg notmet exec1 vs mapped legs met exec3 — both
+`<<response>>` and `<<response^path>>` proven). Guards on
+**computed/derived** values get a *precise* note now, backed by the
+companion negative (`fieldpath_evidence.json`): `<<var^field>>` in a
+criterion **fieldname does not deref** (notmet → Fail while
+materialization and the response path both work elsewhere) — so
+`x = mapped["id"]`-class guards stay honestly flat. The same probe
+closed the spec generator's last path question: **both templated
+method-path styles CREATE** (OpenAPI `/x/{id}` id187 and Halo
+`/x/<<id>>` id188) — `openapi_methods.py` keeps `{param}` as-is. Probe lesson recorded: sequencing
 hops must carry `auto_action: 21` — a bare `steptype: 2` hop gets
 *"Next step not found"*.
 
