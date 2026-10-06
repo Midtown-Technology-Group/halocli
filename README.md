@@ -937,7 +937,21 @@ input variables substitute). A
 workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion — which names all three kinds —
-instead of a guessed write. **The catalog beyond tickets is pinned
+instead of a guessed write.
+
+**Halo's own templates as a regression oracle** (fixture
+`tests/fixtures/bifrost/halo_online_runbook_templates.json`, pulled
+read-only from the same online repository) + the new
+**`halo_runbook_action` binding**: `aa18` (SQL Query — raw SQL in
+`raw_message` with `<<var>>` bare, `runbook_variable_mappings` in
+`step_fields`), `aa25`/`aa26` (AI ability/agent via `ai_ability_id`)
+all **fired live** (runs 2783/2784/2785 status 2, `ai_action_evidence.json`),
+with their act29/act37 edge pairs decoded from the templates. The oracle
+test enforces the same structural rules on Halo's graphs and ours:
+`approval_result`1/0 by seq, an edge-name table **derived** from their
+20 templates, terminal shapes, iteration pairing — and it documents the
+one defect found *in Halo's own template* (a dangling `end_step` in
+"AI Project Task Creation"). **The catalog beyond tickets is pinned
 too** (`aat48_evidence.json`): **aat4 and aat5 both create USERS**
 (marker scan hit `/Users` ids 94/95, both status 2), **aat6** rejects
 a name-only body (status 1, honest negative), and the generic

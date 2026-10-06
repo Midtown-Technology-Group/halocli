@@ -181,10 +181,21 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   catalog variant - aat4 and aat5 are now PINNED as user-creators
   (marker scan hit /Users ids94/95, both status2; aat6 rejected a
   name-only body at status1 - aat48_evidence.json, entities deleted
-  after readback). Edges act18 Successful /
-  Unsuccessful. Unbound
+  after readback). Non-aa8 actions:
+  ``{"kind": "halo_runbook_action", "aa": N, "aat"?, "raw_message"?,
+  "body"?, "step_fields": {...}}`` targets the auto_actions Halo's own
+  templates use - aa18 (SQL Query: raw_message = SQL with ``<<var>>``
+  bare, runbook_variable_mappings via step_fields), aa25/aa26 (AI
+  ability/agent: ai_ability_id, input_values) - all three FIRED on the
+  trial (runs2783/2784/2785 status2; act29/act37 edge pairs decoded
+  from the templates - ai_action_evidence.json). Edges act18
+  Successful / Unsuccessful. Unbound
   halopsa-write effects get a conversion_report suggestion, never a
-  guessed write.
+  guessed write. A structural ORACLE (tests/test_halo_template_oracle.py)
+  enforces Halo's own graph rules - approval_result1/0 by seq, the
+  edge-name table DERIVED from their20 templates, terminal shape,
+  iteration pairing, endpoint integrity - on BOTH their committed
+  template graphs and our emitted payloads.
 
 Fidelity stance: the converter emits this executable graph (phases ->
 hops or method-bound API-call steps, detected loops -> iteration pairs,
@@ -343,6 +354,19 @@ def _set_token(value: object) -> str:
     if isinstance(value, bool):
         return "1" if value else "0"
     return str(value)
+
+
+# Edge pair per auto_action, decoded from Halo's OWN template graphs
+# (halo_online_runbook_repository.json): aa8->act18 (35/35),
+# aa18->act29 (8/8), aa25+aa26->act37 (4/4). aa6->act17 lives in the
+# api branch. seq1->approval1, seq2->approval0 everywhere (their
+# graphs and our sent-vs-persisted lesson agree).
+_AA_EDGE: dict[int, tuple[int, str, str]] = {
+    8: (18, "Successful", "Unsuccessful"),
+    18: (29, "Successful", "Unsuccessful"),
+    25: (37, "Successful", "Unsuccessful"),
+    26: (37, "Successful", "Unsuccessful"),
+}
 
 
 # Python annotation -> Halo data_type (name based; best-effort)
@@ -1711,7 +1735,23 @@ def build_runbook_steps(
             # Edges: act18 Successful / Unsuccessful (sem-table pair).
             spec = ph.halo_note or {}
             write_kind = spec.get("kind")
-            if write_kind in (
+            # any binding may target a different auto_action (aa18 SQL,
+            # aa25/aa26 AI - ai_action_evidence.json) with its decoded
+            # edge pair; default aa8/act18 (the ticket-write family).
+            aa = int(spec.get("aa") or 8)
+            atype, ok_name, bad_name = _AA_EDGE.get(aa, (18, "Successful", "Unsuccessful"))
+            if write_kind == "halo_runbook_action":
+                # generic action: raw_message verbatim (aa18 SQL carries
+                # <<var>> already bare), a body dict as JSON, or nothing
+                # (Halo's aa26 steps carry no message key at all)
+                if spec.get("raw_message") is not None:
+                    message: str | None = str(spec["raw_message"])
+                elif spec.get("body") is not None:
+                    message = _unquote_vars(json.dumps(spec["body"], indent=2))
+                else:
+                    message = None
+                aat = int(spec["aat"]) if spec.get("aat") is not None else None
+            elif write_kind in (
                 "halo_ticket_create",
                 "halo_ticket_update",
                 "halo_api_action",
@@ -1741,28 +1781,32 @@ def build_runbook_steps(
                         indent=2,
                     )
                 )
-            steps.append(
-                {
-                    "step_id": idx,
-                    "name": ph.label[:200],
-                    "steptype": 2,
-                    "auto_action": 8,
-                    "auto_action_type": aat,
-                    "isstart": idx == 1,
-                    "allow_all_statuses": True,
-                    "message": message,
-                    "actions": [
-                        edge(18, "Successful", idx, next_id, 1),
-                        edge(
-                            18,
-                            "Unsuccessful",
-                            idx,
-                            ph.except_step or fail_id or success_id,
-                            2,
-                        ),
-                    ],
-                }
-            )
+            action_step: dict = {
+                "step_id": idx,
+                "name": ph.label[:200],
+                "steptype": 2,
+                "auto_action": aa,
+                "isstart": idx == 1,
+                "allow_all_statuses": True,
+                "actions": [
+                    edge(atype, ok_name, idx, next_id, 1),
+                    edge(
+                        atype,
+                        bad_name,
+                        idx,
+                        ph.except_step or fail_id or success_id,
+                        2,
+                    ),
+                ],
+            }
+            if aat is not None:
+                action_step["auto_action_type"] = aat
+            if message is not None:
+                action_step["message"] = message
+            # step_fields merges verbatim (ai_ability_id,
+            # runbook_variable_mappings, input_values, output_variables)
+            action_step.update(spec.get("step_fields") or {})
+            steps.append(action_step)
             continue
         if ph.kind == "api":
             fail_target = fail_id if fail_id is not None else success_id
@@ -2038,11 +2082,26 @@ def convert_workflow(
         )
     for p in phases:
         if p.kind == "halo_note" and p.halo_note:
-            if p.halo_note.get("kind") in (
+            k = p.halo_note.get("kind")
+            if k in (
                 "halo_ticket_create",
                 "halo_ticket_update",
                 "halo_api_action",
             ) and not p.halo_note.get("body"):
+                notes.append(
+                    f"binding {k!r} on phase {p.label!r} has no "
+                    "body - the aa8 step would send {} (give the binding a "
+                    '"body": {...} request payload)'
+                )
+            if (
+                k == "halo_runbook_action"
+                and not p.halo_note.get("body")
+                and p.halo_note.get("raw_message") is None
+            ):
+                notes.append(
+                    f"binding 'halo_runbook_action' on phase {p.label!r} has no "
+                    "payload - give it raw_message (aa18 SQL) or body ({...})"
+                )
                 notes.append(
                     f"binding {p.halo_note.get('kind')!r} on phase {p.label!r} has no "
                     "body - the aa8 step would send {} (give the binding a "

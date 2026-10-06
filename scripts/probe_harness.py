@@ -87,18 +87,41 @@ def build_condition_leg(
     return doc, view
 
 
-def aa8_runbook(name: str, aat: int, message: str, inputs: dict[str, str] | None = None) -> dict:
-    """One-step Halo API Action runbook (aa8 + aat, act18 edge pair).
+# Edge pair per auto_action, decoded from Halo's OWN template graphs
+# (halo_online_runbook_repository.json): aa8->act18 (35/35),
+# aa18->act29 (8/8), aa25+aa26->act37 (4/4); aa6->act17 from this
+# repo's route probe. seq1->approval1, seq2->approval0 throughout.
+AA_EDGES: dict[int, tuple[int, str, str]] = {
+    6: (17, "Successful Response (200 - 299)", "Unsuccessful Response"),
+    8: (18, "Successful", "Unsuccessful"),
+    18: (29, "Successful", "Unsuccessful"),
+    25: (37, "Successful", "Unsuccessful"),
+    26: (37, "Successful", "Unsuccessful"),
+}
 
-    ``inputs`` become document input_variables - aa8 message bodies can
-    interpolate them as ``<<key>>`` (the dynamic-write question the
-    interpolation probe pins).
+
+def action_runbook(
+    name: str,
+    aa: int,
+    message: str | None,
+    aat: int | None = None,
+    extra: dict | None = None,
+    inputs: dict[str, str] | None = None,
+    step_name: str = "action",
+) -> dict:
+    """One-step runbook for ANY auto_action + its proven edge pair.
+
+    ``extra`` merges step fields verbatim - the shapes Halo's own
+    templates carry (ai_ability_id, runbook_variable_mappings,
+    input_values, output_variables...). ``inputs`` become document
+    input_variables (``<<key>>`` interpolation in messages/paths).
     """
+    atype, ok_name, bad_name = AA_EDGES.get(aa, (18, "Successful", "Unsuccessful"))
 
     def edge(action_name: str, end: int, seq: int) -> dict:
         return {
-            "action_type": 18,
-            "action_id": -18,
+            "action_type": atype,
+            "action_id": -atype,
             "action_name": action_name,
             "start_step": 1,
             "end_step": end,
@@ -108,6 +131,20 @@ def aa8_runbook(name: str, aat: int, message: str, inputs: dict[str, str] | None
             "chat_selection_order": 1,
         }
 
+    step: dict = {
+        "step_id": 1,
+        "name": step_name,
+        "steptype": 2,
+        "auto_action": aa,
+        "isstart": True,
+        "allow_all_statuses": True,
+        "actions": [edge(ok_name, 2, 1), edge(bad_name, 3, 2)],
+    }
+    if message is not None:
+        step["message"] = message
+    if aat is not None:
+        step["auto_action_type"] = aat
+    step.update(extra or {})
     return {
         "name": f"{bc.PROBE}-{name}"[:80],
         "type": 1,
@@ -119,17 +156,7 @@ def aa8_runbook(name: str, aat: int, message: str, inputs: dict[str, str] | None
             for k, v in (inputs or {}).items()
         ],
         "steps": [
-            {
-                "step_id": 1,
-                "name": "api-action",
-                "steptype": 2,
-                "auto_action": 8,
-                "auto_action_type": aat,
-                "isstart": True,
-                "allow_all_statuses": True,
-                "message": message,
-                "actions": [edge("Successful", 2, 1), edge("Unsuccessful", 3, 2)],
-            },
+            step,
             {
                 "step_id": 2,
                 "name": "Success",
@@ -150,6 +177,18 @@ def aa8_runbook(name: str, aat: int, message: str, inputs: dict[str, str] | None
             },
         ],
     }
+
+
+def aa8_runbook(name: str, aat: int, message: str, inputs: dict[str, str] | None = None) -> dict:
+    """One-step Halo API Action runbook (aa8 + aat, act18 edge pair).
+
+    Thin delegate over action_runbook; ``inputs`` become document
+    input_variables - aa8 message bodies interpolate them as ``<<key>>``
+    (pinned by interpolation_evidence.json).
+    """
+    return action_runbook(
+        name, aa=8, message=message, aat=aat, inputs=inputs, step_name="api-action"
+    )
 
 
 async def create_ticket(client: Any, summary: str) -> str | None:
