@@ -7,6 +7,8 @@ edge shapes, terminal wiring, iteration sentinel, method binding.
 
 from __future__ import annotations
 
+import json
+
 from halocli.bifrost_convert import (
     AUTHORIZATION_TYPE,
     DATA_TYPE,
@@ -671,6 +673,68 @@ def test_halopsa_write_without_binding_gets_a_suggestion_note() -> None:
     conv = convert_workflow({}, NOTE_SOURCE, "writer")  # no bindings
     assert conv.ok
     assert any("halo_note" in n and "phase-bindings" in n for n in conv.notes)
+    # the suggestion names the aat1/aat2 write kinds too (proven
+    # on plain fires - ticket_crud_evidence.json)
+    assert any("halo_ticket_create" in n and "halo_ticket_update" in n for n in conv.notes)
+
+
+def test_halo_ticket_create_binding_emits_aat1() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={
+            "post_note": {
+                "kind": "halo_ticket_create",
+                "body": {
+                    "summary": "Escalated by halocli",
+                    "reportedby": "<<request^reporter>>",
+                },
+            }
+        },
+    )
+    assert conv.ok
+    step = next(s for s in conv.payload["steps"] if s.get("auto_action") == 8)
+    assert step["auto_action_type"] == 1  # aat1 = create ticket
+    body = json.loads(step["message"].replace("<<request^reporter>>", '"x"'))
+    assert body["summary"] == "Escalated by halocli"
+    # <<vars>> must be UNQUOTED for interpolation (the working-template
+    # convention - the probe's literal bodies carried no vars)
+    assert '"<<request^reporter>>"' not in step["message"]
+    assert "<<request^reporter>>" in step["message"]
+    # the act18 pair with the approval_result rule (proven both ways:
+    # aat2_bad took Unsuccessful off the Success path)
+    assert [(a["action_type"], a["approval_result"]) for a in step["actions"]] == [
+        (18, 1),
+        (18, 0),
+    ]
+
+
+def test_halo_ticket_update_binding_emits_aat2() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={
+            "post_note": {"kind": "halo_ticket_update", "body": {"id": 42, "summary": "upd"}}
+        },
+    )
+    assert conv.ok
+    step = next(s for s in conv.payload["steps"] if s.get("auto_action") == 8)
+    assert step["auto_action_type"] == 2  # aat2 = update
+    body = json.loads(step["message"])
+    assert body == {"id": 42, "summary": "upd"}
+
+
+def test_ticket_write_binding_without_body_gets_a_note() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={"post_note": {"kind": "halo_ticket_create"}},
+    )
+    assert conv.ok
+    assert any("has no body" in n for n in conv.notes)
 
 
 def test_bare_string_guard_uses_has_value_criteria() -> None:

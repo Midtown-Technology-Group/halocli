@@ -1,0 +1,187 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "aat1/aat2/aat3-literal",
+  "legs": {
+    "aat3_lit": {
+      "id": "2e9177b4-342e-4cf1-9ed8-a5b3d1e8a7f5",
+      "aat": 3,
+      "runlog": {
+        "id": 2700,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 516,
+        "timestamp": "2026-10-06T04:19:13.287"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 2,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      },
+      "marker_found": false,
+      "action_marker_found": true,
+      "ticket_id": "2946",
+      "doc_keys": [
+        "_can_download_att",
+        "_can_edit_att",
+        "_can_upload_att",
+        "_can_view_action_history",
+        "_can_view_att",
+        "_canupdate",
+        "_has_automations",
+        "_open_search_score",
+        "actisbillabledefault",
+        "additional_agents",
+        "addressfrom",
+        "agent_id",
+        "ai_conversation_summary",
+        "ai_generated_summary",
+        "ai_matched_articles",
+        "ai_matched_tickets",
+        "ai_search_query",
+        "ai_suggested_category",
+        "ai_suggested_impact",
+        "ai_suggested_priority",
+        "ai_suggested_type",
+        "ai_suggested_urgency",
+        "ai_survey_comment",
+        "ai_tonality",
+        "alluserscanview",
+        "appointment_count",
+        "appointment_type",
+        "approval_cab_name",
+        "approval_process_group_name",
+        "approval_process_step_name",
+        "article_type",
+        "atera_alert_id",
+        "attachment_count",
+        "automate_id",
+        "automation_sequence",
+        "autotask_id",
+        "autotask_number",
+        "auvik_id",
+        "auvik_url",
+        "azure_tenants_name"
+      ]
+    },
+    "aat1_create": {
+      "id": "b2e2e6fa-725d-42a7-b160-c7aaaf789d79",
+      "aat": 1,
+      "runlog": {
+        "id": 2701,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 671,
+        "timestamp": "2026-10-06T04:19:18.04"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 2,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      },
+      "new_ticket_ids": [
+        "2948"
+      ],
+      "created_id": "2948",
+      "created_summary": "halocli-crud-probe created-by-aat1"
+    },
+    "aat2_update": {
+      "id": "ee504165-6d57-49d7-a456-de8c247e4250",
+      "aat": 2,
+      "runlog": {
+        "id": 2703,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 552,
+        "timestamp": "2026-10-06T04:19:22.83"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 2,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      },
+      "updated": true,
+      "summary_now": "halocli-crud-probe updated-by-aat2"
+    },
+    "aat2_bad": {
+      "id": "62f1fd0d-a634-4090-834e-4da5cff122db",
+      "aat": 2,
+      "runlog": {
+        "id": 2704,
+        "status": 1,
+        "error": "Failed result reached. Last step=3",
+        "steps_executed": 1,
+        "runbook_step": 1,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 388,
+        "timestamp": "2026-10-06T04:19:27.617"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 1,
+          "step": 1,
+          "step_name": null,
+          "exec": 1,
+          "error": "Failed result reached. Last step=3"
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      },
+      "took_failure_path": true
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "ticket_cleanup": "deleted 3 probe ticket(s)",
+  "verdict": "SHIP: aat3 note with literal id lands without ticket context | SHIP: aat1 create step made a discoverable ticket | SHIP: aat2 update step changed the target ticket | bad id routes the Unsuccessful edge off the Success path"
+}
