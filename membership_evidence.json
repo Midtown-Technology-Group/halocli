@@ -1,0 +1,792 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "membership guard primitive",
+  "legs": {
+    "control": {
+      "id": "58ffa051-e966-40fa-83dd-5bf739004b77",
+      "inputs": {
+        "a": "x"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2646,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 288,
+        "timestamp": "2026-10-06T03:23:23.133"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          }
+        ]
+      }
+    },
+    "two_eq_or": {
+      "id": "d5cbeda3-8a53-4ca3-b270-e5f622389c8e",
+      "inputs": {
+        "a": "x"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        },
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2647,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 262,
+        "timestamp": "2026-10-06T03:23:28.003"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          }
+        ]
+      }
+    },
+    "two_eq_neg": {
+      "id": "d20e39ff-ced8-4510-8a5a-a8d34f94931c",
+      "inputs": {
+        "a": "z"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        },
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2648,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 242,
+        "timestamp": "2026-10-06T03:23:32.723"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "z"
+          }
+        ]
+      }
+    },
+    "in_list_b": {
+      "id": "e7d5df2b-e377-4693-84ca-8ca5f3ae3d43",
+      "inputs": {
+        "a": "y"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        },
+        {
+          "type": 0,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2649,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 257,
+        "timestamp": "2026-10-06T03:23:37.487"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "y"
+          }
+        ]
+      }
+    },
+    "t23_single": {
+      "id": "e8cbad73-9bb2-4291-b853-fc79d02e3c59",
+      "inputs": {
+        "a": "x"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2650,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 296,
+        "timestamp": "2026-10-06T03:23:42.277"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          }
+        ]
+      }
+    },
+    "t23_csv": {
+      "id": "ae60468a-4ac9-449f-a49b-300bf5618383",
+      "inputs": {
+        "a": "y"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x,y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2651,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 263,
+        "timestamp": "2026-10-06T03:23:47.01"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "y"
+          }
+        ]
+      }
+    },
+    "t9_any": {
+      "id": "925457b4-1924-4a16-b617-b959635c8dc7",
+      "inputs": {
+        "a": "y"
+      },
+      "criterion_rows": [
+        {
+          "type": 9,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x,y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2652,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 344,
+        "timestamp": "2026-10-06T03:23:51.807"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "y"
+          }
+        ]
+      }
+    },
+    "t9_neg": {
+      "id": "ad3ed25f-3337-4304-9fb9-42092dfd6155",
+      "inputs": {
+        "a": "z"
+      },
+      "criterion_rows": [
+        {
+          "type": 9,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x,y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2653,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 272,
+        "timestamp": "2026-10-06T03:23:56.59"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "z"
+          }
+        ]
+      }
+    },
+    "t23_neg_set": {
+      "id": "e9c52fa8-f351-43bc-ad5c-898d35e7f4aa",
+      "inputs": {
+        "a": "z"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x,y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2654,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 236,
+        "timestamp": "2026-10-06T03:24:02.08"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "z"
+          }
+        ]
+      }
+    },
+    "t23_neg_single": {
+      "id": "e4086a93-33e8-4aec-b27d-f57bd9163169",
+      "inputs": {
+        "a": "z"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2655,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 246,
+        "timestamp": "2026-10-06T03:24:07.57"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "z"
+          }
+        ]
+      }
+    },
+    "t24_notin_true": {
+      "id": "633ca65e-4e13-4134-870f-31e82736d04b",
+      "inputs": {
+        "a": "z"
+      },
+      "criterion_rows": [
+        {
+          "type": 24,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x,y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2656,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 320,
+        "timestamp": "2026-10-06T03:24:13.3"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "z"
+          }
+        ]
+      }
+    },
+    "t24_notin_false": {
+      "id": "f862e5cd-c6f9-4d93-ab0c-2bac609c06e1",
+      "inputs": {
+        "a": "y"
+      },
+      "criterion_rows": [
+        {
+          "type": 24,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "x,y",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2657,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 278,
+        "timestamp": "2026-10-06T03:24:18.043"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "y"
+          }
+        ]
+      }
+    },
+    "t23_overlap": {
+      "id": "954a2880-2052-40e8-9528-9334106a8f0b",
+      "inputs": {
+        "a": "x"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "xy",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2658,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 252,
+        "timestamp": "2026-10-06T03:24:22.82"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          }
+        ]
+      }
+    },
+    "t24_overlap": {
+      "id": "4c50036a-daa9-463e-bda0-165f035f5f06",
+      "inputs": {
+        "a": "x"
+      },
+      "criterion_rows": [
+        {
+          "type": 24,
+          "fieldname": "<<a>>",
+          "value_type": "string",
+          "value_string": "xy",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2659,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 343,
+        "timestamp": "2026-10-06T03:24:27.613"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "a",
+            "Value": "x"
+          }
+        ]
+      }
+    },
+    "t23_arr_true": {
+      "id": "003e2541-5ae6-41d3-b1e4-c52415aa5785",
+      "inputs": {
+        "arr": "[\"x\"]",
+        "a": "zz"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<arr>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2660,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 266,
+        "timestamp": "2026-10-06T03:24:32.403"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "arr",
+            "Value": "[\"x\"]"
+          },
+          {
+            "Key": "a",
+            "Value": "zz"
+          }
+        ]
+      }
+    },
+    "t23_arr_false": {
+      "id": "3c1e5197-3b3e-4ca3-a808-d25f50172bfb",
+      "inputs": {
+        "arr": "[\"z\"]",
+        "a": "zz"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<arr>>",
+          "value_type": "string",
+          "value_string": "x",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2661,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 260,
+        "timestamp": "2026-10-06T03:24:37.153"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "arr",
+            "Value": "[\"z\"]"
+          },
+          {
+            "Key": "a",
+            "Value": "zz"
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "verdict": "exec={'control': 3, 'two_eq_or': 1, 'two_eq_neg': 1, 'in_list_b': 1, 't23_single': 3, 't23_csv': 3, 't9_any': 1, 't9_neg': 1, 't23_neg_set': 1, 't23_neg_single': 1, 't24_notin_true': 3, 't24_notin_false': 1, 't23_overlap': 1, 't24_overlap': 3, 't23_arr_true': 1, 't23_arr_false': 1} | multiple eq rows are AND'd (eq rows cannot express a set) | SHIP: type23 = in-set membership (both legs proven) | SHIP: type24 = not-in (both legs proven) | value side = STRICT comma-set (overlap case not matched) | type23 on Array field does NOT match element membership"
+}
