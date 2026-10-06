@@ -32,101 +32,13 @@ AAT3_MARKER = "halocli-crud-probe note marker"
 AAT1_MARKER = "halocli-crud-probe created-by-aat1"
 AAT2_MARKER = "halocli-crud-probe updated-by-aat2"
 
-
-def aa8_runbook(name: str, aat: int, message: str) -> dict:
-    """One-step Halo API Action runbook (aa8 + aat, act18 edge pair)."""
-
-    def edge(action_name: str, end: int, seq: int) -> dict:
-        return {
-            "action_type": 18,
-            "action_id": -18,
-            "action_name": action_name,
-            "start_step": 1,
-            "end_step": end,
-            "seq": seq,
-            "use_work_hours": True,
-            "approval_result": 1 if seq == 1 else 0,
-            "chat_selection_order": 1,
-        }
-
-    return {
-        "name": f"{ph.bc.PROBE}-{name}"[:80],
-        "type": 1,
-        "active": True,
-        "runbook_start_type": 1,
-        "inbound_authentication_type": 0,
-        "input_variables": [],
-        "steps": [
-            {
-                "step_id": 1,
-                "name": "api-action",
-                "steptype": 2,
-                "auto_action": 8,
-                "auto_action_type": aat,
-                "isstart": True,
-                "allow_all_statuses": True,
-                "message": message,
-                "actions": [edge("Successful", 2, 1), edge("Unsuccessful", 3, 2)],
-            },
-            {
-                "step_id": 2,
-                "name": "Success",
-                "steptype": 3,
-                "isend": True,
-                "islaststep": True,
-                "allow_all_statuses": True,
-                "actions": [],
-            },
-            {
-                "step_id": 3,
-                "name": "Fail",
-                "steptype": 3,
-                "auto_action": 1,
-                "isend": True,
-                "allow_all_statuses": True,
-                "actions": [],
-            },
-        ],
-    }
-
-
-async def create_ticket(client: Any, summary: str) -> str | None:
-    ta = await client.request(
-        "POST",
-        "/Tickets",
-        json_body=[{"summary": summary, "reportedby": "probe@example.com"}],
-        timeout=60,
-    )
-    trow = ta[0] if isinstance(ta, list) else ta
-    return str(trow.get("id")) if isinstance(trow, dict) and trow.get("id") else None
-
-
-async def ticket_doc(client: Any, tid: str) -> dict:
-    doc = await client.request(
-        "GET", f"/Tickets/{tid}", params={"includedetails": "true"}, timeout=45
-    )
-    return doc if isinstance(doc, dict) else {}
-
-
-async def ticket_id_set(client: Any) -> set[str]:
-    rows = await client.request("GET", "/Tickets", params={"count": "1000"}, timeout=60)
-    if isinstance(rows, dict):
-        rows = next((v for v in rows.values() if isinstance(v, list)), [])
-    if not isinstance(rows, list):
-        return set()
-    return {str(r.get("id")) for r in rows if isinstance(r, dict) and r.get("id")}
-
-
-async def find_by_summary(client: Any, marker: str) -> str | None:
-    rows = await client.request("GET", "/Tickets", params={"count": "1000"}, timeout=60)
-    if isinstance(rows, dict):
-        rows = next((v for v in rows.values() if isinstance(v, list)), [])
-    if not isinstance(rows, list):
-        return None
-    for r in rows:
-        if marker in str(r.get("summary") or ""):
-            return str(r.get("id"))
-    return None
+# shared builders live in probe_harness (single definitions - the sonar
+# duplication gate counts cross-probe clones)
+aa8_runbook = ph.aa8_runbook
+create_ticket = ph.create_ticket
+ticket_doc = ph.ticket_doc
+ticket_id_set = ph.ticket_id_set
+find_by_summary = ph.find_by_summary
 
 
 def verdict(ev: dict[str, Any]) -> str:

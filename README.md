@@ -906,7 +906,7 @@ its message templates: `1` create ticket, `2` update ticket,
 {"post_note": {"kind": "halo_note", "outcome": "Internal Note",
                "who": "Automation", "note": "<b>Converted by halocli</b> ..."}}
 {"escalate": {"kind": "halo_ticket_create",
-              "body": {"summary": "Escalated", "reportedby": "<<request^reporter>>"}}}
+              "body": {"summary": "Escalated", "reportedby": "<<reporter>>"}}}
 {"retitle":  {"kind": "halo_ticket_update",
               "body": {"id": 42, "summary": "Retitled by the runbook"}}}
 ```
@@ -921,10 +921,16 @@ the body's summary applied exactly (discovered by pre/post id-diff),
 took the *Unsuccessful* edge → Fail terminal, status1 *"Failed result
 reached. Last step=3"* — the edge pair proven in both directions),
 and **aat3 with a literal ticket id** landed as an Action row
-(`GET /Actions` marker hit). The earlier "ticket context required"
-was really "**resolved interpolation** required": `<<ticket^id>>`
-still needs the trigger path (runlog **2552 status 2** +
-`note_readback.note_found_in_actions: true`). A workflow with
+(`GET /Actions` marker hit).
+
+**Bodies are dynamic**: bare `<<input_var>>` tokens interpolate the
+runbook's **input variables** (`interpolation_evidence.json`): aat1
+with `"summary": "<<subject>>"` created a ticket whose summary *was*
+the fired input value, aat3's `note_html` carried the fired note text
+the same way — while an **unresolved token fails the step** (the same
+behavior that makes `<<ticket^id>>` need the trigger path, runlog
+**2552 status 2** + `note_readback.note_found_in_actions: true`). A
+workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion — which names all three kinds —
 instead of a guessed write.
@@ -1040,9 +1046,14 @@ spellings pass); **float sets** translate **only with
 the converter always emits `"string"`); **bool bare truthiness**
 translates to the same criteria5 `">0"` idiom (flag `1` → met, `0` →
 notmet — `True`/`False` input spellings never match, so bool defaults
-serialize as `1`/`0`). Still flat, deliberately: `flag == True`
-literal comparisons and `flag in [True, False]` (never probed — never
-guessed). The sweep that started the membership work: no trial runbook
+serialize as `1`/`0`). **The last bool gaps followed**
+(`interpolation_evidence.json`, probe `scripts/runbook_interpolation_probe.py`,
+10 self-cleaning runbooks): `flag == True` → **eq `value_int1`**
+(flag `1` → met, `0` → notmet) and `flag in [True, False]` →
+**type23 comma-set `1,0`** (both legs for both spellings — and the
+`"True"` value spelling *fails*, confirming the canonical `1`/`0`
+encoding). Still flat: `flag == 1` (int constant on a bool param —
+never probed, never guessed). The sweep that started the membership work: no trial runbook
 used any membership-style criterion (0 hits in 20 —
 `criteria_labels_probe.py`).
 
@@ -1080,12 +1091,14 @@ arm live-proven** (met → guarded body, notmet → else arm; a then-arm
 ending in a loop skips the else from its `iter_end`), bare truthiness
 on **str** params (criteria29, both legs proven) and on **int/float/
 bool** params (criteria5 ">0", both legs proven per type) and **set
-membership** on str/int/float (`in`/`not in` → type23/24, both legs +
-overlap proof; `value_type "string"` is the proven row), but
+membership** on str/int/float/bool (`in`/`not in` → type23/24, both
+legs + overlap proof; `value_type "string"` is the proven row; bools
+encode `1`/`0`) and **bool literal comparisons** (`flag == True` →
+eq1, both legs), but
 comparisons **against other variables** (proven non-substitutable —
 value-side `<<var>>` compares literally, see above), **element
-membership on Array params** (proven non-executing), **bool literal
-comparisons and bool sets** (unpinned), and guards
+membership on Array params** (proven non-executing), **int constants
+on bool params** (unpinned), and guards
 on untyped params still flatten to the linear success path (noted per
 conversion);
 `effects`/`enforced_bounds`/secrets become

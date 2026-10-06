@@ -94,17 +94,22 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   var_compare_evidence.json). Emitting that criterion would invert
   routing (always notmet), so these flatten WITH a precise
   per-guard note naming the evidence - never a guessed criterion.
-- membership guards (``if x in ["a","b"]`` / ``not in``) on str, int
-  and float params -> type23/type24 (Includes / Does not include)
-  with value_string = comma-set, value_type "string" for all three
-  (floats FAIL with value_type "float" - intbool_guard_evidence) -
+- membership guards (``if x in ["a","b"]`` / ``not in``) on str, int,
+  float and bool params -> type23/type24 (Includes / Does not
+  include)
+  with value_string = comma-set, value_type "string" (floats FAIL
+  with value_type "float" - intbool_guard_evidence; bools encode
+  True/False as "1"/"0" - the "True" spelling fails,
+  interpolation_evidence.json) -
   STRICT set semantics proven by the16-leg membership_evidence.json
   probe (both legs for in and not-in,
   the overlap leg value "xy" + field "x" rules out substring, eq rows
   are AND'd so sets cannot be built from eq rows). Element membership
   on ARRAY params does NOT transfer (type23 on an Array field stays
-  notmet both ways - noted per conversion); bool sets and bool
-  literal comparisons (``flag == True``) stay unpinned (flat).
+  notmet both ways - noted per conversion); ``flag == True/False``
+  literal comparisons translate to eq/ne against value_int 1/0 (both
+  legs proven - interpolation_evidence.json), while int constants on
+  bool params (``flag == 1``) stay unpinned (flat).
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -305,6 +310,18 @@ def _unquote_vars(message: str) -> str:
     converter used to hardcode this for ``<<ticket^id>>``).
     """
     return _UNQUOTE_VAR.sub(r"\1", message)
+
+
+def _set_token(value: object) -> str:
+    """Membership-set spelling for a literal: bools as ``1``/``0``.
+
+    data_type5 inputs only accept ``1``/``0`` (the ``True`` spelling
+    fails - interpolation_evidence.json), so set values must use the
+    same canonical encoding the input variables use.
+    """
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    return str(value)
 
 
 # Python annotation -> Halo data_type (name based; best-effort)
@@ -1024,6 +1041,7 @@ def classify_phases(
                 "str": lambda v: isinstance(v, str),
                 "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
                 "float": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+                "bool": lambda v: isinstance(v, bool),
             }
             pred = _elem_pred.get(param_types.get(left.id, "") or "")
             if (
@@ -1036,14 +1054,30 @@ def classify_phases(
                 return {
                     "param": left.id,
                     "op": "in_set" if isinstance(test.ops[0], ast.In) else "not_in_set",
-                    "value": ",".join(str(v) for v in literals),
+                    "value": ",".join(_set_token(v) for v in literals),
                     "values": literals,
-                    "value_type": "string",  # proven for str/int/float alike
+                    "value_type": "string",  # proven for str/int/float/bool alike
                 }
             return None
         if op is None or not isinstance(left, ast.Name):
             return None
         ptype = param_types.get(left.id)
+        # `flag == True/False` (and !=) -> eq/ne against1/0: data_type5's
+        # proven spelling, both legs (interpolation_evidence.json:
+        # flag=1 met / flag=0 notmet on eq1). Int constants on bool
+        # params stay unpinned (flat).
+        if (
+            ptype == "bool"
+            and op in ("eq", "ne")
+            and isinstance(right, ast.Constant)
+            and isinstance(right.value, bool)
+        ):
+            return {
+                "param": left.id,
+                "op": op,
+                "value": 1 if right.value else 0,
+                "value_type": "int",
+            }
         if ptype in (None, "array", "bool"):
             return None
         if not isinstance(right, ast.Constant) or isinstance(right.value, bool):
@@ -1230,10 +1264,11 @@ def _compare_criterion(spec: dict, step_id: int) -> dict:
     value = spec["value"] if spec.get("values") is None else ""
     if spec.get("values") is not None:
         # membership: the value side is a STRICT comma-set; value_type
-        # "string" is the proven row for str/int/float params alike
+        # "string" is the proven row for str/int/float/bool params
         # (intbool_guard_evidence.json: floats FAIL with value_type
-        # "float", pass with "string"; ints pass with both)
-        value = ",".join(str(v) for v in spec["values"])
+        # "float", pass with "string"; ints pass with both;
+        # interpolation_evidence.json: bools spell True/False as 1/0)
+        value = ",".join(_set_token(v) for v in spec["values"])
     vt = spec.get("value_type") or "string"
     # spec forms: {param...} -> <<param>> on runbookvariable, or
     # {table, field...} -> a raw table field (N-Central's faults-style
@@ -1514,10 +1549,14 @@ def build_runbook_steps(
             # 3 add note (SPA catalog), all three proven on PLAIN
             # formCollection fires with literal ids (ticket_crud_evidence
             # json: create ticket2945 with summary applied, update read
-            # back, note landed as an Action row; the old "requires
-            # ticket context" was really "requires RESOLVED
-            # interpolation" - <<vars>> still need context). The
-            # message is the raw Halo API request body with UNQUOTED
+            # back, note landed as an Action row). BARE <<input_var>>
+            # tokens interpolate DYNAMICALLY in the body too
+            # (interpolation_evidence.json: aat1 summary "<<subject>>"
+            # created a ticket whose summary was the input value; aat3
+            # note_html "<<note_text>>" landed with the input text);
+            # an UNRESOLVED token fails the step - the same behavior
+            # that made <<ticket^id>> need the trigger path (run2552).
+            # The message is the raw Halo API request body with UNQUOTED
             # ``<<...>>`` tokens (the working runbooks' convention).
             # Edges: act18 Successful / Unsuccessful (sem-table pair).
             spec = ph.halo_note or {}

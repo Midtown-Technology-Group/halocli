@@ -1,0 +1,324 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "dynamic bodies + bool encoding",
+  "legs": {
+    "aat1_var": {
+      "id": "d9e67691-4773-4b36-9d24-52d10206c675",
+      "aat": 1,
+      "inputs": {
+        "subject": "halocli-interp created-by-input"
+      },
+      "runlog": {
+        "id": 2736,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 523,
+        "timestamp": "2026-10-06T04:40:57.847"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "subject",
+            "Value": "halocli-interp created-by-input"
+          }
+        ]
+      },
+      "created_id": "2955",
+      "created_summary": "halocli-interp created-by-input"
+    },
+    "aat1_missing": {
+      "id": "6a8ecf25-6bc3-4385-9534-a7861225d53c",
+      "aat": 1,
+      "inputs": {},
+      "runlog": {
+        "id": 2738,
+        "status": 1,
+        "error": "Failed result reached. Last step=3",
+        "steps_executed": 1,
+        "runbook_step": 1,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 256,
+        "timestamp": "2026-10-06T04:41:02.63"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "aat3_var": {
+      "id": "0fc7ccb3-3dda-4a9b-8de9-b9cc93156096",
+      "aat": 3,
+      "inputs": {
+        "note_text": "halocli-interp dynamic note"
+      },
+      "runlog": {
+        "id": 2739,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 645,
+        "timestamp": "2026-10-06T04:41:07.443"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "note_text",
+            "Value": "halocli-interp dynamic note"
+          }
+        ]
+      },
+      "note_has_input": true
+    },
+    "bool_eq_t": {
+      "id": "2ed4f3d2-8b55-4e82-8dc7-996b4b7eaded",
+      "inputs": {
+        "flag": "1",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2740,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 370,
+        "timestamp": "2026-10-06T04:41:13.027"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "1"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "bool_eq_f": {
+      "id": "4aa3bda2-4865-4d7e-8e77-e8e29cf2b9b3",
+      "inputs": {
+        "flag": "0",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2741,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 259,
+        "timestamp": "2026-10-06T04:41:17.833"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "0"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "boolset_t": {
+      "id": "70e5cea8-270d-466c-b3ff-fbcebf763292",
+      "inputs": {
+        "flag": "1",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2742,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 340,
+        "timestamp": "2026-10-06T04:41:22.587"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "1"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "boolset_f": {
+      "id": "046bcf15-3dd1-447d-bf26-328c6ef3211c",
+      "inputs": {
+        "flag": "0",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2743,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 247,
+        "timestamp": "2026-10-06T04:41:27.44"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "0"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "boolset0_f": {
+      "id": "de36e7ab-395b-433e-8704-57c28ed054dc",
+      "inputs": {
+        "flag": "0",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2744,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 268,
+        "timestamp": "2026-10-06T04:41:32.25"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "0"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "boolset0_t": {
+      "id": "38525657-289b-4066-b99d-f38b41170b03",
+      "inputs": {
+        "flag": "1",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2745,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 233,
+        "timestamp": "2026-10-06T04:41:37.047"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "1"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "boolset_capital": {
+      "id": "3c23bfad-8c43-42b0-be04-82babc91fbfb",
+      "inputs": {
+        "flag": "1",
+        "level": "5"
+      },
+      "runlog": {
+        "id": 2746,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 252,
+        "timestamp": "2026-10-06T04:41:41.857"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "flag",
+            "Value": "1"
+          },
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "ticket_cleanup": "deleted 2 probe ticket(s)",
+  "verdict": "SHIP: <<input>> vars interpolate in aa8 bodies (dynamic create) | unresolved token fails the step (same as <<ticket^id>> precedent) | SHIP: dynamic note text via <<input>> (aat3) | SHIP: flag == True -> eq value_int1 (both legs) | SHIP: bool membership encodes as '1' (both legs) | SHIP: bool membership encodes False as '0' (both legs) | 'True' spelling fails (canonical 1/0 required)"
+}
