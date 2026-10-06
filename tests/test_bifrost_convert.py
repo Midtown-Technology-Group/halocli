@@ -689,6 +689,54 @@ def test_chain_before_trailing_phases_warns() -> None:
     assert any("WARNING" in n and "NOT run" in n for n in conv.notes)
 
 
+TICKET_FILTER_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Filter")
+async def filtered(client) -> dict:
+    await do_work(client)
+    return {}
+"""
+
+
+def test_ticket_guard_prefixes_faults_criteria_with_exit() -> None:
+    conv = convert_workflow(
+        {},
+        TICKET_FILTER_SOURCE,
+        "filtered",
+        ticket_guards=[
+            {
+                "field": "reportedby",
+                "op": "ne",
+                "value": "noreply@voicemail.goto.com",
+                "value_type": "string",
+            }
+        ],
+    )
+    assert conv.ok
+    steps = conv.payload["steps"]
+    guard = steps[0]
+    # prefix condition, N-Central's faults-table shape
+    assert guard["steptype"] == 1 and guard["isstart"] is True
+    assert guard["name"] == "if ticket.reportedby != 'noreply@voicemail.goto.com':"
+    (crit,) = guard["step_conditions"]
+    assert (crit["tablename"], crit["fieldname"], crit["type"]) == (
+        "faults",
+        "reportedby",
+        1,  # Is not equal to
+    )
+    assert crit["value_string"] == "noreply@voicemail.goto.com"
+    met, notmet = guard["actions"]
+    # met -> first work phase; notmet EXITS to Success (early-return)
+    work = next(s for s in steps if s["name"] == "do_work")
+    success = next(s for s in steps if s["name"] == "Success")
+    assert met["end_step"] == work["step_id"]
+    assert notmet["end_step"] == success["step_id"]
+    assert (met["approval_result"], notmet["approval_result"]) == (1, 0)
+    assert any("ticket-field guard" in n for n in conv.notes)
+
+
 def test_classify_does_not_descend_into_callee_args() -> None:
     phases = classify_phases  # imported for the guard below
     conv = convert_workflow({}, WORKFLOW_SOURCE, "inspect_voicemail_customer")

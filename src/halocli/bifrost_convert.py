@@ -69,6 +69,14 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   so every failure/false edge MUST send approval_result:0 or it
   collapses to the positive name and never routes (the same rule
   governs act17/act22/act23 second edges).
+- ticket guards (``--ticket-guard "field op value"``) -> PREFIX
+  condition steps with criteria on the FAULTS table (N-Central's
+  production shape: tablename ``faults``, plain fieldname, operator id)
+  and ``notmet_exit``: notmet jumps to Success - the Bifrost early-
+  return (no-op complete) semantics. Requires ticket context (the
+  event/trigger path; faults criteria cannot evaluate on a bare
+  formCollection fire). Trial-proven BOTH legs: full path exec3
+  status2 (run2567) vs early exit exec1 status2 (run2570).
 - chain binding (``{"kind": "chain_runbook", "target": <guid>}``) ->
   aa24 StartNewRunbookTerminateCurrentRunbook + start_new_runbook_id,
   NO outgoing edges (trial-proven, runs2561/2562: the current run
@@ -465,6 +473,7 @@ class Phase:
     branch_span: int | None = None  # guarded (then-arm) raw-phase count
     else_span: int | None = None  # else-arm raw-phase count (None = no else)
     notmet_target: int | None = None  # plan-space step id (build side)
+    notmet_exit: bool = False  # notmet jumps straight to Success (early-return semantics)
     criterion_spec: dict | None = None  # typed comparison criteria (None = array has-elements)
 
 
@@ -794,18 +803,22 @@ def _compare_criterion(spec: dict, step_id: int) -> dict:
     """
     value = spec["value"]
     vt = spec.get("value_type") or "string"
+    # spec forms: {param...} -> <<param>> on runbookvariable, or
+    # {table, field...} -> a raw table field (N-Central's faults-style
+    # ticket-field criteria)
+    fieldname = str(spec["field"]) if spec.get("field") else f"<<{spec.get('param')}>>"
     crit: dict = {
         "id": None,
         "rule_id": 0,
         "qualification_criteria_id": 0,
-        "fieldname": f"<<{spec['param']}>>",
+        "fieldname": fieldname,
         "value_type": {"int": "int", "float": "float", "str": "string"}.get(vt, "string"),
         "value_type_id": -1,
         "value_int": 0,
         "value_string": "",
         "partialmatch": False,
         "matchseparatedvalues": False,
-        "tablename": "runbookvariable",
+        "tablename": str(spec.get("table") or "runbookvariable"),
         "type": CRITERIA_TYPE[spec["op"]],
         "flowsubdetails_criteria_id": 0,
         "use": 0,
@@ -1011,7 +1024,10 @@ def build_runbook_steps(
             continue
         assert ph is not None  # kind == "plain" or "body"
         if ph.kind == "condition":
-            notmet = ph.notmet_target if ph.notmet_target is not None else success_id
+            if ph.notmet_exit:
+                notmet = success_id  # early-return semantics: skip the rest
+            else:
+                notmet = ph.notmet_target if ph.notmet_target is not None else success_id
             steps.append(
                 {
                     "step_id": idx,
@@ -1154,6 +1170,7 @@ def convert_workflow(
     function_name: str | None = None,
     phase_bindings: dict[str, int | str] | None = None,
     triggers: list[str] | None = None,
+    ticket_guards: list[dict] | None = None,
 ) -> Conversion:
     """Bifrost workflow -> POST /Webhook type:1 runbook document.
 
@@ -1250,6 +1267,33 @@ def convert_workflow(
                 }
             )
         phases = classify_phases(func, phase_bindings)
+
+    if ticket_guards:
+        # prefix ticket-field guards (N-Central's faults-style criteria):
+        # notmet = early return -> Success (the Bifrost payload-filter
+        # semantics: wrong sender/event -> no-op complete, skip writes)
+        guard_phases = [
+            Phase(
+                "condition",
+                f"if ticket.{g['field']} "
+                f"{_COMPARE_SYMBOLS.get(str(g['op']), str(g['op']))} {g['value']!r}:",
+                criterion_spec={
+                    "field": str(g["field"]),
+                    "table": "faults",
+                    "op": str(g["op"]),
+                    "value": g["value"],
+                    "value_type": str(g.get("value_type") or "string"),
+                },
+                notmet_exit=True,
+            )
+            for g in ticket_guards
+        ]
+        phases = guard_phases + phases
+        notes.append(
+            f"{len(guard_phases)} ticket-field guard(s) prepended (criteria on the "
+            "faults table, N-Central's production shape): notmet exits to Success "
+            "(early-return semantics - the Bifrost payload-filter pattern)"
+        )
 
     steps, sidecar = build_runbook_steps(name, description, phases)
     loop_phases = [p for p in phases if p.in_loop]

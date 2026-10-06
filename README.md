@@ -914,6 +914,21 @@ fire correctly fails at the note step (no ticket). A workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion instead of a guessed write.
 
+**Ticket-field guards (`--ticket-guard`, live-proven)** — the Bifrost
+payload-filter → Halo cut-over: `--ticket-guard
+"reportedby!=noreply@voicemail.goto.com"` prepends a condition step
+whose criteria sit on the **faults table** (N-Central's production
+shape: `tablename: faults`, plain fieldname, `type` from the operator
+table) and whose **notmet leg exits straight to Success** — the
+Bifrost "early return, no-op complete" semantics. Requires ticket
+context (the event path; a manual formCollection fire cannot evaluate
+faults criteria — the note-step lesson). Proof
+(`ticket_guard_evidence.json`): eventno3 binding + two probe tickets —
+sender ≠ vendor → run **2567 status 2, steps_executed 3** (guard + two
+hops); vendor sender → run **2570 status 2, steps_executed 1** (guard
+jumped to Success, work skipped). Ops supported: `!= == >= <= > < =`
+with int/string values (typed from the literal).
+
 **Chaining (`--phase-bindings` `{"kind": "chain_runbook", "target":
 <runbook-guid>}`)**: `aa24` *StartNewRunbookTerminateCurrentRunbook* +
 `start_new_runbook_id` starts the target runbook and **terminates the

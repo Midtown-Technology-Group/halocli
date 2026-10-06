@@ -1,0 +1,37 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "runbook": "7bc4d7f7-adad-42c4-ad21-f7940e7242f8",
+  "binding": {
+    "id": 28
+  },
+  "met_leg": {
+    "ticket": 2931,
+    "expect": "exec3 (guard + two hops)",
+    "run": {
+      "id": 2567,
+      "status": 2,
+      "error": "",
+      "steps_executed": 3,
+      "runbook_step": 4,
+      "execution_time": 708
+    }
+  },
+  "notmet_leg": {
+    "ticket": 2932,
+    "expect": "exec1 (guard jumps straight to Success)",
+    "run": {
+      "id": 2570,
+      "status": 2,
+      "error": "",
+      "steps_executed": 1,
+      "runbook_step": 4,
+      "execution_time": 389
+    }
+  },
+  "both_status2": true,
+  "paths_differ": true,
+  "verdict": "PROVEN: met path ran the work hops, notmet exited early",
+  "cleanup": [
+    "runbook haloclidevprobeguard-runbook"
+  ]
+}
