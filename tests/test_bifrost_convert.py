@@ -1587,6 +1587,67 @@ def test_halo_api_action_without_body_gets_a_note() -> None:
     assert any("has no body" in n for n in conv.notes)
 
 
+def test_halo_runbook_action_aa18_sql_with_mappings() -> None:
+    mapping = [{"type": 4, "key": "impact_description", "value": "<<response[0]^impact>>"}]
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={
+            "post_note": {
+                "kind": "halo_runbook_action",
+                "aa": 18,
+                "raw_message": "select fid from faults where faultid = <<ticket^id>>",
+                "step_fields": {"runbook_variable_mappings": mapping},
+            }
+        },
+    )
+    assert conv.ok
+    step = next(s for s in conv.payload["steps"] if s.get("auto_action") == 18)
+    assert "auto_action_type" not in step  # aa18 carries no aat (template-verified)
+    # act29 pair from the template decode (ai_action_evidence: ran status2)
+    assert [
+        (a["action_type"], a["action_name"], a["approval_result"]) for a in step["actions"]
+    ] == [
+        (29, "Successful", 1),
+        (29, "Unsuccessful", 0),
+    ]
+    # raw SQL verbatim - <<var>> stays bare (no JSON quoting to strip)
+    assert step["message"].startswith("select fid") and "<<ticket^id>>" in step["message"]
+    assert step["runbook_variable_mappings"] == mapping  # merged verbatim
+
+
+def test_halo_runbook_action_aa26_ai_agent_no_message() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={
+            "post_note": {
+                "kind": "halo_runbook_action",
+                "aa": 26,
+                "step_fields": {"ai_ability_id": "9d7b5165-2222-4908-a5d4-e02577e76504"},
+            }
+        },
+    )
+    assert conv.ok
+    step = next(s for s in conv.payload["steps"] if s.get("auto_action") == 26)
+    assert [a["action_type"] for a in step["actions"]] == [37, 37]  # aa26 -> act37
+    assert "message" not in step  # Halo's aa26 steps carry none
+    assert step["ai_ability_id"] == "9d7b5165-2222-4908-a5d4-e02577e76504"
+
+
+def test_halo_runbook_action_without_payload_gets_note() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={"post_note": {"kind": "halo_runbook_action", "aa": 18}},
+    )
+    assert conv.ok
+    assert any("raw_message" in n and "has no payload" in n for n in conv.notes)
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
     steps, sidecar, chains = build_runbook_steps(

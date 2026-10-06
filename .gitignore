@@ -54,6 +54,7 @@ scripts/*
 !scripts/runbook_errorpath_probe.py
 !scripts/runbook_aat48_probe.py
 !scripts/openapi_methods.py
+!scripts/runbook_ai_action_probe.py
 halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py

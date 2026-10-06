@@ -1,0 +1,89 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "aa18/aa25/aa26 execution",
+  "legs": {
+    "sql_query": {
+      "id": "162ad197-83ad-4557-9450-fa5bfc1a7cc5",
+      "persisted": {
+        "auto_action": 18,
+        "auto_action_type": null,
+        "message_len": 242,
+        "ai_ability_id": null,
+        "edge_types": [
+          29,
+          29
+        ]
+      },
+      "runlog": {
+        "id": 2783,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 341,
+        "timestamp": "2026-10-06T16:04:29.643"
+      },
+      "vars_after": {
+        "impact_description": "",
+        "urgency_description": ""
+      }
+    },
+    "ai_eval": {
+      "id": "d4b631ff-57d8-44e6-92c4-81777bb83876",
+      "persisted": {
+        "auto_action": 25,
+        "auto_action_type": 44,
+        "message_len": 27,
+        "ai_ability_id": "9d7b5165-2222-4908-a5d4-e02577e76504",
+        "edge_types": [
+          37,
+          37
+        ]
+      },
+      "runlog": {
+        "id": 2784,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 1182,
+        "timestamp": "2026-10-06T16:04:34.733"
+      }
+    },
+    "ai_agent": {
+      "id": "8e64b820-336a-4cfe-8189-cff3efdbef12",
+      "persisted": {
+        "auto_action": 26,
+        "auto_action_type": null,
+        "message_len": 0,
+        "ai_ability_id": "17866d7c-9871-4842-b934-7e01e1091d79",
+        "edge_types": [
+          37,
+          37
+        ]
+      },
+      "runlog": {
+        "id": 2785,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 11688,
+        "timestamp": "2026-10-06T16:04:39.647"
+      }
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "ticket_cleanup": "deleted 1 probe ticket(s)",
+  "verdict": "SHIP: aa18 SQL ran (run 2783 status2, exec 1); mapping NOT read back | SHIP: aa25 ability ran (run 2784 status2) | SHIP: aa26 ability ran (run 2785 status2)"
+}
