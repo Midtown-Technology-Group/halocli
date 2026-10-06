@@ -985,10 +985,12 @@ honest warning — never a guessed guid.
 
 **Bare string guards**: `if label:` on a `str` param becomes criteria
 **29 "Has a value"** — both legs live-proven (**2563** "x" → met →
-Success; **2564** "" → notmet → Fail terminal). Int/float bare
-truthiness maps to criteria **5 ">0"** (both legs proven: **2591**
-limit=10 met / **2592** limit=0 Fail; negatives misclassify — noted);
-**bool** bare truthiness stays flattened.
+Success; **2564** "" → notmet → Fail terminal). Int/float/bool bare
+truthiness maps to criteria **5 ">0"** (int/float: **2591** limit=10
+met / **2592** limit=0 Fail, negatives misclassify — noted; bool via
+`intbool_guard_evidence.json`: flag `1` → met, `0` → notmet, and the
+`True` spelling **fails** — bool input defaults therefore serialize
+as `1`/`0`).
 
 **Variable-vs-variable comparisons are proven non-transferable**
 (`var_compare_evidence.json`, probe `scripts/runbook_varcompare_probe.py`):
@@ -1014,9 +1016,22 @@ multiple `step_conditions` rows are **AND'd** (eq rows can never
 express a set), type9 "CSV contains" does not match this shape, and
 **element membership on Array params does NOT transfer** (`"x" in
 arr` → type23 on an Array field stays notmet both ways — flattened
-with a precise note). **Int/float sets stay unpinned** (never a
-guessed criterion). The sweep that started it: no trial runbook used
-any membership-style criterion (0 hits in 20 — `criteria_labels_probe.py`).
+with a precise note).
+
+**The last numeric/bool guard gaps closed** (`intbool_guard_evidence.json`,
+probe `scripts/runbook_intbool_probe.py`, 16 self-cleaning legs, three
+controls): **int sets** translate (type23, `value_string "1,2"`,
+overlap leg `12`/`1` → notmet = strict comma-set, both `value_type`
+spellings pass); **float sets** translate **only with
+`value_type "string"`** (the inherited `"float"` row fails both legs —
+the converter always emits `"string"`); **bool bare truthiness**
+translates to the same criteria5 `">0"` idiom (flag `1` → met, `0` →
+notmet — `True`/`False` input spellings never match, so bool defaults
+serialize as `1`/`0`). Still flat, deliberately: `flag == True`
+literal comparisons and `flag in [True, False]` (never probed — never
+guessed). The sweep that started the membership work: no trial runbook
+used any membership-style criterion (0 hits in 20 —
+`criteria_labels_probe.py`).
 
 **Helper inlining + constant folding (the real-workflow proof)**: a
 same-file `await helper(...)` no longer collapses to one hop — the
@@ -1050,13 +1065,14 @@ Honesty notes (what does **not** transfer): the Python logic itself —
 int/float/str params translate to real Halo condition steps with every
 arm live-proven** (met → guarded body, notmet → else arm; a then-arm
 ending in a loop skips the else from its `iter_end`), bare truthiness
-on **str** params (criteria29, both legs proven) and on **int/float**
-params (criteria5 ">0", both legs proven) and **str set membership**
-(`in`/`not in` → type23/24, both legs + overlap proof), but
+on **str** params (criteria29, both legs proven) and on **int/float/
+bool** params (criteria5 ">0", both legs proven per type) and **set
+membership** on str/int/float (`in`/`not in` → type23/24, both legs +
+overlap proof; `value_type "string"` is the proven row), but
 comparisons **against other variables** (proven non-substitutable —
 value-side `<<var>>` compares literally, see above), **element
-membership on Array params** (proven non-executing), **int/float set
-membership** (unpinned), **bool** bare truthiness, and guards
+membership on Array params** (proven non-executing), **bool literal
+comparisons and bool sets** (unpinned), and guards
 on untyped params still flatten to the linear success path (noted per
 conversion);
 `effects`/`enforced_bounds`/secrets become

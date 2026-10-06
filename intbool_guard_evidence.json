@@ -1,0 +1,786 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "int/float sets + bool truthiness",
+  "legs": {
+    "int_ctrl": {
+      "id": "7991601a-b7ff-4f5f-8fa2-ab000f309687",
+      "inputs": {
+        "level": "1"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<level>>",
+          "value_type": "int",
+          "value_string": "",
+          "value_int": 1
+        }
+      ],
+      "runlog": {
+        "id": 2662,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 310,
+        "timestamp": "2026-10-06T03:47:38.49"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "1"
+          }
+        ]
+      }
+    },
+    "float_ctrl": {
+      "id": "694a633b-417f-480f-93e1-79ad56b95d05",
+      "inputs": {
+        "limit": "1.5"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<limit>>",
+          "value_type": "float",
+          "value_string": "",
+          "value_int": 1
+        }
+      ],
+      "runlog": {
+        "id": 2663,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 256,
+        "timestamp": "2026-10-06T03:47:43.37"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "limit",
+            "Value": "1.5"
+          }
+        ]
+      }
+    },
+    "bool_ctrl": {
+      "id": "55c200d1-2afc-44bd-8d88-d315cf6290af",
+      "inputs": {
+        "level": "1",
+        "flag": "1"
+      },
+      "criterion_rows": [
+        {
+          "type": 0,
+          "fieldname": "<<level>>",
+          "value_type": "int",
+          "value_string": "",
+          "value_int": 1
+        }
+      ],
+      "runlog": {
+        "id": 2664,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 270,
+        "timestamp": "2026-10-06T03:47:48.103"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "1"
+          },
+          {
+            "Key": "flag",
+            "Value": "1"
+          }
+        ]
+      }
+    },
+    "intA_in": {
+      "id": "1ec9e7b0-9114-489f-a1bf-48ddc734cafc",
+      "inputs": {
+        "level": "2"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<level>>",
+          "value_type": "int",
+          "value_string": "1,2",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2665,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 307,
+        "timestamp": "2026-10-06T03:47:52.89"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "2"
+          }
+        ]
+      }
+    },
+    "intA_out": {
+      "id": "5429bdb9-f3e8-494f-9bbb-507a81d5b1c4",
+      "inputs": {
+        "level": "5"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<level>>",
+          "value_type": "int",
+          "value_string": "1,2",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2666,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 250,
+        "timestamp": "2026-10-06T03:47:57.627"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "intB_in": {
+      "id": "be40416c-0f66-4d17-b1a1-204a35e0c9c7",
+      "inputs": {
+        "level": "2"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<level>>",
+          "value_type": "string",
+          "value_string": "1,2",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2667,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 312,
+        "timestamp": "2026-10-06T03:48:02.41"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "2"
+          }
+        ]
+      }
+    },
+    "intB_out": {
+      "id": "32cc40d0-3ed1-4fc6-ae8a-0dc320fda019",
+      "inputs": {
+        "level": "5"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<level>>",
+          "value_type": "string",
+          "value_string": "1,2",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2668,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 258,
+        "timestamp": "2026-10-06T03:48:07.14"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "5"
+          }
+        ]
+      }
+    },
+    "int_overlap": {
+      "id": "2c856455-1ca5-491a-8546-8481fba73ffd",
+      "inputs": {
+        "level": "1"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<level>>",
+          "value_type": "int",
+          "value_string": "12",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2669,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 244,
+        "timestamp": "2026-10-06T03:48:11.91"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "1"
+          }
+        ]
+      }
+    },
+    "fltA_in": {
+      "id": "bbe59225-1677-49b0-9e1c-0ea168787eb0",
+      "inputs": {
+        "limit": "2.5"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<limit>>",
+          "value_type": "float",
+          "value_string": "1.5,2.5",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2670,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 262,
+        "timestamp": "2026-10-06T03:48:16.983"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "limit",
+            "Value": "2.5"
+          }
+        ]
+      }
+    },
+    "fltA_out": {
+      "id": "edb3cbc1-bf68-43ce-9df3-35cfcc48c5f1",
+      "inputs": {
+        "limit": "3.5"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<limit>>",
+          "value_type": "float",
+          "value_string": "1.5,2.5",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2671,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 257,
+        "timestamp": "2026-10-06T03:48:21.727"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "limit",
+            "Value": "3.5"
+          }
+        ]
+      }
+    },
+    "fltB_in": {
+      "id": "50b60f18-0b7e-47e8-b52e-0594e0edc8f8",
+      "inputs": {
+        "limit": "2.5"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<limit>>",
+          "value_type": "string",
+          "value_string": "1.5,2.5",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2672,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 255,
+        "timestamp": "2026-10-06T03:48:26.43"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "limit",
+            "Value": "2.5"
+          }
+        ]
+      }
+    },
+    "fltB_out": {
+      "id": "238d3723-6ae5-4318-b9c1-1eceb18d4d96",
+      "inputs": {
+        "limit": "3.5"
+      },
+      "criterion_rows": [
+        {
+          "type": 23,
+          "fieldname": "<<limit>>",
+          "value_type": "string",
+          "value_string": "1.5,2.5",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2673,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 255,
+        "timestamp": "2026-10-06T03:48:31.34"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "limit",
+            "Value": "3.5"
+          }
+        ]
+      }
+    },
+    "bool_t_10": {
+      "id": "63b74887-b1bb-40db-941a-4f4469ccd8db",
+      "inputs": {
+        "level": "5",
+        "flag": "1"
+      },
+      "criterion_rows": [
+        {
+          "type": 5,
+          "fieldname": "<<flag>>",
+          "value_type": "int",
+          "value_string": "",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2674,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 277,
+        "timestamp": "2026-10-06T03:48:36.147"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "5"
+          },
+          {
+            "Key": "flag",
+            "Value": "1"
+          }
+        ]
+      }
+    },
+    "bool_f_10": {
+      "id": "ac477eba-25a7-4de5-b5af-0b702b146819",
+      "inputs": {
+        "level": "5",
+        "flag": "0"
+      },
+      "criterion_rows": [
+        {
+          "type": 5,
+          "fieldname": "<<flag>>",
+          "value_type": "int",
+          "value_string": "",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2675,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 247,
+        "timestamp": "2026-10-06T03:48:40.943"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "5"
+          },
+          {
+            "Key": "flag",
+            "Value": "0"
+          }
+        ]
+      }
+    },
+    "bool_t_TF": {
+      "id": "1c519fee-5094-4e0f-afb0-d4ace5c94dfd",
+      "inputs": {
+        "level": "5",
+        "flag": "True"
+      },
+      "criterion_rows": [
+        {
+          "type": 5,
+          "fieldname": "<<flag>>",
+          "value_type": "int",
+          "value_string": "",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2676,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 265,
+        "timestamp": "2026-10-06T03:48:45.717"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "5"
+          },
+          {
+            "Key": "flag",
+            "Value": "True"
+          }
+        ]
+      }
+    },
+    "bool_f_TF": {
+      "id": "4f1f7903-0446-4325-8b3d-f6dda074a4ce",
+      "inputs": {
+        "level": "5",
+        "flag": "False"
+      },
+      "criterion_rows": [
+        {
+          "type": 5,
+          "fieldname": "<<flag>>",
+          "value_type": "int",
+          "value_string": "",
+          "value_int": 0
+        }
+      ],
+      "runlog": {
+        "id": 2677,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 282,
+        "timestamp": "2026-10-06T03:48:50.693"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "level",
+            "Value": "5"
+          },
+          {
+            "Key": "flag",
+            "Value": "False"
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "verdict": "exec={'int_ctrl': 3, 'float_ctrl': 3, 'bool_ctrl': 3, 'intA_in': 3, 'intA_out': 1, 'intB_in': 3, 'intB_out': 1, 'int_overlap': 1, 'fltA_in': 1, 'fltA_out': 1, 'fltB_in': 3, 'fltB_out': 1, 'bool_t_10': 3, 'bool_f_10': 1, 'bool_t_TF': 1, 'bool_f_TF': 1} | SHIP: int sets type23 with base value_type int | int value side STRICT comma-set (overlap not matched) | SHIP: float sets type23 with value_type string | SHIP: bool bare truthiness = criteria5 >0 with inputs 1/0"
+}

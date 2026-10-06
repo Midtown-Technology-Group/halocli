@@ -1108,23 +1108,6 @@ def test_not_in_translates_to_type24() -> None:
     assert c["value_string"] == "eu,us"
 
 
-def test_int_set_membership_stays_flat_unpinned() -> None:
-    src = """
-from bifrost import workflow
-
-
-@workflow(name="Demo: Int Set")
-async def level_gate(level: int) -> dict:
-    if level in [1, 2]:
-        await allowed()
-    return {}
-"""
-    conv = convert_workflow({}, src, "level_gate")
-    assert conv.ok
-    # int sets were NOT probed - honest flatten, never a guessed criterion
-    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
-
-
 def test_array_element_membership_flattens_with_evidence_note() -> None:
     src = """
 from bifrost import workflow
@@ -1157,6 +1140,121 @@ async def dyn_gate(items: list[str], region: str) -> dict:
     assert conv.ok
     assert not any(s.get("step_conditions") for s in conv.payload["steps"])
     assert any("array-element membership" in n for n in conv.notes)
+
+
+def test_int_set_membership_translates_with_string_value_type() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Int Set")
+async def level_gate(level: int) -> dict:
+    if level in [1, 2]:
+        await allowed()
+    else:
+        await blocked()
+    return {}
+"""
+    conv = convert_workflow({}, src, "level_gate")
+    assert conv.ok
+    c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
+    assert c["type"] == 23
+    assert c["fieldname"] == "<<level>>"
+    assert c["value_string"] == "1,2"
+    assert c["value_type"] == "string"  # the proven row (int accepts it too)
+
+
+def test_float_set_membership_requires_string_value_type() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Float Set")
+async def limit_gate(limit: float) -> dict:
+    if limit in [1.5, 2.5]:
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "limit_gate")
+    assert conv.ok
+    c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
+    assert c["type"] == 23
+    assert c["value_string"] == "1.5,2.5"
+    # value_type "float" FAILS on the trial (fltA legs) - string is proven
+    assert c["value_type"] == "string"
+
+
+def test_bool_bare_truthiness_translates_to_gt_zero() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Bool")
+async def flag_gate(flag: bool) -> dict:
+    if flag:
+        await allowed()
+    else:
+        await blocked()
+    return {}
+"""
+    conv = convert_workflow({}, src, "flag_gate")
+    assert conv.ok
+    c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
+    assert c["type"] == 5 and c["value_int"] == 0  # the ">0" idiom
+    assert c["fieldname"] == "<<flag>>"
+    assert c["value_type"] == "int"  # the proven criterion-row spelling
+    assert any("truthiness" in n for n in conv.notes)
+
+
+def test_bool_literal_compare_stays_flat_unproven() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Bool Lit")
+async def flag_eq(flag: bool) -> dict:
+    if flag == True:  # noqa: E712
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "flag_eq")
+    assert conv.ok
+    # `flag == True` was never probed (only bare truthiness) - flat
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+
+
+def test_bool_set_membership_stays_flat_unproven() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Bool Set")
+async def flag_set(flag: bool) -> dict:
+    if flag in [True, False]:
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "flag_set")
+    assert conv.ok
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+
+
+def test_bool_default_serializes_to_proven_spelling() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Bool Default")
+async def flag_default(flag: bool = True, other: bool = False) -> dict:
+    await work()
+    return {}
+"""
+    conv = convert_workflow({}, src, "flag_default")
+    assert conv.ok
+    values = {v["key"]: v["value"] for v in conv.payload["input_variables"]}
+    # "1"/"0" are the only data_type5 spellings the trial accepts
+    # ("True" never matched - intbool_guard_evidence.json)
+    assert values == {"flag": "1", "other": "0"}
 
 
 def test_build_runbook_steps_direct_calls() -> None:

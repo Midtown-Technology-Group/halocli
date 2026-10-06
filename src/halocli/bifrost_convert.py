@@ -79,8 +79,11 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   status2 (run2567) vs early exit exec1 status2 (run2570).
 - bare guards (all trial-proven): array -> has-elements (type5 +
   value_int0), str -> criteria29 Has a value, ``not str`` ->
-  criteria30 Does not have a value, int/float -> criteria5 ">0"
-  (runs2589-2592; negative values misclassify - noted). FIELDNAME
+  criteria30 Does not have a value, int/float/bool -> criteria5 ">0"
+  (int/float runs2589-2592; bool flag inputs "1"/"0" with the
+  "True" spelling disproven - intbool_guard_evidence.json; bool
+  defaults serialize as "1"/"0"; negative numbers misclassify -
+  noted). FIELDNAME
   RULE: runbookvariable criteria MUST wrap as ``<<var>>`` - plain
   names are for the faults table (unwrapped = every leg routes to
   Fail, the first probe attempt's exact failure).
@@ -91,15 +94,17 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   var_compare_evidence.json). Emitting that criterion would invert
   routing (always notmet), so these flatten WITH a precise
   per-guard note naming the evidence - never a guessed criterion.
-- membership guards (``if x in ["a","b"]`` / ``not in``) on STR
-  params -> type23/type24 (Includes / Does not include) with
-  value_string = comma-set - STRICT set semantics proven by the
-  16-leg membership_evidence.json probe (both legs for in and not-in,
+- membership guards (``if x in ["a","b"]`` / ``not in``) on str, int
+  and float params -> type23/type24 (Includes / Does not include)
+  with value_string = comma-set, value_type "string" for all three
+  (floats FAIL with value_type "float" - intbool_guard_evidence) -
+  STRICT set semantics proven by the16-leg membership_evidence.json
+  probe (both legs for in and not-in,
   the overlap leg value "xy" + field "x" rules out substring, eq rows
   are AND'd so sets cannot be built from eq rows). Element membership
   on ARRAY params does NOT transfer (type23 on an Array field stays
-  notmet both ways - noted per conversion); int/float sets stay
-  unpinned (generic flatten note).
+  notmet both ways - noted per conversion); bool sets and bool
+  literal comparisons (``flag == True``) stay unpinned (flat).
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -304,13 +309,18 @@ def _default_value(literal: object) -> str:
 
     Halo parses list-shaped values as JSON (proven: input value
     ``["a","b","c"]`` unlocked the iteration step on the trial), so
-    containers and bools serialize via json; strings stay raw.
+    containers serialize via json; strings stay raw. bools canonicalize
+    to ``1``/``0`` - the ONLY input spellings the trial accepts for
+    data_type5 (``"True"`` never matched: intbool_guard_evidence.json
+    bool_t_TF notmet; json's ``"true"`` is equally unpinned).
     """
     if literal is None:
         return ""
+    if isinstance(literal, bool):
+        return "1" if literal else "0"
     if isinstance(literal, str):
         return literal
-    if isinstance(literal, (bool, int, float, list, tuple, dict)):
+    if isinstance(literal, (int, float, list, tuple, dict)):
         return json.dumps(literal)
     return str(literal)
 
@@ -983,18 +993,26 @@ def classify_phases(
         op = _COMPARE_OPS.get(type(test.ops[0]))
         left, right = test.left, test.comparators[0]
         # `param in [..]` / `param not in [..]` -> type23/24 membership
-        # (STRICT comma-set proven for str params only - the16-leg
-        # membership_evidence.json probe; int sets stay unpinned and
-        # array-element membership is proven non-matching - both flat)
+        # (STRICT comma-set proven for str AND int/float params - the
+        # membership_evidence.json and intbool_guard_evidence.json
+        # probes; floats REQUIRE value_type "string" on the criterion
+        # row, ints accept it, so all sets emit "string". bool sets and
+        # array-element membership stay flat - the latter proven
+        # non-matching; int/float sets were unpinned until v14)
         if isinstance(test.ops[0], (ast.In, ast.NotIn)):
+            if not isinstance(left, ast.Name):
+                return None
+            _elem_pred = {
+                "str": lambda v: isinstance(v, str),
+                "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
+                "float": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+            }
+            pred = _elem_pred.get(param_types.get(left.id, "") or "")
             if (
-                isinstance(left, ast.Name)
-                and param_types.get(left.id) == "str"
+                pred is not None
                 and isinstance(right, (ast.List, ast.Tuple))
                 and right.elts
-                and all(
-                    isinstance(e, ast.Constant) and isinstance(e.value, str) for e in right.elts
-                )
+                and all(isinstance(e, ast.Constant) and pred(e.value) for e in right.elts)
             ):
                 literals = [e.value for e in right.elts if isinstance(e, ast.Constant)]
                 return {
@@ -1002,7 +1020,7 @@ def classify_phases(
                     "op": "in_set" if isinstance(test.ops[0], ast.In) else "not_in_set",
                     "value": ",".join(str(v) for v in literals),
                     "values": literals,
-                    "value_type": "str",
+                    "value_type": "string",  # proven for str/int/float alike
                 }
             return None
         if op is None or not isinstance(left, ast.Name):
@@ -1061,16 +1079,21 @@ def classify_phases(
                     "value": "",
                     "value_type": "str",
                 }
-            elif bare is not None and param_types.get(bare.id) in ("int", "float"):
-                # bare numeric truthiness as ">0" (trial-proven both
-                # legs: limit=10 -> met run2591, limit=0 -> Fail run2592;
-                # negative values misclassify - flagged in notes)
+            elif bare is not None and param_types.get(bare.id) in ("int", "float", "bool"):
+                # bare numeric/bool truthiness as ">0" (trial-proven
+                # both legs: limit=10 -> met run2591, limit=0 -> Fail
+                # run2592; bool flag inputs "1" -> met / "0" -> notmet
+                # with the "True" spelling disproven -
+                # intbool_guard_evidence.json; negative values
+                # misclassify - flagged in notes)
                 guard_label = f"if {bare.id}:"
+                ptype_bare = param_types[bare.id]
                 spec = {
                     "param": bare.id,
                     "op": "gt",
                     "value": 0,
-                    "value_type": param_types[bare.id],
+                    # bool proven with a value_type "int" criterion row
+                    "value_type": "int" if ptype_bare == "bool" else ptype_bare,
                     "truthiness": True,
                 }
             else:
@@ -1188,8 +1211,10 @@ def _compare_criterion(spec: dict, step_id: int) -> dict:
     """
     value = spec["value"] if spec.get("values") is None else ""
     if spec.get("values") is not None:
-        # membership: the value side is a STRICT comma-set
-        # (type23/24, membership_evidence.json)
+        # membership: the value side is a STRICT comma-set; value_type
+        # "string" is the proven row for str/int/float params alike
+        # (intbool_guard_evidence.json: floats FAIL with value_type
+        # "float", pass with "string"; ints pass with both)
         value = ",".join(str(v) for v in spec["values"])
     vt = spec.get("value_type") or "string"
     # spec forms: {param...} -> <<param>> on runbookvariable, or
@@ -1821,9 +1846,9 @@ def convert_workflow(
             notes.append(
                 f"{translated} branch(es) translated to Halo condition steps "
                 "(steptype1 + action12 'Condition met/not met'; criteria on "
-                "<<params>>: array has-elements, str has/no-value, numeric >0, "
-                "literal comparisons, str set membership (in/not in)); "
-                "else-branches, bool guards and "
+                "<<params>>: array has-elements, str has/no-value, numeric/bool >0, "
+                "literal comparisons, set membership (str/int/float, in/not in)); "
+                "else-branches, bool literal comparisons and "
                 "comparisons against other names stay flattened to the linear "
                 "success path"
             )
@@ -1839,9 +1864,9 @@ def convert_workflow(
         for p in phases
     ):
         notes.append(
-            "numeric bare-truthiness mapped to '>0' (criteria5, trial-proven "
-            "limit=10/limit=0 legs): NEGATIVE values misclassify - use an "
-            "explicit comparison if the value can go below zero"
+            "bare-truthiness (numeric/bool) mapped to '>0' (criteria5, trial-proven "
+            "limit=10/limit=0 legs + bool flag1/flag0 legs): NEGATIVE values "
+            "misclassify - use an explicit comparison if the value can go below zero"
         )
 
     payload: dict = {
