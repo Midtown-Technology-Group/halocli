@@ -1,0 +1,89 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "applied": {
+    "integration:Huntress (spec-generated)": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\huntress_apply\\integration__huntress--spec-generated.json",
+      "create": {
+        "id": 42
+      },
+      "verify": true,
+      "methods": [
+        {
+          "id": 80,
+          "name": "getV1Account",
+          "bind_phase": null,
+          "test_response": "{'id': 80, 'guid': '6865e76a-3f43-4613-bef7-700dd7ab1bd2', 'integration_id': 42, 'integration_baseurl': 'https://api.huntress.io', 'name': 'getV1Account', 'full_name': ': getV1Account', 'resource': 'https://api.huntress.io', 'path': '/v1/account', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_params': [], 'headers': [], 'body_mappi"
+        },
+        {
+          "id": 81,
+          "name": "getV1Actor",
+          "bind_phase": null,
+          "test_response": "{'id': 81, 'guid': '007448ed-fcb3-40fc-8d24-9b26395f2d83', 'integration_id': 42, 'integration_baseurl': 'https://api.huntress.io', 'name': 'getV1Actor', 'full_name': ': getV1Actor', 'resource': 'https://api.huntress.io', 'path': '/v1/actor', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_params': [], 'headers': [], 'body_mappings': "
+        },
+        {
+          "id": 82,
+          "name": "getV1KnownVpns",
+          "bind_phase": null,
+          "test_response": "{'id': 82, 'guid': '67585ce7-e060-49d6-8050-947e76ec52d1', 'integration_id': 42, 'integration_baseurl': 'https://api.huntress.io', 'name': 'getV1KnownVpns', 'full_name': ': getV1KnownVpns', 'resource': 'https://api.huntress.io', 'path': '/v1/known_vpns', 'method': 0, 'authorizationtype': -1, 'requesttype': 0, 'responsetype': 0, 'log_retention_policy_days': 30, 'uri_params': [], 'headers': [], 'bod"
+        }
+      ],
+      "cleanup": "methods + integration deleted"
+    },
+    "methods:Huntress (spec-generated)": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\huntress_apply\\methods__huntress--spec-generated.json"
+    },
+    "runbook:huntress_smoke": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\huntress_apply\\runbook__huntress_smoke.json",
+      "_inputs": {},
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=ff1169d3-e544-4cef-a202-690bb780583f"
+      ],
+      "id": "ff1169d3-e544-4cef-a202-690bb780583f",
+      "verify": {
+        "type": 1,
+        "steps": 4,
+        "expected_steps": 4,
+        "edges": 3,
+        "edge_names": [
+          "Sleep Finished",
+          "Successful Response (200 - 299)",
+          "Unsuccessful Response"
+        ],
+        "bound_steps": [
+          1
+        ],
+        "input_variables": 0,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      },
+      "runlog": {
+        "id": 2780,
+        "status": 2,
+        "error": "",
+        "steps_executed": 2,
+        "runbook_step": 3,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 1106,
+        "timestamp": "2026-10-06T15:10:30.02"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 3,
+          "step_name": null,
+          "exec": 2,
+          "error": ""
+        }
+      ],
+      "cleanup": "deleted (clean)"
+    }
+  }
+}
