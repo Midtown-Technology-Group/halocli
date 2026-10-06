@@ -914,6 +914,29 @@ fire correctly fails at the note step (no ticket). A workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion instead of a guessed write.
 
+**Trigger filters (`--trigger-filter`, the subscriber-filter port)** —
+`--triggers "New Ticket Logged" --trigger-filter
+"reportedby==noreply@voicemail.goto.com"` attaches **faults-table
+conditions to each binding** (`filter_type:2`, the exact shape of AI
+Triage's production eventno3 bindings) so **the run never starts for a
+non-matching event** — Bifrost's `event.body.ticket...` subscriber
+guard, moved in-Halo. Proof (`filter_evidence.json`): blocked leg
+ticket2937 → *no run* (correct); matching ticket2938 → run **2597
+status 2**; the converter's own apply re-confirms it (its proof ticket
+carries an empty `reportedby` → the filter blocks it → `trigger_proof:
+no event-driven run observed`). Syntax is shared with `--ticket-guard`
+(`FIELD<OP>VALUE`, `!= == >= <= > < =`).
+
+**Bare guards now translate** (all legs live-proven, runs 2589–2592):
+`if <str>:` → criteria29 *Has a value*; `if not <str>:` → criteria30
+*Does not have a value*; `if <int>:` → criteria5 *Greater than0*
+(negative values misclassify — conversion note); arrays keep the
+has-elements idiom. **Fieldname wrapping is load-bearing**: runbook-
+variable criteria must be `<<var>>` (plain names are for the `faults`
+table) — the unwrapped form silently routes every leg to Fail (the
+first probe attempt failed exactly this way; the persisted-criteria
+forensics caught it).
+
 **Ticket-field guards (`--ticket-guard`, live-proven)** — the Bifrost
 payload-filter → Halo cut-over: `--ticket-guard
 "reportedby!=noreply@voicemail.goto.com"` prepends a condition step

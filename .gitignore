@@ -43,6 +43,7 @@ scripts/*
 !scripts/runbook_event_ladder.py
 !scripts/runbook_chain_probe.py
 !scripts/runbook_ticket_guard_probe.py
+!scripts/runbook_filter_probe.py
 halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py
