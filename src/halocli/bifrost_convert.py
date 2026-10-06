@@ -91,6 +91,15 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   var_compare_evidence.json). Emitting that criterion would invert
   routing (always notmet), so these flatten WITH a precise
   per-guard note naming the evidence - never a guessed criterion.
+- membership guards (``if x in ["a","b"]`` / ``not in``) on STR
+  params -> type23/type24 (Includes / Does not include) with
+  value_string = comma-set - STRICT set semantics proven by the
+  16-leg membership_evidence.json probe (both legs for in and not-in,
+  the overlap leg value "xy" + field "x" rules out substring, eq rows
+  are AND'd so sets cannot be built from eq rows). Element membership
+  on ARRAY params does NOT transfer (type23 on an Array field stays
+  notmet both ways - noted per conversion); int/float sets stay
+  unpinned (generic flatten note).
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -170,6 +179,14 @@ from typing import Any
 # shape two working trial runbooks use). type29 "Has a value" proven
 # BOTH legs for bare str truthiness on the trial (label "x" -> met
 # status2, "" -> notmet to the Fail terminal; runs2563/2564).
+# type23/24 = the Includes / Does not include pair (label-pack order
+# agentweb756/757) PROVEN as set membership by the16-leg
+# membership_evidence.json probe: value_string = comma-set with
+# STRICT set semantics (value "xy" + field "x" NOT matched - the
+# overlap leg rules out substring), both legs for in (23) and not-in
+# (24), multiple eq rows are AND'd (eq rows cannot express a set),
+# and type23 on an Array field does NOT match element membership
+# (t23_arr_true notmet).
 # Other decoded labels from the
 # same pack: steptype1=Condition,2=Action,3=End (SPA
 # getChatFlowStepTypeDisplay ids5268/5269/455); aa6 label5635="Execute
@@ -187,6 +204,8 @@ CRITERIA_TYPE: dict[str, int] = {
     "ge": 6,  # Greater than or equal to
     "lt": 7,  # Less than
     "le": 8,  # Less than or equal to
+    "in_set": 23,  # Includes - value side = comma-set (membership, proven)
+    "not_in_set": 24,  # Does not include - the `not in` primitive
     "has_value": 29,
     "no_value": 30,
 }
@@ -201,7 +220,16 @@ _COMPARE_OPS: dict[type, str] = {
     ast.Eq: "eq",
     ast.NotEq: "ne",
 }
-_COMPARE_SYMBOLS = {"gt": ">", "ge": ">=", "lt": "<", "le": "<=", "eq": "==", "ne": "!="}
+_COMPARE_SYMBOLS = {
+    "gt": ">",
+    "ge": ">=",
+    "lt": "<",
+    "le": "<=",
+    "eq": "==",
+    "ne": "!=",
+    "in_set": "in",
+    "not_in_set": "not in",
+}
 
 METHOD_VERB: dict[str, int] = {
     "GET": 0,
@@ -954,6 +982,29 @@ def classify_phases(
             return None
         op = _COMPARE_OPS.get(type(test.ops[0]))
         left, right = test.left, test.comparators[0]
+        # `param in [..]` / `param not in [..]` -> type23/24 membership
+        # (STRICT comma-set proven for str params only - the16-leg
+        # membership_evidence.json probe; int sets stay unpinned and
+        # array-element membership is proven non-matching - both flat)
+        if isinstance(test.ops[0], (ast.In, ast.NotIn)):
+            if (
+                isinstance(left, ast.Name)
+                and param_types.get(left.id) == "str"
+                and isinstance(right, (ast.List, ast.Tuple))
+                and right.elts
+                and all(
+                    isinstance(e, ast.Constant) and isinstance(e.value, str) for e in right.elts
+                )
+            ):
+                literals = [e.value for e in right.elts if isinstance(e, ast.Constant)]
+                return {
+                    "param": left.id,
+                    "op": "in_set" if isinstance(test.ops[0], ast.In) else "not_in_set",
+                    "value": ",".join(str(v) for v in literals),
+                    "values": literals,
+                    "value_type": "str",
+                }
+            return None
         if op is None or not isinstance(left, ast.Name):
             return None
         ptype = param_types.get(left.id)
@@ -1025,9 +1076,8 @@ def classify_phases(
             else:
                 spec = _guard_spec(stmt.test)
                 if spec:
-                    guard_label = (
-                        f"if {spec['param']} {_COMPARE_SYMBOLS[spec['op']]} {spec['value']!r}:"
-                    )
+                    rhs = spec["values"] if "values" in spec else spec["value"]
+                    guard_label = f"if {spec['param']} {_COMPARE_SYMBOLS[spec['op']]} {rhs!r}:"
                 elif (
                     isinstance(test, ast.Compare)
                     and len(test.ops) == 1
@@ -1047,6 +1097,20 @@ def classify_phases(
                     sym = _COMPARE_SYMBOLS[_COMPARE_OPS[type(test.ops[0])]]
                     report.setdefault("var_guards", []).append(
                         f"if {test.left.id} {sym} {test.comparators[0].id}:"
+                    )
+                elif (
+                    isinstance(test, ast.Compare)
+                    and len(test.ops) == 1
+                    and isinstance(test.ops[0], (ast.In, ast.NotIn))
+                    and isinstance(test.comparators[0], ast.Name)
+                    and test.comparators[0].id in array_params
+                ):
+                    # element membership on an Array param: PROVEN not to
+                    # execute (type23 on an Array field stays notmet both
+                    # ways - membership_evidence.json t23_arr_true/false)
+                    report.setdefault("flat_membership", []).append(
+                        f"{ast.unparse(stmt.test)} (array-element membership does "
+                        "not execute: membership_evidence.json t23_arr_true notmet)"
                     )
         if guard_label and isinstance(stmt, ast.If):
             # guard with optional else: translate whether or not there is
@@ -1122,7 +1186,11 @@ def _compare_criterion(spec: dict, step_id: int) -> dict:
     field matching the variable's type (value_int/value_float/
     value_string), same base shape as the has-elements criterion.
     """
-    value = spec["value"]
+    value = spec["value"] if spec.get("values") is None else ""
+    if spec.get("values") is not None:
+        # membership: the value side is a STRICT comma-set
+        # (type23/24, membership_evidence.json)
+        value = ",".join(str(v) for v in spec["values"])
     vt = spec.get("value_type") or "string"
     # spec forms: {param...} -> <<param>> on runbookvariable, or
     # {table, field...} -> a raw table field (N-Central's faults-style
@@ -1675,6 +1743,14 @@ def convert_workflow(
             "emitting the criterion would invert routing - flattened to the linear "
             "success path; review in the flow editor"
         )
+    if classify_report.get("flat_membership"):
+        fm = classify_report["flat_membership"]
+        notes.append(
+            f"{len(fm)} membership guard(s) flattened ({'; '.join(fm)}) - element "
+            "membership on Array variables does not execute in Halo "
+            "(trial-proven both legs: membership_evidence.json) - flattened to "
+            "the linear success path; review in the flow editor"
+        )
     if classify_report.get("sync_helpers"):
         notes.append(
             f"sync-only helper(s) kept as hops: {sorted(classify_report['sync_helpers'])} "
@@ -1746,7 +1822,8 @@ def convert_workflow(
                 f"{translated} branch(es) translated to Halo condition steps "
                 "(steptype1 + action12 'Condition met/not met'; criteria on "
                 "<<params>>: array has-elements, str has/no-value, numeric >0, "
-                "literal comparisons); else-branches, bool guards and "
+                "literal comparisons, str set membership (in/not in)); "
+                "else-branches, bool guards and "
                 "comparisons against other names stay flattened to the linear "
                 "success path"
             )

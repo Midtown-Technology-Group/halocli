@@ -1070,6 +1070,95 @@ async def compare_literal(a: str) -> dict:
     assert not any("two runbook variables" in n for n in conv.notes)
 
 
+MEMBERSHIP_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Membership")
+async def region_gate(region: str) -> dict:
+    if region in ["eu", "us"]:
+        await allowed()
+    else:
+        await blocked()
+    return {}
+"""
+
+
+def test_membership_guard_translates_to_type23() -> None:
+    """str param in literal set -> type23 comma-set, both arms wired."""
+    conv = convert_workflow({}, MEMBERSHIP_SOURCE, "region_gate")
+    assert conv.ok
+    conds = [s for s in conv.payload["steps"] if s.get("step_conditions")]
+    assert len(conds) == 1
+    c = conds[0]["step_conditions"][0]
+    assert c["type"] == 23  # Includes (membership_evidence.json)
+    assert c["fieldname"] == "<<region>>"
+    assert c["value_string"] == "eu,us"  # STRICT comma-set
+    names = [s["name"] for s in conv.payload["steps"]]
+    assert "allowed" in names and "blocked" in names  # both arms survive
+    assert any("set membership" in n for n in conv.notes)
+
+
+def test_not_in_translates_to_type24() -> None:
+    src = MEMBERSHIP_SOURCE.replace('if region in ["eu", "us"]:', 'if region not in ["eu", "us"]:')
+    conv = convert_workflow({}, src, "region_gate")
+    assert conv.ok
+    c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
+    assert c["type"] == 24  # Does not include (both legs proven)
+    assert c["value_string"] == "eu,us"
+
+
+def test_int_set_membership_stays_flat_unpinned() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Int Set")
+async def level_gate(level: int) -> dict:
+    if level in [1, 2]:
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "level_gate")
+    assert conv.ok
+    # int sets were NOT probed - honest flatten, never a guessed criterion
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+
+
+def test_array_element_membership_flattens_with_evidence_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Arr Membership")
+async def elem_gate(items: list[str]) -> dict:
+    if "x" in items:
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "elem_gate")
+    assert conv.ok
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+    assert any("array-element membership" in n and "membership_evidence" in n for n in conv.notes)
+
+
+def test_param_in_array_param_flattens_with_evidence_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Dyn Membership")
+async def dyn_gate(items: list[str], region: str) -> dict:
+    if region in items:
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "dyn_gate")
+    assert conv.ok
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+    assert any("array-element membership" in n for n in conv.notes)
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
     steps, sidecar, chains = build_runbook_steps(

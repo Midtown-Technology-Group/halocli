@@ -1002,6 +1002,22 @@ stays flattened and the conversion report now names **that specific
 guard** with this evidence — never a guessed criterion. All three
 probe runbooks were deleted clean.
 
+**Membership guards now transfer** (`membership_evidence.json`, probe
+`scripts/runbook_membership_probe.py`, 16 self-cleaning legs): `if x
+in ["eu", "us"]` on a **str** param becomes criteria **23
+"Includes"** with `value_string` = comma-set, and `not in` becomes
+**24 "Does not include"** — both legs live-proven (in-set → met,
+out-of-set → notmet; inverse for not-in), plus the **overlap leg**
+(value `xy`, field `x` → notmet) proving the value side is a
+**strict comma-set**, not a substring. Facts pinned along the way:
+multiple `step_conditions` rows are **AND'd** (eq rows can never
+express a set), type9 "CSV contains" does not match this shape, and
+**element membership on Array params does NOT transfer** (`"x" in
+arr` → type23 on an Array field stays notmet both ways — flattened
+with a precise note). **Int/float sets stay unpinned** (never a
+guessed criterion). The sweep that started it: no trial runbook used
+any membership-style criterion (0 hits in 20 — `criteria_labels_probe.py`).
+
 **Helper inlining + constant folding (the real-workflow proof)**: a
 same-file `await helper(...)` no longer collapses to one hop — the
 helper's awaits **splice into the flow** (explicit bindings win over
@@ -1035,9 +1051,12 @@ int/float/str params translate to real Halo condition steps with every
 arm live-proven** (met → guarded body, notmet → else arm; a then-arm
 ending in a loop skips the else from its `iter_end`), bare truthiness
 on **str** params (criteria29, both legs proven) and on **int/float**
-params (criteria5 ">0", both legs proven), but comparisons **against
-other variables** (proven non-substitutable — value-side `<<var>>`
-compares literally, see above), **bool** bare truthiness, and guards
+params (criteria5 ">0", both legs proven) and **str set membership**
+(`in`/`not in` → type23/24, both legs + overlap proof), but
+comparisons **against other variables** (proven non-substitutable —
+value-side `<<var>>` compares literally, see above), **element
+membership on Array params** (proven non-executing), **int/float set
+membership** (unpinned), **bool** bare truthiness, and guards
 on untyped params still flatten to the linear success path (noted per
 conversion);
 `effects`/`enforced_bounds`/secrets become
