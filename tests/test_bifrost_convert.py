@@ -101,6 +101,31 @@ def test_missing_name_is_not_converted() -> None:
     assert not convert_integration({"config_schema": []}).ok
 
 
+def test_integration_explicit_authorizationtype_passthrough() -> None:
+    # numeric and named forms, and explicit WINS over the oauth/None defaults
+    for explicit, want in ((3, 3), ("Basic", 3)):
+        conv = convert_integration(
+            {
+                "name": "Huntress",
+                "authorizationtype": explicit,
+                "config_schema": [
+                    {
+                        "key": "base_url",
+                        "type": "string",
+                        "required": True,
+                        "description": "Base URL from the spec (https://api.huntress.io)",
+                    }
+                ],
+            }
+        )
+        assert conv.ok
+        assert conv.payload["authorizationtype"] == want
+        assert conv.payload["resourcebaseurl"] == "https://api.huntress.io"
+    # oauth_config present but an explicit type pins the explicit one
+    conv = convert_integration({"name": "X", "authorizationtype": 3, "has_oauth_config": True})
+    assert conv.payload["authorizationtype"] == 3
+
+
 def test_method_verb_mapping_is_non_sequential() -> None:
     assert METHOD_VERB == {"GET": 0, "POST": 1, "PUT": 2, "DELETE": 3, "PATCH": 4}
     bodies, notes = convert_methods(

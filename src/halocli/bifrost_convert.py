@@ -434,9 +434,19 @@ def convert_integration(entry: dict) -> Conversion:
 
     payload: dict = {"name": name}
 
+    # explicit authorization type wins (e.g. Basic for Huntress): a
+    # numeric enum or its name - the oauth branches below only fire
+    # when the entry does NOT pin one
+    explicit_auth = entry.get("authorizationtype")
+    if explicit_auth is not None:
+        if isinstance(explicit_auth, str) and explicit_auth in AUTHORIZATION_TYPE:
+            payload["authorizationtype"] = AUTHORIZATION_TYPE[explicit_auth]
+        else:
+            payload["authorizationtype"] = int(explicit_auth)
+
     oauth = entry.get("oauth_provider") or {}
     if oauth:
-        payload["authorizationtype"] = AUTHORIZATION_TYPE["OAuth2"]
+        payload.setdefault("authorizationtype", AUTHORIZATION_TYPE["OAuth2"])
         flow = str(oauth.get("oauth_flow_type") or "authorization_code").lower()
         grant = _BIFROST_FLOW_TO_GRANT.get(flow)
         if grant is None:
@@ -459,13 +469,13 @@ def convert_integration(entry: dict) -> Conversion:
         )
     elif entry.get("has_oauth_config"):
         # API-row shape: oauth exists but details are not in the payload
-        payload["authorizationtype"] = AUTHORIZATION_TYPE["OAuth2"]
+        payload.setdefault("authorizationtype", AUTHORIZATION_TYPE["OAuth2"])
         notes.append(
             "GET /integrations only reports has_oauth_config - fetch the full row or "
             "the .bifrost/integrations.yaml entry for URLs/scopes/grant flow"
         )
     else:
-        payload["authorizationtype"] = AUTHORIZATION_TYPE["None"]
+        payload.setdefault("authorizationtype", AUTHORIZATION_TYPE["None"])
 
     # config secrets never map to a manifest-level Halo field (they live in
     # header/certificate config or per-method headers) - report them always,

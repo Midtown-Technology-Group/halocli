@@ -1,0 +1,296 @@
+{
+  "question": "which Huntress Bifrost workflows are100% compatible with Halo primitives?",
+  "method": "offline conversion via scripts/bifrost_convert.py (multi-workflow mode); strict = zero semantic-gap notes (branch/try/helper flatten, unmapped guards, unbound writes). 'branch(es) translated' boilerplate is NOT a gap. Regenerate: run the CLI over features/huntress/workflows/*.py + features/huntress_gws_itdr/workflows/*.py and classify notes with these phrases: [\"did not fit\", \"are flattened to the linear success path\", \"helper branch(es) with RUNTIME conditions\", \"flattens to linear\", \"two runbook variables\", \"array-element membership does not execute\", \"no phase is bound\", \"has no payload\", \"has no body\"]",
+  "counts": {
+    "GAPS": 14,
+    "NOT_A_RUNBOOK": 2
+  },
+  "findings": [
+    "strict result: ZERO workflows pass100% today - blockers are structural, not converter bugs:",
+    "(a) guards on COMPUTED/derived values (org is None, if not connections, if risky, len(names)==1) - Halo criteria read runbook variables (inputs/mapped outputs) only, not mid-run locals; mapping them needs per-workflow redesign (aa18-style runbook_variable_mappings can materialize SOME values).",
+    "(b) try/else/finally + nested try (7 workflows) - Halo failure edges carry no exception type/finally (v17 limitation, noted per conversion).",
+    "(c) helper-internal branches (gws_itdr onboarding) - lift to workflow top level for translation.",
+    "nearest miss: prepare_huntress_organization_merge (branches ALL translated; its only gap is the try form)."
+  ],
+  "rows": [
+    {
+      "feature": "huntress",
+      "file": "allowlist_reconciliation.py",
+      "workflow": "reconcile_huntress_remote_access_allowlist",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 1 executable step(s): ['hop:list_huntress_remote_access_connections']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "effects recorded, no Halo equivalent: [{'kind': 'integration.read', 'target': 'huntress'}]",
+        "enforced_bounds recorded, no Halo equivalent (consider infinite_loop_threshold / batch settings): {'max_duration_seconds': 300, 'max_external_calls': 8, 'max_records_read': 2500, 'max_output_bytes': 512000}",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "audit_organization_inventory.py",
+      "workflow": "audit_huntress_organization_inventory",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "1 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 4 executable step(s): ['hop:get_client', 'hop:get_organization', 'hop:list_agents', 'hop:close']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "detected loop over requested_ids -> Halo iteration pair (aa12/aa13, -98 back-edge); loop multiplicity executes in Halo - runbook log 'iteration' counter observed on the trial",
+        "1 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "data_providers.py",
+      "workflow": "(file)",
+      "converted": false,
+      "strict_verdict": "NOT_A_RUNBOOK",
+      "gaps": [],
+      "notes": [
+        "no @workflow-decorated function found - decorate the workflow or pass --function"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "prepare_organization_merge.py",
+      "workflow": "prepare_huntress_organization_merge",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "2 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor; try/except inside inlined helper '_ensure_backup_table' flattens to linear phases - lift it to the workflow's top level for failure-edge routing"
+      ],
+      "notes": [
+        "phases -> 13 executable step(s): ['hop:get_client', 'hop:get_organization', 'hop:list_agents', 'hop:get_organization', 'hop:list_agents', 'hop:create', 'hop:upsert', 'hop:update_organization', 'hop:get_organization', 'condition:if retire_empty_sources:', 'hop:delete_organization', 'hop:upsert', 'hop:close']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "detected loop over source_rows -> Halo iteration pair (aa12/aa13, -98 back-edge); loop multiplicity executes in Halo - runbook log 'iteration' counter observed on the trial",
+        "inlined same-file helper(s): ['_ensure_backup_table'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "2 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor; try/except inside inlined helper '_ensure_backup_table' flattens to linear phases - lift it to the workflow's top level for failure-edge routing",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "1 branch(es) translated to Halo condition steps (steptype1 + action12 'Condition met/not met'; criteria on <<params>>: array has-elements, str has/no-value, numeric/bool >0, literal comparisons, set membership (str/int/float, in/not in)); else-branches, bool literal comparisons and comparisons against other names stay flattened to the linear success path",
+        "bare-truthiness (numeric/bool) mapped to '>0' (criteria5, trial-proven limit=10/limit=0 legs + bool flag1/flag0 legs): NEGATIVE values misclassify - use an explicit comparison if the value can go below zero"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "remote_access_connections.py",
+      "workflow": "list_huntress_remote_access_connections",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "1 try/except form(s) NOT mapped: try/except nested inside control flow flattens to linear phases - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 2 executable step(s): ['hop:get_client', 'hop:_call']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "1 try/except form(s) NOT mapped: try/except nested inside control flow flattens to linear phases - review in the flow editor",
+        "effects recorded, no Halo equivalent: [{'kind': 'integration.read', 'target': 'huntress'}]",
+        "enforced_bounds recorded, no Halo equivalent (consider infinite_loop_threshold / batch settings): {'max_duration_seconds': 300, 'max_external_calls': 3, 'max_records_read': 1000, 'max_output_bytes': 512000}",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "security_findings.py",
+      "workflow": "list_huntress_signals",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 2 executable step(s): ['hop:get_client', 'hop:_call']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "inlined same-file helper(s): ['_collect'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "effects recorded, no Halo equivalent: [{'kind': 'integration.read', 'target': 'huntress'}]",
+        "enforced_bounds recorded, no Halo equivalent (consider infinite_loop_threshold / batch settings): {'max_duration_seconds': 300, 'max_external_calls': 12, 'max_records_read': 2500, 'max_output_bytes': 512000}",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "security_findings.py",
+      "workflow": "list_huntress_incident_reports",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "1 try/except form(s) NOT mapped: try/except nested inside control flow flattens to linear phases - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 2 executable step(s): ['hop:get_client', 'hop:_call']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "inlined same-file helper(s): ['_collect'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "1 try/except form(s) NOT mapped: try/except nested inside control flow flattens to linear phases - review in the flow editor",
+        "effects recorded, no Halo equivalent: [{'kind': 'integration.read', 'target': 'huntress'}]",
+        "enforced_bounds recorded, no Halo equivalent (consider infinite_loop_threshold / batch settings): {'max_duration_seconds': 300, 'max_external_calls': 12, 'max_records_read': 2500, 'max_output_bytes': 512000}",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "sync_organizations.py",
+      "workflow": "sync_huntress_organizations",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "1 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 6 executable step(s): ['hop:get_client', 'hop:list_organizations', 'hop:close', 'hop:list', 'hop:build_customer_match_index', 'hop:reconcile_vendor_mappings']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "1 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress",
+      "file": "update_organization.py",
+      "workflow": "update_huntress_organization",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "1 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 6 executable step(s): ['hop:get_mapping', 'hop:get_client', 'hop:update_organization', 'hop:close', 'hop:get_mapping', 'hop:guarded_upsert_mapping']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "1 try/except form(s) NOT mapped: try with else/finally or multiple handlers flattens to linear phases (Halo failure edges carry no exception type/finally) - review in the flow editor",
+        "category 'Huntress' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "_onboarding.py",
+      "workflow": "(file)",
+      "converted": false,
+      "strict_verdict": "NOT_A_RUNBOOK",
+      "gaps": [],
+      "notes": [
+        "no @workflow-decorated function found - decorate the workflow or pass --function"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "onboarding.py",
+      "workflow": "build_huntress_gws_itdr_candidate_queue",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row'] stay flattened to linear phases - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 10 executable step(s): ['hop:ensure_table', 'hop:load_settings', 'hop:query_rows', 'hop:list_mappings', 'hop:list_mappings', 'hop:list_mappings', 'hop:list', 'hop:get_org_setting', 'hop:get_org_setting', 'hop:upsert_row']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "detected loop over all_orgs -> Halo iteration pair (aa12/aa13, -98 back-edge); loop multiplicity executes in Halo - runbook log 'iteration' counter observed on the trial",
+        "inlined same-file helper(s): ['_build_candidate_row', '_load_mapping_lookups'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row'] stay flattened to linear phases - review in the flow editor",
+        "category 'Huntress GWS ITDR' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "onboarding.py",
+      "workflow": "preflight_huntress_gws_itdr_tenant",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_build_preflight', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "2 try/except form(s) NOT mapped: try/except inside inlined helper '_load_google_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing; try/except inside inlined helper '_load_huntress_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 13 executable step(s): ['hop:load_settings', 'hop:get_row', 'hop:load_settings', 'hop:list_mappings', 'hop:list_mappings', 'hop:list_mappings', 'hop:get', 'hop:get_org_setting', 'hop:get_org_setting', 'hop:upsert_row', 'hop:get', 'hop:get', 'hop:upsert_row']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "inlined same-file helper(s): ['_build_candidate_row', '_build_preflight', '_load_google_integration', '_load_huntress_integration', '_load_mapping_lookups', '_resolve_row_for_org'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_build_preflight', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "2 try/except form(s) NOT mapped: try/except inside inlined helper '_load_google_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing; try/except inside inlined helper '_load_huntress_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing",
+        "category 'Huntress GWS ITDR' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "onboarding.py",
+      "workflow": "start_huntress_gws_itdr_operator_session",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_build_preflight', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "2 try/except form(s) NOT mapped: try/except inside inlined helper '_load_google_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing; try/except inside inlined helper '_load_huntress_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 13 executable step(s): ['hop:load_settings', 'hop:get_row', 'hop:load_settings', 'hop:list_mappings', 'hop:list_mappings', 'hop:list_mappings', 'hop:get', 'hop:get_org_setting', 'hop:get_org_setting', 'hop:upsert_row', 'hop:get', 'hop:get', 'hop:upsert_row']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "inlined same-file helper(s): ['_build_candidate_row', '_build_preflight', '_load_google_integration', '_load_huntress_integration', '_load_mapping_lookups', '_resolve_row_for_org'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_build_preflight', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "2 try/except form(s) NOT mapped: try/except inside inlined helper '_load_google_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing; try/except inside inlined helper '_load_huntress_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing",
+        "category 'Huntress GWS ITDR' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "onboarding.py",
+      "workflow": "record_huntress_gws_itdr_operator_outcome",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 10 executable step(s): ['hop:get_row', 'hop:load_settings', 'hop:list_mappings', 'hop:list_mappings', 'hop:list_mappings', 'hop:get', 'hop:get_org_setting', 'hop:get_org_setting', 'hop:upsert_row', 'hop:upsert_row']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "inlined same-file helper(s): ['_build_candidate_row', '_load_mapping_lookups', '_resolve_row_for_org'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "category 'Huntress GWS ITDR' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "onboarding.py",
+      "workflow": "verify_huntress_gws_itdr_tenant",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "2 try/except form(s) NOT mapped: try/except inside inlined helper '_load_google_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing; try/except nested inside control flow flattens to linear phases - review in the flow editor",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 16 executable step(s): ['hop:get_row', 'hop:load_settings', 'hop:list_mappings', 'hop:list_mappings', 'hop:list_mappings', 'hop:get', 'hop:get_org_setting', 'hop:get_org_setting', 'hop:upsert_row', 'hop:get_mapping', 'hop:get_mapping', 'hop:get', 'hop:get_client', 'hop:get_organization', 'hop:close', 'hop:upsert_row']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "inlined same-file helper(s): ['_build_candidate_row', '_load_google_integration', '_load_mapping_lookups', '_resolve_row_for_org'] - their awaits splice into this flow (bind phases by the inner call labels)",
+        "helper branch(es) with RUNTIME conditions in ['_build_candidate_row', '_resolve_row_for_org'] stay flattened to linear phases - review in the flow editor",
+        "2 try/except form(s) NOT mapped: try/except inside inlined helper '_load_google_integration' flattens to linear phases - lift it to the workflow's top level for failure-edge routing; try/except nested inside control flow flattens to linear phases - review in the flow editor",
+        "category 'Huntress GWS ITDR' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    },
+    {
+      "feature": "huntress_gws_itdr",
+      "file": "onboarding.py",
+      "workflow": "list_huntress_gws_itdr_queue",
+      "converted": true,
+      "strict_verdict": "GAPS",
+      "gaps": [
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ],
+      "notes": [
+        "phases -> 1 executable step(s): ['hop:query_rows']; wired with template-proven edges (Sleep/Successful Response/iteration)",
+        "category 'Huntress GWS ITDR' -> Halo runbook group via lookup -4 (--apply matches it live when the tenant defines groups)",
+        "Python branches (if/else) are flattened to the linear success path - Halo conditions exist (steptype1 + action12 'Condition met/not met') and translate for array/str/numeric guards with literal comparisons; this function's guards did not fit, so review in the flow editor"
+      ]
+    }
+  ]
+}

@@ -959,6 +959,26 @@ a name-only body (status 1, honest negative), and the generic
 **any** catalog variant — entities and runbooks all deleted after
 readback.
 
+**Huntress built out in the trial** (`huntress_integration_evidence.json`,
+`scripts/build_huntress_integration.py` — a PERSISTENT builder, unlike
+the self-cleaning `--apply`; `--cleanup` removes it): integration **id43
+"Huntress"** (Basic auth, `https://api.huntress.io`) with the full
+**102-method catalog rendered from Huntress' own spec —102 created,
+0 failed,102/102 read back**. Explicit `authorizationtype` now
+passthroughs `convert_integration` (numeric or named; wins over the
+oauth/None defaults). **Bifrost workflow conversion verdict**
+(`huntress_conversion_triage.json`, strict = zero semantic-gap notes):
+**0 of16 pass100%** —14 convert-with-gaps +2 are not runbooks
+(`@data_provider` + a helper-only file). Blockers, per workflow:
+(a) guards on **computed/derived values** (`if not connections`,
+`org is None`, `if risky`) — Halo criteria read runbook variables
+(inputs/mapped outputs) only, so these need per-workflow redesign
+(aa18-style `runbook_variable_mappings` can materialize some);
+(b) try/else/finally + nested try (7 workflows — no exception type or
+finally on failure edges); (c) helper-internal branches (gws_itdr —
+lift to top level). **Nearest miss: `prepare_huntress_organization_merge`**
+— every branch translated; only its try form blocks100%.
+
 **try/except maps to failure-edge routing** (`errorpath_evidence.json`,
 four legs, runbooks + ticket deleted clean): failable steps in the
 `try` body route their **Unsuccessful edge to the handler's first
