@@ -1552,6 +1552,41 @@ async def uses_helper(client) -> dict:
     assert any("inside inlined helper" in n and "top level" in n for n in conv.notes)
 
 
+def test_halo_api_action_generic_kind_pins_any_aat() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={
+            "post_note": {
+                "kind": "halo_api_action",
+                "aat": 4,
+                "body": {"name": "Created by the runbook"},
+            }
+        },
+    )
+    assert conv.ok
+    step = next(s for s in conv.payload["steps"] if s.get("auto_action") == 8)
+    assert step["auto_action_type"] == 4  # generic catalog variant (aat48: user create)
+    body = json.loads(step["message"])
+    assert body == {"name": "Created by the runbook"}
+    assert [(a["action_type"], a["approval_result"]) for a in step["actions"]] == [
+        (18, 1),
+        (18, 0),
+    ]
+
+
+def test_halo_api_action_without_body_gets_a_note() -> None:
+    conv = convert_workflow(
+        {},
+        NOTE_SOURCE,
+        "writer",
+        phase_bindings={"post_note": {"kind": "halo_api_action", "aat": 5}},
+    )
+    assert conv.ok
+    assert any("has no body" in n for n in conv.notes)
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
     steps, sidecar, chains = build_runbook_steps(

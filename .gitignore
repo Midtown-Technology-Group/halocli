@@ -52,6 +52,7 @@ scripts/*
 !scripts/runbook_ticket_crud_probe.py
 !scripts/runbook_interpolation_probe.py
 !scripts/runbook_errorpath_probe.py
+!scripts/runbook_aat48_probe.py
 halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py

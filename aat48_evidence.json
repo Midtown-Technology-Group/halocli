@@ -1,0 +1,112 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "aat4/5/6 catalog pin",
+  "legs": {
+    "aat1_control": {
+      "id": "6b4f03cb-5e96-4c4b-868c-851ec12d9658",
+      "aat": 1,
+      "runlog": {
+        "id": 2775,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 1090,
+        "timestamp": "2026-10-06T05:36:11.757"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "aat4": {
+      "id": "fb6c8fac-77e1-4bda-9857-35ef238decaa",
+      "aat": 4,
+      "runlog": {
+        "id": 2777,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 534,
+        "timestamp": "2026-10-06T05:36:16.53"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "aat5": {
+      "id": "dac30e0d-7392-4d82-86a2-35f172b95326",
+      "aat": 5,
+      "runlog": {
+        "id": 2778,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 1169,
+        "timestamp": "2026-10-06T05:36:21.297"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "aat6": {
+      "id": "f2856a76-2e3b-4c4e-9c28-afb1034e0f71",
+      "aat": 6,
+      "runlog": {
+        "id": 2779,
+        "status": 1,
+        "error": "Failed result reached. Last step=3",
+        "steps_executed": 1,
+        "runbook_step": 1,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 329,
+        "timestamp": "2026-10-06T05:36:25.99"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    }
+  },
+  "marker_hits": {
+    "halocli-aat48 ticket marker": {
+      "endpoint": "/Tickets",
+      "id": 2962
+    },
+    "halocli-aat48 aat4 entity": {
+      "endpoint": "/Users",
+      "id": 94
+    },
+    "halocli-aat48 aat5 entity": {
+      "endpoint": "/Users",
+      "id": 95
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "cleanup_errors": [
+    "/Users:94: HaloPSA validation error (400) on /api/Users/94: \"General Users cannot be deleted\"",
+    "/Users:95: HaloPSA validation error (400) on /api/Users/95: \"General Users cannot be deleted\""
+  ],
+  "entity_cleanup": "deleted 3 created entit(ies)",
+  "verdict": "control: aat1 created the marker ticket (harness valid) | SHIP: aat4 -> /Users id=94 | SHIP: aat5 -> /Users id=95 | aat6 created no matching entity (run status=1, error='Failed result reached. Last step=3')"
+}
