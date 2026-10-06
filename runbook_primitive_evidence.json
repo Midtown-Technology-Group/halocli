@@ -1,0 +1,69 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "chain": {
+    "target": "a2580d9c-a8da-4dac-b118-5e0e6684a885",
+    "source": "60f3c1a1-b74e-4b67-9df8-a0ef8b847b25"
+  },
+  "chain_fire": "ok",
+  "chain_runs": [
+    {
+      "id": 2561,
+      "runbook_id": "60f3c1a1-b74e-4b67-9df8-a0ef8b847b25",
+      "status": 2,
+      "error": "",
+      "steps_executed": null,
+      "runbook_step": -9999,
+      "execution_time": 1333
+    },
+    {
+      "id": 2562,
+      "runbook_id": "a2580d9c-a8da-4dac-b118-5e0e6684a885",
+      "status": 2,
+      "error": "",
+      "steps_executed": 1,
+      "runbook_step": 2,
+      "execution_time": 100
+    }
+  ],
+  "target_ran": true,
+  "value_runbook": "e46a6e8a-e505-4469-8fa2-0e9730de5b56",
+  "value_legs": {
+    "x": {
+      "expect": "met",
+      "runs": [
+        {
+          "id": 2563,
+          "runbook_id": "e46a6e8a-e505-4469-8fa2-0e9730de5b56",
+          "status": 2,
+          "error": "",
+          "steps_executed": 1,
+          "runbook_step": 3,
+          "execution_time": 254
+        }
+      ],
+      "status": 2,
+      "ended_at_step": 3
+    },
+    "": {
+      "expect": "notmet",
+      "runs": [
+        {
+          "id": 2564,
+          "runbook_id": "e46a6e8a-e505-4469-8fa2-0e9730de5b56",
+          "status": 1,
+          "error": "Failed result reached. Last step=4",
+          "steps_executed": 1,
+          "runbook_step": 1,
+          "execution_time": 280
+        }
+      ],
+      "status": 1,
+      "ended_at_step": 1
+    }
+  },
+  "cleanup": [
+    "haloclidevprobechain2-chain",
+    "haloclidevprobechain2-target",
+    "haloclidevprobechain2-value"
+  ]
+}

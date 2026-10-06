@@ -914,6 +914,27 @@ fire correctly fails at the note step (no ticket). A workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion instead of a guessed write.
 
+**Chaining (`--phase-bindings` `{"kind": "chain_runbook", "target":
+<runbook-guid>}`)**: `aa24` *StartNewRunbookTerminateCurrentRunbook* +
+`start_new_runbook_id` starts the target runbook and **terminates the
+current one — with zero edge configuration** (the SPA ships no
+default-edge entry for aa24 because none is needed). Live proof
+(`runbook_primitive_evidence.json`): fire A → run **2561 status 2**
+(current, ends at -9999) → **target ran: run 2562 status 2,
+Success**. Trailing phases after a chain get a WARNING (they never
+execute); the target is an existing runbook's guid.
+
+**Bare string guards**: `if label:` on a `str` param becomes criteria
+**29 "Has a value"** — both legs live-proven (**2563** "x" → met →
+Success; **2564** "" → notmet → Fail terminal). Int/bool bare truthiness
+and comparisons against other names stay flattened (their semantics
+are not pinned yet).
+
+Two enforcement facts from the same probe: `runbook_start_type:0`
+answers **401** to a public POST (Halo-only is enforced server-side),
+and runbook **names are unique** (colliding create → 400 *"Name must
+be unique"*).
+
 Egress caveat (measured, not assumed): an `aa6` step routes only when
 its HTTP call actually answers — Halo's servers reached
 `/api/InstanceInfo` (status2) but not `example.com` ("Next step not
@@ -924,8 +945,9 @@ Honesty notes (what does **not** transfer): the Python logic itself —
 **if/else guards on list/tuple params AND literal comparisons on
 int/float/str params translate to real Halo condition steps with every
 arm live-proven** (met → guarded body, notmet → else arm; a then-arm
-ending in a loop skips the else from its `iter_end`), but comparisons
-against other variables, bool/bare non-array truthiness, and guards on
+ending in a loop skips the else from its `iter_end`), bare truthiness
+on **str** params (criteria29, both legs proven), but comparisons
+against other variables, bool/int bare truthiness, and guards on
 untyped params still flatten to the linear success path (noted per
 conversion);
 `effects`/`enforced_bounds`/secrets become

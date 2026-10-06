@@ -41,6 +41,7 @@ scripts/*
 !scripts/runbook_api_route_probe.py
 !scripts/runbook_event_probe.py
 !scripts/runbook_event_ladder.py
+!scripts/runbook_chain_probe.py
 halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py

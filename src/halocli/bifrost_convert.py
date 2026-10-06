@@ -69,6 +69,19 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   so every failure/false edge MUST send approval_result:0 or it
   collapses to the positive name and never routes (the same rule
   governs act17/act22/act23 second edges).
+- chain binding (``{"kind": "chain_runbook", "target": <guid>}``) ->
+  aa24 StartNewRunbookTerminateCurrentRunbook + start_new_runbook_id,
+  NO outgoing edges (trial-proven, runs2561/2562: the current run
+  terminates (-9999) and the TARGET runs to Success with zero edge
+  config - the SPA has no default-edge catalog entry for aa24 because
+  none is needed). The chain step TERMINATES this run: trailing
+  phases get a WARNING note. Target = an existing runbook's guid
+  (multi-runbook orchestration in one apply = future work).
+- runbook_start_type0 correctly answers401 to a public POST (Halo-only
+  enforcement, observed) - fire-able probes need start_type1; runbook
+  names are server-UNIQUE (colliding creates400 "Name must be
+  unique").
+
 - internal triggers: ``triggers=[names]`` becomes a sidecar the apply
   resolves against lookup64 (event catalog; prefer the "- All" scope)
   and binds via POST /Notification {guid: null, eventno, type: -2,
@@ -114,7 +127,10 @@ from dataclasses import dataclass, field
 # to,7 Less than,8 Less than or equal to,29 Has a value,30 Does not
 # have a value,-10 To any value. type5 "Greater than" with
 # value_int:0 on an Array variable IS Halo's has-elements idiom (the
-# shape two working trial runbooks use). Other decoded labels from the
+# shape two working trial runbooks use). type29 "Has a value" proven
+# BOTH legs for bare str truthiness on the trial (label "x" -> met
+# status2, "" -> notmet to the Fail terminal; runs2563/2564).
+# Other decoded labels from the
 # same pack: steptype1=Condition,2=Action,3=End (SPA
 # getChatFlowStepTypeDisplay ids5268/5269/455); aa6 label5635="Execute
 # an Integration Method" (confirms the method-binding primitive);
@@ -443,6 +459,8 @@ class Phase:
     array_var: str | None = None  # loop target (input variable name)
     # halo_note phases (bound Halo API Action, aa8/aat3 add-note):
     halo_note: dict | None = None  # {outcome, who, note} payload spec
+    # chain phases (aa24 StartNewRunbookTerminateCurrentRunbook):
+    chain_target: str | None = None  # target runbook guid
     # condition phases (array truthiness guards AND if/else comparisons):
     branch_span: int | None = None  # guarded (then-arm) raw-phase count
     else_span: int | None = None  # else-arm raw-phase count (None = no else)
@@ -600,7 +618,20 @@ def classify_phases(
                         )
                     )
                 elif bound is not None and label:
-                    if isinstance(bound, dict):
+                    if isinstance(bound, dict) and bound.get("kind") == "chain_runbook":
+                        # chain into an existing runbook: aa24 + guid,
+                        # NO edges (trial-proven: the step terminates the
+                        # current run and starts the target)
+                        phases.append(
+                            Phase(
+                                "chain",
+                                label,
+                                chain_target=str(bound.get("target") or ""),
+                                in_loop=in_loop,
+                                array_var=array_var,
+                            )
+                        )
+                    elif isinstance(bound, dict):
                         # explicit action binding: {"kind": "halo_note", ...}
                         # -> Halo API Action aa8/aat3 (add note) step
                         phases.append(
@@ -670,6 +701,17 @@ def classify_phases(
             if isinstance(stmt.test, ast.Name) and stmt.test.id in array_params:
                 guard_label = f"if {stmt.test.id}:"
                 array_var = stmt.test.id
+            elif isinstance(stmt.test, ast.Name) and param_types.get(stmt.test.id) == "str":
+                # bare truthiness on a str param -> criteria29 "Has a
+                # value" (trial-proven both legs: "x" -> met/status2,
+                # "" -> notmet/Fail terminal)
+                guard_label = f"if {stmt.test.id}:"
+                spec = {
+                    "param": stmt.test.id,
+                    "op": "has_value",
+                    "value": "",
+                    "value_type": "str",
+                }
             else:
                 spec = _guard_spec(stmt.test)
                 if spec:
@@ -990,6 +1032,24 @@ def build_runbook_steps(
                 }
             )
             continue
+        if ph.kind == "chain":
+            # aa24 StartNewRunbookTerminateCurrentRunbook: starts the
+            # target and ENDS this run - no outgoing edges (trial-proven:
+            # run2557 current completed/-9999, run2558 target ran to
+            # Success with zero edge config)
+            steps.append(
+                {
+                    "step_id": idx,
+                    "name": ph.label[:200],
+                    "steptype": 2,
+                    "auto_action": 24,
+                    "start_new_runbook_id": ph.chain_target or None,
+                    "isstart": idx == 1,
+                    "allow_all_statuses": True,
+                    "actions": [],
+                }
+            )
+            continue
         if ph.kind == "halo_note":
             # Halo API Action (aa8) + auto_action_type3 = add note; the
             # message is a raw Halo API request body (SPA template for
@@ -1204,6 +1264,19 @@ def convert_workflow(
             "(aa12/aa13, -98 back-edge); loop multiplicity executes in Halo - "
             "runbook log 'iteration' counter observed on the trial"
         )
+    chain_phases = [i for i, p in enumerate(phases) if p.kind == "chain"]
+    if chain_phases:
+        notes.append(
+            "chain phase -> aa24 StartNewRunbookTerminateCurrentRunbook "
+            f"(target {phases[chain_phases[0]].chain_target}): starts the target runbook "
+            "and TERMINATES this run (trial-proven: run2557 current + run2558 target, "
+            "zero edge config); steps after a chain phase never execute"
+        )
+        if chain_phases[0] != len(phases) - 1:
+            notes.append(
+                f"WARNING: {len(phases) - 1 - chain_phases[0]} phase(s) follow the chain "
+                "phase and will NOT run - move the chain last or drop the trailing phases"
+            )
     if sidecar:
         notes.append(
             f"steps {sorted(sidecar, key=int)} bind to methods {list(sidecar.values())} - "
