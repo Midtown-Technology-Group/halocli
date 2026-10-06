@@ -794,6 +794,115 @@ def test_ticket_guard_prefixes_faults_criteria_with_exit() -> None:
     assert any("ticket-field guard" in n for n in conv.notes)
 
 
+HELPER_SOURCE = """
+from bifrost import workflow
+
+
+async def run(client, flag: bool):
+    if flag:
+        await inspect_path(client)
+    else:
+        await route_path(client)
+
+
+@workflow(name="Demo: Helper")
+async def caller(client, ticket_id: int) -> dict:
+    await setup(client)
+    await run(client, flag=True)
+    return {}
+"""
+
+
+def test_same_file_helper_inlines_and_folds_true_arm() -> None:
+    conv = convert_workflow({}, HELPER_SOURCE, "caller")
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    # call-site literal flag=True -> route arm statically gone; `run` is
+    # not a hop (its awaits spliced); Success tail
+    assert names == ["setup", "inspect_path", "Success"]
+    assert any("inlined same-file helper" in n for n in conv.notes)
+    assert any("folded" in n and "flag = True" in n for n in conv.notes)
+
+
+def test_helper_folds_to_else_arm_when_false() -> None:
+    conv = convert_workflow({}, HELPER_SOURCE.replace("flag=True", "flag=False"), "caller")
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    assert names == ["setup", "route_path", "Success"]
+
+
+def test_helper_runtime_guard_stays_flattened() -> None:
+    src = (
+        HELPER_SOURCE.replace(
+            "async def run(client, flag: bool):",
+            "async def run(client, level: int):",
+        )
+        .replace("    if flag:", "    if level > 5:")
+        .replace("await run(client, flag=True)", "await run(client, level=level)")
+        .replace(
+            "async def caller(client, ticket_id: int)",
+            "async def caller(client, level: int)",
+        )
+    )
+    conv = convert_workflow({}, src, "caller")
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    # runtime guard can not fold: both arms extract linearly + noted
+    assert names == ["setup", "inspect_path", "route_path", "Success"]
+    assert any("RUNTIME conditions" in n and "run" in n for n in conv.notes)
+    assert not any("folded" in n for n in conv.notes)
+
+
+def test_recursive_helper_cycle_safe() -> None:
+    src = """
+from bifrost import workflow
+
+
+async def countdown(n: int):
+    if n > 0:
+        await countdown(n - 1)
+    await tick()
+
+
+@workflow(name="Demo: Rec")
+async def rec_caller(client) -> dict:
+    await countdown(3)
+    return {}
+"""
+    conv = convert_workflow({}, src, "rec_caller")
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    # n=3 folds the guard True; the INNER countdown call is in the helper
+    # stack -> hop fallback (no infinite recursion); tick splices
+    assert names == ["countdown", "tick", "Success"]
+    assert any("folded" in n and "n > 0 = True" in n for n in conv.notes)
+
+
+def test_unreachable_after_folded_return_is_pruned() -> None:
+    src = """
+from bifrost import workflow
+
+
+async def run(client, flag: bool):
+    if flag:
+        await yes(client)
+        return
+    await no(client)
+
+
+@workflow(name="Demo: Unreach")
+async def caller(client) -> dict:
+    await run(client, flag=True)
+    return {}
+"""
+    conv = convert_workflow({}, src, "caller")
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    # `no(client)` sits after the folded arm's return - dead, pruned
+    assert names == ["yes", "Success"]
+    assert any("unreachable" in n and "run: 1" in n for n in conv.notes)
+
+
 def test_classify_does_not_descend_into_callee_args() -> None:
     phases = classify_phases  # imported for the guard below
     conv = convert_workflow({}, WORKFLOW_SOURCE, "inspect_voicemail_customer")

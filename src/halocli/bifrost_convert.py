@@ -135,9 +135,11 @@ probe deliberately fires them.
 from __future__ import annotations
 
 import ast
+import copy
 import json
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 # --- enums (provenance above) -------------------------------------------
 
@@ -566,9 +568,138 @@ def _is_sleep(call: ast.Call) -> int | None:
     return None
 
 
+def _literal_bindings(
+    helper: ast.FunctionDef | ast.AsyncFunctionDef, call: ast.Call
+) -> dict[str, Any]:
+    """Call-site CONSTANT arguments bound to the helper's parameter names.
+
+    Only ast.Constant values bind (runtime args pass through untouched) -
+    this is what makes ``run(x, inspect_only=True)`` fold its True arm.
+    """
+    binds: dict[str, Any] = {}
+    h = helper.args
+    pos = [a.arg for a in (*h.posonlyargs, *h.args)]
+    for name, node in zip(pos, call.args):
+        if isinstance(node, ast.Constant):
+            binds[name] = node.value
+    for kw in call.keywords:
+        if kw.arg and isinstance(kw.value, ast.Constant):
+            binds[kw.arg] = kw.value.value  # the VALUE, not the AST node
+    return binds
+
+
+class _LiteralFolder(ast.NodeTransformer):
+    """Substitute literal-bound names and statically fold ``if`` guards.
+
+    A guard whose test becomes fully literal evaluates to bool and the
+    UNTAKEN arm disappears (constant propagation from the call site);
+    runtime guards remain for the linear walk (recorded by the caller).
+    """
+
+    def __init__(self, binds: dict[str, Any]) -> None:
+        self.binds = binds
+        self.folds: list[tuple[str, Any]] = []
+
+    def visit_Name(self, node: ast.Name) -> ast.AST:
+        if node.id in self.binds:
+            value = self.binds[node.id]
+            if isinstance(value, ast.Constant):  # defensive unwrap
+                value = value.value
+            return ast.copy_location(ast.Constant(value=value), node)
+        return node
+
+    def visit_If(self, node: ast.If) -> list[ast.stmt] | ast.If:
+        src = ast.unparse(node.test)
+        node.test = self.visit(node.test)
+        try:
+            value = _eval_literal(node.test)
+        except (ValueError, SyntaxError):
+            # runtime guard: keep (caller records it as flattened)
+            self.generic_visit(node)
+            return node
+        self.folds.append((src, value))
+        taken = node.body if bool(value) else node.orelse
+        out: list[ast.stmt] = []
+        for stmt in taken:
+            res = self.visit(stmt)
+            if isinstance(res, list):
+                out.extend(res)
+            else:
+                out.append(res)
+        return out
+
+
+_CMP = {
+    ast.Eq: lambda a, b: a == b,
+    ast.NotEq: lambda a, b: a != b,
+    ast.Lt: lambda a, b: a < b,
+    ast.LtE: lambda a, b: a <= b,
+    ast.Gt: lambda a, b: a > b,
+    ast.GtE: lambda a, b: a >= b,
+    ast.Is: lambda a, b: a is b,
+    ast.IsNot: lambda a, b: a is not b,
+}
+
+
+def _eval_literal(node: ast.expr) -> Any:
+    """literal_eval + the guard forms it lacks: single comparisons and ``not``.
+
+    Raises ValueError for anything runtime - the folder keeps those Ifs
+    for the honest flatten path.
+    """
+    try:
+        return ast.literal_eval(node)
+    except (ValueError, SyntaxError):
+        pass
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        return not _eval_literal(node.operand)
+    if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1:
+        left = _eval_literal(node.left)
+        right = _eval_literal(node.comparators[0])
+        fn = _CMP.get(type(node.ops[0]))
+        if fn is None:
+            raise ValueError(f"unsupported comparison {node.ops[0]!r}")
+        return fn(left, right)
+    raise ValueError(f"not a literal guard: {type(node).__name__}")
+
+
+_TERMINATORS = (ast.Return, ast.Raise, ast.Break, ast.Continue)
+
+
+def _prune_unreachable(node: Any) -> int:
+    """Drop statements that follow a control-flow terminator in the SAME block.
+
+    The constant-fold turns ``if inspect_only: ... return`` into those
+    statements directly, leaving the fall-through ``return await route(...)``
+    after them - statically dead, so it must not become a phase. Recursive
+    over every statement list (body/orelse/finalbody); returns the pruned
+    count.
+    """
+    pruned = 0
+    for field_name in ("body", "orelse", "finalbody"):
+        stmts = getattr(node, field_name, None)
+        if not isinstance(stmts, list) or not stmts:
+            continue
+        keep: list = []
+        terminated = False
+        for stmt in stmts:
+            if terminated:
+                pruned += 1
+                continue
+            pruned += _prune_unreachable(stmt)
+            keep.append(stmt)
+            if isinstance(stmt, _TERMINATORS):
+                terminated = True
+        if len(keep) != len(stmts):
+            setattr(node, field_name, keep)
+    return pruned
+
+
 def classify_phases(
     func: ast.AsyncFunctionDef | ast.FunctionDef,
     phase_bindings: dict[str, int | str] | None = None,
+    module_defs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] | None = None,
+    report: dict[str, Any] | None = None,
 ) -> list[Phase]:
     """Top-level awaits in source order, classified into Halo primitives.
 
@@ -577,6 +708,13 @@ def classify_phases(
       str method name -> sidecar for the apply probe to resolve)
     - awaits inside a top-level ``for`` -> loop body (iteration pair
       around them, array var = the iterated name when it is a parameter)
+    - ``await <same-file helper>(...)`` -> the helper's awaits SPLICE
+      into this flow (explicit bindings win over inlining); call-site
+      CONSTANT arguments fold the helper's ``if`` guards statically -
+      untaken arms vanish (e.g. run(x, inspect_only=True) drops the
+      route arm); statements after a return/raise that become
+      unreachable are PRUNED (the voicemail fall-through case);
+      cycle-safe (recursive calls fall back to a hop)
     - an else-less top-level ``if <array param>:`` whose body carries
       awaits -> a Halo condition step (steptype1, criteria on
       ``<<param>>``; translated only for list/tuple-annotated params -
@@ -587,6 +725,14 @@ def classify_phases(
     linear flatten + conversion note.
     """
     bindings = phase_bindings or {}
+    module_defs = module_defs or {}
+    if report is None:
+        report = {}
+    report.setdefault("inlined", set())
+    report.setdefault("folds", [])
+    report.setdefault("helper_branches", set())
+    report.setdefault("sync_helpers", set())
+    helper_stack: set[str] = {func.name}
     phases: list[Phase] = []
 
     # list/tuple-annotated params -> bare-truthiness guards; all annotated
@@ -681,6 +827,46 @@ def classify_phases(
                                 array_var=array_var,
                             )
                         )
+                elif label in module_defs and label not in helper_stack:
+                    # same-file helper: splice its awaits into this flow
+                    # (bindings win over inlining - explicit beats static)
+                    helper = module_defs[label]
+                    binds = _literal_bindings(helper, call)
+                    folder = _LiteralFolder(binds)
+                    folded_body: list[ast.stmt] = []
+                    for raw_stmt in copy.deepcopy(helper.body):
+                        res = folder.visit(raw_stmt)
+                        if isinstance(res, list):
+                            folded_body.extend(res)
+                        else:
+                            folded_body.append(res)
+                    # post-fold fall-through code after a return/raise is
+                    # statically dead (voicemail's `return route_ticket`
+                    # after the inspect_only return) - prune it or it
+                    # would become a phantom phase
+                    wrapped = ast.Module(body=folded_body, type_ignores=[])
+                    pruned = _prune_unreachable(wrapped)
+                    if pruned:
+                        report.setdefault("pruned", {})
+                        report["pruned"][label] = report["pruned"].get(label, 0) + pruned
+                    helper_stack.add(label)
+                    started = len(phases)
+                    for stmt in wrapped.body:  # the PRUNED statement list
+                        if isinstance(stmt, ast.If):
+                            report["helper_branches"].add(label)
+                        walk(stmt, in_loop, array_var)
+                    helper_stack.remove(label)
+                    if folder.folds:
+                        report["folds"].extend(
+                            f"{label}: {test} = {value!r}" for test, value in folder.folds
+                        )
+                    if len(phases) > started:
+                        report["inlined"].add(label)
+                    else:
+                        # sync-only helper: the call itself stays the hop
+                        phases.append(Phase("hop", label, in_loop=in_loop, array_var=array_var))
+                        report["sync_helpers"].add(label)
+                    continue
                 elif label:
                     phases.append(Phase("hop", label, in_loop=in_loop, array_var=array_var))
                 # do not descend into the call's own args (nested awaits
@@ -1235,11 +1421,15 @@ def convert_workflow(
 
     meta: dict = {}
     func: ast.AsyncFunctionDef | ast.FunctionDef | None = None
+    module_defs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
     if source and function_name:
         try:
             tree = ast.parse(source)
         except SyntaxError as exc:
             return Conversion(None, [f"workflow source does not parse: {exc}"])
+        module_defs = {
+            n.name: n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
         for node in tree.body:
             if (
                 isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
@@ -1266,6 +1456,7 @@ def convert_workflow(
         return Conversion(None, ["workflow has no name (row or @workflow name)"])
 
     input_variables: list[dict] = []
+    classify_report: dict = {}
     phases: list[Phase] = []
     if func is not None:
         args = func.args
@@ -1313,7 +1504,9 @@ def convert_workflow(
                     "description": f"from Bifrost signature ({display})",
                 }
             )
-        phases = classify_phases(func, phase_bindings)
+        phases = classify_phases(
+            func, phase_bindings, module_defs=module_defs, report=classify_report
+        )
 
     if ticket_guards:
         # prefix ticket-field guards (N-Central's faults-style criteria):
@@ -1356,6 +1549,36 @@ def convert_workflow(
             "runbook log 'iteration' counter observed on the trial"
         )
     chain_phases = [i for i, p in enumerate(phases) if p.kind == "chain"]
+    if classify_report.get("inlined"):
+        notes.append(
+            f"inlined same-file helper(s): {sorted(classify_report['inlined'])} - "
+            "their awaits splice into this flow (bind phases by the inner call labels)"
+        )
+    if classify_report.get("folds"):
+        notes.append(
+            f"folded {len(classify_report['folds'])} call-site literal guard(s) "
+            f"({'; '.join(classify_report['folds'])}) - untaken arms skipped statically "
+            "(constant propagation from the call site)"
+        )
+    if classify_report.get("helper_branches"):
+        notes.append(
+            f"helper branch(es) with RUNTIME conditions in "
+            f"{sorted(classify_report['helper_branches'])} stay flattened to linear "
+            "phases - review in the flow editor"
+        )
+    if classify_report.get("sync_helpers"):
+        notes.append(
+            f"sync-only helper(s) kept as hops: {sorted(classify_report['sync_helpers'])} "
+            "(no awaits to splice)"
+        )
+    if classify_report.get("pruned"):
+        pruned = classify_report["pruned"]
+        total = sum(pruned.values())
+        notes.append(
+            f"dropped {total} statically-unreachable statement(s) after "
+            f"return/raise ({', '.join(f'{k}: {v}' for k, v in pruned.items())}) - "
+            "dead code after a constant-folded early return (never executes)"
+        )
     if chain_phases:
         notes.append(
             "chain phase -> aa24 StartNewRunbookTerminateCurrentRunbook "
