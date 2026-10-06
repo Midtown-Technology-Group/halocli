@@ -96,8 +96,18 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   terminates (-9999) and the TARGET runs to Success with zero edge
   config - the SPA has no default-edge catalog entry for aa24 because
   none is needed). The chain step TERMINATES this run: trailing
-  phases get a WARNING note. Target = an existing runbook's guid
-  (multi-runbook orchestration in one apply = future work).
+  phases get a WARNING note. Target = an existing runbook's guid, or
+  a same-file ``@workflow`` callee NAME: awaiting a decorated
+  workflow converts to the chain automatically (the callee keeps its
+  own runbook identity - inputs, triggers, runlogs) and ``--apply``
+  creates targets FIRST (dependency order), patching
+  ``start_new_runbook_id`` with the created ids - multi-runbook
+  orchestration in one apply. An explicit ``--phase-bindings`` chain
+  always wins over the automatic one. Fire-proven as one apply
+  (chain_orchestration_evidence.json): child created first, parent
+  patched with the child id, parent run2607 status2 step -9999 ->
+  chain-started child run2608 status2 (newer than the child's own
+  direct-fire run2606); both deleted clean.
 - runbook_start_type0 correctly answers401 to a public POST (Halo-only
   enforcement, observed) - fire-able probes need start_type1; runbook
   names are server-UNIQUE (colliding creates400 "Name must be
@@ -237,6 +247,7 @@ _BIFROST_FLOW_TO_GRANT: dict[str, int] = {
 # Bifrost config key names whose value/description carries a base URL
 _BASE_URL_KEYS = ("base_url", "base_uri", "endpoint", "api_url", "api_base_url")
 _URL_RE = re.compile(r"https?://[^\s`\"')\],;]+")
+_GUID_RE = re.compile(r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}")
 
 # Python annotation -> Halo data_type (name based; best-effort)
 _ANNOTATION_TO_DATA_TYPE: dict[str, int] = {
@@ -507,6 +518,38 @@ def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
                         out[kw.arg] = ast.unparse(kw.value)
                 return out
     return {}
+
+
+def _is_workflow_func(func: ast.AsyncFunctionDef | ast.FunctionDef) -> bool:
+    """True when the function carries a ``@workflow(...)`` decorator.
+
+    A @workflow callee is its OWN runbook (separate trigger surface,
+    inputs, runlogs) - awaiting it is a cross-workflow CALL, not a
+    helper splice: it converts to an aa24 chain phase instead.
+    """
+    for dec in func.decorator_list:
+        if isinstance(dec, ast.Call):
+            fn = dec.func
+            if isinstance(fn, ast.Name) and fn.id == "workflow":
+                return True
+    return False
+
+
+def workflow_function_names(source: str) -> list[str]:
+    """Names of every top-level ``@workflow`` function in ``source``.
+
+    The CLI uses this to convert a whole multi-workflow file in one
+    pass (``--workflow-file`` without ``--function``).
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+    return [
+        n.name
+        for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and _is_workflow_func(n)
+    ]
 
 
 def _annotation_data_type(node: ast.expr | None) -> tuple[int, str]:
@@ -828,6 +871,25 @@ def classify_phases(
                             )
                         )
                 elif label in module_defs and label not in helper_stack:
+                    callee = module_defs[label]
+                    if _is_workflow_func(callee) and callee.name != func.name:
+                        # cross-workflow CALL: a @workflow callee keeps
+                        # its OWN runbook identity (inputs, triggers,
+                        # runlogs) - chain phase (aa24) with a NAME
+                        # target that the same --apply resolves to the
+                        # callee's freshly-created guid (dependency-
+                        # ordered create). Explicit bindings above win;
+                        # a self-call falls through to the inline path.
+                        phases.append(
+                            Phase(
+                                "chain",
+                                label,
+                                chain_target=label,
+                                in_loop=in_loop,
+                                array_var=array_var,
+                            )
+                        )
+                        continue
                     # same-file helper: splice its awaits into this flow
                     # (bindings win over inlining - explicit beats static)
                     helper = module_defs[label]
@@ -1078,12 +1140,14 @@ def build_runbook_steps(
     name: str,
     description: str,
     phases: list[Phase],
-) -> tuple[list[dict], dict[str, str]]:
+) -> tuple[list[dict], dict[str, str], dict[str, str]]:
     """Executable step graph: phases -> primitives -> wired edges.
 
-    Returns (steps, sidecar) where sidecar maps step_id -> method name
-    for bindings whose id is not yet known (the apply probe resolves and
-    strips it). Wiring rules (all fire-proven, see module docstring):
+    Returns (steps, sidecar, chains): sidecar maps step_id -> method
+    name for bindings whose id is not yet known (the apply probe
+    resolves and strips it); chains maps step_id -> runbook NAME for
+    aa24 targets that are not guids yet (the same-apply create resolves
+    them to ids). Wiring rules (all fire-proven, see module docstring):
 
     - hop/sleep: one edge (action32 "Sleep Finished") -> next
     - api: two edges (action17 "Successful Response (200 - 299)" -> next,
@@ -1096,6 +1160,7 @@ def build_runbook_steps(
       Fail (auto_action1), both isend.
     """
     sidecar: dict[str, str] = {}
+    chains: dict[str, str] = {}
 
     # flatten loop markers: a loop with body phases becomes
     # [iter_begin, *body, iter_end]; loop-less phases stay as-is.
@@ -1284,14 +1349,21 @@ def build_runbook_steps(
             # aa24 StartNewRunbookTerminateCurrentRunbook: starts the
             # target and ENDS this run - no outgoing edges (trial-proven:
             # run2557 current completed/-9999, run2558 target ran to
-            # Success with zero edge config)
+            # Success with zero edge config). The target is either an
+            # explicit guid (bindable today) or a runbook NAME that the
+            # same --apply resolves after creating the target first
+            # (dependency-ordered create).
+            target = (ph.chain_target or "").strip()
+            is_guid = bool(_GUID_RE.fullmatch(target))
+            if target and not is_guid:
+                chains[str(idx)] = target
             steps.append(
                 {
                     "step_id": idx,
                     "name": ph.label[:200],
                     "steptype": 2,
                     "auto_action": 24,
-                    "start_new_runbook_id": ph.chain_target or None,
+                    "start_new_runbook_id": target if is_guid else None,
                     "isstart": idx == 1,
                     "allow_all_statuses": True,
                     "actions": [],
@@ -1393,7 +1465,7 @@ def build_runbook_steps(
                 "actions": [],
             }
         )
-    return steps, sidecar
+    return steps, sidecar, chains
 
 
 def convert_workflow(
@@ -1535,7 +1607,7 @@ def convert_workflow(
             "(early-return semantics - the Bifrost payload-filter pattern)"
         )
 
-    steps, sidecar = build_runbook_steps(name, description, phases)
+    steps, sidecar, chains = build_runbook_steps(name, description, phases)
     loop_phases = [p for p in phases if p.in_loop]
     notes.append(
         f"phases -> {len(phases)} executable step(s): "
@@ -1595,6 +1667,14 @@ def convert_workflow(
         notes.append(
             f"steps {sorted(sidecar, key=int)} bind to methods {list(sidecar.values())} - "
             "resolved to created method ids by --apply (sidecar stripped before POST)"
+        )
+    if chains:
+        notes.append(
+            f"chain target(s) by NAME {sorted(set(chains.values()))} -> the same --apply "
+            "creates the target runbook FIRST (dependency order) and patches this step's "
+            "start_new_runbook_id with its id; a lone --apply of this file leaves the "
+            "target unbound (chain fires nothing) - bind an explicit guid via "
+            "--phase-bindings to chain into a pre-existing runbook instead"
         )
     if meta.get("effects"):
         notes.append(f"effects recorded, no Halo equivalent: {meta['effects']}")
@@ -1659,6 +1739,8 @@ def convert_workflow(
     }
     if sidecar:
         payload["_phase_bindings"] = sidecar  # apply-only; stripped before POST
+    if chains:
+        payload["_chains"] = chains  # step_id -> runbook name; apply resolves to ids
     if category:
         payload["_category"] = category  # apply resolves group_id via lookup -4
     if triggers:

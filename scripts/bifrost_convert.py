@@ -18,18 +18,28 @@ Writes ``halo_out/`` with:
                                  graph (steps + action edges, proven by
                                  scripts/runbook_chain_matrix.py); an
                                  ``_phase_bindings`` sidecar maps step ids to
-                                 method names when the id is not yet known
+                                 method names when the id is not yet known,
+                                 ``_chains`` maps step ids to target runbook
+                                 NAMES for aa24 steps (resolved by --apply)
 - ``conversion_report.json``     every note: what stayed human, what moved
+
+Omit ``--function`` to convert EVERY ``@workflow`` function in the file:
+multi-runbook conversion where a cross-workflow ``await callee(...)``
+becomes an aa24 chain step targeting the callee's own runbook.
 
 ``--apply --profile dev`` round-trips everything against the trial in three
 phases so bindings are alive when it matters (production is refused):
 
-1. create: integrations -> methods (ids captured) -> runbooks
-   (``_phase_bindings`` resolved to the created method ids and stripped)
+1. create: integrations -> methods (ids captured) -> runbooks in
+   DEPENDENCY order (a runbook that another runbook chains INTO is
+   created first): ``_phase_bindings`` resolved to created method ids
+   and stripped; ``_chains`` name targets patched into the aa24 steps
 2. fire:   POST /Automation/{id} with formCollection from the runbook's own
    input_variables (plus ``--form key=value`` overrides), then a runlog
    capture (list poll, by-id fallback) recording steps_executed /
-   runbook_step / status / error
+   runbook_step / status / error; a chain step additionally proves its
+   target ran via ``chain_started_runs`` (target run NEWER than the
+   target's own direct-fire runlog)
 3. cleanup: reverse order - runbooks, methods, integrations (self-cleaning)
 
     python scripts/bifrost_convert.py ... --apply --profile dev
@@ -56,6 +66,7 @@ from halocli.bifrost_convert import (  # noqa: E402
     convert_workflow,
     extract_http_methods,
     match_event,
+    workflow_function_names,
 )
 
 PROBE = "haloclidevprobe"
@@ -229,21 +240,44 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
         triggers = [t.strip() for t in (args.triggers or "").split(",") if t.strip()]
         trigger_filters = [_parse_guard(g) for g in (args.trigger_filter or [])]
         ticket_guards = [_parse_guard(g) for g in (args.ticket_guard or [])]
-        conv: Conversion = convert_workflow(
-            row,
-            source,
-            function,
-            phase_bindings=auto or None,
-            triggers=triggers or None,
-            trigger_filters=trigger_filters or None,
-            ticket_guards=ticket_guards or None,
-        )
-        name = str(row.get("name") or (function or "workflow"))
-        if conv.ok:
-            p = out_dir / f"runbook__{_slug(name)}.json"
-            p.write_text(json.dumps(conv.payload, indent=2) + "\n", encoding="utf-8")
-            files[f"runbook:{name}"] = p
-        report["workflows"].append({"name": name, "converted": conv.ok, "notes": conv.notes})
+
+        def convert_one(fn: str | None) -> None:
+            conv: Conversion = convert_workflow(
+                row,
+                source,
+                fn,
+                phase_bindings=auto or None,
+                triggers=triggers or None,
+                trigger_filters=trigger_filters or None,
+                ticket_guards=ticket_guards or None,
+            )
+            wname = str(row.get("name") or (fn or "workflow"))
+            if conv.ok:
+                p = out_dir / f"runbook__{_slug(wname)}.json"
+                p.write_text(json.dumps(conv.payload, indent=2) + "\n", encoding="utf-8")
+                files[f"runbook:{wname}"] = p
+            report["workflows"].append({"name": wname, "converted": conv.ok, "notes": conv.notes})
+
+        if function or not source:
+            convert_one(function)
+        else:
+            # no --function: convert EVERY @workflow function in the file
+            # (multi-runbook orchestration - cross-workflow awaits become
+            # chain phases whose targets this same apply creates first)
+            names = workflow_function_names(source)
+            if not names:
+                report["workflows"].append(
+                    {
+                        "name": str(row.get("name") or "(file)"),
+                        "converted": False,
+                        "notes": [
+                            "no @workflow-decorated function found - decorate the "
+                            "workflow or pass --function"
+                        ],
+                    }
+                )
+            for fn in names:
+                convert_one(fn)
 
     (out_dir / "conversion_report.json").write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8"
@@ -256,6 +290,43 @@ def _slug(name: str) -> str:
 
 
 # --- live apply ----------------------------------------------------------
+
+
+def _create_order(files: dict[str, Path]) -> list[str]:
+    """Create keys in order: non-runbooks sorted, runbooks dependency-first.
+
+    A runbook listed in another runbook's ``_chains`` sidecar
+    (step_id -> target runbook name) must exist before the caller is
+    POSTed so its id can be patched into the aa24 step. Cycles fall
+    back to sorted order (the create then records an honest
+    unresolved-target warning).
+    """
+    others = sorted(k for k in files if not k.startswith("runbook:"))
+    runbooks = sorted(k for k in files if k.startswith("runbook:"))
+    deps: dict[str, list[str]] = {}
+    for k in runbooks:
+        try:
+            payload = json.loads(files[k].read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            payload = {}
+        deps[k] = sorted(
+            {f"runbook:{t}" for t in (payload.get("_chains") or {}).values()} & set(runbooks)
+        )
+    ordered: list[str] = []
+    seen: set[str] = set()
+
+    def visit(k: str, trail: frozenset[str]) -> None:
+        if k in seen or k in trail:
+            return
+        for d in deps.get(k, ()):
+            visit(d, trail | {k})
+        if k not in seen:
+            seen.add(k)
+            ordered.append(k)
+
+    for k in runbooks:
+        visit(k, frozenset())
+    return others + ordered
 
 
 async def apply_outputs(
@@ -275,9 +346,13 @@ async def apply_outputs(
 
     ev: dict[str, Any] = {"tenant": host, "applied": {}}
     method_ids: dict[str, int] = {}
+    runbook_ids: dict[str, str] = {}
     async with HaloClient(profile, profile_name=profile_name) as client:
         # ---- phase 1: create (no deletes yet) --------------------------
-        for key, path in sorted(files.items()):
+        # dependency order: chain TARGETS are created first so their ids
+        # can be patched into the caller's aa24 step before it POSTs
+        for key in _create_order(files):
+            path = files[key]
             kind, name = key.split(":", 1)
             body = json.loads(path.read_text(encoding="utf-8"))
             record: dict[str, Any] = {"file": str(path)}
@@ -353,8 +428,12 @@ async def apply_outputs(
                             record["methods"] = created
                 elif kind == "runbook":
                     record.update(
-                        await _create_runbook(client, body, name, method_ids, form_overrides)
+                        await _create_runbook(
+                            client, body, name, method_ids, form_overrides, runbook_ids
+                        )
                     )
+                    if record.get("id"):
+                        runbook_ids[name] = str(record["id"])
                 # methods files apply through their integration above
             except Exception as exc:  # noqa: BLE001
                 record["error"] = str(exc)[:400]
@@ -369,6 +448,23 @@ async def apply_outputs(
             _, name = key.split(":", 1)
             inputs = record.get("_inputs") or {}
             record.update(await _fire_runbook(client, str(wid), inputs))
+            # aa24 chain proof: the chain TERMINATED this run and STARTED
+            # the target - capture target runs NEWER than the target's own
+            # direct fire (ids are monotonic; dependency-ordered creation
+            # means the target fired before this caller)
+            started = {t: i for t, i in (record.get("chains") or {}).items() if i}
+            if started:
+                baseline: dict[str, int] = {}
+                for t in started:
+                    trec = ev["applied"].get(f"runbook:{t}") or {}
+                    rid = (
+                        trec.get("runlog").get("id")
+                        if isinstance(trec.get("runlog"), dict)
+                        else None
+                    )
+                    if rid:
+                        baseline[t] = int(rid)
+                record["chain_started_runs"] = await _chain_started_runs(client, started, baseline)
             # branch leg 2 (notmet): the DOCUMENT is authoritative for
             # <<var>>, so the blanked-input path needs a second runbook
             # created fresh (create beats merge-update for input vars).
@@ -393,9 +489,13 @@ async def apply_outputs(
             if has_array and isinstance(record.get("runlog"), dict):
                 # no _triggers on the twin: one binding set is enough for
                 # the proof, and cleanup only tracks the main runbook's
-                branch_payload = {k: v for k, v in raw_payload.items() if k != "_triggers"}
+                # (no _chains either - the twin must not re-fire the
+                # chain target the main runbook already proved)
+                branch_payload = {
+                    k: v for k, v in raw_payload.items() if k not in ("_triggers", "_chains")
+                }
                 rec2 = await _create_runbook(
-                    client, branch_payload, f"{name}-notmet", method_ids, {}
+                    client, branch_payload, f"{name}-notmet", method_ids, {}, runbook_ids
                 )
                 record["branch_create"] = {
                     k: rec2.get(k)
@@ -656,6 +756,7 @@ async def _create_runbook(
     name: str,
     method_ids: dict[str, int],
     input_overrides: dict[str, str],
+    runbook_ids: dict[str, str],
 ) -> dict[str, Any]:
     """Resolve bindings, apply input overrides, create, verify the graph.
 
@@ -663,6 +764,10 @@ async def _create_runbook(
     values before create: ``<<var>>`` expressions resolve from the
     document, not from formCollection (trial-observed - formCollection
     is the ``<<request>>`` payload).
+    ``runbook_ids`` maps already-created runbook names -> ids so the
+    ``_chains`` sidecar (step_id -> target name) can patch
+    ``start_new_runbook_id`` - dependency-ordered creation makes the
+    targets exist first.
     """
     out: dict[str, Any] = {}
     doc: dict[str, Any] = {k: v for k, v in payload.items() if not k.startswith("_")}
@@ -678,6 +783,26 @@ async def _create_runbook(
                     f"step {step.get('step_id')} wanted method {mname!r} - not created; "
                     "left unbound (aa6 without a method fails at fire time)"
                 )
+    # chain targets by NAME (_chains sidecar) -> ids of runbooks created
+    # earlier in this apply (dependency order guarantees they exist)
+    chains = payload.get("_chains") or {}
+    if chains:
+        resolved_chains: dict[str, str | None] = {}
+        for step in doc.get("steps") or []:
+            target = chains.get(str(step.get("step_id")))
+            if not target:
+                continue
+            tid = runbook_ids.get(str(target))
+            resolved_chains[str(target)] = tid
+            if tid:
+                step["start_new_runbook_id"] = tid
+            else:
+                warnings.append(
+                    f"step {step.get('step_id')} chains into {target!r} - no runbook "
+                    "with that name was created before this one in this apply; the "
+                    "aa24 step stays unbound and would start nothing"
+                )
+        out["chains"] = resolved_chains
     for v in doc.get("input_variables") or []:
         if str(v.get("key")) in input_overrides:
             v["value"] = input_overrides[str(v["key"])]
@@ -949,6 +1074,46 @@ async def _fire_runbook(
         out["evolution"] = evolution
     else:
         out["runlog"] = "row not found (list window + by-id scan)"
+    return out
+
+
+async def _chain_started_runs(
+    client: Any,
+    started: dict[str, str],
+    baseline: dict[str, int],
+) -> dict[str, Any]:
+    """Prove the aa24 chain started its target: a target run NEWER than
+    the target's own direct-fire runlog (ids are monotonic; the target
+    fires before its caller because creation is dependency-ordered)."""
+    out: dict[str, Any] = {}
+    for tname, tid in started.items():
+        base = baseline.get(tname)
+        if base is None:
+            out[tname] = {"error": "no baseline runlog for the target (never fired)"}
+            continue
+        found_row: dict | None = None
+        for _attempt in range(10):  # ~30s for the chain to land a row
+            await asyncio.sleep(3)
+            log = await client.request("GET", "/Automation", params={"count": "1000"}, timeout=45)
+            rows = (
+                log
+                if isinstance(log, list)
+                else next((v for v in log.values() if isinstance(v, list)), [])
+            )
+            newer = [r for r in rows if r.get("runbook_id") == tid and (r.get("id") or 0) > base]
+            if newer:
+                found_row = max(newer, key=lambda r: r.get("id") or 0)
+                break
+        if found_row:
+            out[tname] = {
+                k: found_row.get(k)
+                for k in ("id", "status", "error", "steps_executed", "execution_time")
+            } | {"baseline_run_id": base}
+        else:
+            out[tname] = {
+                "error": f"no target run newer than {base} within 30s",
+                "baseline_run_id": base,
+            }
     return out
 
 

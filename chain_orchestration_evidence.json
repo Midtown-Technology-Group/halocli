@@ -1,0 +1,140 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "applied": {
+    "runbook:chain_fixture_child": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\chain_out2\\runbook__chain_fixture_child.json",
+      "_inputs": {
+        "client": "",
+        "tag": ""
+      },
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=4f2b66f0-bae3-4551-adb0-d4d44e2de52b"
+      ],
+      "id": "4f2b66f0-bae3-4551-adb0-d4d44e2de52b",
+      "verify": {
+        "type": 1,
+        "steps": 2,
+        "expected_steps": 2,
+        "edges": 1,
+        "edge_names": [
+          "Sleep Finished"
+        ],
+        "bound_steps": [],
+        "input_variables": 2,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "client",
+            "Value": ""
+          },
+          {
+            "Key": "tag",
+            "Value": ""
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2606,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 2,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 344,
+        "timestamp": "2026-10-06T01:55:58.407"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 2,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "cleanup": "deleted (clean)"
+    },
+    "runbook:chain_fixture_parent": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\chain_out2\\runbook__chain_fixture_parent.json",
+      "chains": {
+        "chain_fixture_child": "4f2b66f0-bae3-4551-adb0-d4d44e2de52b"
+      },
+      "_inputs": {
+        "client": "",
+        "tag": ""
+      },
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=487224d1-b399-46a8-b603-3a9519ee3e5a"
+      ],
+      "id": "487224d1-b399-46a8-b603-3a9519ee3e5a",
+      "verify": {
+        "type": 1,
+        "steps": 3,
+        "expected_steps": 3,
+        "edges": 1,
+        "edge_names": [
+          "Sleep Finished"
+        ],
+        "bound_steps": [],
+        "input_variables": 2,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "client",
+            "Value": ""
+          },
+          {
+            "Key": "tag",
+            "Value": ""
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2607,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": -9999,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 1177,
+        "timestamp": "2026-10-06T01:56:02.897"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": -9999,
+          "step_name": null,
+          "exec": 1,
+          "error": ""
+        }
+      ],
+      "chain_started_runs": {
+        "chain_fixture_child": {
+          "id": 2608,
+          "status": 2,
+          "error": "",
+          "steps_executed": 1,
+          "execution_time": 106,
+          "baseline_run_id": 2606
+        }
+      },
+      "cleanup": "deleted (clean)"
+    }
+  }
+}
