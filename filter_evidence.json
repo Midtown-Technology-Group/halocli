@@ -1,0 +1,137 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "V30_empty": {
+    "expect": "met -> Success (exec1)",
+    "persisted_criterion": {
+      "id": 75,
+      "type": 30,
+      "fieldname": "<<label>>",
+      "value_type": "string",
+      "value_int": 0,
+      "value_string": "",
+      "tablename": "runbookvariable"
+    },
+    "persisted_inputs": {
+      "label": "",
+      "limit": "10"
+    },
+    "run": {
+      "id": 2589,
+      "status": 2,
+      "error": "",
+      "steps_executed": 1,
+      "runbook_step": 3,
+      "execution_time": 269
+    }
+  },
+  "V30_set": {
+    "expect": "notmet -> Fail",
+    "persisted_criterion": {
+      "id": 75,
+      "type": 30,
+      "fieldname": "<<label>>",
+      "value_type": "string",
+      "value_int": 0,
+      "value_string": "",
+      "tablename": "runbookvariable"
+    },
+    "persisted_inputs": {
+      "label": "x",
+      "limit": "10"
+    },
+    "run": {
+      "id": 2590,
+      "status": 1,
+      "error": "Failed result reached. Last step=4",
+      "steps_executed": 1,
+      "runbook_step": 1,
+      "execution_time": 1168
+    }
+  },
+  "Vint_10": {
+    "expect": "met -> Success (exec1)",
+    "persisted_criterion": {
+      "id": 75,
+      "type": 5,
+      "fieldname": "<<limit>>",
+      "value_type": "int",
+      "value_int": 0,
+      "value_string": "",
+      "tablename": "runbookvariable"
+    },
+    "persisted_inputs": {
+      "label": "x",
+      "limit": "10"
+    },
+    "run": {
+      "id": 2591,
+      "status": 2,
+      "error": "",
+      "steps_executed": 1,
+      "runbook_step": 3,
+      "execution_time": 217
+    }
+  },
+  "Vint_0": {
+    "expect": "notmet -> Fail",
+    "persisted_criterion": {
+      "id": 75,
+      "type": 5,
+      "fieldname": "<<limit>>",
+      "value_type": "int",
+      "value_int": 0,
+      "value_string": "",
+      "tablename": "runbookvariable"
+    },
+    "persisted_inputs": {
+      "label": "x",
+      "limit": "0"
+    },
+    "run": {
+      "id": 2592,
+      "status": 1,
+      "error": "Failed result reached. Last step=4",
+      "steps_executed": 1,
+      "runbook_step": 1,
+      "execution_time": 283
+    }
+  },
+  "reportedby_fieldid": null,
+  "runbook": "0f153509-e978-47cc-8c70-60e896094774",
+  "binding": {
+    "id": 31
+  },
+  "conditions_persisted": {
+    "count": 1,
+    "rows": [
+      {
+        "id": 25,
+        "fieldname": "reportedby",
+        "type": 0,
+        "value_string": "noreply@voicemail.goto.com",
+        "tablename": "faults"
+      }
+    ]
+  },
+  "blocked_leg": {
+    "ticket": 2937,
+    "expect": "NO run (filter blocks)",
+    "run": "no run observed (correct)"
+  },
+  "allowed_leg": {
+    "ticket": 2938,
+    "expect": "run starts, status2",
+    "run": {
+      "id": 2597,
+      "status": 2,
+      "error": "",
+      "steps_executed": 1,
+      "runbook_step": 2,
+      "execution_time": 245
+    }
+  },
+  "verdict": "PROVEN: non-matching ticket blocked at the binding; matching ticket ran",
+  "cleanup": [
+    "runbook haloclidevprobefilter-runbook"
+  ]
+}

@@ -227,6 +227,7 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
         }
         auto.update(phase_bindings)
         triggers = [t.strip() for t in (args.triggers or "").split(",") if t.strip()]
+        trigger_filters = [_parse_guard(g) for g in (args.trigger_filter or [])]
         ticket_guards = [_parse_guard(g) for g in (args.ticket_guard or [])]
         conv: Conversion = convert_workflow(
             row,
@@ -234,6 +235,7 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
             function,
             phase_bindings=auto or None,
             triggers=triggers or None,
+            trigger_filters=trigger_filters or None,
             ticket_guards=ticket_guards or None,
         )
         name = str(row.get("name") or (function or "workflow"))
@@ -729,6 +731,29 @@ async def _create_runbook(
     triggers = payload.get("_triggers") or []
     if triggers:
         catalog = await _event_catalog(client)
+        # subscriber filters (Bifrost `event.body...` guards) -> inline
+        # conditions on each binding (faults table, filter_type 2 - the
+        # production shape from AI Triage's eventno3 bindings)
+        filters = payload.get("_trigger_filters") or []
+        conditions = [
+            {
+                "id": None,
+                "rule_id": None,
+                "fieldname": str(f.get("field")),
+                "change_context": 0,
+                "type": {"eq": 0, "ne": 1, "gt": 5, "ge": 6, "lt": 7, "le": 8}.get(
+                    str(f.get("op")), 0
+                ),
+                "value_int": int(f.get("value")) if isinstance(f.get("value"), int) else 0,
+                "value_string": str(f.get("value"))
+                if not isinstance(f.get("value"), int)
+                else str(f.get("value")),
+                "value_display": str(f.get("value")),
+                "value_type": str(f.get("value_type") or "string"),
+                "tablename": "faults",
+            }
+            for f in filters
+        ]
         resolved: list[dict[str, Any]] = []
         unresolved: list[str] = []
         binding_ids: list[int] = []
@@ -738,21 +763,24 @@ async def _create_runbook(
                 unresolved.append(t)
                 continue
             clean = _bound_name(str(m.get("name") or t))
+            body: dict[str, Any] = {
+                "guid": None,
+                "eventno": m["id"],
+                "name": clean,
+                "type": -2,
+                "delivery_method": 6,
+                "agent_id": 0,
+                "webhook_id": wid,
+            }
+            if conditions:
+                body["filter_type"] = 2
+                body["condition_count"] = len(conditions)
+                body["conditions"] = conditions
             try:
                 nr = await client.request(
                     "POST",
                     "/Notification",
-                    json_body=[
-                        {
-                            "guid": None,
-                            "eventno": m["id"],
-                            "name": clean,
-                            "type": -2,
-                            "delivery_method": 6,
-                            "agent_id": 0,
-                            "webhook_id": wid,
-                        }
-                    ],
+                    json_body=[body],
                     timeout=60,
                 )
                 nrow = nr[0] if isinstance(nr, list) and nr else nr
@@ -763,6 +791,10 @@ async def _create_runbook(
             except Exception as exc:  # noqa: BLE001
                 unresolved.append(f"{t}: {str(exc)[:180]}")
         out["triggers"] = {"resolved": resolved, "unresolved": unresolved}
+        if conditions:
+            out["binding_conditions"] = [
+                {k: c.get(k) for k in ("fieldname", "type", "value_string")} for c in conditions
+            ]
         if binding_ids:
             out["trigger_binding_ids"] = binding_ids
 
@@ -944,6 +976,15 @@ def main() -> int:
         help="comma-separated Halo event names to bind as runbook triggers "
         '(e.g. "New Ticket Logged,Closed") - resolved against lookup64 and '
         "written as POST /Notification bindings at apply",
+    )
+    parser.add_argument(
+        "--trigger-filter",
+        action="append",
+        default=[],
+        metavar="FIELD<OP>VALUE",
+        help="subscriber filter on each trigger binding (faults conditions, "
+        'filter_type 2), e.g. --trigger-filter "reportedby==noreply@vendor.com" '
+        "- the Bifrost event.body filter port; repeatable (AND)",
     )
     parser.add_argument(
         "--ticket-guard",

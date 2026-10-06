@@ -415,15 +415,72 @@ def test_else_branch_translates_both_arms() -> None:
 
 
 def test_non_array_guard_stays_flattened() -> None:
+    # untyped params (client has no annotation) have no criterion mapping
     src = API_SOURCE.replace(
         "    await asyncio.sleep(1)",
-        "    if limit:\n        await asyncio.sleep(1)",
+        "    if client:\n        await asyncio.sleep(1)",
     )
     conv = convert_workflow({}, src, "sync_things")
     assert conv.ok
     steps = conv.payload["steps"]
     assert not any(s.get("steptype") == 1 for s in steps)
     assert any("did not fit" in n for n in conv.notes)
+
+
+def test_trigger_filters_become_sidecar_with_note() -> None:
+    conv = convert_workflow(
+        {},
+        API_SOURCE,
+        "sync_things",
+        triggers=["New Ticket Logged"],
+        trigger_filters=[
+            {
+                "field": "reportedby",
+                "op": "eq",
+                "value": "noreply@voicemail.goto.com",
+                "value_type": "string",
+            }
+        ],
+    )
+    assert conv.ok
+    assert conv.payload["_trigger_filters"][0]["field"] == "reportedby"
+    assert conv.payload["_triggers"] == ["New Ticket Logged"]
+    assert any("subscriber-filter" in n and "blocked" in n for n in conv.notes)
+
+
+def test_bare_int_guard_is_gt0_truthiness() -> None:
+    src = COMPARE_SOURCE.replace("if limit > 5:", "if limit:")
+    conv = convert_workflow({}, src, "compare_guards")
+    assert conv.ok
+    conds = [s for s in conv.payload["steps"] if s.get("steptype") == 1]
+    assert conds
+    (crit,) = conds[0]["step_conditions"]
+    # int bare truthiness -> criteria5 (>) value_int 0, trial-proven
+    assert (crit["type"], crit["fieldname"], crit["value_int"]) == (5, "<<limit>>", 0)
+    assert conds[0]["name"] == "if limit:"
+    assert any("misclassify" in n for n in conv.notes)
+
+
+def test_negated_str_guard_is_no_value() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Not str")
+async def not_str_guard(client, label: str = "") -> dict:
+    if not label:
+        await slow_path(client)
+    else:
+        await fast_path(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "not_str_guard")
+    assert conv.ok
+    cond = next(s for s in conv.payload["steps"] if s.get("steptype") == 1)
+    (crit,) = cond["step_conditions"]
+    # criteria30 "Does not have a value" - "" -> met (trial run2589)
+    assert (crit["type"], crit["fieldname"]) == (30, "<<label>>")
+    assert cond["name"] == "if not label:"
 
 
 ELSE_LOOP_SOURCE = """

@@ -77,6 +77,19 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   event/trigger path; faults criteria cannot evaluate on a bare
   formCollection fire). Trial-proven BOTH legs: full path exec3
   status2 (run2567) vs early exit exec1 status2 (run2570).
+- bare guards (all trial-proven): array -> has-elements (type5 +
+  value_int0), str -> criteria29 Has a value, ``not str`` ->
+  criteria30 Does not have a value, int/float -> criteria5 ">0"
+  (runs2589-2592; negative values misclassify - noted). FIELDNAME
+  RULE: runbookvariable criteria MUST wrap as ``<<var>>`` - plain
+  names are for the faults table (unwrapped = every leg routes to
+  Fail, the first probe attempt's exact failure).
+- trigger filters (``_trigger_filters`` sidecar from
+  ``--trigger-filter``) -> inline conditions on each binding
+  (faults table, filter_type2 - AI Triage's production shape): the
+  run does NOT START for non-matching events (blocked leg no-run +
+  matching leg status2, filter_evidence.json) - the Bifrost
+  event.body subscriber guard ported in-Halo.
 - chain binding (``{"kind": "chain_runbook", "target": <guid>}``) ->
   aa24 StartNewRunbookTerminateCurrentRunbook + start_new_runbook_id,
   NO outgoing edges (trial-proven, runs2561/2562: the current run
@@ -707,19 +720,52 @@ def classify_phases(
         spec: dict | None = None
         array_var: str | None = None
         if isinstance(stmt, ast.If):
-            if isinstance(stmt.test, ast.Name) and stmt.test.id in array_params:
-                guard_label = f"if {stmt.test.id}:"
-                array_var = stmt.test.id
-            elif isinstance(stmt.test, ast.Name) and param_types.get(stmt.test.id) == "str":
+            test = stmt.test
+            bare = test if isinstance(test, ast.Name) else None
+            negated = False
+            operand: ast.Name | None = None
+            if (
+                isinstance(test, ast.UnaryOp)
+                and isinstance(test.op, ast.Not)
+                and isinstance(test.operand, ast.Name)
+            ):
+                negated = True
+                operand = test.operand
+            if bare is not None and bare.id in array_params:
+                guard_label = f"if {bare.id}:"
+                array_var = bare.id
+            elif negated and operand is not None and param_types.get(operand.id) == "str":
+                # `if not <str>:` -> criteria30 "Does not have a value"
+                # (trial-proven: "" -> met run2589, "x" -> Fail run2590)
+                guard_label = f"if not {operand.id}:"
+                spec = {
+                    "param": operand.id,
+                    "op": "no_value",
+                    "value": "",
+                    "value_type": "str",
+                }
+            elif bare is not None and param_types.get(bare.id) == "str":
                 # bare truthiness on a str param -> criteria29 "Has a
                 # value" (trial-proven both legs: "x" -> met/status2,
                 # "" -> notmet/Fail terminal)
-                guard_label = f"if {stmt.test.id}:"
+                guard_label = f"if {bare.id}:"
                 spec = {
-                    "param": stmt.test.id,
+                    "param": bare.id,
                     "op": "has_value",
                     "value": "",
                     "value_type": "str",
+                }
+            elif bare is not None and param_types.get(bare.id) in ("int", "float"):
+                # bare numeric truthiness as ">0" (trial-proven both
+                # legs: limit=10 -> met run2591, limit=0 -> Fail run2592;
+                # negative values misclassify - flagged in notes)
+                guard_label = f"if {bare.id}:"
+                spec = {
+                    "param": bare.id,
+                    "op": "gt",
+                    "value": 0,
+                    "value_type": param_types[bare.id],
+                    "truthiness": True,
                 }
             else:
                 spec = _guard_spec(stmt.test)
@@ -1170,6 +1216,7 @@ def convert_workflow(
     function_name: str | None = None,
     phase_bindings: dict[str, int | str] | None = None,
     triggers: list[str] | None = None,
+    trigger_filters: list[dict] | None = None,
     ticket_guards: list[dict] | None = None,
 ) -> Conversion:
     """Bifrost workflow -> POST /Webhook type:1 runbook document.
@@ -1357,17 +1404,28 @@ def convert_workflow(
         if translated:
             notes.append(
                 f"{translated} branch(es) translated to Halo condition steps "
-                "(steptype1 + action12 'Condition met/not met', has-elements criteria "
-                "on <<array params>>); else-branches and non-array guards stay "
-                "flattened to the linear success path"
+                "(steptype1 + action12 'Condition met/not met'; criteria on "
+                "<<params>>: array has-elements, str has/no-value, numeric >0, "
+                "literal comparisons); else-branches, bool guards and "
+                "comparisons against other names stay flattened to the linear "
+                "success path"
             )
         else:
             notes.append(
                 "Python branches (if/else) are flattened to the linear success path - "
                 "Halo conditions exist (steptype1 + action12 'Condition met/not met') "
-                "and translate for else-less `if <array param>:` guards; this function's "
-                "guards did not fit, so review in the flow editor"
+                "and translate for array/str/numeric guards with literal comparisons; "
+                "this function's guards did not fit, so review in the flow editor"
             )
+    if any(
+        p.kind == "condition" and p.criterion_spec and p.criterion_spec.get("truthiness")
+        for p in phases
+    ):
+        notes.append(
+            "numeric bare-truthiness mapped to '>0' (criteria5, trial-proven "
+            "limit=10/limit=0 legs): NEGATIVE values misclassify - use an "
+            "explicit comparison if the value can go below zero"
+        )
 
     payload: dict = {
         "name": name,
@@ -1387,6 +1445,14 @@ def convert_workflow(
             "(resolved against lookup64 at apply; the runbook then runs natively on "
             "those events - trial-proven: eventno3 binding + one API-created ticket "
             "-> runlog status2)"
+        )
+    if trigger_filters:
+        payload["_trigger_filters"] = list(trigger_filters)  # binding conditions
+        notes.append(
+            f"trigger filters {list(trigger_filters)} -> conditions on each binding "
+            "(faults table, filter_type 2) - THE Bifrost subscriber-filter port: the "
+            "run does NOT START for a non-matching event (trial-proven: blocked leg "
+            "no-run + matching leg run status2)"
         )
     return Conversion(payload, notes)
 
