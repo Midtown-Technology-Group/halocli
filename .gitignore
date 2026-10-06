@@ -51,6 +51,8 @@ scripts/*
 !scripts/build_huntress_integration.py
 !scripts/runbook_intbool_probe.py
 !scripts/runbook_ticket_crud_probe.py
+!scripts/runbook_mapping_probe.py
+!scripts/runbook_fieldpath_probe.py
 !scripts/runbook_interpolation_probe.py
 !scripts/runbook_errorpath_probe.py
 !scripts/runbook_aat48_probe.py
