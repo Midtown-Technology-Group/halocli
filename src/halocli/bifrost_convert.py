@@ -84,6 +84,13 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   RULE: runbookvariable criteria MUST wrap as ``<<var>>`` - plain
   names are for the faults table (unwrapped = every leg routes to
   Fail, the first probe attempt's exact failure).
+- var-vs-var guards (``if a == b``, two signature params) do NOT
+  transfer: the criteria VALUE side compares ``<<b>>`` as literal
+  text - trial-proven with a control leg (run2609 control exec3 vs
+  mutated met/notmet runs2610/2611 exec1,
+  var_compare_evidence.json). Emitting that criterion would invert
+  routing (always notmet), so these flatten WITH a precise
+  per-guard note naming the evidence - never a guessed criterion.
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -1021,6 +1028,26 @@ def classify_phases(
                     guard_label = (
                         f"if {spec['param']} {_COMPARE_SYMBOLS[spec['op']]} {spec['value']!r}:"
                     )
+                elif (
+                    isinstance(test, ast.Compare)
+                    and len(test.ops) == 1
+                    and len(test.comparators) == 1
+                    and isinstance(test.left, ast.Name)
+                    and isinstance(test.comparators[0], ast.Name)
+                    and test.left.id in param_types
+                    and test.comparators[0].id in param_types
+                    and _COMPARE_OPS.get(type(test.ops[0])) is not None
+                ):
+                    # var-vs-var: PROVEN non-transferable - the criteria
+                    # value side compares <<b>> as the literal text (trial:
+                    # control exec3 vs mutated met/notmet exec1,
+                    # var_compare_evidence.json). Emitting the criterion
+                    # would INVERT routing (always notmet), so this stays
+                    # flattened - but the report says exactly why.
+                    sym = _COMPARE_SYMBOLS[_COMPARE_OPS[type(test.ops[0])]]
+                    report.setdefault("var_guards", []).append(
+                        f"if {test.left.id} {sym} {test.comparators[0].id}:"
+                    )
         if guard_label and isinstance(stmt, ast.If):
             # guard with optional else: translate whether or not there is
             # one (both arms must carry awaits to earn steps)
@@ -1637,6 +1664,16 @@ def convert_workflow(
             f"helper branch(es) with RUNTIME conditions in "
             f"{sorted(classify_report['helper_branches'])} stay flattened to linear "
             "phases - review in the flow editor"
+        )
+    if classify_report.get("var_guards"):
+        vg = classify_report["var_guards"]
+        notes.append(
+            f"{len(vg)} guard(s) compare two runbook variables ({', '.join(vg)}) - "
+            "Halo criteria do NOT substitute <<var>> on the value side "
+            "(trial-proven: var_compare_evidence.json - control ran 3 steps, both "
+            "mutated legs ran 1, i.e. '<<b>>' compared as literal text), so "
+            "emitting the criterion would invert routing - flattened to the linear "
+            "success path; review in the flow editor"
         )
     if classify_report.get("sync_helpers"):
         notes.append(

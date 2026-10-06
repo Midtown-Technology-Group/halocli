@@ -985,9 +985,22 @@ honest warning — never a guessed guid.
 
 **Bare string guards**: `if label:` on a `str` param becomes criteria
 **29 "Has a value"** — both legs live-proven (**2563** "x" → met →
-Success; **2564** "" → notmet → Fail terminal). Int/bool bare truthiness
-and comparisons against other names stay flattened (their semantics
-are not pinned yet).
+Success; **2564** "" → notmet → Fail terminal). Int/float bare
+truthiness maps to criteria **5 ">0"** (both legs proven: **2591**
+limit=10 met / **2592** limit=0 Fail; negatives misclassify — noted);
+**bool** bare truthiness stays flattened.
+
+**Variable-vs-variable comparisons are proven non-transferable**
+(`var_compare_evidence.json`, probe `scripts/runbook_varcompare_probe.py`):
+Halo substitutes `<<var>>` on the criteria **fieldname** side (the
+standing rule) but **not** on the **value** side — the control leg ran
+the guarded body (**run 2609, steps_executed 3**), both legs with
+`value_string: "<<b>>"` ran **1** (**2610** with a=b=x, **2611** with
+a=x b=y), i.e. the server compared the literal text `<<b>>`. Emitting
+such a criterion would invert routing (always notmet), so `if a == b`
+stays flattened and the conversion report now names **that specific
+guard** with this evidence — never a guessed criterion. All three
+probe runbooks were deleted clean.
 
 **Helper inlining + constant folding (the real-workflow proof)**: a
 same-file `await helper(...)` no longer collapses to one hop — the
@@ -1021,9 +1034,11 @@ Honesty notes (what does **not** transfer): the Python logic itself —
 int/float/str params translate to real Halo condition steps with every
 arm live-proven** (met → guarded body, notmet → else arm; a then-arm
 ending in a loop skips the else from its `iter_end`), bare truthiness
-on **str** params (criteria29, both legs proven), but comparisons
-against other variables, bool/int bare truthiness, and guards on
-untyped params still flatten to the linear success path (noted per
+on **str** params (criteria29, both legs proven) and on **int/float**
+params (criteria5 ">0", both legs proven), but comparisons **against
+other variables** (proven non-substitutable — value-side `<<var>>`
+compares literally, see above), **bool** bare truthiness, and guards
+on untyped params still flatten to the linear success path (noted per
 conversion);
 `effects`/`enforced_bounds`/secrets become
 `conversion_report.json` notes (Halo has no field: secrets → header /

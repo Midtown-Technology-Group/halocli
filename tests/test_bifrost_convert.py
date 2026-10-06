@@ -1029,6 +1029,47 @@ def test_workflow_function_names() -> None:
     assert workflow_function_names("def broken(:\n") == []  # unparseable -> []
 
 
+def test_var_vs_var_guard_flattens_with_evidence_note() -> None:
+    """if a == b must NOT become a criterion (value side doesn't substitute)."""
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Var Guard")
+async def compare_vars(a: str, b: str) -> dict:
+    if a == b:
+        await matched()
+    else:
+        await different()
+    return {}
+"""
+    conv = convert_workflow({}, src, "compare_vars")
+    assert conv.ok
+    # honest flatten: no condition step would be created (it would
+    # always route notmet - the probe proved <<b>> compares literally)
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+    assert any("two runbook variables" in n and "var_compare_evidence" in n for n in conv.notes)
+    assert any("if a == b:" in n for n in conv.notes)  # names the guard
+
+
+def test_literal_guard_still_translates_after_var_detection() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Lit Guard")
+async def compare_literal(a: str) -> dict:
+    if a == "x":
+        await matched()
+    return {}
+"""
+    conv = convert_workflow({}, src, "compare_literal")
+    assert conv.ok
+    conds = [s for s in conv.payload["steps"] if s.get("step_conditions")]
+    assert conds  # literal side unaffected by the var-vs-var detector
+    assert not any("two runbook variables" in n for n in conv.notes)
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
     steps, sidecar, chains = build_runbook_steps(
