@@ -615,6 +615,80 @@ def test_halopsa_write_without_binding_gets_a_suggestion_note() -> None:
     assert any("halo_note" in n and "phase-bindings" in n for n in conv.notes)
 
 
+def test_bare_string_guard_uses_has_value_criteria() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Str guard")
+async def str_guard(client, label: str = "") -> dict:
+    if label:
+        await fast_path(client)
+    else:
+        await slow_path(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "str_guard")
+    assert conv.ok
+    cond = next(s for s in conv.payload["steps"] if s.get("steptype") == 1)
+    (crit,) = cond["step_conditions"]
+    assert (crit["type"], crit["fieldname"], crit["value_string"]) == (29, "<<label>>", "")
+    assert cond["name"] == "if label:"
+    # both arms route (met -> fast, notmet -> slow)
+    met, notmet = cond["actions"]
+    fast = next(s for s in conv.payload["steps"] if s["name"] == "fast_path")
+    slow = next(s for s in conv.payload["steps"] if s["name"] == "slow_path")
+    assert met["end_step"] == fast["step_id"]
+    assert notmet["end_step"] == slow["step_id"]
+
+
+CHAIN_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Chain")
+async def chainer(client) -> dict:
+    await setup(client)
+    await chain_out(client)
+    return {}
+"""
+
+
+def test_chain_binding_emits_aa24_without_edges() -> None:
+    conv = convert_workflow(
+        {},
+        CHAIN_SOURCE,
+        "chainer",
+        phase_bindings={
+            "chain_out": {"kind": "chain_runbook", "target": "11111111-2222-4333-8444-555555555555"}
+        },
+    )
+    assert conv.ok
+    steps = conv.payload["steps"]
+    chain = next(s for s in steps if s.get("auto_action") == 24)
+    assert chain["start_new_runbook_id"] == "11111111-2222-4333-8444-555555555555"
+    assert chain["actions"] == []  # no edges - trial-proven (runs2557/2558)
+    # chain is LAST (terminate-current): only Success follows
+    idx = steps.index(chain)
+    assert [s["name"] for s in steps[idx + 1 :]] == ["Success"]
+    assert any("chains into" in n or "chain phase" in n for n in conv.notes)
+
+
+def test_chain_before_trailing_phases_warns() -> None:
+    src = CHAIN_SOURCE.replace(
+        "    await chain_out(client)\n    return {}",
+        "    await chain_out(client)\n    await never_runs(client)\n    return {}",
+    )
+    conv = convert_workflow(
+        {},
+        src,
+        "chainer",
+        phase_bindings={"chain_out": {"kind": "chain_runbook", "target": "g"}},
+    )
+    assert conv.ok
+    assert any("WARNING" in n and "NOT run" in n for n in conv.notes)
+
+
 def test_classify_does_not_descend_into_callee_args() -> None:
     phases = classify_phases  # imported for the guard below
     conv = convert_workflow({}, WORKFLOW_SOURCE, "inspect_voicemail_customer")
