@@ -25,10 +25,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-from copy import deepcopy
 from typing import Any
 
-from probe_harness import HaloClient, REPO, bc, cleanup_runbooks, convert_workflow, load_profile
+import probe_harness as ph
 
 SOURCES = {
     "int": """
@@ -101,36 +100,7 @@ LEGS: dict[str, tuple[str, list[dict], dict[str, str]]] = {
 def build_leg(
     source_key: str, overrides: list[dict], name: str, inputs: dict[str, str]
 ) -> tuple[dict, list[dict]]:
-    conv = convert_workflow({}, SOURCES[source_key], FUNC[source_key])
-    if not conv.ok:
-        raise SystemExit(f"conversion failed: {conv.notes}")
-    payload = deepcopy(conv.payload)
-    cond = next(s for s in payload["steps"] if s.get("step_conditions"))
-    base = cond["step_conditions"][0]
-    new_rows: list[dict] = []
-    for over in overrides:
-        row = deepcopy(base)
-        row.update(over)
-        new_rows.append(row)
-    cond["step_conditions"] = new_rows
-    for v in payload["input_variables"]:
-        if v["key"] in inputs:
-            v["value"] = inputs[v["key"]]
-    doc = {k: v for k, v in payload.items() if not k.startswith("_")}
-    doc.update(
-        {
-            "name": f"{bc.PROBE}-{name}"[:80],
-            "type": 1,
-            "active": True,
-            "runbook_start_type": 1,
-            "inbound_authentication_type": 0,
-        }
-    )
-    view = [
-        {k: r.get(k) for k in ("type", "fieldname", "value_type", "value_string", "value_int")}
-        for r in new_rows
-    ]
-    return doc, view
+    return ph.build_condition_leg(SOURCES[source_key], FUNC[source_key], overrides, name, inputs)
 
 
 def exec_of(ev: dict[str, Any], leg: str) -> Any:
@@ -175,7 +145,7 @@ def verdict(ev: dict[str, Any]) -> str:
 
 
 async def main() -> int:
-    profile = load_profile("dev")
+    profile = ph.load_profile("dev")
     host = profile.tenant_url.split("//", 1)[-1].split("/", 1)[0]
     if "midtowntg" in host:
         raise SystemExit("refusing: profile points at PRODUCTION")
@@ -186,31 +156,16 @@ async def main() -> int:
     }
     created: list[str] = []
     try:
-        async with HaloClient(profile, profile_name="dev") as client:
+        async with ph.HaloClient(profile, profile_name="dev") as client:
             try:
                 for leg, (source_key, overrides, inputs) in LEGS.items():
                     doc, view = build_leg(source_key, overrides, f"ib-{leg}", inputs)
-                    resp = await client.request("POST", "/Webhook", json_body=[doc], timeout=60)
-                    row = resp[0] if isinstance(resp, list) and resp else resp
-                    wid = str(row.get("id"))
-                    created.append(wid)
-                    fire = await bc._fire_runbook(client, wid, dict(inputs))
-                    ev["legs"][leg] = {
-                        "id": wid,
-                        "inputs": inputs,
-                        "criterion_rows": view,
-                        "runlog": fire.get("runlog"),
-                        "evolution": fire.get("evolution"),
-                        "trigger_fire": fire.get("trigger_fire"),
-                    }
-                    rl = fire.get("runlog")
-                    steps = rl.get("steps_executed") if isinstance(rl, dict) else None
-                    print(f"{leg:14s} exec={steps}")
+                    created.append(await ph.fire_leg(client, leg, doc, view, inputs, ev))
             finally:
-                await cleanup_runbooks(client, created, ev)
+                await ph.cleanup_runbooks(client, created, ev)
     finally:
         ev["verdict"] = verdict(ev)
-        out = REPO / "intbool_guard_evidence.json"
+        out = ph.REPO / "intbool_guard_evidence.json"
         out.write_text(json.dumps(ev, indent=2, default=str) + "\n", encoding="utf-8")
         print("verdict:", ev["verdict"])
         print("cleanup:", ev.get("cleanup"))

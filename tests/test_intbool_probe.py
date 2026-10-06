@@ -73,13 +73,13 @@ class _FakeHalo:
 def test_probe_full_leg_loop_and_ship_verdict(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any
 ) -> None:
-    monkeypatch.setattr(probe, "REPO", tmp_path)
+    monkeypatch.setattr(probe.ph, "REPO", tmp_path)
     monkeypatch.setattr(
-        probe,
+        probe.ph,
         "load_profile",
         lambda _n: type("P", (), {"tenant_url": "https://clidev.trial.usehalo.com"})(),
     )
-    monkeypatch.setattr(probe, "HaloClient", _FakeHalo)
+    monkeypatch.setattr(probe.ph, "HaloClient", _FakeHalo)
 
     order = list(probe.LEGS)
     fire_idx = {"n": 0}
@@ -96,8 +96,8 @@ def test_probe_full_leg_loop_and_ship_verdict(
     async def fake_gone(client: Any, label: str, path: str) -> str:
         return "deleted (clean)"
 
-    monkeypatch.setattr(probe.bc, "_fire_runbook", fake_fire)
-    monkeypatch.setattr(probe.bc, "_gone", fake_gone)
+    monkeypatch.setattr(probe.ph.bc, "_fire_runbook", fake_fire)
+    monkeypatch.setattr(probe.ph.bc, "_gone", fake_gone)
 
     assert asyncio.run(probe.main()) == 0
 

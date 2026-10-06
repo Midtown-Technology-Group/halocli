@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -38,3 +39,77 @@ async def cleanup_runbooks(client: Any, created: list[str], ev: dict) -> None:
         except Exception as exc:  # noqa: BLE001
             ev.setdefault("cleanup_errors", []).append(f"{wid}: {str(exc)[:150]}")
     ev["cleanup"] = [await bc._gone(client, "DELETE check", f"/Webhook/{w}") for w in created]
+
+
+def build_condition_leg(
+    source: str,
+    func: str,
+    overrides: list[dict],
+    name: str,
+    inputs: dict[str, str],
+) -> tuple[dict, list[dict]]:
+    """One self-cleaning probe runbook: converter output + mutated condition.
+
+    The converter's proven literal-compare condition step is the base;
+    each ``overrides`` dict is merged over its criterion row (type,
+    value_string, fieldname, value_type...), inputs patch the document's
+    input variables, and the document gets the public-active probe shell.
+    """
+    conv = convert_workflow({}, source, func)
+    if not conv.ok:
+        raise SystemExit(f"conversion failed: {conv.notes}")
+    payload = deepcopy(conv.payload)
+    cond = next(s for s in payload["steps"] if s.get("step_conditions"))
+    base = cond["step_conditions"][0]
+    new_rows: list[dict] = []
+    for over in overrides:
+        row = deepcopy(base)
+        row.update(over)
+        new_rows.append(row)
+    cond["step_conditions"] = new_rows
+    for v in payload["input_variables"]:
+        if v["key"] in inputs:
+            v["value"] = inputs[v["key"]]
+    doc = {k: v for k, v in payload.items() if not k.startswith("_")}
+    doc.update(
+        {
+            "name": f"{bc.PROBE}-{name}"[:80],
+            "type": 1,
+            "active": True,
+            "runbook_start_type": 1,
+            "inbound_authentication_type": 0,
+        }
+    )
+    view = [
+        {k: r.get(k) for k in ("type", "fieldname", "value_type", "value_string", "value_int")}
+        for r in new_rows
+    ]
+    return doc, view
+
+
+async def fire_leg(
+    client: Any,
+    leg: str,
+    doc: dict,
+    view: list[dict],
+    inputs: dict[str, str],
+    ev: dict,
+    width: int = 16,
+) -> str:
+    """POST one probe runbook, fire it, record the runlog - return its id."""
+    resp = await client.request("POST", "/Webhook", json_body=[doc], timeout=60)
+    row = resp[0] if isinstance(resp, list) and resp else resp
+    wid = str(row.get("id"))
+    fire = await bc._fire_runbook(client, wid, dict(inputs))
+    ev["legs"][leg] = {
+        "id": wid,
+        "inputs": inputs,
+        "criterion_rows": view,
+        "runlog": fire.get("runlog"),
+        "evolution": fire.get("evolution"),
+        "trigger_fire": fire.get("trigger_fire"),
+    }
+    rl = fire.get("runlog")
+    steps = rl.get("steps_executed") if isinstance(rl, dict) else None
+    print(f"{leg:{width}s} exec={steps}")
+    return wid
