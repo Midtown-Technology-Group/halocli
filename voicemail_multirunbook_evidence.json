@@ -1,0 +1,201 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "applied": {
+    "runbook:audit_voicemail_history": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_voice_v17\\runbook__audit_voicemail_history.json",
+      "_inputs": {
+        "halo_ticket_ids": "[]"
+      },
+      "category_group": {
+        "category": "HaloPSA",
+        "group_id": null,
+        "lookup_-4_rows": 0,
+        "note": "no matching group; runs default to group_id -1"
+      },
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=9f7bc628-7a90-491b-a261-6e29142b5730"
+      ],
+      "id": "9f7bc628-7a90-491b-a261-6e29142b5730",
+      "verify": {
+        "type": 1,
+        "steps": 3,
+        "expected_steps": 3,
+        "edges": 2,
+        "edge_names": [
+          "Sleep Finished"
+        ],
+        "bound_steps": [],
+        "input_variables": 1,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "halo_ticket_ids",
+            "Value": "[]"
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2772,
+        "status": 2,
+        "error": "",
+        "steps_executed": 2,
+        "runbook_step": 3,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 261,
+        "timestamp": "2026-10-06T05:22:27.433"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 3,
+          "step_name": null,
+          "exec": 2,
+          "error": ""
+        }
+      ],
+      "cleanup": "deleted (clean)"
+    },
+    "runbook:correct_voicemail_customer": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_voice_v17\\runbook__correct_voicemail_customer.json",
+      "_inputs": {
+        "payload": "",
+        "halo_ticket_id": "",
+        "apply": "0"
+      },
+      "category_group": {
+        "category": "HaloPSA",
+        "group_id": null,
+        "lookup_-4_rows": 0,
+        "note": "no matching group; runs default to group_id -1"
+      },
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=a4a867f9-0175-4c22-bd4d-7e63b2cdaed5"
+      ],
+      "id": "a4a867f9-0175-4c22-bd4d-7e63b2cdaed5",
+      "verify": {
+        "type": 1,
+        "steps": 5,
+        "expected_steps": 5,
+        "edges": 4,
+        "edge_names": [
+          "Sleep Finished"
+        ],
+        "bound_steps": [],
+        "input_variables": 3,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "payload",
+            "Value": ""
+          },
+          {
+            "Key": "halo_ticket_id",
+            "Value": ""
+          },
+          {
+            "Key": "apply",
+            "Value": "0"
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2773,
+        "status": 2,
+        "error": "",
+        "steps_executed": 4,
+        "runbook_step": 5,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 178,
+        "timestamp": "2026-10-06T05:22:31.927"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 5,
+          "step_name": null,
+          "exec": 4,
+          "error": ""
+        }
+      ],
+      "cleanup": "deleted (clean)"
+    },
+    "runbook:inspect_voicemail_customer": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_voice_v17\\runbook__inspect_voicemail_customer.json",
+      "_inputs": {
+        "halo_ticket_id": ""
+      },
+      "category_group": {
+        "category": "HaloPSA",
+        "group_id": null,
+        "lookup_-4_rows": 0,
+        "note": "no matching group; runs default to group_id -1"
+      },
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=7da2046d-827d-468b-97d1-50555aef945b"
+      ],
+      "id": "7da2046d-827d-468b-97d1-50555aef945b",
+      "verify": {
+        "type": 1,
+        "steps": 4,
+        "expected_steps": 4,
+        "edges": 3,
+        "edge_names": [
+          "Sleep Finished"
+        ],
+        "bound_steps": [],
+        "input_variables": 1,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "halo_ticket_id",
+            "Value": ""
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2774,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 143,
+        "timestamp": "2026-10-06T05:22:36.457"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "cleanup": "deleted (clean)"
+    }
+  }
+}

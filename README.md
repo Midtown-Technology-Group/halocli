@@ -1093,6 +1093,16 @@ note; recursion is cycle-safe (inner call → hop). Proof on the actual
 `inspect_only=True` folded, `route_ticket` pruned — created, fired, and
 completed on the trial: **run2602 status 2, steps_executed 3**.
 
+**Multi-workflow end-to-end on the real solution** 
+(`voicemail_multirunbook_evidence.json`): one `--apply` with **no
+`--function`** converted all three `azure-advisory-context`
+`halo-voicemail-routing` workflows in a single pass (inspect / correct
+/ audit — inlining + folding + pruning notes per runbook, the write
+suggestion naming the aat1/aat2 kinds on `correct`), created all three,
+fired all three to **status 2** — **run 2772** audit (exec 2),
+**run 2773** correct (exec 4), **run 2774** inspect (exec 3) — and
+deleted all three clean.
+
 Two enforcement facts from the same probe: `runbook_start_type:0`
 answers **401** to a public POST (Halo-only is enforced server-side),
 and runbook **names are unique** (colliding create → 400 *"Name must

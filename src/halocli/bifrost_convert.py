@@ -123,7 +123,9 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   no exception type - noted). else/finally/multi-handler and nested
   trys flatten WITH notes. Probe discovery: sequencing hops MUST
   carry auto_action21 + duration - a bare steptype2 hop gets "Next
-  step not found".
+  step not found". A try INSIDE an inlined helper flattens WITH a
+  note (the pipeline wraps only the workflow's top level - lift the
+  try for failure-edge routing).
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -1016,6 +1018,15 @@ def classify_phases(
                     for stmt in wrapped.body:  # the PRUNED statement list
                         if isinstance(stmt, ast.If):
                             report["helper_branches"].add(label)
+                        if isinstance(stmt, ast.Try):
+                            # the try/except pipeline (process()) only
+                            # wraps the WORKFLOW's top-level statements -
+                            # a helper-level try flattens honestly here
+                            report.setdefault("try_unsupported", []).append(
+                                f"try/except inside inlined helper {label!r} flattens to "
+                                "linear phases - lift it to the workflow's top level "
+                                "for failure-edge routing"
+                            )
                         walk(stmt, in_loop, array_var)
                     helper_stack.remove(label)
                     if folder.folds:
