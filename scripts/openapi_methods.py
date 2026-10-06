@@ -39,7 +39,18 @@ SPEC_VERBS = ("get", "post", "put", "delete", "patch", "head", "options")
 UNSUPP_VERBS = ("head", "options")
 
 
+def _safe_path(p: str | Path) -> Path:
+    """Canonicalize a CLI-supplied path before touching the disk (S8707).
+
+    Operator tool: paths are the point, but every read/write resolves
+    through here so ``..``/symlink tricks land on a concrete absolute
+    path instead of a relative traversal.
+    """
+    return Path(p).expanduser().resolve()
+
+
 def load_spec(path: Path) -> dict:
+    path = _safe_path(path)
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() in (".yaml", ".yml"):
         import yaml
@@ -62,6 +73,40 @@ def spec_base_url(spec: dict) -> str | None:
         base = str(spec.get("basePath") or "").rstrip("/")
         return f"{scheme}://{spec['host']}{base}"
     return None
+
+
+def _operation_row(
+    verb: str,
+    path: str,
+    op: dict,
+    seen: set[str],
+    stats: dict[str, Any],
+    bind_map: dict[str, str],
+    skip_templated: bool,
+) -> dict | None:
+    """One operation -> a method row (name synth + dedupe + caveats)."""
+    if "{" in path:
+        stats["templated"] += 1
+        if skip_templated:
+            stats["skipped_templated"] += 1
+            return None
+    if any(p.get("in") == "query" for p in op.get("parameters") or []):
+        stats["with_query_params"] += 1
+    name = str(op.get("operationId") or "").strip()
+    if not name:
+        slug = re.sub(r"[^A-Za-z0-9]+", "_", path).strip("_")
+        name = f"{verb}_{slug}"
+        stats["synthesized_names"] += 1
+    if name in seen:
+        stats["duplicate_names"].append(name)
+        name = f"{name}_{verb}"
+    seen.add(name)
+    row: dict = {"name": name, "path": path, "method": verb.upper()}
+    # phase-bridge: bind_map is {phase_label: method_name}
+    for phase, mname in bind_map.items():
+        if mname == name:
+            row["bind_phase"] = phase
+    return row
 
 
 def spec_to_methods(
@@ -95,7 +140,7 @@ def spec_to_methods(
         "base_url": spec_base_url(spec),
         "version": (spec.get("info") or {}).get("version"),
         "title": (spec.get("info") or {}).get("title"),
-        "unsupported_verbs": set(),
+        "unsupported_verbs": [],
         "duplicate_names": [],
     }
     rows: list[dict] = []
@@ -107,43 +152,21 @@ def spec_to_methods(
             if verb not in item:
                 continue
             stats["operations"] += 1
-            op = item[verb] or {}
             key = f"{verb.upper()} {path}"
-            if inc and not inc.search(key):
-                stats["skipped_filter"] += 1
-                continue
-            if exc and exc.search(key):
+            if (inc and not inc.search(key)) or (exc and exc.search(key)):
                 stats["skipped_filter"] += 1
                 continue
             if verb in UNSUPP_VERBS or verb.upper() not in HALO_VERBS:
                 stats["skipped_verb"] += 1
-                stats["unsupported_verbs"].add(verb.upper())
+                stats["unsupported_verbs"].append(verb.upper())
                 continue
-            if "{" in path:
-                stats["templated"] += 1
-                if skip_templated:
-                    stats["skipped_templated"] += 1
-                    continue
-            if any(p.get("in") == "query" for p in op.get("parameters") or []):
-                stats["with_query_params"] += 1
-            name = str(op.get("operationId") or "").strip()
-            if not name:
-                slug = re.sub(r"[^A-Za-z0-9]+", "_", path).strip("_")
-                name = f"{verb}_{slug}"
-                stats["synthesized_names"] += 1
-            if name in seen:
-                stats["duplicate_names"].append(name)
-                name = f"{name}_{verb}"
-            seen.add(name)
-            row: dict = {"name": name, "path": path, "method": verb.upper()}
-            # phase-bridge: bind_map is {phase_label: method_name}
-            for phase, mname in bind_map.items():
-                if mname == name:
-                    row["bind_phase"] = phase
-            rows.append(row)
-            stats["emitted"] += 1
-    if isinstance(stats["unsupported_verbs"], set):
-        stats["unsupported_verbs"] = sorted(stats["unsupported_verbs"])
+            row = _operation_row(
+                verb, path, item[verb] or {}, seen, stats, bind_map, skip_templated
+            )
+            if row is not None:
+                rows.append(row)
+                stats["emitted"] += 1
+    stats["unsupported_verbs"] = sorted(set(stats["unsupported_verbs"]))
     return rows, stats
 
 
@@ -184,8 +207,10 @@ def main() -> int:
 
     import yaml
 
-    spec = load_spec(args.spec)
-    bind_map = json.loads(args.bind_map.read_text(encoding="utf-8")) if args.bind_map else None
+    spec = load_spec(_safe_path(args.spec))
+    bind_map = (
+        json.loads(_safe_path(args.bind_map).read_text(encoding="utf-8")) if args.bind_map else None
+    )
     rows, stats = spec_to_methods(
         spec,
         bind_map,
@@ -194,8 +219,9 @@ def main() -> int:
         skip_templated=args.skip_templated,
     )
     if args.out:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(
+        out = _safe_path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(
             yaml.safe_dump({"methods": rows}, sort_keys=False, allow_unicode=True),
             encoding="utf-8",
         )
@@ -204,7 +230,7 @@ def main() -> int:
             raise SystemExit("--emit-integration needs a spec servers/host URL")
         if not args.integration_out:
             raise SystemExit("--emit-integration requires --integration-out")
-        args.integration_out.write_text(
+        _safe_path(args.integration_out).write_text(
             integration_yaml(args.emit_integration, stats["base_url"]), encoding="utf-8"
         )
 
