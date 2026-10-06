@@ -961,6 +961,28 @@ multiple handlers, and nested trys. Probe lesson recorded: sequencing
 hops must carry `auto_action: 21` — a bare `steptype: 2` hop gets
 *"Next step not found"*.
 
+**Vendor OpenAPI specs → method catalogs → functional runbooks**
+(`scripts/openapi_methods.py`, evidence
+`openapi_methods_evidence.json`): render a vendor's OpenAPI/Swagger
+spec (3.0/3.1/Swagger2 all parse) into the `methods:` YAML the
+`--methods` cascade already consumes — one row per operation
+(`{name, path, method}`, operationId as name, `{templated}` paths
+kept, HEAD/OPTIONS skipped with counts, query-param ops and security
+schemes *reported* not guessed, `--bind-map` for phase slots,
+`--emit-integration` derives the integration row from the spec's
+base URL). Proven live end-to-end on the **Huntress** spec (102 rows
+rendered): a3-row trial subset cascaded onto an integration
+(id42, `https://api.huntress.io`), a converted try/except smoke
+runbook bound its hop to the spec-generated method
+(`bound_steps:[1]`, act17 pair present), fired → **run 2780
+status 2, exec 2** — the vendor call failed (no creds configured yet
+— the one human step: integration auth) and the **Unsuccessful edge
+ran the recovery handler**; integration + methods + runbook all
+deleted clean. Vendor specs pulled for this live in
+`MTG-Thomas/vendor-specs/` (ConnectSecure, CIPP, Huntress OpenAPI +
+Cove's JSON-RPC method schema — Cove needs a body-template strategy,
+not verb+path rows).
+
 **Trigger filters (`--trigger-filter`, the subscriber-filter port)** —
 `--triggers "New Ticket Logged" --trigger-filter
 "reportedby==noreply@voicemail.goto.com"` attaches **faults-table

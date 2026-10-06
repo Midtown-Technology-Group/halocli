@@ -1,0 +1,10 @@
+methods:
+- name: getV1Account
+  path: /v1/account
+  method: GET
+- name: getV1Actor
+  path: /v1/actor
+  method: GET
+- name: getV1KnownVpns
+  path: /v1/known_vpns
+  method: GET
