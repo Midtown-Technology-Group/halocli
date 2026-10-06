@@ -27,6 +27,8 @@ from typing import Any
 import probe_harness as ph
 from halocli.bifrost_convert import convert_integration, convert_methods
 
+METHOD_EP = "/CustomIntegrationMethod"
+
 
 def _method_docs(rows: list[dict], integration_id: int) -> list[dict]:
     """convert_methods output -> POST bodies (strip _-keys, pin owner)."""
@@ -77,7 +79,7 @@ async def main() -> int:
                 return 0
             methods = await client.request(
                 "GET",
-                "/CustomIntegrationMethod",
+                METHOD_EP,
                 params={"integration_id": existing, "showall": "true"},
                 timeout=60,
             )
@@ -126,9 +128,7 @@ async def main() -> int:
             created, failed = [], []
             for body in _method_docs(rows, iid):
                 try:
-                    r = await client.request(
-                        "POST", "/CustomIntegrationMethod", json_body=[body], timeout=45
-                    )
+                    r = await client.request("POST", METHOD_EP, json_body=[body], timeout=45)
                     mr = r[0] if isinstance(r, list) and r else r
                     created.append({"id": mr.get("id"), "name": body.get("name")})
                 except Exception as exc:  # noqa: BLE001
@@ -137,7 +137,7 @@ async def main() -> int:
             # verify: read back the catalog
             back = await client.request(
                 "GET",
-                "/CustomIntegrationMethod",
+                METHOD_EP,
                 params={"integration_id": iid, "showall": "true"},
                 timeout=60,
             )
@@ -164,7 +164,10 @@ async def main() -> int:
 def _ph_path(p: str):
     from pathlib import Path
 
-    return ph.REPO / p if not str(p).startswith(("/", "\\")) and ":" not in str(p) else Path(p)
+    base = ph.REPO / p if not str(p).startswith(("/", "\\")) and ":" not in str(p) else Path(p)
+    # canonicalize a CLI-supplied path before touching the disk (S8707) -
+    # the same house pattern as scripts/bifrost_convert.py::_safe_path
+    return base.expanduser().resolve()
 
 
 if __name__ == "__main__":
