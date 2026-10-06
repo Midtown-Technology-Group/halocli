@@ -1270,7 +1270,7 @@ async def flag_gate(flag: bool) -> dict:
     assert any("truthiness" in n for n in conv.notes)
 
 
-def test_bool_literal_compare_stays_flat_unproven() -> None:
+def test_bool_literal_compare_translates_to_eq_one() -> None:
     src = """
 from bifrost import workflow
 
@@ -1279,15 +1279,21 @@ from bifrost import workflow
 async def flag_eq(flag: bool) -> dict:
     if flag == True:  # noqa: E712
         await allowed()
+    else:
+        await blocked()
     return {}
 """
     conv = convert_workflow({}, src, "flag_eq")
     assert conv.ok
-    # `flag == True` was never probed (only bare truthiness) - flat
-    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+    c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
+    # both legs proven: flag=1 met / flag=0 notmet on eq value_int1
+    # (interpolation_evidence.json) - data_type5's canonical spelling
+    assert c["type"] == 0 and c["value_int"] == 1
+    assert c["fieldname"] == "<<flag>>"
+    assert c["value_type"] == "int"
 
 
-def test_bool_set_membership_stays_flat_unproven() -> None:
+def test_bool_set_membership_encodes_one_zero() -> None:
     src = """
 from bifrost import workflow
 
@@ -1296,10 +1302,34 @@ from bifrost import workflow
 async def flag_set(flag: bool) -> dict:
     if flag in [True, False]:
         await allowed()
+    else:
+        await blocked()
     return {}
 """
     conv = convert_workflow({}, src, "flag_set")
     assert conv.ok
+    c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
+    assert c["type"] == 23
+    # canonical1/0 encoding - the "True" spelling fails on the trial
+    # (interpolation_evidence.json boolset_capital notmet)
+    assert c["value_string"] == "1,0"
+    assert c["value_type"] == "string"
+
+
+def test_int_constant_on_bool_param_stays_flat() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Bool Int")
+async def flag_int(flag: bool) -> dict:
+    if flag == 1:
+        await allowed()
+    return {}
+"""
+    conv = convert_workflow({}, src, "flag_int")
+    assert conv.ok
+    # int-vs-bool was never probed - honest flatten
     assert not any(s.get("step_conditions") for s in conv.payload["steps"])
 
 
