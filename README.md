@@ -937,7 +937,13 @@ input variables substitute). A
 workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion — which names all three kinds —
-instead of a guessed write.
+instead of a guessed write. **The catalog beyond tickets is pinned
+too** (`aat48_evidence.json`): **aat4 and aat5 both create USERS**
+(marker scan hit `/Users` ids 94/95, both status 2), **aat6** rejects
+a name-only body (status 1, honest negative), and the generic
+`{"kind": "halo_api_action", "aat": N, "body": {...}}` binding emits
+**any** catalog variant — entities and runbooks all deleted after
+readback.
 
 **try/except maps to failure-edge routing** (`errorpath_evidence.json`,
 four legs, runbooks + ticket deleted clean): failable steps in the

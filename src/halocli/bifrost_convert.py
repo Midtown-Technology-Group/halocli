@@ -176,7 +176,12 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   runlog2552, while a LITERAL id lands without any context), or
   ``{"kind": "halo_ticket_create" | "halo_ticket_update", "body":
   {...}}`` (aat1/aat2; body = raw Halo API request, ``"<<...>>"``
-  tokens unquoted for interpolation). Edges act18 Successful /
+  tokens unquoted for interpolation), or the GENERIC
+  ``{"kind": "halo_api_action", "aat": <n>, "body": {...}}`` for any
+  catalog variant - aat4 and aat5 are now PINNED as user-creators
+  (marker scan hit /Users ids94/95, both status2; aat6 rejected a
+  name-only body at status1 - aat48_evidence.json, entities deleted
+  after readback). Edges act18 Successful /
   Unsuccessful. Unbound
   halopsa-write effects get a conversion_report suggestion, never a
   guessed write.
@@ -1706,8 +1711,20 @@ def build_runbook_steps(
             # Edges: act18 Successful / Unsuccessful (sem-table pair).
             spec = ph.halo_note or {}
             write_kind = spec.get("kind")
-            if write_kind in ("halo_ticket_create", "halo_ticket_update"):
-                aat = 1 if write_kind == "halo_ticket_create" else 2
+            if write_kind in (
+                "halo_ticket_create",
+                "halo_ticket_update",
+                "halo_api_action",
+            ):
+                if write_kind == "halo_ticket_create":
+                    aat = 1
+                elif write_kind == "halo_ticket_update":
+                    aat = 2
+                else:
+                    # generic catalog variant (aat4/5 create USERS on the
+                    # trial - aat48_evidence.json marker scan; aat6
+                    # rejected a name-only body); operator picks the id
+                    aat = int(spec.get("aat") or 3)
                 message = _unquote_vars(json.dumps(spec.get("body") or {}, indent=2))
             else:
                 aat = 3
@@ -2024,6 +2041,7 @@ def convert_workflow(
             if p.halo_note.get("kind") in (
                 "halo_ticket_create",
                 "halo_ticket_update",
+                "halo_api_action",
             ) and not p.halo_note.get("body"):
                 notes.append(
                     f"binding {p.halo_note.get('kind')!r} on phase {p.label!r} has no "
@@ -2085,7 +2103,9 @@ def convert_workflow(
                 "Halo API Action (aa8/aat3 add-note) step (<<vars>> need event/"
                 'trigger context), or {"kind": "halo_ticket_create" | '
                 '"halo_ticket_update", "body": {...}} for aat1/aat2 ticket writes '
-                "(proven on plain fires - ticket_crud_evidence.json)"
+                "(proven on plain fires - ticket_crud_evidence.json), or "
+                '{"kind": "halo_api_action", "aat": N, "body": {...}} for any '
+                "other catalog variant (aat4/5 create users - aat48_evidence.json)"
             )
     if meta.get("enforced_bounds"):
         notes.append(
