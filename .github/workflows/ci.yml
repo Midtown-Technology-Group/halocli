@@ -77,8 +77,12 @@ jobs:
 
       # Report-only baseline (no floor yet): publishes the number we would
       # later gate on. Runs under -n auto like every other pytest invocation.
+      # --cov=scripts matters for Sonar: without it the CLI/apply plumbing
+      # (scripts/bifrost_convert.py) never appears in coverage.xml and every
+      # new script line counts as UNCOVERED in the PR quality gate - the
+      # script's tests (tests/test_bifrost_convert_cli.py) execute it for real.
       - name: Test with coverage
-        run: python -m pytest -q --cov=halocli --cov-report=term-missing --cov-report=json:pytest-coverage.json --cov-report=xml:coverage.xml
+        run: python -m pytest -q --cov=halocli --cov=scripts --cov-report=term-missing --cov-report=json:pytest-coverage.json --cov-report=xml:coverage.xml
 
       - name: Upload pytest coverage
         if: always()

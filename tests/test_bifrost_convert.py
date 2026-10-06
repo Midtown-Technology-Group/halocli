@@ -20,6 +20,7 @@ from halocli.bifrost_convert import (
     convert_workflow,
     extract_http_methods,
     sanitize_for_import,
+    workflow_function_names,
 )
 
 OAUTH_ENTRY = {
@@ -957,14 +958,86 @@ def test_sanitize_for_import_matches_ui_transform() -> None:
     assert out["_is_new"] is True
 
 
+MULTI_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Child", description="Child runbook.")
+async def child_wf(client, tag: str) -> dict:
+    await child_work(client)
+    return {"tag": tag}
+
+
+@workflow(name="Demo: Parent", description="Parent runbook.")
+async def parent_wf(client, tag: str) -> dict:
+    await prepare(client)
+    await child_wf(client, tag=tag)
+    return {"done": True}
+"""
+
+
+def test_decorated_callee_becomes_chain_not_inline() -> None:
+    """A @workflow callee keeps its own runbook -> aa24 chain by NAME."""
+    conv = convert_workflow({}, MULTI_SOURCE, "parent_wf")
+    assert conv.ok
+    chain_steps = [s for s in conv.payload["steps"] if s.get("auto_action") == 24]
+    assert len(chain_steps) == 1
+    chain = chain_steps[0]
+    # name target: the same --apply resolves it to the created id
+    assert chain["start_new_runbook_id"] is None
+    assert conv.payload.get("_chains") == {str(chain["step_id"]): "child_wf"}
+    assert chain["actions"] == []  # aa24 has no edges (trial-proven)
+    # NOT inlined: the callee's phases must not splice into the parent
+    names = [s["name"] for s in conv.payload["steps"]]
+    assert "child_work" not in names
+    assert "prepare" in names
+    assert any("chain target(s) by NAME" in n for n in conv.notes)
+
+
+def test_explicit_chain_guid_binding_wins_without_sidecar() -> None:
+    conv = convert_workflow(
+        {},
+        MULTI_SOURCE,
+        "parent_wf",
+        phase_bindings={
+            "child_wf": {
+                "kind": "chain_runbook",
+                "target": "11111111-2222-4333-8444-555555555555",
+            }
+        },
+    )
+    assert conv.ok
+    chain = next(s for s in conv.payload["steps"] if s.get("auto_action") == 24)
+    assert chain["start_new_runbook_id"] == "11111111-2222-4333-8444-555555555555"
+    assert "_chains" not in conv.payload  # guid needs no same-apply resolution
+
+
+def test_plain_helper_still_inlines_not_chains() -> None:
+    conv = convert_workflow(
+        {},
+        MULTI_SOURCE.replace('@workflow(name="Demo: Child", description="Child runbook.")\n', ""),
+        "parent_wf",
+    )
+    assert conv.ok
+    assert not any(s.get("auto_action") == 24 for s in conv.payload["steps"])
+    assert "_chains" not in conv.payload
+
+
+def test_workflow_function_names() -> None:
+    assert workflow_function_names(MULTI_SOURCE) == ["child_wf", "parent_wf"]
+    assert workflow_function_names("def plain(x):\n    return x\n") == []
+    assert workflow_function_names("def broken(:\n") == []  # unparseable -> []
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
-    steps, sidecar = build_runbook_steps(
+    steps, sidecar, chains = build_runbook_steps(
         "WB",
         "desc",
         [Phase("sleep", "rest", duration=0), Phase("api", "call", method_id=7)],
     )
     assert sidecar == {}
+    assert chains == {}
     hop, api, success, fail = steps
     # canonical edge fields (copied from working trial runbooks)
     assert set(api["actions"][0]) == {

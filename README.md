@@ -791,6 +791,8 @@ python scripts/bifrost_convert.py `
 # add: --apply --profile dev        # trial round-trip + trigger fire (production refused)
 #      --form items='["c"]'          # override an input variable in the document
 #      --phase-bindings b.json       # {phase: method_id | "Method Name"} for aa6 wiring
+# omit --function                    # convert EVERY @workflow in the file; cross-workflow
+#                                    # awaits become aa24 chains resolved by the same apply
 ```
 
 **Step primitives (every recipe fire-proven on the trial**, matrix in
@@ -960,7 +962,26 @@ default-edge entry for aa24 because none is needed). Live proof
 (`runbook_primitive_evidence.json`): fire A → run **2561 status 2**
 (current, ends at -9999) → **target ran: run 2562 status 2,
 Success**. Trailing phases after a chain get a WARNING (they never
-execute); the target is an existing runbook's guid.
+execute).
+
+**Multi-runbook orchestration in one apply** (v11 — the docstring's
+"future work" closed): omit `--function` and every `@workflow`
+function in the file converts to its own runbook; a cross-workflow
+`await callee(...)` becomes the aa24 chain **automatically** (the
+callee keeps its own inputs, triggers and runlogs — an explicit
+`--phase-bindings` chain wins, and the target may still be a
+pre-existing runbook's **guid**). The apply creates targets **first**
+(dependency order from the `_chains` sidecar) and patches the caller's
+`start_new_runbook_id` with the created id before POSTing. Proof
+(`chain_orchestration_evidence.json`, fixture
+`tests/fixtures/bifrost/chain_parent_child.py`): child created first
+→ parent created with `chains: {chain_fixture_child: <child-id>}` →
+child direct fire **run 2606 status 2** → fire parent **run 2607
+status 2, step -9999** (terminated at the chain) → **chain-started
+child run 2608 status 2, newer than baseline 2606** — the aa24, not
+our direct fire, started that run. Both deleted clean. A name target
+that never gets created (caller converted alone) stays unbound with an
+honest warning — never a guessed guid.
 
 **Bare string guards**: `if label:` on a `str` param becomes criteria
 **29 "Has a value"** — both legs live-proven (**2563** "x" → met →
