@@ -1490,7 +1490,7 @@ async def try_fin(client) -> dict:
     assert conv.ok
     names = [s["name"] for s in conv.payload["steps"]]
     assert "risky" in names and "cleanup_hop" in names  # flattened honestly
-    assert any("else/finally or multiple handlers" in n for n in conv.notes)
+    assert any("finally or multiple handlers" in n for n in conv.notes)
     # no failure-edge routing: Unsuccessful still targets Fail
     risky = next(s for s in conv.payload["steps"] if s["name"] == "risky")
     fail = next(s for s in conv.payload["steps"] if s.get("auto_action") == 1)
@@ -1514,7 +1514,7 @@ async def multi(client) -> dict:
 """
     conv = convert_workflow({}, src, "multi", phase_bindings={"risky": 1})
     assert conv.ok
-    assert any("else/finally or multiple handlers" in n for n in conv.notes)
+    assert any("finally or multiple handlers" in n for n in conv.notes)
 
 
 def test_typed_handler_maps_with_caveat_note() -> None:
@@ -1671,6 +1671,125 @@ def test_halo_runbook_action_without_payload_gets_note() -> None:
     )
     assert conv.ok
     assert any("raw_message" in n and "has no payload" in n for n in conv.notes)
+
+
+def test_try_else_maps_with_handler_skip() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Oracle: Try Else")
+async def guarded_else(client) -> dict:
+    try:
+        await risky3(client)
+    except Exception:
+        await fallback(client)
+    else:
+        await else_hop(client)
+    await afterwards(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "guarded_else", phase_bindings={"risky3": 1})
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    risky, else_hop, fallback, after = (
+        steps["risky3"],
+        steps["else_hop"],
+        steps["fallback"],
+        steps["afterwards"],
+    )
+    # try failures -> handler; try success -> else (Python semantics:
+    # only TRY statements raise into except; else failures propagate)
+    assert [(a["action_type"], a["end_step"]) for a in risky["actions"]] == [
+        (17, else_hop["step_id"]),
+        (17, fallback["step_id"]),
+    ]
+    # else-last SUCCESS skips the handler; handler converges after-try
+    assert else_hop["actions"][0]["end_step"] == after["step_id"]
+    assert fallback["actions"][0]["end_step"] == after["step_id"]
+    assert any("try/except block(s) mapped" in n for n in conv.notes)
+    assert not any("NOT mapped" in n for n in conv.notes)
+
+
+def test_await_result_maps_and_guard_translates() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Oracle: Result Var")
+async def fetchy(client) -> dict:
+    result = await risky_call(client)
+    if not result:
+        await empty_path(client)
+    else:
+        await have_path(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "fetchy", phase_bindings={"risky_call": 1})
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    api = steps["risky_call"]
+    # the response maps into the runbook variable `result`
+    mappings = api.get("runbook_variable_mappings") or []
+    assert mappings and mappings[0]["key"] == "result"
+    assert mappings[0]["value"] == "<<response>>" and mappings[0]["type"] == 4
+    # `if not result` translated to a has/no-value condition (was flat)
+    conds = [s for s in conv.payload["steps"] if s.get("step_conditions")]
+    assert len(conds) == 1
+    c = conds[0]["step_conditions"][0]
+    assert c["type"] == 30 and c["fieldname"] == "<<result>>"  # does not have a value
+    assert any(
+        "bound to runbook variables" in n and "result <- risky_call" in n for n in conv.notes
+    )
+
+
+def test_hop_assigned_result_stays_flat() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Oracle: Hop Result")
+async def hoppy(client) -> dict:
+    x = await sync_helper(client)
+    if x:
+        await yes(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "hoppy")
+    assert conv.ok
+    # sync helper -> hop: no response to map, guard stays flat + honest
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+    hop = next(s for s in conv.payload["steps"] if s.get("name") == "sync_helper")
+    assert hop["auto_action"] == 21
+    assert "runbook_variable_mappings" not in hop
+
+
+def test_derived_guard_gets_precise_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Oracle: Derived")
+async def derive(client) -> dict:
+    payload = await risky_call(client)
+    info = payload["id"]
+    if info:
+        await use_info(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "derive", phase_bindings={"risky_call": 1})
+    assert conv.ok
+    # the DIRECT await result is mapped (payload) but the subscript-derived
+    # alias is a computed value -> precise note, no guessed condition
+    assert not any(s.get("step_conditions") for s in conv.payload["steps"])
+    assert any(
+        "computed/derived values" in n and "fieldpath_evidence" in n and "info" in n
+        for n in conv.notes
+    )
+    # the mapped root still gets its binding note
+    assert any(
+        "bound to runbook variables" in n and "payload <- risky_call" in n for n in conv.notes
+    )
 
 
 def test_build_runbook_steps_direct_calls() -> None:

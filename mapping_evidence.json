@@ -1,0 +1,55 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "mapping -> condition materialization",
+  "legs": {
+    "control": {
+      "id": "017c10a3-71f3-46ce-be06-065cfa753233",
+      "runlog": {
+        "id": 2788,
+        "status": 2,
+        "error": "",
+        "steps_executed": 1,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 174,
+        "timestamp": "2026-10-06T19:04:25.443"
+      }
+    },
+    "map_whole": {
+      "id": "1727c58b-e5a5-4516-9a05-c5af397f2f39",
+      "runlog": {
+        "id": 2789,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 5,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 1115,
+        "timestamp": "2026-10-06T19:04:30.433"
+      }
+    },
+    "map_path": {
+      "id": "5edc4b72-9684-4c33-841e-60c6112bb85b",
+      "runlog": {
+        "id": 2790,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 5,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 638,
+        "timestamp": "2026-10-06T19:04:35.327"
+      }
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "ticket_cleanup": "deleted 1 probe ticket(s)",
+  "verdict": "SHIP: <<response>> mapping materializes; has-value condition READS it | SHIP: <<response^summary>> path mapping materializes"
+}

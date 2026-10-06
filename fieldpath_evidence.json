@@ -1,0 +1,40 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "nested criteria + method paths",
+  "legs": {
+    "control": {
+      "id": "2dc481e8-460b-4ca7-9e7d-2cf2bccc1ab8",
+      "runlog": {
+        "id": 2801,
+        "status": 2,
+        "error": "",
+        "steps_executed": 2,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 165,
+        "timestamp": "2026-10-06T19:16:09.363"
+      }
+    },
+    "deref": {
+      "id": "d037f7bc-5bc5-4a0e-97ed-c8465df67d26",
+      "runlog": {
+        "id": 2802,
+        "status": 1,
+        "error": "Failed result reached. Last step=6",
+        "steps_executed": 2,
+        "runbook_step": 1,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 538,
+        "timestamp": "2026-10-06T19:16:14.203"
+      }
+    },
+    "method_paths": {
+      "brace": "accepted id=189",
+      "var": "accepted id=190"
+    }
+  },
+  "cleanup": "['deleted (clean)', 'deleted (clean)']; 2 probe method(s) deleted; 1 ticket(s) deleted",
+  "verdict": "PROVEN NON-WORKING: <<var^field>> in a criterion fieldname does NOT deref (notmet -> Fail; materialization + response^summary path both proven elsewhere, so the caret is the failure) - derived-value guards stay flat + noted | SHIP: BOTH templated method-path styles create (OpenAPI {param} and Halo <<param>>) - the spec generator keeps {param} as-is"
+}
