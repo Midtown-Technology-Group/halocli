@@ -1,0 +1,67 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "applied": {
+    "runbook:inspect_voicemail_customer": {
+      "file": "C:\\Users\\ThomasBray\\AppData\\Local\\Temp\\opencode\\halo_voice\\runbook__inspect_voicemail_customer.json",
+      "_inputs": {
+        "halo_ticket_id": ""
+      },
+      "category_group": {
+        "category": "HaloPSA",
+        "group_id": null,
+        "lookup_-4_rows": 0,
+        "note": "no matching group; runs default to group_id -1"
+      },
+      "shape_winner": "converted_public_active",
+      "attempts": [
+        "converted_public_active: ok id=4eb78ec7-d806-4daf-80c4-6debc419fef2"
+      ],
+      "id": "4eb78ec7-d806-4daf-80c4-6debc419fef2",
+      "verify": {
+        "type": 1,
+        "steps": 4,
+        "expected_steps": 4,
+        "edges": 3,
+        "edge_names": [
+          "Sleep Finished"
+        ],
+        "bound_steps": [],
+        "input_variables": 1,
+        "start_type": 1,
+        "group_id": -1
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "halo_ticket_id",
+            "Value": ""
+          }
+        ]
+      },
+      "runlog": {
+        "id": 2602,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 4,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 341,
+        "timestamp": "2026-10-06T01:25:16.243"
+      },
+      "evolution": [
+        {
+          "t_s": 2,
+          "status": 2,
+          "step": 4,
+          "step_name": null,
+          "exec": 3,
+          "error": ""
+        }
+      ],
+      "cleanup": "deleted (clean)"
+    }
+  }
+}

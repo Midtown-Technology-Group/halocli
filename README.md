@@ -968,6 +968,22 @@ Success; **2564** "" → notmet → Fail terminal). Int/bool bare truthiness
 and comparisons against other names stay flattened (their semantics
 are not pinned yet).
 
+**Helper inlining + constant folding (the real-workflow proof)**: a
+same-file `await helper(...)` no longer collapses to one hop — the
+helper's awaits **splice into the flow** (explicit bindings win over
+inlining), call-site **constants fold the helper's guards statically**
+(`run(x, inspect_only=True)` → the else arm *vanishes*; literal
+comparisons and `not` evaluate too), and **statements after a
+return/raise are pruned** as unreachable (the fall-through
+`return route_ticket(...)` after a folded early-return is dead code,
+not a phase). Runtime guards inside helpers stay flattened with a
+note; recursion is cycle-safe (inner call → hop). Proof on the actual
+`azure-advisory-context/halo-voicemail-routing` source
+(`voicemail_conversion_evidence.json`): phases
+`[get, halo_connection, inspect_ticket]` — `run` inlined,
+`inspect_only=True` folded, `route_ticket` pruned — created, fired, and
+completed on the trial: **run2602 status 2, steps_executed 3**.
+
 Two enforcement facts from the same probe: `runbook_start_type:0`
 answers **401** to a public POST (Halo-only is enforced server-side),
 and runbook **names are unique** (colliding create → 400 *"Name must
