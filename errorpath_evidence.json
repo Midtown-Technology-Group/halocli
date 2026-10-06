@@ -1,0 +1,95 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "question": "recovery routing + request interp",
+  "legs": {
+    "try_ok": {
+      "id": "b911c409-d149-4f72-8fa4-c76cd8a9bf3c",
+      "runlog": {
+        "id": 2768,
+        "status": 2,
+        "error": "",
+        "steps_executed": 3,
+        "runbook_step": 5,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 386,
+        "timestamp": "2026-10-06T05:04:29.23"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "try_fail": {
+      "id": "a341faa2-eec4-4517-83e2-7688199544c5",
+      "runlog": {
+        "id": 2769,
+        "status": 2,
+        "error": "",
+        "steps_executed": 2,
+        "runbook_step": 5,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 379,
+        "timestamp": "2026-10-06T05:04:34.367"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "control_fail": {
+      "id": "d270e93d-d250-4de3-af67-1ea750f67e8e",
+      "runlog": {
+        "id": 2770,
+        "status": 1,
+        "error": "Failed result reached. Last step=6",
+        "steps_executed": 1,
+        "runbook_step": 1,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 259,
+        "timestamp": "2026-10-06T05:04:39.183"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": []
+      }
+    },
+    "req_interp": {
+      "id": "f3d30cc3-112c-459d-976f-397833bae845",
+      "runlog": {
+        "id": 2771,
+        "status": 1,
+        "error": "Failed result reached. Last step=4",
+        "steps_executed": 1,
+        "runbook_step": 1,
+        "runbook_step_name": null,
+        "iteration": 0,
+        "execution_time": 245,
+        "timestamp": "2026-10-06T05:04:43.987"
+      },
+      "trigger_fire": {
+        "ok": true,
+        "response": "None",
+        "formCollection": [
+          {
+            "Key": "extra",
+            "Value": "halocli-errorpath request-carried"
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": [
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)",
+    "deleted (clean)"
+  ],
+  "ticket_cleanup": "deleted 1 probe ticket(s)",
+  "verdict": "success path runs the normal hops (recovery skipped) | SHIP: Unsuccessful edge routes to a recovery hop and converges | control: edge2 -> Fail keeps the run off status2 (contrast) | request-interp run failed (status=1)"
+}

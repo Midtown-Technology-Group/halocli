@@ -110,6 +110,20 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   literal comparisons translate to eq/ne against value_int 1/0 (both
   legs proven - interpolation_evidence.json), while int constants on
   bool params (``flag == 1``) stay unpinned (flat).
+- try/except -> failure-edge routing (errorpath_evidence.json, four
+  legs, runbooks + ticket deleted clean): the aa8/api Unsuccessful
+  edge runs the ARBITRARY recovery hop and converges to Success
+  (try_fail: status2 exec2) while the success path runs the normal
+  hops and SKIPS the handler (try_ok: status2 exec3); the edge2->Fail
+  control contrasted at status1. Mapping: every failable body phase
+  routes edge2 to the single handler's first phase, the LAST body
+  phase's success edge skips the handler, conditions whose notmet/
+  else would land inside the handler retarget after-try, both paths
+  converge after the try. Typed handlers map too (failure edges carry
+  no exception type - noted). else/finally/multi-handler and nested
+  trys flatten WITH notes. Probe discovery: sequencing hops MUST
+  carry auto_action21 + duration - a bare steptype2 hop gets "Next
+  step not found".
 - trigger filters (``_trigger_filters`` sidecar from
   ``--trigger-filter``) -> inline conditions on each binding
   (faults table, filter_type2 - AI Triage's production shape): the
@@ -581,6 +595,12 @@ class Phase:
     notmet_target: int | None = None  # plan-space step id (build side)
     notmet_exit: bool = False  # notmet jumps straight to Success (early-return semantics)
     criterion_spec: dict | None = None  # typed comparison criteria (None = array has-elements)
+    # try/except (failure-edge routing; RAW phase indices set by classify):
+    except_target: int | None = None  # first handler phase: edge2 lands here
+    try_skip: int | None = None  # after-try phase: this node's SUCCESS edge skips the handler
+    try_notmet: int | None = None  # retarget for a condition's notmet landing in the handler
+    try_else: int | None = None  # retarget for an else-skip landing in the handler
+    except_step: int | None = None  # resolved plan-space target (build side)
 
 
 def _decorator_kwargs(func: ast.AsyncFunctionDef | ast.FunctionDef) -> dict:
@@ -1091,10 +1111,32 @@ def classify_phases(
             return None
         return {"param": left.id, "op": op, "value": value, "value_type": ptype}
 
-    for stmt in func.body:
+    def process(stmt: ast.stmt) -> None:
+        """One statement: translate a guard If first, else walk it.
+
+        Shared by the top-level loop AND try/except body/handler walks so
+        guards INSIDE a try block still become condition steps.
+        """
         guard_label = None
         spec: dict | None = None
         array_var: str | None = None
+        if not isinstance(stmt, ast.Try) and any(isinstance(n, ast.Try) for n in ast.walk(stmt)):
+            # a Try nested inside control flow (or an inlined branch)
+            # cannot get failure-edge routing - flag it before the
+            # guard translation can walk past it
+            report.setdefault("try_unsupported", []).append(
+                "try/except nested inside control flow flattens to linear "
+                "phases - review in the flow editor"
+            )
+        if isinstance(stmt, ast.Try):
+            # reached only as a NESTED try (the top-level loop intercepts
+            # its own) - flatten + say so
+            report.setdefault("try_unsupported", []).append(
+                "try/except nested inside control flow flattens to linear "
+                "phases - review in the flow editor"
+            )
+            walk(stmt, False, None)
+            return
         if isinstance(stmt, ast.If):
             test = stmt.test
             bare = test if isinstance(test, ast.Name) else None
@@ -1210,8 +1252,73 @@ def classify_phases(
                         else_span=else_span if else_span else None,
                     ),
                 )
-            continue
+            return
         walk(stmt, False, None)
+
+    for stmt in func.body:
+        if isinstance(stmt, ast.Try):
+            # try/except -> failure-edge routing (errorpath_evidence.json:
+            # Unsuccessful edge ran the recovery hop and converged to
+            # Success; the success path skipped the handler). failable
+            # phases in the body route edge2 to the handler's first
+            # phase; the LAST body phase's success edge skips the
+            # handler; conditions whose notmet/else would land inside
+            # the handler retarget after-try. One handler only -
+            # else/finally/multi-handler cannot be expressed (flattened
+            # + noted); a typed handler routes ALL failures (edges
+            # carry no exception type).
+            tr = stmt
+            if tr.orelse or tr.finalbody or len(tr.handlers) != 1:
+                report.setdefault("try_unsupported", []).append(
+                    "try with else/finally or multiple handlers flattens to "
+                    "linear phases (Halo failure edges carry no exception "
+                    "type/finally) - review in the flow editor"
+                )
+                subs: list[ast.stmt] = [*tr.body]
+                for h in tr.handlers:
+                    subs.extend(h.body)
+                subs.extend(tr.orelse)
+                subs.extend(tr.finalbody)
+                for sub in subs:
+                    process(sub)
+                continue
+            body_start = len(phases)
+            for sub in tr.body:
+                process(sub)
+            body_end = len(phases)
+            for sub in tr.handlers[0].body:
+                process(sub)
+            handlers_end = len(phases)
+            if body_end == body_start and body_end < handlers_end:
+                report.setdefault("try_unsupported", []).append(
+                    "try block has no awaits - nothing can fail, so its "
+                    "handler phases execute first - review in the flow editor"
+                )
+            if body_end < handlers_end:
+                if tr.handlers[0].type is not None:
+                    report.setdefault("try_notes", []).append(
+                        f"except {ast.unparse(tr.handlers[0].type)}: routes ALL "
+                        "failures here (Halo failure edges carry no exception type)"
+                    )
+                for idx in range(body_start, body_end):
+                    p2 = phases[idx]
+                    if p2.kind in ("api", "halo_note"):
+                        p2.except_target = body_end
+                    if p2.kind == "condition":
+                        notmet_raw = idx + 1 + (p2.branch_span or 0)
+                        if notmet_raw >= body_end:
+                            p2.try_notmet = handlers_end
+                        if p2.else_span:
+                            else_tgt = idx + (p2.branch_span or 0) + p2.else_span + 1
+                            if else_tgt >= body_end:
+                                p2.try_else = handlers_end
+                if body_end > body_start:
+                    # the last body node's SUCCESS edge must skip the
+                    # handler block (both paths converge after-try)
+                    phases[body_end - 1].try_skip = handlers_end
+                report.setdefault("try_mapped", []).append(ast.unparse(tr)[:70].replace("\n", " "))
+            continue
+        process(stmt)
     return phases
 
 
@@ -1344,7 +1451,9 @@ def build_runbook_steps(
     plan: list[tuple[str, Phase | None]] = []
     raw_to_plan: dict[int, int] = {}
     pending_conditions: list[tuple[Phase, int]] = []
-    pending_skips: list[tuple[int, int]] = []  # (then-last raw, after-else raw)
+    pending_skips: list[tuple[Phase, int, int]] = []  # (condition, then-last raw, after-else raw)
+    pending_except: list[tuple[Phase, int]] = []  # (failable phase, handler-first raw)
+    pending_try_skips: list[tuple[int, int]] = []  # (last-body raw, after-try raw)
     loop_end_pos: dict[int, int] = {}  # last body raw -> its iter_end pos
     raw = 0
     i = 0
@@ -1385,20 +1494,31 @@ def build_runbook_steps(
                 # (with an empty then-arm the condition node itself skips)
                 pending_skips.append(
                     (
+                        p,
                         raw + (p.branch_span or 0),
                         raw + (p.branch_span or 0) + p.else_span + 1,
                     )
                 )
+        if p.except_target is not None:
+            # try/except: this failable phase's edge2 lands on the handler
+            pending_except.append((p, p.except_target))
+        if p.try_skip is not None:
+            # its SUCCESS edge skips the handler block entirely
+            pending_try_skips.append((raw, p.try_skip))
         raw_to_plan[raw] = len(plan) - 1
         raw += 1
         i += 1
     total_raw = raw
-    for cond, notmet_raw in pending_conditions:
+    for cond, notmet_default in pending_conditions:
+        notmet_raw = cond.try_notmet if cond.try_notmet is not None else notmet_default
         if notmet_raw >= total_raw:
             cond.notmet_target = None  # falls to the Success terminal
         else:
             pos = raw_to_plan.get(notmet_raw)
             cond.notmet_target = pos + 1 if pos is not None else None
+    for failable, except_raw in pending_except:
+        pos = raw_to_plan.get(except_raw)
+        failable.except_step = pos + 1 if pos is not None else None
     if not plan:
         # no awaits at all: one neutral start hop so the graph has an entry
         plan.append(("plain", Phase("hop", name)))
@@ -1418,13 +1538,24 @@ def build_runbook_steps(
     # jump over the else arm (a then-arm ending in a loop skips from its
     # iter_end node; an empty then-arm makes the condition itself skip)
     skip_map: dict[int, int] = {}
-    for then_last_raw, target_raw in pending_skips:
+    for skip_cond, then_last_raw, target_raw in pending_skips:
         pos = loop_end_pos.get(then_last_raw)
         if pos is None:
             pos = raw_to_plan.get(then_last_raw)
         if pos is None:
             continue
+        # try/except: an else-skip landing inside the handler block must
+        # retarget to after the try (the handler is the FAILURE path)
+        if skip_cond.try_else is not None:
+            target_raw = skip_cond.try_else
         tpos = raw_to_plan.get(target_raw)
+        skip_map[pos + 1] = tpos + 1 if tpos is not None else success_id
+    for last_body_raw, after_raw in pending_try_skips:
+        # the last body node's success edge skips the handler block
+        pos = raw_to_plan.get(last_body_raw)
+        if pos is None:
+            continue
+        tpos = raw_to_plan.get(after_raw)
         skip_map[pos + 1] = tpos + 1 if tpos is not None else success_id
 
     def edge(action_type: int, action_name: str, start: int, end: int, seq: int) -> dict:
@@ -1555,7 +1686,10 @@ def build_runbook_steps(
             # created a ticket whose summary was the input value; aat3
             # note_html "<<note_text>>" landed with the input text);
             # an UNRESOLVED token fails the step - the same behavior
-            # that made <<ticket^id>> need the trigger path (run2552).
+            # that made <<ticket^id>> need the trigger path (run2552) -
+            # and formCollection-only keys do NOT interpolate at all
+            # (errorpath_evidence.json req_interp leg failed at status1:
+            # only DOCUMENT input variables substitute).
             # The message is the raw Halo API request body with UNQUOTED
             # ``<<...>>`` tokens (the working runbooks' convention).
             # Edges: act18 Successful / Unsuccessful (sem-table pair).
@@ -1591,13 +1725,23 @@ def build_runbook_steps(
                     "message": message,
                     "actions": [
                         edge(18, "Successful", idx, next_id, 1),
-                        edge(18, "Unsuccessful", idx, fail_id or success_id, 2),
+                        edge(
+                            18,
+                            "Unsuccessful",
+                            idx,
+                            ph.except_step or fail_id or success_id,
+                            2,
+                        ),
                     ],
                 }
             )
             continue
         if ph.kind == "api":
             fail_target = fail_id if fail_id is not None else success_id
+            # try/except: Unsuccessful routes to the handler's first step
+            # when this phase sits in a try block (errorpath_evidence.json:
+            # the recovery hop ran and converged to Success)
+            fail_target = ph.except_step or fail_target
             step: dict = {
                 "step_id": idx,
                 "name": ph.label[:200],
@@ -1847,6 +1991,22 @@ def convert_workflow(
             "membership on Array variables does not execute in Halo "
             "(trial-proven both legs: membership_evidence.json) - flattened to "
             "the linear success path; review in the flow editor"
+        )
+    if classify_report.get("try_mapped"):
+        tm = classify_report["try_mapped"]
+        notes.append(
+            f"{len(tm)} try/except block(s) mapped to Halo failure-edge routing "
+            f"({'; '.join(tm)}): failable steps route Unsuccessful to the handler, "
+            "the success path skips the handler, both converge after the try "
+            "(errorpath_evidence.json: recovery leg status2 exec2, success leg "
+            "status2 exec3)"
+        )
+    if classify_report.get("try_notes"):
+        notes.append(f"try handler caveat: {'; '.join(classify_report['try_notes'])}")
+    if classify_report.get("try_unsupported"):
+        notes.append(
+            f"{len(classify_report['try_unsupported'])} try/except form(s) NOT mapped: "
+            f"{'; '.join(classify_report['try_unsupported'])}"
         )
     for p in phases:
         if p.kind == "halo_note" and p.halo_note:

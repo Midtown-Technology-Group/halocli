@@ -1351,6 +1351,177 @@ async def flag_default(flag: bool = True, other: bool = False) -> dict:
     assert values == {"flag": "1", "other": "0"}
 
 
+TRY_SOURCE = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Try")
+async def guarded(client) -> dict:
+    try:
+        await risky(client)
+    except Exception:
+        await fallback(client)
+    await afterwards(client)
+    return {}
+"""
+
+
+def test_try_except_routes_failure_edges_and_skips_handler() -> None:
+    conv = convert_workflow({}, TRY_SOURCE, "guarded", phase_bindings={"risky": 1})
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    risky, fallback, afterwards = steps["risky"], steps["fallback"], steps["afterwards"]
+    # success path SKIPS the handler; Unsuccessful routes INTO it
+    assert [(a["action_name"], a["end_step"]) for a in risky["actions"]] == [
+        ("Successful Response (200 - 299)", afterwards["step_id"]),
+        ("Unsuccessful Response", fallback["step_id"]),
+    ]
+    # handler converges after the try
+    assert fallback["actions"][0]["end_step"] == afterwards["step_id"]
+    assert any("try/except block(s) mapped" in n for n in conv.notes)
+
+
+def test_try_except_maps_every_failable_phase() -> None:
+    src = TRY_SOURCE.replace(
+        "        await risky(client)\n",
+        "        await risky_a(client)\n        await risky_b(client)\n",
+    )
+    conv = convert_workflow({}, src, "guarded", phase_bindings={"risky_a": 1, "risky_b": 2})
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    a, b, fallback, after = (
+        steps["risky_a"],
+        steps["risky_b"],
+        steps["fallback"],
+        steps["afterwards"],
+    )
+    # BOTH failable phases route Unsuccessful to the handler...
+    assert a["actions"][1]["end_step"] == fallback["step_id"]
+    assert b["actions"][1]["end_step"] == fallback["step_id"]
+    # ...and the LAST body phase's success edge skips the handler
+    assert b["actions"][0]["end_step"] == after["step_id"]
+    # the non-last body phase flows into the body normally
+    assert a["actions"][0]["end_step"] == b["step_id"]
+
+
+def test_halo_note_in_try_routes_to_handler() -> None:
+    conv = convert_workflow(
+        {},
+        TRY_SOURCE,
+        "guarded",
+        phase_bindings={"risky": {"kind": "halo_note", "note": "x"}},
+    )
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    note, fallback = steps["risky"], steps["fallback"]
+    assert note["auto_action"] == 8
+    # act18 Unsuccessful -> handler (not the Fail terminal)
+    assert note["actions"][1]["end_step"] == fallback["step_id"]
+    assert note["actions"][0]["end_step"] == steps["afterwards"]["step_id"]
+
+
+def test_condition_at_end_of_try_retargets_notmet_after() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Try Guard")
+async def guarded_try(client, label: str) -> dict:
+    try:
+        if label:
+            await guarded_work(client)
+    except Exception:
+        await fallback(client)
+    await afterwards(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "guarded_try")
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    cond = next(s for s in conv.payload["steps"] if s.get("step_conditions"))
+    work, fallback, after = steps["guarded_work"], steps["fallback"], steps["afterwards"]
+    # notmet would land INSIDE the handler - retargeted after the try
+    notmet = next(a for a in cond["actions"] if a["action_name"] == "Condition not met")
+    assert notmet["end_step"] == after["step_id"]
+    # the guarded body's success edge skips the handler too
+    assert work["actions"][0]["end_step"] == after["step_id"]
+    assert work is not fallback
+
+
+def test_try_with_finally_stays_flat_with_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Try Finally")
+async def try_fin(client) -> dict:
+    try:
+        await risky(client)
+    finally:
+        await cleanup_hop(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "try_fin", phase_bindings={"risky": 1})
+    assert conv.ok
+    names = [s["name"] for s in conv.payload["steps"]]
+    assert "risky" in names and "cleanup_hop" in names  # flattened honestly
+    assert any("else/finally or multiple handlers" in n for n in conv.notes)
+    # no failure-edge routing: Unsuccessful still targets Fail
+    risky = next(s for s in conv.payload["steps"] if s["name"] == "risky")
+    fail = next(s for s in conv.payload["steps"] if s.get("auto_action") == 1)
+    assert risky["actions"][1]["end_step"] == fail["step_id"]
+
+
+def test_multi_handler_try_stays_flat_with_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Multi Handler")
+async def multi(client) -> dict:
+    try:
+        await risky(client)
+    except ValueError:
+        await handler_a(client)
+    except Exception:
+        await handler_b(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "multi", phase_bindings={"risky": 1})
+    assert conv.ok
+    assert any("else/finally or multiple handlers" in n for n in conv.notes)
+
+
+def test_typed_handler_maps_with_caveat_note() -> None:
+    src = TRY_SOURCE.replace("except Exception:", "except ValueError:")
+    conv = convert_workflow({}, src, "guarded", phase_bindings={"risky": 1})
+    assert conv.ok
+    steps = {s["name"]: s for s in conv.payload["steps"]}
+    # still routes (edges carry no exception type) + the caveat is named
+    assert steps["risky"]["actions"][1]["end_step"] == steps["fallback"]["step_id"]
+    assert any("routes ALL" in n and "ValueError" in n for n in conv.notes)
+
+
+def test_nested_try_gets_unsupported_note() -> None:
+    src = """
+from bifrost import workflow
+
+
+@workflow(name="Demo: Nested Try")
+async def nested_try(client, flag: bool) -> dict:
+    if flag:
+        try:
+            await risky(client)
+        except Exception:
+            await fallback(client)
+    await afterwards(client)
+    return {}
+"""
+    conv = convert_workflow({}, src, "nested_try", phase_bindings={"risky": 1})
+    assert conv.ok
+    assert any("nested inside control flow" in n for n in conv.notes)
+
+
 def test_build_runbook_steps_direct_calls() -> None:
     """Direct primitive construction: edge fields exactly as templates."""
     steps, sidecar, chains = build_runbook_steps(
