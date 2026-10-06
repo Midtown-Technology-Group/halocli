@@ -1,0 +1,19 @@
+{
+  "tenant": "clidev.trial.usehalo.com",
+  "action": "build",
+  "integration": {
+    "id": 43,
+    "name": "Huntress",
+    "notes": []
+  },
+  "methods": {
+    "created": 102,
+    "failed": 0,
+    "failures": []
+  },
+  "verify": {
+    "integration_id": 43,
+    "methods_on_readback": 102,
+    "expected": 102
+  }
+}

@@ -48,6 +48,7 @@ scripts/*
 !scripts/runbook_membership_probe.py
 !scripts/criteria_labels_probe.py
 !scripts/probe_harness.py
+!scripts/build_huntress_integration.py
 !scripts/runbook_intbool_probe.py
 !scripts/runbook_ticket_crud_probe.py
 !scripts/runbook_interpolation_probe.py
