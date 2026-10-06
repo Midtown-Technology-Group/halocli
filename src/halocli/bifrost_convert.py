@@ -142,15 +142,21 @@ scripts/runbook_chain_matrix.py + runbook_chain_s6b.py, 2026-10-06):
   eventno3 binding + one API-created ticket -> runlog 2532 status2.
   Webhook-create ``events[]`` is a read-joined view (dropped on POST);
   Notification rows are the writable side.
-- halo_note binding (``{"kind": "halo_note", outcome, who, note}``) ->
-  Halo API Action step: auto_action8 (label "Halo API Action") +
-  auto_action_type3 (SPA message-template catalog:1 create ticket,
-  2 update, 3 add note, 4-8 client/site/user CRUD), message = raw Halo
-  API body with UNQUOTED ``<<ticket^id>>``, edges act18 Successful /
-  Unsuccessful. REQUIRES TICKET CONTEXT: trigger path proven (runlog
-  2552 status2 + note read back as an Action row with our marker);
-  ticket-less formCollection fires stop at the note step ("Failed
-  result reached") - correct behavior, not a defect. Unbound
+- Halo API Action bindings, all proven on PLAIN formCollection fires
+  (ticket_crud_evidence.json, four legs, probe tickets + runbooks
+  deleted clean): auto_action8 (label "Halo API Action") +
+  auto_action_type from the SPA message-template catalog -1 create
+  ticket (aat1: body applied, created ticket discovered by id-diff),
+ 2 update (aat2: literal id, summary read back changed; a bad id
+  routes act18 "Unsuccessful" off the Success path - status1 "Failed
+  result reached. Last step=3"),3 add note (aat3). Bindings:
+  ``{"kind": "halo_note", outcome, who, note}`` (aat3; ``<<ticket^id>>
+  `` interpolation needs EVENT/TRIGGER context - trigger path proven
+  runlog2552, while a LITERAL id lands without any context), or
+  ``{"kind": "halo_ticket_create" | "halo_ticket_update", "body":
+  {...}}`` (aat1/aat2; body = raw Halo API request, ``"<<...>>"``
+  tokens unquoted for interpolation). Edges act18 Successful /
+  Unsuccessful. Unbound
   halopsa-write effects get a conversion_report suggestion, never a
   guessed write.
 
@@ -288,6 +294,18 @@ _BIFROST_FLOW_TO_GRANT: dict[str, int] = {
 _BASE_URL_KEYS = ("base_url", "base_uri", "endpoint", "api_url", "api_base_url")
 _URL_RE = re.compile(r"https?://[^\s`\"')\],;]+")
 _GUID_RE = re.compile(r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}")
+_UNQUOTE_VAR = re.compile(r'"(<<[^"]+>>)"')
+
+
+def _unquote_vars(message: str) -> str:
+    """Unquote ``"<<...>>"`` tokens in a serialized API body.
+
+    Halo interpolates runbook variables in aa8 message bodies ONLY
+    when the token is bare (the working runbooks' convention; the
+    converter used to hardcode this for ``<<ticket^id>>``).
+    """
+    return _UNQUOTE_VAR.sub(r"\1", message)
+
 
 # Python annotation -> Halo data_type (name based; best-effort)
 _ANNOTATION_TO_DATA_TYPE: dict[str, int] = {
@@ -1491,32 +1509,47 @@ def build_runbook_steps(
             )
             continue
         if ph.kind == "halo_note":
-            # Halo API Action (aa8) + auto_action_type3 = add note; the
-            # message is a raw Halo API request body (SPA template for
-            # aat3), with <<ticket^id>> interpolated UNQUOTED like the
-            # working runbooks' payloads. Edges: act18 Successful /
-            # Unsuccessful (sem-table pair for aa8).
+            # Halo API Action (aa8): auto_action_type selects the
+            # message-template variant -1 create ticket,2 update,
+            # 3 add note (SPA catalog), all three proven on PLAIN
+            # formCollection fires with literal ids (ticket_crud_evidence
+            # json: create ticket2945 with summary applied, update read
+            # back, note landed as an Action row; the old "requires
+            # ticket context" was really "requires RESOLVED
+            # interpolation" - <<vars>> still need context). The
+            # message is the raw Halo API request body with UNQUOTED
+            # ``<<...>>`` tokens (the working runbooks' convention).
+            # Edges: act18 Successful / Unsuccessful (sem-table pair).
             spec = ph.halo_note or {}
-            note_body = json.dumps(
-                {
-                    "ticket_id": "<<ticket^id>>",
-                    "outcome": spec.get("outcome") or "Internal Note",
-                    "who": spec.get("who") or "Automation",
-                    "hiddenfromuser": True,
-                    "note_html": spec.get("note") or "Converted from Bifrost workflow by halocli",
-                },
-                indent=2,
-            ).replace('"<<ticket^id>>"', "<<ticket^id>>")
+            write_kind = spec.get("kind")
+            if write_kind in ("halo_ticket_create", "halo_ticket_update"):
+                aat = 1 if write_kind == "halo_ticket_create" else 2
+                message = _unquote_vars(json.dumps(spec.get("body") or {}, indent=2))
+            else:
+                aat = 3
+                message = _unquote_vars(
+                    json.dumps(
+                        {
+                            "ticket_id": "<<ticket^id>>",
+                            "outcome": spec.get("outcome") or "Internal Note",
+                            "who": spec.get("who") or "Automation",
+                            "hiddenfromuser": True,
+                            "note_html": spec.get("note")
+                            or "Converted from Bifrost workflow by halocli",
+                        },
+                        indent=2,
+                    )
+                )
             steps.append(
                 {
                     "step_id": idx,
                     "name": ph.label[:200],
                     "steptype": 2,
                     "auto_action": 8,
-                    "auto_action_type": 3,
+                    "auto_action_type": aat,
                     "isstart": idx == 1,
                     "allow_all_statuses": True,
-                    "message": note_body,
+                    "message": message,
                     "actions": [
                         edge(18, "Successful", idx, next_id, 1),
                         edge(18, "Unsuccessful", idx, fail_id or success_id, 2),
@@ -1776,6 +1809,17 @@ def convert_workflow(
             "(trial-proven both legs: membership_evidence.json) - flattened to "
             "the linear success path; review in the flow editor"
         )
+    for p in phases:
+        if p.kind == "halo_note" and p.halo_note:
+            if p.halo_note.get("kind") in (
+                "halo_ticket_create",
+                "halo_ticket_update",
+            ) and not p.halo_note.get("body"):
+                notes.append(
+                    f"binding {p.halo_note.get('kind')!r} on phase {p.label!r} has no "
+                    "body - the aa8 step would send {} (give the binding a "
+                    '"body": {...} request payload)'
+                )
     if classify_report.get("sync_helpers"):
         notes.append(
             f"sync-only helper(s) kept as hops: {sorted(classify_report['sync_helpers'])} "
@@ -1828,7 +1872,10 @@ def convert_workflow(
                 "this workflow writes to Halo but no phase is bound to a halo_note "
                 'action - bind one via --phase-bindings {"<phase>": {"kind": '
                 '"halo_note", "outcome": "...", "note": "..."}} to emit a '
-                "Halo API Action (aa8/aat3 add-note) step in ticket context"
+                "Halo API Action (aa8/aat3 add-note) step (<<vars>> need event/"
+                'trigger context), or {"kind": "halo_ticket_create" | '
+                '"halo_ticket_update", "body": {...}} for aat1/aat2 ticket writes '
+                "(proven on plain fires - ticket_crud_evidence.json)"
             )
     if meta.get("enforced_bounds"):
         notes.append(

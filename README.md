@@ -803,6 +803,7 @@ method-call routing in `runbook_api_route_probe.py`)**:
 |---|---|---|
 | `await asyncio.sleep(N)` / sequencing | `steptype2, aa21` (sleep, duration N) | act32 "Sleep Finished" |
 | bound API call (`bind_phase`) | `steptype2, aa6, aat:<method id>` | act17 "Successful Response (200 - 299)" → next, "Unsuccessful Response" → Fail |
+| bound ticket write (`halo_note` / `halo_ticket_create` / `halo_ticket_update`) | `steptype2, aa8, aat3/1/2` (message-template catalog; message = raw body, `"<<...>>"` unquoted) | act18 "Successful" → next, "Unsuccessful" → Fail — **both directions proven** (`ticket_crud_evidence.json`) |
 | `for x in p:` + await | `aa12`/`aa13` pair, array source in `message:"<<p>>"` | act22 "Has elements/Has no elements", act23 "finished/Next iteration" (`end_step:-98` loop-back) |
 | `if <array-param>:` (else-less guard) | `steptype1, aa6` + has-elements criteria (`tablename:runbookvariable`, `fieldname:"<<p>>"`, `type:5`) | act12 "Condition met" → guarded body, "Condition not met" → first step after the guard |
 | return / fall-through | `steptype3` terminals: Success (no aa) / Fail (aa1) | — |
@@ -904,17 +905,29 @@ its message templates: `1` create ticket, `2` update ticket,
 ```json
 {"post_note": {"kind": "halo_note", "outcome": "Internal Note",
                "who": "Automation", "note": "<b>Converted by halocli</b> ..."}}
+{"escalate": {"kind": "halo_ticket_create",
+              "body": {"summary": "Escalated", "reportedby": "<<request^reporter>>"}}}
+{"retitle":  {"kind": "halo_ticket_update",
+              "body": {"id": 42, "summary": "Retitled by the runbook"}}}
 ```
 
-The step's message is a raw Halo API body with `<<ticket^id>>`
+The step's message is a raw Halo API body with `"<<...>>"` tokens
 interpolated unquoted (template style), edges act18
-Successful/Unsuccessful. **Ticket context is required**: fired from the
-trigger path the note lands — evidence: runlog **2552 status 2** plus
-`note_readback.note_found_in_actions: true` (row: outcome "Internal
-Note", who "Automation", our marker text) — while a bare formCollection
-fire correctly fails at the note step (no ticket). A workflow with
+Successful/Unsuccessful. **All three variants are proven on plain
+formCollection fires** (`ticket_crud_evidence.json`, four legs, probe
+tickets + runbooks deleted clean): **aat1** created ticket2945 with
+the body's summary applied exactly (discovered by pre/post id-diff),
+**aat2** changed the target ticket's summary (read back; a bad id
+took the *Unsuccessful* edge → Fail terminal, status1 *"Failed result
+reached. Last step=3"* — the edge pair proven in both directions),
+and **aat3 with a literal ticket id** landed as an Action row
+(`GET /Actions` marker hit). The earlier "ticket context required"
+was really "**resolved interpolation** required": `<<ticket^id>>`
+still needs the trigger path (runlog **2552 status 2** +
+`note_readback.note_found_in_actions: true`). A workflow with
 `effects: integration.write halopsa` and no binding gets a
-`conversion_report.json` suggestion instead of a guessed write.
+`conversion_report.json` suggestion — which names all three kinds —
+instead of a guessed write.
 
 **Trigger filters (`--trigger-filter`, the subscriber-filter port)** —
 `--triggers "New Ticket Logged" --trigger-filter
