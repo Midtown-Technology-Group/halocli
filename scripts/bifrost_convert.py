@@ -71,6 +71,35 @@ def _safe_path(p: str | Path) -> Path:
     return Path(p).expanduser().resolve()
 
 
+def _parse_guard(expr: str) -> dict:
+    """'reportedby!=noreply@x.com' / 'count>=5' -> {field, op, value, value_type}."""
+    for token, op in (
+        ("!=", "ne"),
+        ("==", "eq"),
+        (">=", "ge"),
+        ("<=", "le"),
+        (">", "gt"),
+        ("<", "lt"),
+        ("=", "eq"),
+    ):
+        if token in expr:
+            field, _, value = expr.partition(token)
+            field = field.strip()
+            value = value.strip()
+            if not field or not value:
+                break
+            is_int = value.lstrip("-").isdigit()
+            return {
+                "field": field,
+                "op": op,
+                "value": int(value) if is_int else value,
+                "value_type": "int" if is_int else "string",
+            }
+    raise SystemExit(
+        f"--ticket-guard {expr!r}: expected FIELD<op>VALUE with op in != == >= <= > < ="
+    )
+
+
 def _load_structured(path: Path) -> Any:
     path = _safe_path(path)
     text = path.read_text(encoding="utf-8")
@@ -198,8 +227,14 @@ def build_outputs(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
         }
         auto.update(phase_bindings)
         triggers = [t.strip() for t in (args.triggers or "").split(",") if t.strip()]
+        ticket_guards = [_parse_guard(g) for g in (args.ticket_guard or [])]
         conv: Conversion = convert_workflow(
-            row, source, function, phase_bindings=auto or None, triggers=triggers or None
+            row,
+            source,
+            function,
+            phase_bindings=auto or None,
+            triggers=triggers or None,
+            ticket_guards=ticket_guards or None,
         )
         name = str(row.get("name") or (function or "workflow"))
         if conv.ok:
@@ -909,6 +944,15 @@ def main() -> int:
         help="comma-separated Halo event names to bind as runbook triggers "
         '(e.g. "New Ticket Logged,Closed") - resolved against lookup64 and '
         "written as POST /Notification bindings at apply",
+    )
+    parser.add_argument(
+        "--ticket-guard",
+        action="append",
+        default=[],
+        metavar="FIELD<OP>VALUE",
+        help="prepend a ticket-field guard (criteria on the faults table, "
+        'N-Central shape), e.g. --ticket-guard "reportedby!=noreply@vendor.com" '
+        "- notmet exits to Success (Bifrost payload-filter semantics); repeatable",
     )
     parser.add_argument("--out", default="./halo_out", help="output directory")
     parser.add_argument("--apply", action="store_true", help="round-trip payloads on a tenant")
