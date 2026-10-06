@@ -804,6 +804,7 @@ method-call routing in `runbook_api_route_probe.py`)**:
 | `await asyncio.sleep(N)` / sequencing | `steptype2, aa21` (sleep, duration N) | act32 "Sleep Finished" |
 | bound API call (`bind_phase`) | `steptype2, aa6, aat:<method id>` | act17 "Successful Response (200 - 299)" → next, "Unsuccessful Response" → Fail |
 | bound ticket write (`halo_note` / `halo_ticket_create` / `halo_ticket_update`) | `steptype2, aa8, aat3/1/2` (message-template catalog; message = raw body, `"<<...>>"` unquoted) | act18 "Successful" → next, "Unsuccessful" → Fail — **both directions proven** (`ticket_crud_evidence.json`) |
+| `try:` / `except:` | failure-edge routing: failable body phases' act17/act18 **Unsuccessful → handler's first step**, last body phase's success edge **skips the handler** | both paths converge after the try (`errorpath_evidence.json`) |
 | `for x in p:` + await | `aa12`/`aa13` pair, array source in `message:"<<p>>"` | act22 "Has elements/Has no elements", act23 "finished/Next iteration" (`end_step:-98` loop-back) |
 | `if <array-param>:` (else-less guard) | `steptype1, aa6` + has-elements criteria (`tablename:runbookvariable`, `fieldname:"<<p>>"`, `type:5`) | act12 "Condition met" → guarded body, "Condition not met" → first step after the guard |
 | return / fall-through | `steptype3` terminals: Success (no aa) / Fail (aa1) | — |
@@ -929,11 +930,30 @@ with `"summary": "<<subject>>"` created a ticket whose summary *was*
 the fired input value, aat3's `note_html` carried the fired note text
 the same way — while an **unresolved token fails the step** (the same
 behavior that makes `<<ticket^id>>` need the trigger path, runlog
-**2552 status 2** + `note_readback.note_found_in_actions: true`). A
+**2552 status 2** + `note_readback.note_found_in_actions: true`), and
+**formCollection-only keys do NOT interpolate at all**
+(`errorpath_evidence.json` `req_interp` leg: status1 — only document
+input variables substitute). A
 workflow with
 `effects: integration.write halopsa` and no binding gets a
 `conversion_report.json` suggestion — which names all three kinds —
 instead of a guessed write.
+
+**try/except maps to failure-edge routing** (`errorpath_evidence.json`,
+four legs, runbooks + ticket deleted clean): failable steps in the
+`try` body route their **Unsuccessful edge to the handler's first
+step** (recovery leg: **status 2, exec 2** — the recovery hop ran and
+converged), the success path runs the normal hops and **skips the
+handler** (success leg: **status 2, exec 3**), and the edge2→Fail
+control leg contrasted at **status 1**. Every failable body phase
+(api/aa8) gets the handler edge; the last body phase's success edge
+skips the handler; a condition whose notmet/else would land *inside*
+the handler retargets after the try; both paths converge. Typed
+handlers map with a caveat note (failure edges carry no exception
+type). **Flattened with notes**: `try/finally`, `try/else`,
+multiple handlers, and nested trys. Probe lesson recorded: sequencing
+hops must carry `auto_action: 21` — a bare `steptype: 2` hop gets
+*"Next step not found"*.
 
 **Trigger filters (`--trigger-filter`, the subscriber-filter port)** —
 `--triggers "New Ticket Logged" --trigger-filter
@@ -1098,7 +1118,9 @@ eq1, both legs), but
 comparisons **against other variables** (proven non-substitutable —
 value-side `<<var>>` compares literally, see above), **element
 membership on Array params** (proven non-executing), **int constants
-on bool params** (unpinned), and guards
+on bool params** (unpinned), **try/finally, try/else, multi-handler
+and nested trys** (failure edges carry no exception type or
+finally — flattened with notes), and guards
 on untyped params still flatten to the linear success path (noted per
 conversion);
 `effects`/`enforced_bounds`/secrets become
