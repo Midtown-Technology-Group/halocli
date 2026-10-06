@@ -20,24 +20,11 @@ verified gone. Evidence lands in var_compare_evidence.json.
 from __future__ import annotations
 
 import asyncio
-import importlib.util
 import json
-import sys
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
 
-REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "src"))
-
-from halocli.bifrost_convert import convert_workflow  # noqa: E402
-from halocli.client import HaloClient  # noqa: E402
-from halocli.config import load_profile  # noqa: E402
-
-_spec = importlib.util.spec_from_file_location("bc_cli", REPO / "scripts" / "bifrost_convert.py")
-assert _spec is not None and _spec.loader is not None
-bc = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(bc)
+from probe_harness import HaloClient, REPO, bc, cleanup_runbooks, convert_workflow, load_profile
 
 SOURCE = """
 from bifrost import workflow
@@ -137,14 +124,7 @@ async def main() -> int:
                         f"{leg:8s} exec={step} runlog={rl if not isinstance(rl, dict) else rl.get('id')}"
                     )
             finally:
-                for wid in created:
-                    try:
-                        await client.request("DELETE", f"/Webhook/{wid}", timeout=30)
-                    except Exception as exc:  # noqa: BLE001
-                        ev.setdefault("cleanup_errors", []).append(f"{wid}: {str(exc)[:150]}")
-                ev["cleanup"] = [
-                    await bc._gone(client, "DELETE check", f"/Webhook/{w}") for w in created
-                ]
+                await cleanup_runbooks(client, created, ev)
     finally:
         ev["verdict"] = verdict(ev)
         out = REPO / "var_compare_evidence.json"

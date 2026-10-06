@@ -47,6 +47,7 @@ scripts/*
 !scripts/runbook_varcompare_probe.py
 !scripts/runbook_membership_probe.py
 !scripts/criteria_labels_probe.py
+!scripts/probe_harness.py
 halo_out/
 !scripts/workflow_shape_probe.py
 !scripts/workflow_create_probe.py

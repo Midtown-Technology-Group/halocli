@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import sys
 import webbrowser
 from pathlib import Path
 from typing import Any
+
+# probe scripts import probe_harness directly (scripts/ must be findable
+# when a test loads a probe via importlib)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import pytest
 
