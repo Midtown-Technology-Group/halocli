@@ -165,7 +165,8 @@ async def test_todo_create_on_sample_ticket_leaves_labeled_orphan() -> None:
     from halocli.utils import parse_page_result
 
     todos = get_resource("to-dos")
-    assert todos.supports_create and not todos.supports_delete
+    assert todos.supports_create
+    assert not todos.supports_delete
     async with await _client() as client:
         body = await client.list_resource(
             "tickets", pageinate=True, page_no=1, page_size=1, count="1"

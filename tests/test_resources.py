@@ -880,7 +880,8 @@ def test_sweep_promoted_columns_come_from_sweep_evidence() -> None:
     for name in SWEEP_PROMOTED:
         resource = get_resource(name)
         evidence = sweep[f"GET {resource.endpoint}"]
-        assert evidence["status"] == 200 and evidence["rows"], name
+        assert evidence["status"] == 200, name
+        assert evidence["rows"], name
 
         observed = set(evidence.get("row_keys") or [])
         declared = set(resource.table_fields)
@@ -899,7 +900,10 @@ def test_sweep_promoted_columns_come_from_sweep_evidence() -> None:
         if resource.supports_get:
             # 500 counts as route-alive (the route exists; the probe token
             # crashed the handler) - cf. Holiday in the batch-2 comments.
-            assert id_evidence and id_evidence["status"] in (400, 404, 500), (
+            assert id_evidence, (
+                f"{name}: id-route evidence {id_evidence} does not support supports_get=True"
+            )
+            assert id_evidence["status"] in (400, 404, 500), (
                 f"{name}: id-route evidence {id_evidence} does not support supports_get=True"
             )
             assert f"{resource.endpoint}/{{id}}" in spec["paths"], name
@@ -1105,7 +1109,8 @@ def test_post_only_tier_offers_no_delete_command() -> None:
     assert len(WRITE_POST_ONLY) == 3
     for name in WRITE_POST_ONLY:
         resource = get_resource(name)
-        assert resource.supports_create and resource.supports_update, name
+        assert resource.supports_create, name
+        assert resource.supports_update, name
         assert not resource.supports_delete, name
         assert "post" in spec["paths"][resource.endpoint], name
         assert "delete" not in spec["paths"].get(f"{resource.endpoint}/{{id}}", {}), name
@@ -1144,7 +1149,8 @@ def test_tackle25_writes_bind_to_spec_post_schemas() -> None:
     assert len(TACKLE25_CUD) == 4
     for name in TACKLE25_CUD:
         resource = get_resource(name)
-        assert resource.supports_create and resource.supports_update, name
+        assert resource.supports_create, name
+        assert resource.supports_update, name
         assert resource.supports_delete, name
         assert "post" in spec["paths"][resource.endpoint], name
         assert "delete" in spec["paths"][f"{resource.endpoint}/{{id}}"], name

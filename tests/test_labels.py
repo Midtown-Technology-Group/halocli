@@ -225,11 +225,13 @@ def test_table_columns_prefer_hydrated_labels() -> None:
         }
     ]
     cols = _columns(rows, table_fields=("id", "subject", "agent_id", "start_date"))
-    assert "agent_name" in cols and "agent_id" not in cols
+    assert "agent_name" in cols
+    assert "agent_id" not in cols
     # without the hydrated label the raw id column stands
     rows2 = [{"id": 1, "agent_id": 3, "start_date": "2026-10-03"}]
     cols2 = _columns(rows2, table_fields=("id", "agent_id", "start_date"))
-    assert "agent_id" in cols2 and "agent_name" not in cols2
+    assert "agent_id" in cols2
+    assert "agent_name" not in cols2
 
 
 # ------------------------------------------------------------------ CLI wiring

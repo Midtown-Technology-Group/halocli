@@ -146,9 +146,12 @@ def test_edge_names_stable_across_templates() -> None:
     table = derive_edge_table(load_templates())
     assert table[(17, 1)] == "Successful Response (200 - 299)"
     assert table[(17, 2)] == "Unsuccessful Response"
-    assert table[(12, 1)] == "Condition met" and table[(12, 2)] == "Condition not met"
-    assert table[(22, 2)] == "Has no elements" and table[(23, 1)] == "Iteration finished"
-    assert table[(18, 1)] == "Successful" and table[(29, 1)] == "Successful"
+    assert table[12, 1] == "Condition met"
+    assert table[12, 2] == "Condition not met"
+    assert table[22, 2] == "Has no elements"
+    assert table[23, 1] == "Iteration finished"
+    assert table[18, 1] == "Successful"
+    assert table[29, 1] == "Successful"
     assert table[(32, 1)] == "Sleep Finished"
 
 

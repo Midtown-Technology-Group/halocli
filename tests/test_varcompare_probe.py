@@ -21,7 +21,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "varcmp_probe", REPO / "scripts" / "runbook_varcompare_probe.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 probe = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(probe)
 
@@ -92,14 +93,17 @@ def test_probe_leg_loop_verdict_and_cleanup(
     assert sum(1 for m, _ in calls if m == "POST") == 3  # one create per leg
     assert sum(1 for m, _ in calls if m == "DELETE") == 3  # self-cleaning
     out = capsys.readouterr().out
-    assert "verdict:" in out and "cleanup:" in out
+    assert "verdict:" in out
+    assert "cleanup:" in out
 
 
 def test_build_leg_mutates_criterion_and_inputs() -> None:
     doc, crit = probe.build_leg("<<b>>", "x-leg", "x", "y")
     assert doc["name"].endswith("x-leg")
-    assert doc["active"] is True and doc["runbook_start_type"] == 1
-    assert "_chains" not in doc and "_triggers" not in doc  # sidecars stripped
+    assert doc["active"] is True
+    assert doc["runbook_start_type"] == 1
+    assert "_chains" not in doc
+    assert "_triggers" not in doc  # sidecars stripped
     cond = next(s for s in doc["steps"] if s.get("step_conditions"))
     assert cond["step_conditions"][0]["value_string"] == "<<b>>"
     assert crit[0]["value_string"] == "<<b>>"
@@ -115,8 +119,7 @@ def _ev(control: int, met: int, notmet: int) -> dict[str, Any]:
 
 def test_verdict_classifier() -> None:
     assert "DOES NOT RESOLVE" in probe.verdict(_ev(3, 1, 1))
-    assert "RESOLVES" in probe.verdict(_ev(3, 3, 1)) and "DOES NOT" not in probe.verdict(
-        _ev(3, 3, 1)
-    )
+    assert "RESOLVES" in probe.verdict(_ev(3, 3, 1))
+    assert "DOES NOT" not in probe.verdict(_ev(3, 3, 1))
     assert "BROKEN PROBE" in probe.verdict(_ev(1, 1, 1))
     assert "UNEXPECTED" in probe.verdict(_ev(3, 2, 2))

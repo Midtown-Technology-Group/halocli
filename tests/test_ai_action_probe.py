@@ -19,7 +19,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "ai_action_probe", REPO / "scripts" / "runbook_ai_action_probe.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 probe = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(probe)
 
@@ -107,7 +108,8 @@ def test_probe_leg_loop_and_ship_verdict(
     assert set(ev["legs"]) == {"sql_query", "ai_eval", "ai_agent"}
     # persistence: what the fake kept is what we posted (aa + edges + aat/ability)
     sql = ev["legs"]["sql_query"]["persisted"]
-    assert sql["auto_action"] == 18 and sql["edge_types"] == [29, 29]
+    assert sql["auto_action"] == 18
+    assert sql["edge_types"] == [29, 29]
     assert ev["legs"]["ai_eval"]["persisted"]["auto_action_type"] == 44
     assert ev["legs"]["ai_eval"]["persisted"]["ai_ability_id"] == probe.AI_EVAL_ABILITY
     assert ev["legs"]["ai_agent"]["persisted"]["edge_types"] == [37, 37]
@@ -125,4 +127,6 @@ def test_probe_leg_loop_and_ship_verdict(
 def test_verdict_degrades_honestly() -> None:
     empty: dict[str, Any] = {"legs": {}}
     v = probe.verdict(empty)
-    assert "aa18 NOT run" in v and "aa25 not run" in v and "aa26 not run" in v
+    assert "aa18 NOT run" in v
+    assert "aa25 not run" in v
+    assert "aa26 not run" in v

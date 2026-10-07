@@ -14,7 +14,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "build_huntress", REPO / "scripts" / "build_huntress_integration.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 bh = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(bh)
 
@@ -113,7 +114,8 @@ def test_main_builds_full_catalog(
     assert sum(1 for m, p in calls if m == "POST" and p == "/CustomIntegration") == 1
     assert sum(1 for m, p in calls if m == "POST" and p == "/CustomIntegrationMethod") == 102
     out = capsys.readouterr().out
-    assert "built integration 43" in out and "102/102 read back" in out
+    assert "built integration 43" in out
+    assert "102/102 read back" in out
 
 
 def test_main_cleanup_deletes_and_verifies(

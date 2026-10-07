@@ -164,7 +164,8 @@ def test_multi_profile_default_fails_listing_names(monkeypatch, tmp_path: Path) 
     with pytest.raises(ValueError) as exc:
         load_profile(config_file=config_file)
     message = str(exc.value)
-    assert "thomas" in message and "work" in message  # names the options
+    assert "thomas" in message
+    assert "work" in message  # names the options
     assert "--profile" in message
 
 

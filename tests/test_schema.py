@@ -96,7 +96,8 @@ def test_lookup_templated_item_path() -> None:
     # /Tickets (collection) and /Tickets/{id} (item) resolve to different operations
     collection = schema.lookup_operation("GET", "/Tickets")
     item = schema.lookup_operation("GET", "/Tickets/123")
-    assert collection is not None and item is not None
+    assert collection is not None
+    assert item is not None
     assert collection is not item
     # literal template beats the parameterized one
     literal = schema._match_path(spec, "/Tickets/zapier")
@@ -182,7 +183,8 @@ def test_validate_wrong_method_reports_known_methods() -> None:
     problems = schema.validate_request("PUT", "/Tickets", None)
     assert len(problems) == 1
     assert problems[0].startswith("unknown endpoint")
-    assert "GET" in problems[0] and "POST" in problems[0]
+    assert "GET" in problems[0]
+    assert "POST" in problems[0]
 
 
 # --------------------------------------------------------------------------------------------

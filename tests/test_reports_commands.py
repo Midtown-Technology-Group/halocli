@@ -156,7 +156,8 @@ def test_reports_capability_advertises_clone() -> None:
     summary = _capability_summary(resource)
     assert "clone" in summary, summary
     assert "writes only via raw" not in summary, summary
-    assert "GET" in _verbs(resource) and "POST" in _verbs(resource)
+    assert "GET" in _verbs(resource)
+    assert "POST" in _verbs(resource)
 
 
 # ------------------------------------------------------------------------ run
@@ -381,7 +382,8 @@ def test_clone_preview_is_zero_network(monkeypatch: pytest.MonkeyPatch) -> None:
     assert preview["source_id"] == "147"
     assert preview["name"] == "Copy of closed"
     # The fields that would otherwise make Halo update the source.
-    assert "id" in preview["stripped_fields"] and "guid" in preview["stripped_fields"]
+    assert "id" in preview["stripped_fields"]
+    assert "guid" in preview["stripped_fields"]
     assert calls == [], "preview must not touch the network"
 
 
@@ -399,7 +401,8 @@ def test_clone_half_confirmed_write_is_refused(monkeypatch: pytest.MonkeyPatch) 
 
     result = runner.invoke(app, ["reports", "clone", "147", "--name", "x", "--apply"])
     assert result.exit_code != 0
-    assert "--apply" in plain(result.output) and "--yes" in plain(result.output)
+    assert "--apply" in plain(result.output)
+    assert "--yes" in plain(result.output)
     assert calls == []
 
 
@@ -459,9 +462,11 @@ def test_clone_posts_an_array_and_verifies(monkeypatch: pytest.MonkeyPatch) -> N
     # and a missing content type returns 415 (both hit while building this).
     assert seen["content_type"].startswith("application/json")
     body = seen["body"]
-    assert isinstance(body, list) and len(body) == 1, "POST body must be a one-element array"
+    assert isinstance(body, list), "POST body must be a one-element array"
+    assert len(body) == 1, "POST body must be a one-element array"
     copy = body[0]
-    assert "id" not in copy and "guid" not in copy, "identity fields must be stripped"
+    assert "id" not in copy, "identity fields must be stripped"
+    assert "guid" not in copy, "identity fields must be stripped"
     assert copy["name"] == "Copy of closed"
     assert copy["sql"] == source["sql"], "SQL must be copied verbatim"
 
@@ -543,9 +548,11 @@ def test_clone_verification_failure_still_reports_the_new_id(
     assert payload["category"] == "permission"
     assert payload["status_code"] == 403
     assert payload["verification"] == "skipped"
-    assert "WAS created" in payload["hint"] and "second copy" in payload["hint"]
+    assert "WAS created" in payload["hint"]
+    assert "second copy" in payload["hint"]
     # Permission failures keep their actionable diagnostic.
-    assert "diagnostic" in payload and payload["diagnostic"]
+    assert "diagnostic" in payload
+    assert payload["diagnostic"]
 
 
 def test_clone_reports_source_mutation(monkeypatch: pytest.MonkeyPatch) -> None:

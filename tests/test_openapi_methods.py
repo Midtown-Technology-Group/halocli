@@ -11,7 +11,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "openapi_methods", REPO / "scripts" / "openapi_methods.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 om = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(om)
 
@@ -47,7 +48,9 @@ def test_rows_shape_and_counts() -> None:
     rows, stats = om.spec_to_methods(OAS3)
     assert stats["operations"] == 5
     names = [r["name"] for r in rows]
-    assert "listWidgets" in names and "createWidget" in names and "getWidget" in names
+    assert "listWidgets" in names
+    assert "createWidget" in names
+    assert "getWidget" in names
     # HEAD skipped (Halo verb enum has no HEAD)
     assert "headWidgets" not in names
     assert stats["skipped_verb"] == 1
@@ -175,14 +178,16 @@ def test_main_cli_end_to_end(tmp_path: Path, monkeypatch: Any, capsys: Any) -> N
     assert om.main() == 0
     rows = yaml.safe_load(out.read_text(encoding="utf-8"))["methods"]
     names = [r["name"] for r in rows]
-    assert "listWidgets" in names and "getWidget" not in names  # templated skipped
+    assert "listWidgets" in names
+    assert "getWidget" not in names  # templated skipped
     bound = next(r for r in rows if r["name"] == "listWidgets")
     assert bound["bind_phase"] == "fetch_widgets"
     int_doc = yaml.safe_load(integration.read_text(encoding="utf-8"))
     entry = next(iter(int_doc["integrations"].values()))
     assert entry["name"] == "Vendor Demo"
     printed = capsys.readouterr().out
-    assert "emitted" in printed and "wrote" in printed
+    assert "emitted" in printed
+    assert "wrote" in printed
     assert "auth: schemes" in printed
 
 
