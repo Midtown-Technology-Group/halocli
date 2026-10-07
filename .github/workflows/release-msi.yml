@@ -1,4 +1,5 @@
 name: Build MSI Release
+run-name: Build MSI Release ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.event.release.tag_name }}
 
 on:
   release:
@@ -125,7 +126,9 @@ jobs:
       - name: Upload MSI to release
         if: steps.release.outputs.exists == 'true'
         shell: pwsh
-        run: gh release upload "${{ steps.version.outputs.tag }}" dist/halocli.msi --clobber
+        # An overlapping build must not replace the asset already verified by
+        # the release script. A duplicate upload fails for operator review.
+        run: gh release upload "${{ steps.version.outputs.tag }}" dist/halocli.msi
         env:
           GH_TOKEN: ${{ github.token }}
 
