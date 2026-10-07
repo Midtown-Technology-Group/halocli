@@ -357,6 +357,19 @@ def verify_existing(version: str) -> None:
         raise SystemExit("rehearsal FAILED")
 
 
+def _follow_dispatched_run(workflow: str, run_id: int, deadline: float, started: float) -> str:
+    """Poll one workflow run to completion; return its conclusion."""
+    while time.time() < deadline:
+        cur = json.loads(gh(["run", "view", str(run_id), "--json", "status,conclusion"]))
+        if cur["status"] == "completed":
+            conclusion = cur["conclusion"] or "unknown"
+            log(f"workflow {workflow!r} run {run_id} finished: {conclusion}")
+            return conclusion
+        log(f"workflow {workflow!r} run {run_id}: {cur['status']} ({_elapsed(started)})")
+        time.sleep(20)
+    raise SystemExit(f"timeout waiting for run {run_id} of {workflow}")
+
+
 def wait_new_workflow_dispatch(workflow: str, *, known_ids: set[int], timeout_s: int = 900) -> str:
     """Wait for a run of `workflow` that was NOT in known_ids, then its conclusion."""
     started = time.time()
@@ -385,16 +398,8 @@ def wait_new_workflow_dispatch(workflow: str, *, known_ids: set[int], timeout_s:
                 log(f"workflow {workflow!r} run {new_id} already finished: {conclusion}")
                 return conclusion
             log(f"workflow {workflow!r} new run {new_id}: {fresh[0]['status']}")
-            while time.time() < deadline:
-                cur = json.loads(gh(["run", "view", str(new_id), "--json", "status,conclusion"]))
-                if cur["status"] == "completed":
-                    conclusion = cur["conclusion"] or "unknown"
-                    log(f"workflow {workflow!r} run {new_id} finished: {conclusion}")
-                    return conclusion
-                log(f"workflow {workflow!r} run {new_id}: {cur['status']} ({_elapsed(started)})")
-                time.sleep(20)
-        else:
-            log(f"workflow {workflow!r}: no new run yet ({_elapsed(started)})")
+            return _follow_dispatched_run(workflow, new_id, deadline, started)
+        log(f"workflow {workflow!r}: no new run yet ({_elapsed(started)})")
         time.sleep(10)
     raise SystemExit(f"timeout waiting for a NEW run of {workflow} (saw {new_id})")
 
@@ -402,6 +407,24 @@ def wait_new_workflow_dispatch(workflow: str, *, known_ids: set[int], timeout_s:
 def pre_dispatch_run_ids(workflow: str) -> set[int]:
     out = gh(["run", "list", "--workflow", workflow, "--limit", "10", "--json", "databaseId"])
     return {r["databaseId"] for r in json.loads(out)}
+
+
+def build_msi_stage(version: str) -> None:
+    """Dispatch Build MSI Release and wait for it, unless the asset exists.
+
+    A resumed run whose release already carries `halocli.msi` skips the
+    dispatch (no duplicate build); anything else waits for a successful run.
+    """
+    if release_has_msi(version):
+        log(f"release v{version} already carries halocli.msi: skipping MSI dispatch")
+        return
+    pre_ids = pre_dispatch_run_ids("Build MSI Release")
+    gh(["workflow", "run", "Build MSI Release", "-f", f"version={version}"])
+    log("Build MSI Release dispatched")
+    conclusion = wait_new_workflow_dispatch("Build MSI Release", known_ids=pre_ids)
+    if conclusion != "success":
+        raise SystemExit(f"MSI workflow concluded {conclusion}")
+    log("MSI workflow: success")
 
 
 def _git_ok(cmd: list[str], *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -571,16 +594,7 @@ def main() -> int:
         raise SystemExit(f"Release workflow concluded {conclusion}")
     log("Release workflow: success")
 
-    if release_has_msi(version):
-        log(f"release v{version} already carries halocli.msi: skipping MSI dispatch")
-    else:
-        pre_ids = pre_dispatch_run_ids("Build MSI Release")
-        gh(["workflow", "run", "Build MSI Release", "-f", f"version={version}"])
-        log("Build MSI Release dispatched")
-        conclusion = wait_new_workflow_dispatch("Build MSI Release", known_ids=pre_ids)
-        if conclusion != "success":
-            raise SystemExit(f"MSI workflow concluded {conclusion}")
-        log("MSI workflow: success")
+    build_msi_stage(version)
 
     digest, code = verify_release_assets(version)
 

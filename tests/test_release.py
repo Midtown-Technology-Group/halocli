@@ -24,7 +24,8 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location("release_harness", REPO / "scripts" / "release.py")
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 rel = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rel)
 
@@ -49,7 +50,7 @@ class FakeClock:
         self.now += self.step
 
 
-@pytest.fixture()
+@pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
     fake = FakeClock()
     monkeypatch.setattr(rel, "time", fake)
@@ -116,6 +117,18 @@ def test_wait_new_dispatch_narrates_and_returns_conclusion(
     lines = _lines(capsys)
     assert all(STAMP.match(line) for line in lines), lines
     assert any("run 9" in line for line in lines)
+
+
+def test_follow_dispatched_run_timeout_aborts(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        rel,
+        "gh",
+        lambda args, *, cwd=None: json.dumps({"status": "in_progress", "conclusion": None}),
+    )
+    with pytest.raises(SystemExit, match="timeout waiting for run 9"):
+        rel._follow_dispatched_run("Build MSI Release", 9, clock.time() + 30, clock.time())
 
 
 def test_find_winget_pr_skips_unrelated_titles(
@@ -311,7 +324,8 @@ def test_resumed_run_skips_duplicate_msi_dispatch(
         "sys.argv", ["release.py", "1.16.0", "--yes", "--skip-tests", "--skip-pipx"]
     )
     assert rel.main() == 0
-    assert "dispatch" not in calls and "msi-wait" not in calls
+    assert "dispatch" not in calls
+    assert "msi-wait" not in calls
     assert calls == ["tag", "push", "wait", "dance", "checks", "feed"]
 
 
@@ -338,4 +352,6 @@ def test_manifest_mismatch_aborts_before_any_push(monkeypatch: pytest.MonkeyPatc
     )
     with pytest.raises(SystemExit, match="MANIFEST MISMATCH"):
         rel.main()
-    assert "dance" not in calls and "checks" not in calls and "feed" not in calls
+    assert "dance" not in calls
+    assert "checks" not in calls
+    assert "feed" not in calls
