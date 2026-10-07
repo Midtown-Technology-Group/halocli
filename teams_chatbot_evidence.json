@@ -1,0 +1,97 @@
+{
+  "tool": "teams_chatbot_config",
+  "guide": "https://www.usehalo.com/guides/1080",
+  "profile": "dev",
+  "tenant": "clidev.trial.usehalo.com",
+  "mode": "read",
+  "ts": "2026-10-07T16:42:43+00:00",
+  "read": {
+    "teams_tab": {
+      "appname": "Halo PSA",
+      "teamsbot_ticket_type": 0,
+      "teamsbot_default_subject": "Microsoft Teams Message: Sent by ${From} on ${Sent}",
+      "teamsbot_outcome_id": 0,
+      "ticket_icon": "https://halopsa.com/wp-content/uploads/2021/09/PSA-ticket-Coin.png"
+    },
+    "chatbot": {
+      "teams_chat_profile": "a34f0eb2-5f48-44af-87f7-5ba3307339a9",
+      "teams_chat_welcome_message": null,
+      "teams_chat_help_message": null,
+      "_context": {
+        "teams_authorized": null,
+        "show_chat_module": true,
+        "teams_chat_management": false,
+        "allow_live_chat_teams": false,
+        "enableteamsmsg": true,
+        "enableteamscall": true,
+        "teamsbot_disabled": true
+      }
+    },
+    "chat_profiles": [
+      {
+        "id": "299d93d9-bb94-4023-abe0-291a29d11a36",
+        "name": "HaloAI Agent",
+        "access_type": 2,
+        "access_control_level": null,
+        "access_control_count": 0,
+        "validate_lifetime": true,
+        "anon_token_method": 2,
+        "cors_whitelist_count": 0,
+        "has_tenant_id": false,
+        "has_hmac_secret": false,
+        "logticket": 0,
+        "tickettype_name": null,
+        "in_use": null,
+        "chat_available": null,
+        "chat_mode": null
+      },
+      {
+        "id": "a34f0eb2-5f48-44af-87f7-5ba3307339a9",
+        "name": "Example Chat Profile for External Website",
+        "access_type": 1,
+        "access_control_level": null,
+        "access_control_count": 0,
+        "validate_lifetime": true,
+        "anon_token_method": 1,
+        "cors_whitelist_count": 0,
+        "has_tenant_id": false,
+        "has_hmac_secret": false,
+        "logticket": 0,
+        "tickettype_name": null,
+        "in_use": null,
+        "chat_available": null,
+        "chat_mode": null
+      },
+      {
+        "id": "df75d4fc-89a7-4760-b595-b7c345adca23",
+        "name": "HaloPSA Portal Bot",
+        "access_type": 0,
+        "access_control_level": null,
+        "access_control_count": 0,
+        "validate_lifetime": true,
+        "anon_token_method": 1,
+        "cors_whitelist_count": 0,
+        "has_tenant_id": false,
+        "has_hmac_secret": false,
+        "logticket": 0,
+        "tickettype_name": null,
+        "in_use": null,
+        "chat_available": null,
+        "chat_mode": null
+      }
+    ]
+  },
+  "manifest": {
+    "requested": {
+      "name": "Halo Service Chatbot",
+      "shortDescription": "Raise and track requests with the Halo service assistant.",
+      "longDescription": "Chat with the Halo service assistant to raise and track requests, start conversations, or ask to speak to a human agent.",
+      "iconColor": "0078D4",
+      "iconOutline": "style1"
+    },
+    "bytes": 818,
+    "sha256": "4fbf1ad58807978a0d3d979d25ff69ad3dbfb4bd93eca1cbd25704b7f706e006",
+    "looks_like_zip": true,
+    "artifact": "C:\\Users\\ThomasBray\\src\\Midtown-Technology-Group\\halocli\\teams_chatbot_manifest.zip"
+  }
+}
