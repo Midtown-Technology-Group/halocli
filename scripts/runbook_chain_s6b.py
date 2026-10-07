@@ -200,7 +200,7 @@ async def main() -> int:
             rec["fire"] = str(exc)[:250]
         # find the row by id scan (fresh rows appear immediately after fire)
         found = None
-        for i in range(10):
+        for _ in range(10):
             await asyncio.sleep(2)
             body = await client.request("GET", "/Automation", params={"count": "50"}, timeout=45)
             rows = (

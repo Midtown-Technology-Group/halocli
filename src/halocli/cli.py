@@ -80,7 +80,9 @@ def global_options(
         ),
     ] = False,
 ) -> None:
-    pass
+    # intentionally empty: this callback exists only to register the
+    # eager --version option; typer invokes the callback, not a body.
+    return None
 
 
 @app.command()
@@ -483,7 +485,7 @@ async def _run_report(
     path: str,
     params: dict[str, str],
     limit: int,
-    timeout: float,
+    timeout: float,  # NOSONAR: intentional per-report timeout (gateway deadline, see below)
     profile: str,
 ) -> dict[str, Any]:
     halo_profile = load_profile(profile)
@@ -1476,12 +1478,11 @@ def todo_import_ms(
         raise typer.BadParameter("--complete-source requires --apply.")
     if apply and source_json:
         raise typer.BadParameter("--apply cannot complete or mutate a --source-json import.")
+    graph_scopes = ["Tasks.Read", "Tasks.ReadWrite"] if complete_source else ["Tasks.Read"]
     repository = (
         JsonMicrosoftTodoRepository(source_json)
         if source_json
-        else GraphMicrosoftTodoRepository.from_shared_auth(
-            scopes=["Tasks.Read", "Tasks.ReadWrite"] if complete_source else ["Tasks.Read"]
-        )
+        else GraphMicrosoftTodoRepository.from_shared_auth(scopes=graph_scopes)
     )
     if apply:
         _run(

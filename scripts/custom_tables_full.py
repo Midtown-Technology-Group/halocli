@@ -133,13 +133,16 @@ async def main() -> int:
         }
         candidates: list[tuple[str, dict[str, Any]]] = []
         if trio["table_id"] is not None:
-            candidates.append(("trio id+guid+name", dict(trio)))
-            candidates.append(
-                ("trio+customextratableid", {**trio, "customextratableid": trio["table_id"]})
-            )
-            candidates.append(("table_guid only", {"table_guid": trio["table_guid"]}))
-            candidates.append(
-                ("customextratableid=guid", {"customextratableid": trio["table_guid"]})
+            candidates.extend(
+                [
+                    ("trio id+guid+name", dict(trio)),
+                    (
+                        "trio+customextratableid",
+                        {**trio, "customextratableid": trio["table_id"]},
+                    ),
+                    ("table_guid only", {"table_guid": trio["table_guid"]}),
+                    ("customextratableid=guid", {"customextratableid": trio["table_guid"]}),
+                ]
             )
         if table_ids:
             candidates.append(

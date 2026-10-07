@@ -17,7 +17,6 @@ import argparse
 import asyncio
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -83,7 +82,7 @@ async def main() -> int:
         }
         if template_event:
             # carry every template field, override id/eventno/name
-            merged = {k: v for k, v in template_event.items()}
+            merged = dict(template_event)
             merged.update(new_ticket_event)
             new_ticket_event = merged
 
@@ -142,7 +141,7 @@ async def main() -> int:
         # webhook_id). Bind via POST /Notification with the template row.
         binding_id = None
         if template_event and wid:
-            notif = {k: v for k, v in template_event.items()}
+            notif = dict(template_event)
             notif.update({"id": None, "eventno": 3, "name": "New Ticket Logged", "webhook_id": wid})
             try:
                 nresp = await client.request("POST", "/Notification", json_body=[notif], timeout=60)
@@ -186,7 +185,7 @@ async def main() -> int:
         found = None
         rid = None
         for _ in range(15):
-            time.sleep(2)
+            await asyncio.sleep(2)
             if rid is None:
                 log = await client.request("GET", "/Automation", params={"count": "60"}, timeout=45)
                 rows2 = (

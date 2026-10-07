@@ -64,7 +64,7 @@ async def main() -> int:
             }
 
         # helper: first id from a sibling list
-        async def first_id(path: str, key_hint: str | None = None) -> int | None:
+        async def first_id(path: str) -> int | None:
             body = await client.request("GET", path, params={"count": "1"}, timeout=30)
             rows = body if isinstance(body, list) else None
             if rows is None and isinstance(body, dict):

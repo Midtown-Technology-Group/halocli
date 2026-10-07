@@ -149,6 +149,9 @@ class Mirror:
     def __init__(self, path: Path) -> None:
         import sqlite3
 
+        # canonicalize before connecting (S8706): a CLI-supplied path
+        # must resolve to a concrete local file, not a URI string
+        path = path.expanduser().resolve()
         if not path.exists():
             raise SystemExit(
                 f"dev mirror not found at {path}; run: halocli sync --profile dev --db {path}"
@@ -288,7 +291,7 @@ class Sweeper:
                 break
         return out
 
-    async def extras(self, resource_name: str) -> dict[str, Any]:
+    def extras(self, resource_name: str) -> dict[str, Any]:
         out: dict[str, Any] = {}
         if resource_name == "appointments":
             agent = self.fk_value("agent_id")
@@ -358,7 +361,7 @@ class Sweeper:
             if resource.name in COPY_LIST:
                 payload.update(self.copy_sample(resource.name))
             payload.update(self.needle(resource.name))
-            payload.update(await self.extras(resource.name))
+            payload.update(self.extras(resource.name))
         fields = list(resource.required_create_fields)
         for field in fields:
             if field.lower() == "id":

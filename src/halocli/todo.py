@@ -717,7 +717,7 @@ def parse_halo_date(value: Any) -> str | None:
 def clean_body(value: str) -> str:
     clean = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
     clean = re.sub(r"</p\s*>", "\n", clean, flags=re.IGNORECASE)
-    clean = re.sub(r"<.*?>", "", clean)
+    clean = re.sub(r"<[^>]*>", "", clean)
     return html.unescape(clean).strip()
 
 

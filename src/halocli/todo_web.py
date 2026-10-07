@@ -56,10 +56,10 @@ if BaseModel is not None:
 
 
 def create_todo_api(repository_factory: Callable[[], Any]):
-    if FastAPI is None or Depends is None:
+    if any(dep is None for dep in (FastAPI, Depends)):
         raise RuntimeError("Install halocli with the web extra: pip install 'halocli[web]'.")
 
-    async def repository():
+    def repository():
         return repository_factory()
 
     app = FastAPI(title="Halo Todo", version="0.1.0")

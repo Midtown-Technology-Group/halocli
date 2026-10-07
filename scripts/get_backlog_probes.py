@@ -93,7 +93,7 @@ def value_for(name: str) -> str:
     return "1"
 
 
-def fallback_attempts(path: str, documented: list[str]) -> list[dict]:
+def fallback_attempts(documented: list[str]) -> list[dict]:
     """Ordered attempt list: documented params first, then tenant scope ids."""
     attempts: list[dict] = []
     for name in documented[:5]:
@@ -177,7 +177,7 @@ async def try_attempt(client, path: str, extra: dict) -> dict:
     return result
 
 
-async def probe_endpoint(client, key: str, path: str, spec_params: list[str]) -> dict:
+async def probe_endpoint(client, path: str, spec_params: list[str]) -> dict:
     """Bare attempt, then documented/scope params until rows come back."""
     attempts: list[dict] = []
 
@@ -186,7 +186,7 @@ async def probe_endpoint(client, key: str, path: str, spec_params: list[str]) ->
     winner = bare if bare.get("rows") else None
 
     if winner is None:
-        for extra in fallback_attempts(path, spec_params):
+        for extra in fallback_attempts(spec_params):
             attempt = await try_attempt(client, path, extra)
             attempts.append(attempt)
             if attempt.get("rows"):
@@ -239,7 +239,7 @@ async def run(args) -> int:
     profile = load_profile(args.profile)
     async with HaloClient(profile, profile_name=args.profile) as client:
         for index, (key, path, spec_params) in enumerate(pending, 1):
-            record = await probe_endpoint(client, key, path, spec_params)
+            record = await probe_endpoint(client, path, spec_params)
 
             # real-id detail probe with the winner's actual first-row id
             if record.get("rows"):

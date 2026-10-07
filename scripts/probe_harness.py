@@ -17,6 +17,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+
+_EP_Tickets = "/Tickets"
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO / "src") not in sys.path:
     sys.path.insert(0, str(REPO / "src"))
@@ -38,7 +40,7 @@ async def cleanup_runbooks(client: Any, created: list[str], ev: dict) -> None:
             await client.request("DELETE", f"/Webhook/{wid}", timeout=30)
         except Exception as exc:  # noqa: BLE001
             ev.setdefault("cleanup_errors", []).append(f"{wid}: {str(exc)[:150]}")
-    ev["cleanup"] = [await bc._gone(client, "DELETE check", f"/Webhook/{w}") for w in created]
+    ev["cleanup"] = [await bc._gone(client, f"/Webhook/{w}") for w in created]
 
 
 def build_condition_leg(
@@ -194,7 +196,7 @@ def aa8_runbook(name: str, aat: int, message: str, inputs: dict[str, str] | None
 async def create_ticket(client: Any, summary: str) -> str | None:
     ta = await client.request(
         "POST",
-        "/Tickets",
+        _EP_Tickets,
         json_body=[{"summary": summary, "reportedby": "probe@example.com"}],
         timeout=60,
     )
@@ -210,7 +212,7 @@ async def ticket_doc(client: Any, tid: str) -> dict:
 
 
 async def ticket_id_set(client: Any) -> set[str]:
-    rows = await client.request("GET", "/Tickets", params={"count": "1000"}, timeout=60)
+    rows = await client.request("GET", _EP_Tickets, params={"count": "1000"}, timeout=60)
     if isinstance(rows, dict):
         rows = next((v for v in rows.values() if isinstance(v, list)), [])
     if not isinstance(rows, list):
@@ -219,7 +221,7 @@ async def ticket_id_set(client: Any) -> set[str]:
 
 
 async def find_by_summary(client: Any, marker: str) -> str | None:
-    rows = await client.request("GET", "/Tickets", params={"count": "1000"}, timeout=60)
+    rows = await client.request("GET", _EP_Tickets, params={"count": "1000"}, timeout=60)
     if isinstance(rows, dict):
         rows = next((v for v in rows.values() if isinstance(v, list)), [])
     if not isinstance(rows, list):

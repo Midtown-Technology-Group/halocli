@@ -41,6 +41,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
+_EP_Webhook = "/Webhook"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -92,7 +94,7 @@ async def main() -> int:
         attempts: list[str] = []
         for label, body in body_variants:
             try:
-                resp = await client.request("POST", "/Webhook", json_body=body, timeout=45)
+                resp = await client.request("POST", _EP_Webhook, json_body=body, timeout=45)
                 row = resp[0] if isinstance(resp, list) and resp else resp
                 created_id = row.get("id") if isinstance(row, dict) else None
                 attempts.append(f"{label}: ok id={created_id}")
@@ -121,7 +123,7 @@ async def main() -> int:
             try:
                 body = await client.request(
                     "GET",
-                    "/Webhook",
+                    _EP_Webhook,
                     params={"showall": "true", "type": "1", "count": "100"},
                     timeout=45,
                 )
@@ -150,7 +152,7 @@ async def main() -> int:
         try:
             body = await client.request(
                 "GET",
-                "/Webhook",
+                _EP_Webhook,
                 params={"showall": "true", "type": "1", "count": "10"},
                 timeout=45,
             )
@@ -187,7 +189,7 @@ async def main() -> int:
                 )
                 imported = sanitize_for_import(doc)
                 imported["name"] = PROBE + "-imported"
-                resp = await client.request("POST", "/Webhook", json_body=[imported], timeout=60)
+                resp = await client.request("POST", _EP_Webhook, json_body=[imported], timeout=60)
                 row = resp[0] if isinstance(resp, list) and resp else resp
                 new_id = row.get("id") if isinstance(row, dict) else None
                 out["import_create"] = {"id": new_id}
@@ -216,7 +218,7 @@ async def main() -> int:
                     try:
                         resp = await client.request(
                             "POST",
-                            "/Webhook",
+                            _EP_Webhook,
                             json_body=[{"id": new_id, "name": PROBE + "-renamed"}],
                             timeout=45,
                         )
@@ -273,7 +275,7 @@ async def main() -> int:
         try:
             resp = await client.request(
                 "POST",
-                "/Webhook",
+                _EP_Webhook,
                 json_body=[{"name": PROBE + "upd", "type": 1, "steps": [], "_is_new": True}],
                 timeout=45,
             )
@@ -285,7 +287,7 @@ async def main() -> int:
             try:
                 resp = await client.request(
                     "POST",
-                    "/Webhook",
+                    _EP_Webhook,
                     json_body=[{"id": upd_id, "name": PROBE + "updv2", "type": 1, "steps": []}],
                     timeout=45,
                 )
@@ -307,7 +309,7 @@ async def main() -> int:
         try:
             resp = await client.request(
                 "POST",
-                "/Webhook",
+                _EP_Webhook,
                 json_body=[{"name": PROBE + "bare"}],
                 timeout=45,
             )
@@ -323,7 +325,7 @@ async def main() -> int:
             try:
                 resp = await client.request(
                     "POST",
-                    "/Webhook",
+                    _EP_Webhook,
                     json_body=[{"id": bare_id, "name": PROBE + "barev2"}],
                     timeout=45,
                 )
@@ -345,7 +347,7 @@ async def main() -> int:
         try:
             resp = await client.request(
                 "POST",
-                "/Webhook",
+                _EP_Webhook,
                 json_body=[{"name": PROBE + "sweep", "type": 1, "steps": []}],
                 timeout=45,
             )
@@ -359,7 +361,7 @@ async def main() -> int:
             try:
                 resp = await client.request(
                     "POST",
-                    "/Webhook",
+                    _EP_Webhook,
                     json_body=[{"id": sw_id, "name": PROBE + "sweepv2", "type": 1, "steps": []}],
                     timeout=45,
                 )

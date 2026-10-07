@@ -26,6 +26,12 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+
+def _safe_path(p: str | Path) -> Path:
+    """Canonicalize a CLI-supplied path before touching the disk (S8707)."""
+    return Path(p).expanduser().resolve()
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LADDER_FILE = REPO_ROOT / "halo_release_ladder.json"
 SOURCE = "https://www.usehalo.co/"
@@ -92,7 +98,7 @@ def main() -> int:
         "current": current,
         "ladder": ladder,
     }
-    Path(args.out).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    _safe_path(args.out).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(f"{len(ladder)} versions -> {args.out}")
     print("current:", json.dumps(current))
     for e in ladder[:8]:

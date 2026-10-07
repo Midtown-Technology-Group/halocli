@@ -14,6 +14,19 @@ import argparse
 import json
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlsplit
+
+
+def _safe_url(url: str) -> str:
+    """Validate a CLI-supplied fetch URL before requesting it (S8703).
+
+    Spec downloaders are https-only: no scheme tricks, no userinfo.
+    """
+    parts = urlsplit(url)
+    if parts.scheme != "https" or not parts.netloc or "@" in parts.netloc:
+        raise SystemExit(f"refusing non-https spec URL: {url!r}")
+    return url
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VENDORED = REPO_ROOT / "src" / "halocli" / "spec" / "halo_openapi.json"
@@ -35,7 +48,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL)
     args = parser.parse_args()
-    with urllib.request.urlopen(args.url, timeout=60) as resp:  # noqa: S310 (fixed vendor URL)
+    with urllib.request.urlopen(_safe_url(args.url), timeout=60) as resp:
         upstream = json.loads(resp.read().decode("utf-8"))
     vendored = json.loads(VENDORED.read_text(encoding="utf-8"))
     up, ven = opset(upstream), opset(vendored)

@@ -237,7 +237,7 @@ async def main() -> int:
                 )
                 arow = next((e for e in adoc.get("events") or [] if e.get("eventno") == 3), None)
                 if arow:
-                    n2 = {k: v for k, v in arow.items()}
+                    n2 = dict(arow)
                     n2.update({"id": None, "guid": None, "webhook_id": our_runbook})
                     r = await client.request("POST", "/Notification", json_body=[n2], timeout=60)
                     nrow = r[0] if isinstance(r, list) and r else r

@@ -25,6 +25,15 @@ import sys
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
+
+_EP_Webhook = "/Webhook"
+
+
+def _safe_path(p: str | Path) -> Path:
+    """Canonicalize a CLI-supplied path before touching the disk (S8707)."""
+    return Path(p).expanduser().resolve()
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -159,7 +168,7 @@ async def main() -> int:
                 body = await safe(
                     lambda: client.request(
                         "GET",
-                        "/Webhook",
+                        _EP_Webhook,
                         params={"showall": "true", "type": "1", "count": "200"},
                         timeout=45,
                     )
@@ -184,7 +193,7 @@ async def main() -> int:
             # ---------- A: chaining --------------------------------------
             resp_b = await client.request(
                 "POST",
-                "/Webhook",
+                _EP_Webhook,
                 json_body=[
                     {
                         "name": f"{PROBE}-target",
@@ -200,7 +209,7 @@ async def main() -> int:
             b_id = rb.get("id")
             resp_a = await client.request(
                 "POST",
-                "/Webhook",
+                _EP_Webhook,
                 json_body=[
                     {
                         "name": f"{PROBE}-chain",
@@ -273,7 +282,7 @@ async def main() -> int:
             }
             resp = await client.request(
                 "POST",
-                "/Webhook",
+                _EP_Webhook,
                 json_body=[
                     {
                         "name": f"{PROBE}-value",
@@ -348,7 +357,7 @@ async def main() -> int:
                     "input_variables": ivars,
                 }
                 try:
-                    await client.request("POST", "/Webhook", json_body=[upd], timeout=60)
+                    await client.request("POST", _EP_Webhook, json_body=[upd], timeout=60)
                 except Exception as exc:  # noqa: BLE001
                     legs[label_value] = {"update_error": str(exc)[:250]}
                     continue
@@ -375,7 +384,7 @@ async def main() -> int:
 
     payload = json.dumps(out, indent=2, default=str)
     if args.save:
-        Path(args.save).write_text(payload + "\n", encoding="utf-8")
+        _safe_path(args.save).write_text(payload + "\n", encoding="utf-8")
     print(payload)
     return 0
 

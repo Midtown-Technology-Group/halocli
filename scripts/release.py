@@ -25,6 +25,8 @@ import subprocess
 import time
 from pathlib import Path
 
+
+_C_Build_MSI_Release = "Build MSI Release"
 REPO = Path(__file__).resolve().parents[1]
 WINGET = REPO.parent / "mtg-winget"
 FEED_URL = "https://winget.midtowntg.com/api/packageManifests/MidtownTechnologyGroup.Halocli"
@@ -86,7 +88,7 @@ def wait_workflow(
     raise SystemExit(f"timeout waiting for {workflow} on {branch} (run {run_id})")
 
 
-def wait_pr_checks(pr: int, repo: str, *, timeout_s: int = 1800) -> None:
+def wait_pr_checks(pr: int, repo: str) -> None:
     """Watch a PR's checks until they pass (gh exits nonzero while failing)."""
     proc = subprocess.run(
         ["gh", "pr", "checks", str(pr), "--repo", repo, "--watch", "--interval", "20"],
@@ -409,9 +411,9 @@ def main() -> int:
         raise SystemExit(f"Release workflow concluded {conclusion}")
     print("Release workflow: success")
 
-    pre_ids = pre_dispatch_run_ids("Build MSI Release")
-    gh(["workflow", "run", "Build MSI Release", "-f", f"version={version}"])
-    conclusion = wait_new_workflow_dispatch("Build MSI Release", known_ids=pre_ids)
+    pre_ids = pre_dispatch_run_ids(_C_Build_MSI_Release)
+    gh(["workflow", "run", _C_Build_MSI_Release, "-f", f"version={version}"])
+    conclusion = wait_new_workflow_dispatch(_C_Build_MSI_Release, known_ids=pre_ids)
     if conclusion != "success":
         raise SystemExit(f"MSI workflow concluded {conclusion}")
     print("MSI workflow: success")
