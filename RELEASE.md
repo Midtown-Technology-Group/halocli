@@ -46,6 +46,37 @@ Pushing a `v*.*.*` tag runs the release workflow, builds the wheel and source
 distribution, generates a CycloneDX SBOM, runs `pip-audit`, and attaches the
 artifacts to a GitHub Release.
 
+## Resuming An Interrupted Release
+
+`scripts/release.py` is idempotent: re-run the same command and completed
+steps are detected and skipped instead of repeated.
+
+- **Tag:** created on HEAD, or reused after verifying it already sits on HEAD
+  and the tree under it declares the same `pyproject.toml` version. A tag on
+  any other commit, or declaring a different version, aborts the run.
+- **Tag push:** skipped when `origin` already holds the tag on the same
+  commit. An origin tag on a different commit aborts rather than moving a
+  published release tag.
+- **MSI dispatch:** skipped when release `vX.Y.Z` already carries the
+  `halocli.msi` asset (a read-only `gh release view` check). A missing
+  release means a fresh run and the build is dispatched exactly once.
+- **Waits:** every poll loop prints timestamped (`[YYYY-MM-DDTHH:MM:SSZ]`)
+  progress, so a long silent-looking wait is visibly alive.
+
+Script wait budgets (defaults in `scripts/release.py`, not CI/harness
+limits — the release workflows declare no `timeout-minutes` of their own):
+
+| Wait | Budget | Poll interval |
+|---|---|---|
+| Release workflow / feed deploy | 1800s | 20s |
+| Winget-releaser PR appearance | 3600s | 15s |
+| MSI dispatch run | 900s | 10s outer / 20s inner |
+| Feed serving the version | 10 attempts | 10s (+30s request timeout) |
+
+Offline regression coverage lives in `tests/test_release.py`: timestamped
+wait output, tag/push reuse vs. mismatch aborts, MSI skip-on-resume, and the
+manifest-mismatch abort — all with mocked `git`/`gh`, no network.
+
 ## Build The Windows MSI
 
 The MSI is a separate workflow. It packages `halocli.exe` as a PyInstaller
