@@ -153,14 +153,23 @@ class HaloClient:
         return await self.request("GET", "/Agent/me")
 
     async def _post_token_form(self, url: str, data: dict[str, Any]) -> httpx.Response:
-        """POST form data to an auth/token endpoint after validating its URL.
+        """POST form data to an auth/token endpoint, pinned to the auth origin.
 
-        The single validated token POST path (S5144): the URL is checked on
-        the exact value being sent, right where the request is made.
+        Policy (S5144): the token endpoint must be a plain http(s) URL on
+        the SAME origin as the profile's auth URL - token minting never
+        leaves the tenant's auth origin, and a forged profile cannot make
+        it do so.
         """
+        base = urlsplit(self.profile.auth_token_url)
+        if base.scheme not in ("http", "https") or not base.netloc:
+            raise HaloCLIError(
+                f"auth token URL must be a plain http(s) URL: {self.profile.auth_token_url!r}"
+            )
         parts = urlsplit(url)
-        if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc:
-            raise HaloCLIError(f"token endpoint URL must be a plain http(s) URL: {url!r}")
+        if (parts.scheme, parts.netloc) != (base.scheme, base.netloc):
+            raise HaloCLIError(
+                f"token endpoint must share the auth origin {base.scheme}://{base.netloc}: {url!r}"
+            )
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         return await self._http.post(url, data=data)
