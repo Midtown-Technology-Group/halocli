@@ -24,7 +24,7 @@ def _safe_url(url: str) -> str:
     """
     parts = urlsplit(url)
     if parts.scheme != "https" or not parts.netloc or "@" in parts.netloc:
-        raise SystemExit(f"refusing non-https spec URL: {url!r}")
+        raise ValueError(f"refusing non-https spec URL: {url!r}")
     return url
 
 
@@ -48,7 +48,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL)
     args = parser.parse_args()
-    url = _safe_url(args.url)
+    try:
+        url = _safe_url(args.url)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     with urllib.request.urlopen(url, timeout=60) as resp:
         upstream = json.loads(resp.read().decode("utf-8"))
     vendored = json.loads(VENDORED.read_text(encoding="utf-8"))

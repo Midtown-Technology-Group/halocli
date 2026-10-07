@@ -62,8 +62,17 @@ def test_check_spec_url_requires_https() -> None:
     url = "https://example.com/spec.json"
     assert module._safe_url(url) == url
     for bad in ("http://example.com/spec.json", "file:///etc/passwd", "ftp://x/y", "not-a-url"):
-        with pytest.raises(SystemExit):
+        with pytest.raises(ValueError):
             module._safe_url(bad)
+
+
+def test_check_spec_main_rejects_bad_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = importlib.import_module("check_spec_currency")
+    monkeypatch.setattr(
+        sys, "argv", ["check_spec_currency.py", "--url", "http://example.com/spec.json"]
+    )
+    with pytest.raises(SystemExit):
+        module.main()
 
 
 def test_check_spec_main_fetches_through_validator(monkeypatch: pytest.MonkeyPatch) -> None:
