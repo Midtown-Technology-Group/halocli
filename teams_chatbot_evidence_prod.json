@@ -1,0 +1,85 @@
+{
+  "tool": "teams_chatbot_config",
+  "guide": "https://www.usehalo.com/guides/1080",
+  "profile": "thomas",
+  "tenant": "midtowntg.halopsa.com",
+  "production": true,
+  "mode": "read",
+  "ts": "2026-10-07T18:51:27+00:00",
+  "read": {
+    "teams_tab": {
+      "appname": "Halo PSA",
+      "teamsbot_ticket_type": 1,
+      "teamsbot_default_subject": "Microsoft Teams Message: Sent by ${From} on ${Sent}",
+      "teamsbot_outcome_id": 7,
+      "ticket_icon": "https://halopsa.com/wp-content/uploads/2021/09/PSA-ticket-Coin.png"
+    },
+    "chatbot": {
+      "teams_chat_profile": "a34f0eb2-5f48-44af-87f7-5ba3307339a9",
+      "teams_chat_welcome_message": null,
+      "teams_chat_help_message": null,
+      "_context": {
+        "teams_authorized": null,
+        "show_chat_module": true,
+        "teams_chat_management": false,
+        "allow_live_chat_teams": false,
+        "enableteamsmsg": true,
+        "enableteamscall": true,
+        "teamsbot_disabled": false
+      }
+    },
+    "chat_profiles": [
+      {
+        "id": "370527f7-5a99-47e0-a796-e9d415a8ed45",
+        "name": "AI Virtual Agent",
+        "access_type": 2,
+        "access_control_level": null,
+        "access_control_count": 0,
+        "validate_lifetime": true,
+        "anon_token_method": 1,
+        "cors_whitelist_count": 0,
+        "has_tenant_id": false,
+        "has_hmac_secret": false,
+        "logticket": 0,
+        "tickettype_name": null,
+        "in_use": null,
+        "chat_available": null,
+        "chat_mode": null
+      },
+      {
+        "id": "a34f0eb2-5f48-44af-87f7-5ba3307339a9",
+        "name": "Example Chat Profile for External Website",
+        "access_type": 1,
+        "access_control_level": null,
+        "access_control_count": 0,
+        "validate_lifetime": true,
+        "anon_token_method": 1,
+        "cors_whitelist_count": 0,
+        "has_tenant_id": false,
+        "has_hmac_secret": false,
+        "logticket": 0,
+        "tickettype_name": null,
+        "in_use": null,
+        "chat_available": null,
+        "chat_mode": null
+      },
+      {
+        "id": "df75d4fc-89a7-4760-b595-b7c345adca23",
+        "name": "HaloPSA Portal Bot",
+        "access_type": 0,
+        "access_control_level": null,
+        "access_control_count": 0,
+        "validate_lifetime": true,
+        "anon_token_method": 1,
+        "cors_whitelist_count": 0,
+        "has_tenant_id": false,
+        "has_hmac_secret": false,
+        "logticket": 0,
+        "tickettype_name": null,
+        "in_use": null,
+        "chat_available": null,
+        "chat_mode": null
+      }
+    ]
+  }
+}
