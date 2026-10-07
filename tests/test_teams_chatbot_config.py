@@ -6,11 +6,27 @@ import argparse
 import asyncio
 import copy
 import importlib
+import io
 import json
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+
+def _iconless_manifest_zip() -> bytes:
+    """The generator's icon-less output shape (what Teams rejects)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(
+            "manifest.json",
+            json.dumps({"icons": {"color": "color.png", "outline": "outline.png"}}),
+        )
+    return buf.getvalue()
+
+
+MANIFEST_ZIP = _iconless_manifest_zip()
 
 
 def test_refuse_production_guard() -> None:
@@ -98,8 +114,6 @@ TAB_SEED = {"appname": "Halo PSA", "teamsbot_ticket_type": 0}
 PROFILES_SEED = [
     {"id": "prof-external", "name": "Example Chat Profile for External Website", "access_type": 1}
 ]
-
-MANIFEST_ZIP = b"PK\x03\x04fake-manifest-bytes"
 
 
 class _FakeHaloClient:
@@ -260,10 +274,18 @@ def test_manifest_generates_zip_artifact(monkeypatch: pytest.MonkeyPatch, tmp_pa
     evidence = json.loads((tmp_path / "evidence.json").read_text(encoding="utf-8"))
     manifest = evidence["manifest"]
     assert manifest["looks_like_zip"] is True
-    assert manifest["bytes"] == len(MANIFEST_ZIP)
+    assert manifest["icons_injected"] == ["color.png", "outline.png"]
+    expected = {"manifest.json", "color.png", "outline.png"}
+    assert set(manifest["entries"]) == expected
     artifact = Path(manifest["artifact"])
-    assert artifact.read_bytes() == MANIFEST_ZIP
+    with zipfile.ZipFile(artifact) as zf:
+        assert set(zf.namelist()) == expected
+        assert zf.read("color.png").startswith(b"\x89PNG")
+        assert zf.read("outline.png").startswith(b"\x89PNG")
+    assert manifest["bytes"] == artifact.stat().st_size
     assert manifest["requested"]["name"] == "Halo Service Chatbot"
+    # evidence records metadata, never the multi-KB data URIs
+    assert "data:image" not in json.dumps(manifest["requested"])
 
 
 def test_apply_requires_chat_profile(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

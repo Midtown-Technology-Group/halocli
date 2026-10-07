@@ -22,10 +22,15 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import copy
 import hashlib
+import io
 import json
+import struct
 import sys
+import zipfile
+import zlib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -313,16 +318,79 @@ async def tab_post_state(
     return result
 
 
+def _png(width: int, height: int, pixel: bytes, border: int = 0) -> bytes:
+    """Minimal RGBA PNG (stdlib only) - placeholder Teams icons."""
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    rows = bytearray()
+    for y in range(height):
+        rows.append(0)  # filter: none
+        for x in range(width):
+            on_border = border and (
+                x < border or y < border or x >= width - border or y >= height - border
+            )
+            rows += b"\xff\xff\xff\xff" if on_border else pixel
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    idat = zlib.compress(bytes(rows), 9)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+
+
+def _placeholder_icons(hex_color: str) -> tuple[bytes, bytes]:
+    """192x192 color + 32x32 outline placeholder icons (Teams' requirements)."""
+    h = hex_color.lstrip("#")
+    try:
+        rgb = bytes(int(h[i : i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        rgb = bytes((0, 120, 212))
+    pixel = rgb + b"\xff"
+    return _png(192, 192, pixel), _png(32, 32, pixel, border=6)
+
+
+def _ensure_icons(data: bytes, hex_color: str) -> tuple[bytes, list[str]]:
+    """Guarantee the manifest zip carries the icon files it declares."""
+    with zipfile.ZipFile(io.BytesIO(data)) as src:
+        names = src.namelist()
+        manifest = json.loads(src.read("manifest.json"))
+        declared = [manifest["icons"]["color"], manifest["icons"]["outline"]]
+        missing = [n for n in declared if n not in names]
+        if not missing:
+            return data, []
+        color_png, outline_png = _placeholder_icons(hex_color)
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as out:
+            for name in names:
+                out.writestr(name, src.read(name))
+            for name in declared:
+                if name in missing:
+                    out.writestr(name, color_png if "color" in name else outline_png)
+        return buf.getvalue(), missing
+
+
 async def generate_manifest(
     client: HaloClient, args: argparse.Namespace, out_path: Path
 ) -> dict[str, Any]:
-    """POST the manifest generator (guide Fig 26-27) and record the artifact."""
+    """POST the manifest generator (guide Fig 26-27) and record the artifact.
+
+    Teams rejects packages without their declared icons. The generator only
+    embeds images when they arrive as data URIs (the UI's format - plain hex
+    or bare base64 yields an icon-less zip, both verified live), so generated
+    placeholder icons are sent as data URIs and _ensure_icons still guarantees
+    the zip contents as a fallback.
+    """
+    color_png, outline_png = _placeholder_icons(args.manifest_icon_color)
     body = {
         "name": args.manifest_name,
         "shortDescription": args.manifest_short,
         "longDescription": args.manifest_long,
-        "iconColor": args.manifest_icon_color,
-        "iconOutline": args.manifest_icon_outline,
+        "iconColor": "data:image/png;base64," + base64.b64encode(color_png).decode(),
+        "iconOutline": "data:image/png;base64," + base64.b64encode(outline_png).decode(),
     }
     raw = await client.request(
         "POST",
@@ -331,17 +399,31 @@ async def generate_manifest(
         timeout=60,
         as_bytes=True,
     )
-    result: dict[str, Any] = {"requested": body}
+    result: dict[str, Any] = {
+        # metadata only: evidence must not carry multi-KB data URIs
+        "requested": {
+            "name": args.manifest_name,
+            "shortDescription": args.manifest_short,
+            "longDescription": args.manifest_long,
+            "icon_color": args.manifest_icon_color,
+            "icons": "data-URI placeholder PNGs (192 color / 32 outline)",
+        }
+    }
     if isinstance(raw, (bytes, bytearray)):
         data = bytes(raw)
-        result["bytes"] = len(data)
-        result["sha256"] = hashlib.sha256(data).hexdigest()
         result["looks_like_zip"] = data[:2] == b"PK"
         if data[:2] == b"PK":
-            out = out_path
-            out.write_bytes(data)
-            result["artifact"] = str(out)
+            data, injected = _ensure_icons(data, args.manifest_icon_color)
+            result["icons_injected"] = injected
+            out_path.write_bytes(data)
+            result["artifact"] = str(out_path)
+            result["bytes"] = len(data)
+            result["sha256"] = hashlib.sha256(data).hexdigest()
+            with zipfile.ZipFile(out_path) as zf:
+                result["entries"] = zf.namelist()
         else:
+            result["bytes"] = len(data)
+            result["sha256"] = hashlib.sha256(data).hexdigest()
             try:
                 result["json"] = json.loads(data.decode("utf-8-sig"))
             except ValueError:
@@ -458,7 +540,6 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--manifest-icon-color", default="0078D4")
-    parser.add_argument("--manifest-icon-outline", default="style1")
     return parser
 
 
