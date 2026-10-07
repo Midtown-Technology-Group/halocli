@@ -55,6 +55,51 @@ async def probe(out: dict, name: str, fn: Callable[[], Awaitable[dict] | dict]) 
         out[name] = {"error": f"{type(exc).__name__}: {exc}"}
 
 
+def dates(rows: list[dict]) -> list[str]:
+    return [str(r.get("dateoccurred") or "")[:19] for r in rows]
+
+
+def dates_probe(recent: list[dict]) -> dict:
+    return {
+        "sampled": len(recent),
+        "datecreated_blank": sum(1 for r in recent if r.get("datecreated") in (None, "")),
+        "dateoccurred_present": sum(1 for r in recent if r.get("dateoccurred") not in (None, "")),
+        "sample_pair": [
+            {
+                "datecreated": r.get("datecreated"),
+                "dateoccurred": r.get("dateoccurred"),
+                "datemodified": r.get("datemodified"),
+            }
+            for r in recent[:3]
+        ],
+    }
+
+
+def agent_probe(recent: list[dict]) -> dict:
+    return {
+        "sampled": len(recent),
+        "agent_id_present": sum(1 for r in recent if r.get("agent_id") not in (None, "", 0)),
+        "agent_name_present": sum(1 for r in recent if r.get("agent_name") not in (None, "")),
+    }
+
+
+def closed_cross(rows: list[dict]) -> dict[str, dict[str, int]]:
+    """status_id -> {hasbeenclosed spelling: count} (the closed-ish census)."""
+    cross: dict[str, dict[str, int]] = {}
+    for r in rows:
+        sid = str(r.get("status_id"))
+        hbc = r.get("hasbeenclosed")
+        if hbc is True:
+            closed = "true"
+        elif hbc is None:
+            closed = "null"
+        else:
+            closed = str(hbc)
+        cross.setdefault(sid, {}).setdefault(closed, 0)
+        cross[sid][closed] += 1
+    return cross
+
+
 async def main() -> int:
     from halocli.client import HaloClient
     from halocli.config import load_profile
@@ -63,9 +108,6 @@ async def main() -> int:
     profile = load_profile("thomas")
     out: dict[str, dict] = {}
     async with HaloClient(profile, profile_name="thomas") as client:
-
-        def dates(rows: list[dict]) -> list[str]:
-            return [str(r.get("dateoccurred") or "")[:19] for r in rows]
 
         async def ordering_probe() -> dict:
             attempts = []
@@ -134,34 +176,6 @@ async def main() -> int:
                 "_recent": recent,  # reused by the date/agent probes
             }
 
-        def dates_probe(recent: list[dict]) -> dict:
-            return {
-                "sampled": len(recent),
-                "datecreated_blank": sum(1 for r in recent if r.get("datecreated") in (None, "")),
-                "dateoccurred_present": sum(
-                    1 for r in recent if r.get("dateoccurred") not in (None, "")
-                ),
-                "sample_pair": [
-                    {
-                        "datecreated": r.get("datecreated"),
-                        "dateoccurred": r.get("dateoccurred"),
-                        "datemodified": r.get("datemodified"),
-                    }
-                    for r in recent[:3]
-                ],
-            }
-
-        def agent_probe(recent: list[dict]) -> dict:
-            return {
-                "sampled": len(recent),
-                "agent_id_present": sum(
-                    1 for r in recent if r.get("agent_id") not in (None, "", 0)
-                ),
-                "agent_name_present": sum(
-                    1 for r in recent if r.get("agent_name") not in (None, "")
-                ),
-            }
-
         async def feed_probe() -> dict:
             f1 = rows_of(
                 await client.request(
@@ -228,18 +242,7 @@ async def main() -> int:
                     timeout=60,
                 )
             )
-            cross: dict[str, dict[str, int]] = {}
-            for r in rows:
-                sid = str(r.get("status_id"))
-                hbc = r.get("hasbeenclosed")
-                if hbc is True:
-                    closed = "true"
-                elif hbc is None:
-                    closed = "null"
-                else:
-                    closed = str(hbc)
-                cross.setdefault(sid, {}).setdefault(closed, 0)
-                cross[sid][closed] += 1
+            cross = closed_cross(rows)
             closed_dates = [r.get("dateclosed") for r in rows if r.get("dateclosed")]
             return {
                 "hasbeenclosed_by_status": cross,

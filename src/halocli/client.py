@@ -66,8 +66,8 @@ class HaloClient:
         files: Any = None,
         data: Any = None,
         as_bytes: bool = False,
-        timeout: float
-        | None = None,  # NOSONAR: intentional per-call timeout (see timeout_kwargs below)
+        # per-call timeout is intentional: forwarded only when set (timeout_kwargs below)
+        timeout: float | None = None,  # NOSONAR
     ) -> Any:
         """Send an authenticated HaloPSA request.
 

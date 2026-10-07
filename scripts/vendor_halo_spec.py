@@ -63,6 +63,16 @@ def _safe_url(url: str) -> str:
     return url
 
 
+def _vendor_safe_paths(
+    source_file: Path | None, out_path: Path, overlay_path: Path | None
+) -> tuple[Path | None, Path, Path | None]:
+    """Canonicalize every CLI-supplied path before any disk I/O (S8707)."""
+    safe_source = _safe_path(source_file) if source_file is not None else None
+    safe_out = _safe_path(out_path)
+    safe_overlay = _safe_path(overlay_path) if overlay_path is not None else None
+    return safe_source, safe_out, safe_overlay
+
+
 DEFAULT_URL = "https://dtcdev.halopsa.com/api/swagger/v2/swagger.json"
 MIRROR_URLS = ["https://midtowntg.halopsa.com/api/swagger/v2/swagger.json"]
 DISCOVERED_VIA = (
@@ -353,10 +363,7 @@ def vendor(
 ) -> dict[str, Any]:
     """Fetch (or read), trim, enrich, and write the vendored spec. Returns the written spec."""
     # canonicalize every CLI-supplied path before any disk I/O (S8707)
-    source_file = _safe_path(source_file) if source_file is not None else None
-    out_path = _safe_path(out_path)
-    if overlay_path is not None:
-        overlay_path = _safe_path(overlay_path)
+    source_file, out_path, overlay_path = _vendor_safe_paths(source_file, out_path, overlay_path)
     raw_bytes: bytes | None
     if source_file is not None:
         raw_bytes = source_file.read_bytes()

@@ -485,7 +485,8 @@ async def _run_report(
     path: str,
     params: dict[str, str],
     limit: int,
-    timeout: float,  # NOSONAR: intentional per-report timeout (gateway deadline, see below)
+    # per-report timeout is intentional (gateway deadline) - see the caller
+    timeout: float,  # NOSONAR
     profile: str,
 ) -> dict[str, Any]:
     halo_profile = load_profile(profile)

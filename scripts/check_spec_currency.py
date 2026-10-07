@@ -48,7 +48,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL)
     args = parser.parse_args()
-    with urllib.request.urlopen(_safe_url(args.url), timeout=60) as resp:
+    url = _safe_url(args.url)
+    with urllib.request.urlopen(url, timeout=60) as resp:
         upstream = json.loads(resp.read().decode("utf-8"))
     vendored = json.loads(VENDORED.read_text(encoding="utf-8"))
     up, ven = opset(upstream), opset(vendored)
