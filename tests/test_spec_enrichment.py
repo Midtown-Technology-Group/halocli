@@ -35,7 +35,8 @@ VENDOR_SCRIPT = REPO_ROOT / "scripts" / "vendor_halo_spec.py"
 
 def _load_vendor_module() -> Any:
     spec = importlib.util.spec_from_file_location("vendor_halo_spec", VENDOR_SCRIPT)
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules["vendor_halo_spec"] = module
     spec.loader.exec_module(module)
@@ -172,7 +173,8 @@ def test_overlay_file_shape() -> None:
     assert overlay["overlay"] in ("1.0.0", "1.1.0")
     assert overlay["info"]["title"]
     actions = overlay["actions"]
-    assert isinstance(actions, list) and actions, "overlay must carry actions"
+    assert isinstance(actions, list), "overlay must carry actions"
+    assert actions, "overlay must carry actions"
     for action in actions:
         target = action["target"]
         # Supported shapes: $.paths[...].<method>.summary|description,
@@ -182,7 +184,8 @@ def test_overlay_file_shape() -> None:
         on_path = target.startswith("$.paths[") and target.endswith((".summary", ".description"))
         on_schema = target.startswith("$.components.schemas.") and target.endswith(".description")
         assert on_path or on_schema, f"unrecognised overlay target: {target}"
-        assert isinstance(action["update"], str) and action["update"].strip()
+        assert isinstance(action["update"], str)
+        assert action["update"].strip()
 
 
 def test_overlay_targets_exist_in_spec(spec: dict[str, Any], vendor_mod: Any) -> None:
@@ -391,7 +394,9 @@ def test_report_interface_prose_documented(spec: dict[str, Any]) -> None:
     summary = post.get("summary") or ""
     description = post.get("description") or ""
     assert "array" in summary.lower(), "POST /Report summary should mention the array body"
-    assert "JSON array" in description and "400" in description and "415" in description
+    assert "JSON array" in description
+    assert "400" in description
+    assert "415" in description
 
     get_one = spec["paths"]["/Report/{id}"]["get"]
     loadreport = next(
@@ -400,11 +405,13 @@ def test_report_interface_prose_documented(spec: dict[str, Any]) -> None:
     )
     assert loadreport is not None, "loadreport query parameter missing from spec"
     loadreport_desc = loadreport.get("description") or ""
-    assert "report.rows" in loadreport_desc and "50,000" in loadreport_desc
+    assert "report.rows" in loadreport_desc
+    assert "50,000" in loadreport_desc
 
     sql = spec["components"]["schemas"]["AnalyzerProfile"]["properties"]["sql"]
     sql_desc = sql.get("description") or ""
-    assert "derived table" in sql_desc and "ORDER BY" in sql_desc
+    assert "derived table" in sql_desc
+    assert "ORDER BY" in sql_desc
 
     # The array schema itself must stay intact -- the prose documents it, it
     # does not replace it.

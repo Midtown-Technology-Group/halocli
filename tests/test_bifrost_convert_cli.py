@@ -18,7 +18,8 @@ from typing import Any
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "bifrost_convert.py"
 _spec = importlib.util.spec_from_file_location("bifrost_convert_cli", _SCRIPT)
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 cli = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cli)
 
@@ -219,7 +220,8 @@ class _RunlogClient:
     async def request(
         self, method: str, path: str, params: dict | None = None, timeout: float | None = None
     ) -> Any:
-        assert method == "GET" and path == "/Automation"
+        assert method == "GET"
+        assert path == "/Automation"
         return self.rows
 
 

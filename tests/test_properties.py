@@ -71,7 +71,8 @@ def test_build_operation_path_never_leaves_placeholders(value: str) -> None:
     """One filled template: no braces survive, and the value appears encoded."""
     op = ResourceOperation(name="one", method="POST", path="/X/{id}", args=("id",))
     result = _build_operation_path(op, [value])
-    assert "{" not in result and "}" not in result
+    assert "{" not in result
+    assert "}" not in result
     assert result == "/X/" + quote(value, safe="")
 
 

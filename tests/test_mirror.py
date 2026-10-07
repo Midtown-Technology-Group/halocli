@@ -113,7 +113,8 @@ def test_sync_is_bounded_by_default(monkeypatch, tmp_path: Path) -> None:
     # it stopped paging at the ceiling instead of walking all eight pages
     assert len(seen) <= 6
     state = state_for(db, "tickets")
-    assert state is not None and state["truncated"] == 1
+    assert state is not None
+    assert state["truncated"] == 1
 
 
 def test_sync_all_removes_the_ceiling(monkeypatch, tmp_path: Path) -> None:
@@ -201,7 +202,8 @@ def test_failed_sync_keeps_prior_rows_and_records_error(monkeypatch, tmp_path: P
     # previous rows intact: a transient failure must not wipe the mirror
     assert len(load_resource(db, "tickets")) == 2
     state = state_for(db, "tickets")
-    assert state is not None and state["error"]
+    assert state is not None
+    assert state["error"]
 
 
 @pytest.mark.asyncio
@@ -224,7 +226,8 @@ async def test_sync_stops_on_repeated_page_without_duplicates(tmp_path: Path) ->
     assert entry["paging_ignored"] is True
     assert entry["rows"] == 100  # one page, never appended twice
     state = state_for(db, "tickets")
-    assert state is not None and state["paging_ignored"] == 1
+    assert state is not None
+    assert state["paging_ignored"] == 1
 
 
 # -------------------------------------------------------------------- sqlguard
@@ -496,7 +499,8 @@ async def test_sync_walks_cursor_resources_bounded(tmp_path: Path) -> None:
     assert len({r["id"] for r in stored}) == DEFAULT_SYNC_LIMIT  # no dupes
     assert len(client.calls) == 5
     for call in client.calls:
-        assert "page_no" not in call and "pageinate" not in call  # cursor, not pages
+        assert "page_no" not in call
+        assert "pageinate" not in call  # cursor, not pages
         assert call["count"] == 100
     assert client.calls[0].get("older_than_id") is None  # starts at the newest
     assert client.calls[1]["older_than_id"] == 900

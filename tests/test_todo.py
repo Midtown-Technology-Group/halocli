@@ -393,7 +393,8 @@ class _AppointmentPages:
 
     async def raw(self, method, path, *, params=None, body=None):
         self.calls.append({"method": method, "path": path, "params": dict(params or {})})
-        assert method == "GET" and path == "/Appointment"
+        assert method == "GET"
+        assert path == "/Appointment"
         return {"appointments": self.pages.get(int((params or {}).get("page_no") or 1), [])}
 
 

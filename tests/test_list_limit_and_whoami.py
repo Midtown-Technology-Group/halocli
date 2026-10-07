@@ -232,7 +232,8 @@ def test_list_all_flag_fetches_every_record(monkeypatch: pytest.MonkeyPatch) -> 
     assert payload["count"] == 900
     assert payload.get("truncated") is not True
     assert "hint" not in payload
-    assert seen and "pageinate" in seen[0]
+    assert seen
+    assert "pageinate" in seen[0]
 
 
 def test_list_all_rejects_combination_with_explicit_limits() -> None:
@@ -291,7 +292,8 @@ def test_list_recovers_single_page_when_halo_ignores_paging(
     assert len(set(ids)) == 133
     assert payload["paging_ignored"] is True
     assert payload.get("truncated") is not True
-    assert seen and seen[-1].get("count") == "133"
+    assert seen
+    assert seen[-1].get("count") == "133"
 
 
 def test_list_reports_paging_ignored_when_count_is_ignored_too(

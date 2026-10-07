@@ -19,7 +19,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "errorpath_probe", REPO / "scripts" / "runbook_errorpath_probe.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 probe = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(probe)
 
@@ -145,7 +146,8 @@ def test_errorpath_runbook_shapes() -> None:
     # every hop is an aa21 sequencing step (the shape the engine needs -
     # hop steps without auto_action get "Next step not found")
     for hop in (n1, n2, recovered):
-        assert hop["auto_action"] == 21 and hop["duration"] == 0
+        assert hop["auto_action"] == 21
+        assert hop["duration"] == 0
     # TARGET substituted with the real ticket id
     assert json.loads(write["message"])["id"] == 42
 

@@ -52,7 +52,8 @@ def test_sweep_entries_carry_live_evidence() -> None:
             continue
         assert isinstance(status, int) or str(status).startswith("error:"), entry
         if status == 200:
-            assert "envelope" in entry and "size_bytes" in entry, key
+            assert "envelope" in entry, key
+            assert "size_bytes" in entry, key
     # The sweep must have real verdict diversity (or something is wedged).
     assert len(statuses) >= 1
 

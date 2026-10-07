@@ -120,7 +120,8 @@ def test_validate_write_reports_required_fields_and_allows_extra_keys() -> None:
 
     assert validate_write(tickets, {"summary": "ok", "client_id": 1}) == []
     problems = validate_write(tickets, {"client_id": 1})
-    assert problems and "summary" in problems[0]
+    assert problems
+    assert "summary" in problems[0]
     assert validate_write(tickets, {"summary": "ok"}, update=True)
     # Extra keys are allowed: they are warnings, never validation errors.
     assert validate_write(tickets, {"summary": "ok", "custom_field_xyz": "kept"}) == []
@@ -203,7 +204,8 @@ async def test_update_uses_update_endpoint_from_metadata() -> None:
 def test_write_metadata_selects_endpoints_and_defaults_preview_fields() -> None:
     assert validate_write(WIDGET, {"name": "new"}) == []
     problems = validate_write(WIDGET, {}, update=False)
-    assert problems and "name" in problems[0]
+    assert problems
+    assert "name" in problems[0]
 
     # No explicit preview fields -> default shape is id plus the required fields.
     bare = HaloResource(

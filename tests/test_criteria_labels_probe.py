@@ -18,7 +18,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "criteria_sweep", REPO / "scripts" / "criteria_labels_probe.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 sweep = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(sweep)
 

@@ -198,7 +198,8 @@ def test_workflow_decorator_and_signature_convert() -> None:
     assert names == ["halo_connection", "inspect_ticket", "Success"]
     assert p["steps"][0]["isstart"] is True
     assert p["steps"][-1]["name"] == "Success"
-    assert p["steps"][-1]["isend"] is True and p["steps"][-1]["islaststep"] is True
+    assert p["steps"][-1]["isend"] is True
+    assert p["steps"][-1]["islaststep"] is True
     # wiring: every hop carries exactly the Sleep Finished edge to the next
     for s in p["steps"][:-1]:
         assert len(s["actions"]) == 1
@@ -398,7 +399,8 @@ def test_array_guard_becomes_condition_with_criteria() -> None:
     assert crit["tablename"] == "runbookvariable"
     assert crit["type"] == 5
     assert crit["value_type"] == "Array"
-    assert crit["id"] is None and crit["chatprofile_id"] is None
+    assert crit["id"] is None
+    assert crit["chatprofile_id"] is None
     # edges: met -> guarded body (the iteration begin), notmet -> Success
     met, notmet = cond["actions"]
     assert (met["action_type"], met["action_name"]) == (12, "Condition met")
@@ -865,7 +867,8 @@ def test_ticket_guard_prefixes_faults_criteria_with_exit() -> None:
     steps = conv.payload["steps"]
     guard = steps[0]
     # prefix condition, N-Central's faults-table shape
-    assert guard["steptype"] == 1 and guard["isstart"] is True
+    assert guard["steptype"] == 1
+    assert guard["isstart"] is True
     assert guard["name"] == "if ticket.reportedby != 'noreply@voicemail.goto.com':"
     (crit,) = guard["step_conditions"]
     assert (crit["tablename"], crit["fieldname"], crit["type"]) == (
@@ -1040,8 +1043,11 @@ def test_sanitize_for_import_matches_ui_transform() -> None:
     }
     out = sanitize_for_import(doc)
     s = out["steps"][0]
-    assert s["id"] is None and s["fdid"] is None and s["chatprofile_id"] is None
-    assert s["actions"][0]["id"] is None and s["actions"][0]["chatprofile_id"] is None
+    assert s["id"] is None
+    assert s["fdid"] is None
+    assert s["chatprofile_id"] is None
+    assert s["actions"][0]["id"] is None
+    assert s["actions"][0]["chatprofile_id"] is None
     assert s["step_conditions"][0]["id"] is None
     assert s["auto_action_type"] is None
     assert out["_is_new"] is True
@@ -1184,7 +1190,8 @@ def test_membership_guard_translates_to_type23() -> None:
     assert c["fieldname"] == "<<region>>"
     assert c["value_string"] == "eu,us"  # STRICT comma-set
     names = [s["name"] for s in conv.payload["steps"]]
-    assert "allowed" in names and "blocked" in names  # both arms survive
+    assert "allowed" in names
+    assert "blocked" in names  # both arms survive
     assert any("set membership" in n for n in conv.notes)
 
 
@@ -1289,7 +1296,8 @@ async def flag_gate(flag: bool) -> dict:
     conv = convert_workflow({}, src, "flag_gate")
     assert conv.ok
     c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
-    assert c["type"] == 5 and c["value_int"] == 0  # the ">0" idiom
+    assert c["type"] == 5
+    assert c["value_int"] == 0  # the ">0" idiom
     assert c["fieldname"] == "<<flag>>"
     assert c["value_type"] == "int"  # the proven criterion-row spelling
     assert any("truthiness" in n for n in conv.notes)
@@ -1313,7 +1321,8 @@ async def flag_eq(flag: bool) -> dict:
     c = next(s for s in conv.payload["steps"] if s.get("step_conditions"))["step_conditions"][0]
     # both legs proven: flag=1 met / flag=0 notmet on eq value_int1
     # (interpolation_evidence.json) - data_type5's canonical spelling
-    assert c["type"] == 0 and c["value_int"] == 1
+    assert c["type"] == 0
+    assert c["value_int"] == 1
     assert c["fieldname"] == "<<flag>>"
     assert c["value_type"] == "int"
 
@@ -1489,7 +1498,8 @@ async def try_fin(client) -> dict:
     conv = convert_workflow({}, src, "try_fin", phase_bindings={"risky": 1})
     assert conv.ok
     names = [s["name"] for s in conv.payload["steps"]]
-    assert "risky" in names and "cleanup_hop" in names  # flattened honestly
+    assert "risky" in names
+    assert "cleanup_hop" in names  # flattened honestly
     assert any("finally or multiple handlers" in n for n in conv.notes)
     # no failure-edge routing: Unsuccessful still targets Fail
     risky = next(s for s in conv.payload["steps"] if s["name"] == "risky")
@@ -1570,7 +1580,9 @@ async def uses_helper(client) -> dict:
     assert conv.ok
     names = [s["name"] for s in conv.payload["steps"]]
     # flattened honestly: every await extracts linearly, no routing
-    assert "risky" in names and "fallback" in names and "afterwards" in names
+    assert "risky" in names
+    assert "fallback" in names
+    assert "afterwards" in names
     risky = next(s for s in conv.payload["steps"] if s["name"] == "risky")
     fail = next(s for s in conv.payload["steps"] if s.get("auto_action") == 1)
     assert risky["actions"][1]["end_step"] == fail["step_id"]
@@ -1638,7 +1650,8 @@ def test_halo_runbook_action_aa18_sql_with_mappings() -> None:
         (29, "Unsuccessful", 0),
     ]
     # raw SQL verbatim - <<var>> stays bare (no JSON quoting to strip)
-    assert step["message"].startswith("select fid") and "<<ticket^id>>" in step["message"]
+    assert step["message"].startswith("select fid")
+    assert "<<ticket^id>>" in step["message"]
     assert step["runbook_variable_mappings"] == mapping  # merged verbatim
 
 
@@ -1731,13 +1744,16 @@ async def fetchy(client) -> dict:
     api = steps["risky_call"]
     # the response maps into the runbook variable `result`
     mappings = api.get("runbook_variable_mappings") or []
-    assert mappings and mappings[0]["key"] == "result"
-    assert mappings[0]["value"] == "<<response>>" and mappings[0]["type"] == 4
+    assert mappings
+    assert mappings[0]["key"] == "result"
+    assert mappings[0]["value"] == "<<response>>"
+    assert mappings[0]["type"] == 4
     # `if not result` translated to a has/no-value condition (was flat)
     conds = [s for s in conv.payload["steps"] if s.get("step_conditions")]
     assert len(conds) == 1
     c = conds[0]["step_conditions"][0]
-    assert c["type"] == 30 and c["fieldname"] == "<<result>>"  # does not have a value
+    assert c["type"] == 30
+    assert c["fieldname"] == "<<result>>"  # does not have a value
     assert any(
         "bound to runbook variables" in n and "result <- risky_call" in n for n in conv.notes
     )

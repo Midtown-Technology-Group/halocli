@@ -19,7 +19,8 @@ REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "crud_probe", REPO / "scripts" / "runbook_ticket_crud_probe.py"
 )
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 probe = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(probe)
 
@@ -143,17 +144,21 @@ def test_probe_all_four_legs_and_ship_verdict(
 
 def test_aa8_runbook_shape() -> None:
     doc = probe.aa8_runbook("t", 2, '{"id": 1}')
-    assert doc["type"] == 1 and doc["active"] is True
+    assert doc["type"] == 1
+    assert doc["active"] is True
     assert doc["runbook_start_type"] == 1
     step, success, fail = doc["steps"]
-    assert step["auto_action"] == 8 and step["auto_action_type"] == 2
+    assert step["auto_action"] == 8
+    assert step["auto_action_type"] == 2
     assert step["isstart"] is True
     assert [(a["action_name"], a["approval_result"], a["end_step"]) for a in step["actions"]] == [
         ("Successful", 1, 2),
         ("Unsuccessful", 0, 3),
     ]
-    assert success["isend"] is True and "auto_action" not in success
-    assert fail["auto_action"] == 1 and fail["isend"] is True
+    assert success["isend"] is True
+    assert "auto_action" not in success
+    assert fail["auto_action"] == 1
+    assert fail["isend"] is True
 
 
 def test_verdict_flags_missing_pieces() -> None:
@@ -175,4 +180,6 @@ def test_verdict_flags_missing_pieces() -> None:
         }
     }
     v = probe.verdict(bad)
-    assert "NOT found" in v and "NOT observed" in v and "did NOT route" in v
+    assert "NOT found" in v
+    assert "NOT observed" in v
+    assert "did NOT route" in v
