@@ -127,8 +127,10 @@ def test_follow_dispatched_run_timeout_aborts(
         "gh",
         lambda args, *, cwd=None: json.dumps({"status": "in_progress", "conclusion": None}),
     )
+    deadline = clock.time() + 30
+    started = clock.time()
     with pytest.raises(SystemExit, match="timeout waiting for run 9"):
-        rel._follow_dispatched_run("Build MSI Release", 9, clock.time() + 30, clock.time())
+        rel._follow_dispatched_run("Build MSI Release", 9, deadline, started)
 
 
 def test_find_winget_pr_skips_unrelated_titles(
