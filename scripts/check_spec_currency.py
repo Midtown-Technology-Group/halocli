@@ -17,14 +17,21 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 
+# The only hosts this tool may fetch spec documents from (S8703): the
+# vendored spec's provenance (dtcdev) plus the production mirror that
+# vendor_halo_spec cross-checks. Anything else is a different origin.
+ALLOWED_SPEC_HOSTS = frozenset({"dtcdev.halopsa.com", "midtowntg.halopsa.com"})
+
+
 def _safe_url(url: str) -> str:
     """Validate a CLI-supplied fetch URL before requesting it (S8703).
 
-    Spec downloaders are https-only: no scheme tricks, no userinfo.
+    https-only AND host-allowlisted: the URL must name one of the known
+    spec hosts, so no other origin can ever be reached.
     """
     parts = urlsplit(url)
-    if parts.scheme != "https" or not parts.netloc or "@" in parts.netloc:
-        raise ValueError(f"refusing non-https spec URL: {url!r}")
+    if parts.scheme != "https" or parts.hostname not in ALLOWED_SPEC_HOSTS:
+        raise ValueError(f"refusing spec URL outside the allowlist: {url!r}")
     return url
 
 

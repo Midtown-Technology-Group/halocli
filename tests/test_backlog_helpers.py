@@ -57,11 +57,16 @@ def test_safe_path_helpers_canonicalize(name: str, tmp_path: Path) -> None:
     assert module._safe_path(tmp_path).is_absolute()
 
 
-def test_check_spec_url_requires_https() -> None:
+def test_check_spec_url_requires_allowlisted_host() -> None:
     module = importlib.import_module("check_spec_currency")
-    url = "https://example.com/spec.json"
-    assert module._safe_url(url) == url
-    for bad in ("http://example.com/spec.json", "file:///etc/passwd", "ftp://x/y", "not-a-url"):
+    assert module._safe_url(module.DEFAULT_URL) == module.DEFAULT_URL
+    for bad in (
+        "http://dtcdev.halopsa.com/spec.json",
+        "https://evil.example.com/spec.json",
+        "https:///nohost",
+        "file:///etc/passwd",
+        "not-a-url",
+    ):
         with pytest.raises(ValueError):
             module._safe_url(bad)
 
@@ -69,7 +74,7 @@ def test_check_spec_url_requires_https() -> None:
 def test_check_spec_main_rejects_bad_url(monkeypatch: pytest.MonkeyPatch) -> None:
     module = importlib.import_module("check_spec_currency")
     monkeypatch.setattr(
-        sys, "argv", ["check_spec_currency.py", "--url", "http://example.com/spec.json"]
+        sys, "argv", ["check_spec_currency.py", "--url", "https://evil.example.com/spec.json"]
     )
     with pytest.raises(SystemExit):
         module.main()
