@@ -71,12 +71,13 @@ def test_check_spec_url_requires_allowlisted_host() -> None:
             module._safe_url(bad)
 
 
-def test_check_spec_main_rejects_bad_url(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_check_spec_main_rejects_unknown_url_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """--url was removed: only the constant DEFAULT_URL reaches the sink (S8703)."""
     module = importlib.import_module("check_spec_currency")
     monkeypatch.setattr(
         sys, "argv", ["check_spec_currency.py", "--url", "https://evil.example.com/spec.json"]
     )
-    with pytest.raises(ValueError):
+    with pytest.raises(SystemExit):
         module.main()
 
 

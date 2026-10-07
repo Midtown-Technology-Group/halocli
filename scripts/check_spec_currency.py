@@ -5,7 +5,7 @@ Downloads the upstream swagger (read-only) and diffs the (path, method) set
 plus operationIds against src/halocli/spec/halo_openapi.json. Exit 0 when
 identical, exit 1 on drift (re-run scripts/vendor_halo_spec.py then).
 
-    python scripts/check_spec_currency.py [--url URL]
+    python scripts/check_spec_currency.py
 """
 
 from __future__ import annotations
@@ -24,10 +24,11 @@ ALLOWED_SPEC_HOSTS = frozenset({"dtcdev.halopsa.com", "midtowntg.halopsa.com"})
 
 
 def _safe_url(url: str) -> str:
-    """Validate a CLI-supplied fetch URL before requesting it (S8703).
+    """Validate the fetch URL before requesting it (S8703).
 
     https-only AND host-allowlisted: the URL must name one of the known
-    spec hosts, so no other origin can ever be reached.
+    spec hosts, so no other origin can ever be reached. The fetch target
+    is the constant DEFAULT_URL - no CLI-supplied URL reaches the sink.
     """
     parts = urlsplit(url)
     if parts.scheme != "https" or parts.hostname not in ALLOWED_SPEC_HOSTS:
@@ -53,9 +54,9 @@ def opset(doc: dict) -> set[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default=DEFAULT_URL)
-    args = parser.parse_args()
-    url = _safe_url(args.url)
+    parser.parse_args()
+    # fixed fetch target: no CLI-supplied URL (the S8703 taint source) exists
+    url = _safe_url(DEFAULT_URL)
     with urllib.request.urlopen(url, timeout=60) as resp:
         upstream = json.loads(resp.read().decode("utf-8"))
     vendored = json.loads(VENDORED.read_text(encoding="utf-8"))
