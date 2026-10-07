@@ -55,10 +55,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL)
     args = parser.parse_args()
-    try:
-        url = _safe_url(args.url)
-    except ValueError as exc:
-        raise SystemExit(str(exc)) from exc
+    url = _safe_url(args.url)
     with urllib.request.urlopen(url, timeout=60) as resp:
         upstream = json.loads(resp.read().decode("utf-8"))
     vendored = json.loads(VENDORED.read_text(encoding="utf-8"))
@@ -80,4 +77,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except ValueError as exc:
+        # validator failures keep the clean CLI message, not a traceback
+        raise SystemExit(str(exc)) from exc

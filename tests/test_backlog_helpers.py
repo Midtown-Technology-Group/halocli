@@ -76,7 +76,7 @@ def test_check_spec_main_rejects_bad_url(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(
         sys, "argv", ["check_spec_currency.py", "--url", "https://evil.example.com/spec.json"]
     )
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         module.main()
 
 
