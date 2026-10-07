@@ -15,7 +15,6 @@ Usage:
     python scripts/vendor_halo_spec.py                     # download + trim + enrich + write
     python scripts/vendor_halo_spec.py --source raw.json   # trim a local raw copy (offline)
     python scripts/vendor_halo_spec.py --no-overlay        # skip curated prose enrichment
-    python scripts/vendor_halo_spec.py --url https://host/api/swagger/v2/swagger.json
 
 Enrichment (both steps are deterministic and re-runnable):
 
@@ -449,7 +448,6 @@ def vendor(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--url", default=DEFAULT_URL, help="OpenAPI spec URL to download")
     parser.add_argument(
         "--source",
         type=Path,
@@ -472,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         spec = vendor(
-            args.url,
+            DEFAULT_URL,
             args.source,
             args.out,
             overlay_path=None if args.no_overlay else args.overlay,

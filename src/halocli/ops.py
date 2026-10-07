@@ -30,6 +30,8 @@ from typing import Any
 
 from halocli.mirror import load_resource, state_for
 
+
+_C_unassigned = "(unassigned)"
 # Tenant-configurable via --closed-status; ids are NOT used (tenant-specific).
 DEFAULT_CLOSED_STATUSES: tuple[str, ...] = (
     "closed",
@@ -214,7 +216,7 @@ def run_triage(
     stale_count = 0
     for d in open_rows:
         by_status[d["status"] or "?"] = by_status.get(d["status"] or "?", 0) + 1
-        by_agent[d["agent"] or "(unassigned)"] = by_agent.get(d["agent"] or "(unassigned)", 0) + 1
+        by_agent[d["agent"] or _C_unassigned] = by_agent.get(d["agent"] or _C_unassigned, 0) + 1
         if d["age_days"] >= stale_days:
             stale_count += 1
     return {
@@ -261,7 +263,7 @@ def run_standup(
 
     client_counts: dict[str, dict[str, int]] = {}
     for d in entries:
-        name = d["agent"] or "(unassigned)"
+        name = d["agent"] or _C_unassigned
         row = d["row"]
         closed_at = str(row.get("dateclosed") or "")[:19]
         in_window = bool(closed_at) and closed_at >= since_key

@@ -11,6 +11,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Any, Protocol
 
 
+_EP_Appointment = "/Appointment"
 DEFAULT_CACHE_NAMESPACE = "mtg-shared-microsoft-auth"
 PLACEHOLDER_CLIENT_ID = "11111111-1111-1111-1111-111111111111"
 
@@ -179,7 +180,7 @@ class HaloTodoRepository:
             tags=tags or [],
             source_metadata=source_metadata or {"source": "halocli"},
         )
-        result = await self.halo_client.raw("POST", "/Appointment", body=[payload])
+        result = await self.halo_client.raw("POST", _EP_Appointment, body=[payload])
         item = first_result(result) or {**payload}
         return todo_from_appointment(item)
 
@@ -225,7 +226,7 @@ class HaloTodoRepository:
         seen_pages: set[str] = set()
         for page in range(1, 51):  # 50 x 100: a safety net above any tenant size we support
             result = await self.halo_client.raw(
-                "GET", "/Appointment", params={**base, "page_no": str(page)}
+                "GET", _EP_Appointment, params={**base, "page_no": str(page)}
             )
             batch = result_rows(result)
             if not batch:
@@ -311,7 +312,7 @@ class HaloTodoRepository:
         }.items():
             if value is not None:
                 payload[key] = value
-        result = await self.halo_client.raw("POST", "/Appointment", body=[payload])
+        result = await self.halo_client.raw("POST", _EP_Appointment, body=[payload])
         return todo_from_appointment(first_result(result) or payload)
 
     async def complete(self, todo_id: int | str) -> dict[str, Any]:
@@ -323,7 +324,7 @@ class HaloTodoRepository:
             "complete_status": 0,
             "complete_date": datetime.now().isoformat(timespec="seconds"),
         }
-        result = await self.halo_client.raw("POST", "/Appointment", body=[payload])
+        result = await self.halo_client.raw("POST", _EP_Appointment, body=[payload])
         return todo_from_appointment(first_result(result) or payload)
 
     async def add_note(self, todo_id: int | str, note: str) -> dict[str, Any]:
@@ -340,7 +341,7 @@ class HaloTodoRepository:
                 extract_description(str(existing.get("note_html") or "")), metadata
             ),
         }
-        result = await self.halo_client.raw("POST", "/Appointment", body=[payload])
+        result = await self.halo_client.raw("POST", _EP_Appointment, body=[payload])
         return todo_from_appointment(first_result(result) or payload)
 
     async def log_time(

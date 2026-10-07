@@ -17,18 +17,6 @@ from halocli.resources import get_resource
 from halocli.token_cache import KeyringTokenCache, TokenCache
 
 
-def _require_http_url(url: str, what: str) -> str:
-    """Validate a config-supplied endpoint before any request (S5144).
-
-    Profile/auth URLs come from operator-set config; a forged or
-    malformed value must never reach the HTTP layer.
-    """
-    parts = urlsplit(url)
-    if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc:
-        raise HaloCLIError(f"{what} must be a plain http(s) URL: {url!r}")
-    return url
-
-
 class HaloClient:
     def __init__(
         self,
@@ -93,6 +81,13 @@ class HaloClient:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         token = await self._access_token()
         url = self._url(path)
+        # SSRF guard (S5144), inline where the request is sent: the joined
+        # URL must stay on the tenant origin - a caller-supplied path can
+        # never re-target scheme or host
+        base_parts = urlsplit(self.profile.api_base_url)
+        url_parts = urlsplit(url)
+        if (url_parts.scheme, url_parts.netloc) != (base_parts.scheme, base_parts.netloc):
+            raise HaloCLIError(f"path escapes the tenant origin: {path!r}")
         headers = {"Authorization": f"Bearer {token}"}
         body_kwargs = _body_kwargs(json_body, _buffer_files(files), data)
 
@@ -164,8 +159,18 @@ class HaloClient:
             return await self._interactive_access_token()
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
+        # SSRF guard (S5144), checked inline on the exact value sent:
+        # the auth endpoint must be a plain http(s) URL with no userinfo
+        auth_url = self.profile.auth_token_url
+        auth_parts = urlsplit(auth_url)
+        if (
+            auth_parts.scheme not in ("http", "https")
+            or not auth_parts.netloc
+            or "@" in auth_parts.netloc
+        ):
+            raise HaloCLIError(f"auth token URL must be a plain http(s) URL: {auth_url!r}")
         response = await self._http.post(
-            _require_http_url(self.profile.auth_token_url, "auth token URL"),
+            auth_url,
             data={
                 "grant_type": "client_credentials",
                 "client_id": self.profile.client_id,
@@ -216,13 +221,16 @@ class HaloClient:
         }
         if self.profile.client_secret:
             data["client_secret"] = self.profile.client_secret
-        response = await self._http.post(
-            _require_http_url(
-                self.profile.token_endpoint or self.profile.auth_token_url,
-                "token endpoint URL",
-            ),
-            data=data,
-        )
+        # SSRF guard (S5144), inline on the value sent to the token endpoint
+        token_url = self.profile.token_endpoint or self.profile.auth_token_url
+        token_parts = urlsplit(token_url)
+        if (
+            token_parts.scheme not in ("http", "https")
+            or not token_parts.netloc
+            or "@" in token_parts.netloc
+        ):
+            raise HaloCLIError(f"token endpoint URL must be a plain http(s) URL: {token_url!r}")
+        response = await self._http.post(token_url, data=data)
         if response.status_code >= 300:
             raise _response_error(response, endpoint="/auth/token")
         payload = TokenPayload.model_validate(response.json())
@@ -247,15 +255,7 @@ class HaloClient:
             clean_path = "/" + clean_path
         if clean_path.lower().startswith("/api/"):
             clean_path = clean_path[4:]
-        # origin guard (S5144): no matter how the path is spelled, the
-        # request URL must stay on the tenant origin - concat can never
-        # re-target scheme/host, and we check it anyway
-        url = f"{self.profile.api_base_url}{clean_path}"
-        base = urlsplit(self.profile.api_base_url)
-        got = urlsplit(url)
-        if (got.scheme, got.netloc) != (base.scheme, base.netloc):
-            raise HaloCLIError(f"path escapes the tenant origin: {path!r}")
-        return url
+        return f"{self.profile.api_base_url}{clean_path}"
 
     @staticmethod
     def _endpoint(path: str) -> str:
