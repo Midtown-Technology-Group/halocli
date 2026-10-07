@@ -114,7 +114,8 @@ def test_vendor_url_and_paths_are_validated(tmp_path: Path) -> None:
 
     out = tmp_path / "out.json"
     src, safe_out, overlay = module._vendor_safe_paths(None, out, None)
-    assert src is None and overlay is None
+    assert src is None
+    assert overlay is None
     assert safe_out == out.resolve()
 
 
