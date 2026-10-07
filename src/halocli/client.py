@@ -152,6 +152,19 @@ class HaloClient:
     async def test_auth(self) -> Any:
         return await self.request("GET", "/Agent/me")
 
+    async def _post_token_form(self, url: str, data: dict[str, Any]) -> httpx.Response:
+        """POST form data to an auth/token endpoint after validating its URL.
+
+        The single validated token POST path (S5144): the URL is checked on
+        the exact value being sent, right where the request is made.
+        """
+        parts = urlsplit(url)
+        if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc:
+            raise HaloCLIError(f"token endpoint URL must be a plain http(s) URL: {url!r}")
+        if self._http is None:
+            self._http = httpx.AsyncClient(timeout=self.profile.timeout)
+        return await self._http.post(url, data=data)
+
     async def _access_token(self) -> str:
         if self._token and time.time() < self._expires_at - 60:
             return self._token
@@ -159,19 +172,9 @@ class HaloClient:
             return await self._interactive_access_token()
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
-        # SSRF guard (S5144), checked inline on the exact value sent:
-        # the auth endpoint must be a plain http(s) URL with no userinfo
-        auth_url = self.profile.auth_token_url
-        auth_parts = urlsplit(auth_url)
-        if (
-            auth_parts.scheme not in ("http", "https")
-            or not auth_parts.netloc
-            or "@" in auth_parts.netloc
-        ):
-            raise HaloCLIError(f"auth token URL must be a plain http(s) URL: {auth_url!r}")
-        response = await self._http.post(
-            auth_url,
-            data={
+        response = await self._post_token_form(
+            self.profile.auth_token_url,
+            {
                 "grant_type": "client_credentials",
                 "client_id": self.profile.client_id,
                 "client_secret": self.profile.client_secret,
@@ -212,31 +215,9 @@ class HaloClient:
         return self._token
 
     async def _refresh_interactive_token(self, refresh_token: str) -> dict[str, Any]:
-        if self._http is None:
-            self._http = httpx.AsyncClient(timeout=self.profile.timeout)
-        # SSRF guard (S5144): validate every caller-supplied value before it
-        # can reach the HTTP layer - both endpoint inputs on their own
-        # expression, and the refresh token itself
+        # validate the caller-supplied token before it reaches the HTTP layer
         if not refresh_token:
             raise HaloCLIError("refresh token must be a non-empty value")
-        auth_url = self.profile.auth_token_url
-        endpoint = self.profile.token_endpoint
-        auth_parts = urlsplit(auth_url)
-        if (
-            auth_parts.scheme not in ("http", "https")
-            or not auth_parts.netloc
-            or "@" in auth_parts.netloc
-        ):
-            raise HaloCLIError(f"auth token URL must be a plain http(s) URL: {auth_url!r}")
-        if endpoint is not None:
-            endpoint_parts = urlsplit(endpoint)
-            if (
-                endpoint_parts.scheme not in ("http", "https")
-                or not endpoint_parts.netloc
-                or "@" in endpoint_parts.netloc
-            ):
-                raise HaloCLIError(f"token endpoint URL must be a plain http(s) URL: {endpoint!r}")
-        token_url = endpoint or auth_url
         data = {
             "grant_type": "refresh_token",
             "client_id": self.profile.client_id,
@@ -244,7 +225,10 @@ class HaloClient:
         }
         if self.profile.client_secret:
             data["client_secret"] = self.profile.client_secret
-        response = await self._http.post(token_url, data=data)
+        response = await self._post_token_form(
+            self.profile.token_endpoint or self.profile.auth_token_url,
+            data,
+        )
         if response.status_code >= 300:
             raise _response_error(response, endpoint="/auth/token")
         payload = TokenPayload.model_validate(response.json())
