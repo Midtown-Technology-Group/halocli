@@ -133,6 +133,84 @@ def test_follow_dispatched_run_timeout_aborts(
         rel._follow_dispatched_run("Build MSI Release", 9, deadline, started)
 
 
+def test_wait_new_dispatch_ignores_other_versions(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = {"n": 0}
+
+    def fake_gh(args: list[str], *, cwd: Any = None) -> str:
+        calls["n"] += 1
+        rows = [
+            {
+                "databaseId": 9,
+                "status": "completed",
+                "conclusion": "failure",
+                "displayTitle": "Build MSI Release v9.9.9",
+            }
+        ]
+        if calls["n"] > 1:
+            rows.insert(
+                0,
+                {
+                    "databaseId": 10,
+                    "status": "completed",
+                    "conclusion": "success",
+                    "displayTitle": "Build MSI Release v1.16.0",
+                },
+            )
+        return json.dumps(rows)
+
+    monkeypatch.setattr(rel, "gh", fake_gh)
+    assert (
+        rel.wait_new_workflow_dispatch(
+            "Build MSI Release", known_ids=set(), display_title="Build MSI Release v1.16.0"
+        )
+        == "success"
+    )
+    assert calls["n"] == 2
+
+
+def test_wait_pr_checks_reports_progress_and_passes(
+    clock: FakeClock, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    responses = [
+        _ok([], json.dumps([{"name": "ci", "state": "IN_PROGRESS", "bucket": "pending"}])),
+        _ok([], json.dumps([{"name": "ci", "state": "SUCCESS", "bucket": "pass"}])),
+    ]
+    calls: list[tuple[list[str], dict[str, Any]]] = []
+
+    def fake_run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append((args, kwargs))
+        return responses.pop(0)
+
+    monkeypatch.setattr(rel.subprocess, "run", fake_run)
+    rel.wait_pr_checks(11, "Midtown-Technology-Group/mtg-winget", timeout_s=45)
+    assert len(calls) == 2
+    assert all("--watch" not in args and kw["timeout"] <= 30 for args, kw in calls)
+    lines = _lines(capsys)
+    assert all(STAMP.match(line) for line in lines)
+    assert any("pending" in line for line in lines)
+    assert "checks passed" in lines[-1]
+
+
+def test_wait_pr_checks_timeout_is_bounded_and_visible(
+    clock: FakeClock, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = {"n": 0}
+
+    def pending(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls["n"] += 1
+        return subprocess.CompletedProcess(
+            args, 8, json.dumps([{"name": "ci", "bucket": "pending"}]), ""
+        )
+
+    monkeypatch.setattr(rel.subprocess, "run", pending)
+    with pytest.raises(SystemExit, match="timeout waiting for PR #11 checks"):
+        rel.wait_pr_checks(11, "Midtown-Technology-Group/mtg-winget", timeout_s=25)
+    assert 1 <= calls["n"] <= 5
+    assert any("pending" in line for line in _lines(capsys))
+
+
 def test_find_winget_pr_skips_unrelated_titles(
     clock: FakeClock, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -146,6 +224,19 @@ def test_find_winget_pr_skips_unrelated_titles(
     lines = _lines(capsys)
     assert all(STAMP.match(line) for line in lines), lines
     assert any("#4" in line for line in lines)
+
+
+def test_find_winget_pr_reports_already_merged(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fake_gh(args: list[str], *, cwd: Any = None) -> str:
+        if "merged" in args:
+            return json.dumps([{"number": 4, "title": "Update halocli to 1.16.0"}])
+        return "[]"
+
+    monkeypatch.setattr(rel, "gh", fake_gh)
+    with pytest.raises(SystemExit, match="already merged.*--verify-existing"):
+        rel.find_winget_pr("1.16.0")
 
 
 def _show_pyproject(version: str) -> str:
@@ -291,7 +382,7 @@ def _stub_dance(monkeypatch: pytest.MonkeyPatch, calls: list[str], *, msi_attach
     monkeypatch.setattr(rel, "ensure_tag_pushed", lambda tag: calls.append("push") or "pushed")
     monkeypatch.setattr(rel, "wait_workflow", lambda *a, **k: calls.append("wait") or "success")
     monkeypatch.setattr(rel, "release_has_msi", lambda version: msi_attached)
-    monkeypatch.setattr(rel, "pre_dispatch_run_ids", lambda workflow: {1})
+    monkeypatch.setattr(rel, "msi_workflow_runs", lambda: [])
     monkeypatch.setattr(rel, "gh", lambda args, **k: calls.append("dispatch") or "")
     monkeypatch.setattr(
         rel, "wait_new_workflow_dispatch", lambda *a, **k: calls.append("msi-wait") or "success"
@@ -339,6 +430,106 @@ def test_fresh_run_dispatches_msi_once(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert rel.main() == 0
     assert calls == ["tag", "push", "wait", "dispatch", "msi-wait", "dance", "checks", "feed"]
+
+
+def test_msi_stage_reuses_only_matching_active_run(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(rel, "release_has_msi", lambda version: False)
+    monkeypatch.setattr(
+        rel,
+        "msi_workflow_runs",
+        lambda: [
+            {
+                "databaseId": 9,
+                "status": "in_progress",
+                "conclusion": None,
+                "displayTitle": "Build MSI Release v1.16.0",
+            },
+            {
+                "databaseId": 8,
+                "status": "in_progress",
+                "conclusion": None,
+                "displayTitle": "Build MSI Release v9.9.9",
+            },
+        ],
+    )
+    seen: list[list[str]] = []
+
+    def fake_gh(args: list[str], *, cwd: Any = None) -> str:
+        seen.append(args)
+        return json.dumps({"status": "completed", "conclusion": "success"})
+
+    monkeypatch.setattr(rel, "gh", fake_gh)
+    rel.build_msi_stage("1.16.0")
+    assert seen == [["run", "view", "9", "--json", "status,conclusion"]]
+
+
+def test_msi_stage_blocks_ambiguous_active_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(rel, "release_has_msi", lambda version: False)
+    monkeypatch.setattr(
+        rel,
+        "msi_workflow_runs",
+        lambda: [
+            {
+                "databaseId": 7,
+                "status": "in_progress",
+                "conclusion": None,
+                "displayTitle": "Build MSI Release",
+            },
+        ],
+    )
+    with pytest.raises(SystemExit, match="without version identity"):
+        rel.build_msi_stage("1.16.0")
+
+
+def test_msi_stage_reconciles_lost_dispatch_response(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(rel, "release_has_msi", lambda version: False)
+    rows = iter(
+        [
+            [],
+            [
+                {
+                    "databaseId": 9,
+                    "status": "in_progress",
+                    "conclusion": None,
+                    "displayTitle": "Build MSI Release v1.16.0",
+                }
+            ],
+        ]
+    )
+    monkeypatch.setattr(rel, "msi_workflow_runs", lambda: next(rows))
+    seen: list[list[str]] = []
+
+    def fake_gh(args: list[str], *, cwd: Any = None) -> str:
+        seen.append(args)
+        if args[0] == "workflow":
+            raise SystemExit("network lost")
+        return json.dumps({"status": "completed", "conclusion": "success"})
+
+    monkeypatch.setattr(rel, "gh", fake_gh)
+    rel.build_msi_stage("1.16.0")
+    assert len([a for a in seen if a[0] == "workflow"]) == 1
+    assert ["run", "view", "9", "--json", "status,conclusion"] in seen
+
+
+def test_msi_stage_stops_when_dispatch_outcome_cannot_be_read_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(rel, "release_has_msi", lambda version: False)
+    monkeypatch.setattr(rel, "msi_workflow_runs", lambda: [])
+    dispatched = {"n": 0}
+
+    def lost(args: list[str], *, cwd: Any = None) -> str:
+        dispatched["n"] += 1
+        raise SystemExit("network lost")
+
+    monkeypatch.setattr(rel, "gh", lost)
+    with pytest.raises(SystemExit, match="outcome uncertain.*inspect workflow runs"):
+        rel.build_msi_stage("1.16.0")
+    assert dispatched["n"] == 1
 
 
 def test_manifest_mismatch_aborts_before_any_push(monkeypatch: pytest.MonkeyPatch) -> None:

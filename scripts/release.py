@@ -14,10 +14,10 @@ serve the version before pipx installs it.
 Steps refuse to continue on any mismatch. --skip-pipx omits the local
 install; --skip-tests skips the local gate run (CI still gates the tag).
 
-Interrupted runs are safe to re-run with the same arguments: completed steps
-(tag, tag push, MSI dispatch) are detected and skipped, every wait prints
-timestamped progress, and a tag or artifact that does not match the requested
-version aborts before any mutation.
+Tag, tag push and MSI stages can resume with the same arguments. A merged
+winget PR still requires --verify-existing rather than replaying the dance.
+Every wait prints timestamped progress, and a tag or artifact that does not
+match the requested version aborts before any mutation.
 """
 
 from __future__ import annotations
@@ -118,19 +118,42 @@ def wait_workflow(
 
 
 def wait_pr_checks(pr: int, repo: str, *, timeout_s: int = 1800) -> None:
-    """Watch a PR's checks until they pass (gh exits nonzero while failing)."""
-    _ = timeout_s  # gh --watch owns the pacing here; kept for a uniform wait signature
-    log(f"watching checks for PR #{pr} in {repo}")
-    proc = subprocess.run(
-        ["gh", "pr", "checks", str(pr), "--repo", repo, "--watch", "--interval", "20"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if proc.returncode != 0:
-        raise SystemExit(f"PR #{pr} checks failed:\n{proc.stdout[-3000:]}")
-    log(f"PR #{pr} checks passed")
+    """Poll checks with a wall-clock limit and visible progress."""
+    started = time.time()
+    deadline = started + timeout_s
+    log(f"waiting for PR #{pr} checks in {repo} (timeout {timeout_s}s)")
+    while time.time() < deadline:
+        remaining = deadline - time.time()
+        try:
+            proc = subprocess.run(
+                ["gh", "pr", "checks", str(pr), "--repo", repo, "--json", "name,state,bucket"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=min(30, remaining),
+            )
+        except subprocess.TimeoutExpired:
+            log(f"PR #{pr} check query timed out ({_elapsed(started)})")
+            continue
+        if proc.returncode not in {0, 1, 8}:
+            raise SystemExit(f"PR #{pr} check query failed ({proc.returncode}): {proc.stderr}")
+        try:
+            checks = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            raise SystemExit(f"could not parse PR #{pr} checks: {proc.stdout[:200]!r}")
+        failed = [c for c in checks if c["bucket"] == "fail"]
+        if failed:
+            raise SystemExit(f"PR #{pr} checks failed: {failed}")
+        pending = [c for c in checks if c["bucket"] == "pending"]
+        if proc.returncode == 1 and not pending:
+            raise SystemExit(f"PR #{pr} check query failed: {proc.stderr or proc.stdout}")
+        if checks and not pending and proc.returncode == 0:
+            log(f"PR #{pr} checks passed")
+            return
+        log(f"PR #{pr} checks: {len(checks)} found, {len(pending)} pending ({_elapsed(started)})")
+        time.sleep(min(20, max(0, deadline - time.time())))
+    raise SystemExit(f"timeout waiting for PR #{pr} checks in {repo} after {timeout_s}s")
 
 
 def sha256_file(path: Path) -> str:
@@ -214,16 +237,25 @@ def verify_release_assets(version: str) -> tuple[str, str]:
 
 
 def find_winget_pr(version: str, *, timeout_s: int = 3600) -> dict:
-    """Wait for the winget-releaser PR for this version."""
+    """Wait for an open winget-releaser PR; fail fast if it already merged."""
     started = time.time()
     deadline = started + timeout_s
     log(f"waiting for the winget-releaser PR for {version} (timeout {timeout_s}s)")
     while time.time() < deadline:
         out = gh(["pr", "list", "--state", "open", "--json", "number,title,headRefName"])
         for pr in json.loads(out):
-            if f"Update halocli to {version}" in pr["title"]:
+            if pr["title"] == f"Update halocli to {version}":
                 log(f"found winget PR #{pr['number']} ({pr['headRefName']})")
                 return pr
+        merged = json.loads(
+            gh(["pr", "list", "--state", "merged", "--limit", "100", "--json", "number,title"])
+        )
+        for pr in merged:
+            if pr["title"] == f"Update halocli to {version}":
+                raise SystemExit(
+                    f"winget PR #{pr['number']} for {version} already merged; "
+                    "the dance cannot resume after this point. Use --verify-existing."
+                )
         log(f"no winget PR for {version} yet ({_elapsed(started)})")
         time.sleep(15)
     raise SystemExit(f"no winget PR appeared for {version} within {timeout_s}s")
@@ -370,7 +402,9 @@ def _follow_dispatched_run(workflow: str, run_id: int, deadline: float, started:
     raise SystemExit(f"timeout waiting for run {run_id} of {workflow}")
 
 
-def wait_new_workflow_dispatch(workflow: str, *, known_ids: set[int], timeout_s: int = 900) -> str:
+def wait_new_workflow_dispatch(
+    workflow: str, *, known_ids: set[int], display_title: str | None = None, timeout_s: int = 900
+) -> str:
     """Wait for a run of `workflow` that was NOT in known_ids, then its conclusion."""
     started = time.time()
     deadline = started + timeout_s
@@ -384,13 +418,18 @@ def wait_new_workflow_dispatch(workflow: str, *, known_ids: set[int], timeout_s:
                 "--workflow",
                 workflow,
                 "--limit",
-                "10",
+                "100",
                 "--json",
-                "databaseId,status,conclusion",
+                "databaseId,status,conclusion,displayTitle",
             ]
         )
         rows = json.loads(out)
-        fresh = [r for r in rows if r["databaseId"] not in known_ids]
+        fresh = [
+            r
+            for r in rows
+            if r["databaseId"] not in known_ids
+            and (display_title is None or r["displayTitle"] == display_title)
+        ]
         if fresh:
             new_id = fresh[0]["databaseId"]
             if fresh[0]["status"] == "completed":
@@ -404,24 +443,83 @@ def wait_new_workflow_dispatch(workflow: str, *, known_ids: set[int], timeout_s:
     raise SystemExit(f"timeout waiting for a NEW run of {workflow} (saw {new_id})")
 
 
-def pre_dispatch_run_ids(workflow: str) -> set[int]:
-    out = gh(["run", "list", "--workflow", workflow, "--limit", "10", "--json", "databaseId"])
-    return {r["databaseId"] for r in json.loads(out)}
+def msi_workflow_runs() -> list[dict]:
+    """Read recent MSI runs. An active run without a version is ambiguous."""
+    out = gh(
+        [
+            "run",
+            "list",
+            "--workflow",
+            "Build MSI Release",
+            "--limit",
+            "100",
+            "--json",
+            "databaseId,status,conclusion,displayTitle",
+        ]
+    )
+    return json.loads(out)
 
 
 def build_msi_stage(version: str) -> None:
-    """Dispatch Build MSI Release and wait for it, unless the asset exists.
-
-    A resumed run whose release already carries `halocli.msi` skips the
-    dispatch (no duplicate build); anything else waits for a successful run.
-    """
+    """Reuse a version-matched run or dispatch once; ambiguous state aborts."""
     if release_has_msi(version):
         log(f"release v{version} already carries halocli.msi: skipping MSI dispatch")
         return
-    pre_ids = pre_dispatch_run_ids("Build MSI Release")
-    gh(["workflow", "run", "Build MSI Release", "-f", f"version={version}"])
-    log("Build MSI Release dispatched")
-    conclusion = wait_new_workflow_dispatch("Build MSI Release", known_ids=pre_ids)
+    title = f"Build MSI Release v{version}"
+    rows = msi_workflow_runs()
+    matching = [r for r in rows if r["displayTitle"] == title]
+    active = [r for r in matching if r["status"] != "completed"]
+    if len(active) > 1:
+        raise SystemExit(
+            f"multiple active MSI runs for v{version}: {[r['databaseId'] for r in active]}"
+        )
+    if active:
+        run_id = active[0]["databaseId"]
+        log(f"Build MSI Release run {run_id} for v{version} already active: resuming wait")
+        started = time.time()
+        conclusion = _follow_dispatched_run("Build MSI Release", run_id, started + 900, started)
+    else:
+        # Old workflow runs have no version in their display title. Their
+        # active outcome cannot be safely assigned to this release.
+        unknown = [
+            r
+            for r in rows
+            if r["status"] != "completed"
+            and not r["displayTitle"].startswith("Build MSI Release v")
+        ]
+        if unknown:
+            raise SystemExit(
+                f"active MSI run(s) without version identity: {[r['databaseId'] for r in unknown]}"
+            )
+        if matching:
+            latest = matching[0]
+            raise SystemExit(
+                f"MSI run {latest['databaseId']} for v{version} already concluded "
+                f"{latest['conclusion']}, but the release has no halocli.msi; inspect it before redispatch"
+            )
+        known_ids = {r["databaseId"] for r in rows}
+        try:
+            gh(["workflow", "run", "Build MSI Release", "-f", f"version={version}"])
+        except SystemExit as exc:
+            # A lost dispatch response does not prove the run was rejected.
+            observed = [
+                r
+                for r in msi_workflow_runs()
+                if r["displayTitle"] == title and r["databaseId"] not in known_ids
+            ]
+            if len(observed) != 1 or observed[0]["status"] == "completed":
+                raise SystemExit(
+                    f"MSI dispatch outcome uncertain for v{version}; inspect workflow runs before retry: {exc}"
+                ) from exc
+            run_id = observed[0]["databaseId"]
+            log(f"MSI dispatch response lost; following observed run {run_id} for v{version}")
+            started = time.time()
+            conclusion = _follow_dispatched_run("Build MSI Release", run_id, started + 900, started)
+        else:
+            log(f"Build MSI Release dispatched for v{version}")
+            conclusion = wait_new_workflow_dispatch(
+                "Build MSI Release", known_ids=known_ids, display_title=title
+            )
     if conclusion != "success":
         raise SystemExit(f"MSI workflow concluded {conclusion}")
     log("MSI workflow: success")
