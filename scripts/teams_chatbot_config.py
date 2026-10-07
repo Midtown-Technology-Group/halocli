@@ -38,6 +38,10 @@ from halocli.config import load_profile  # noqa: E402
 
 EVIDENCE_PATH = REPO_ROOT / "teams_chatbot_evidence.json"
 
+# Endpoint literals (S1192): one definition each.
+_EP_CONTROL = "/Control"
+_EP_CONTROL_TEAMS = "/Control/Teams"
+
 # The three Control fields behind the guide's End-User Chat general settings.
 CHATBOT_FIELDS = (
     "teams_chat_profile",
@@ -153,11 +157,11 @@ async def read_state(client: HaloClient) -> dict[str, Any]:
     """Read-only snapshot: Teams tab, Control chatbot fields, chat profiles."""
     out: dict[str, Any] = {}
     try:
-        out["teams_tab"] = await client.request("GET", "/Control/Teams", timeout=60)
+        out["teams_tab"] = await client.request("GET", _EP_CONTROL_TEAMS, timeout=60)
     except Exception as exc:  # noqa: BLE001 - tab may be absent pre-enablement
         out["teams_tab_error"] = f"{type(exc).__name__}: {exc}"[:300]
 
-    controls = unwrap_list(await client.request("GET", "/Control", timeout=60))
+    controls = unwrap_list(await client.request("GET", _EP_CONTROL, timeout=60))
     control = next(
         (c for c in controls if isinstance(c, dict) and "teams_chat_profile" in c),
         controls[0] if controls else None,
@@ -205,7 +209,7 @@ async def apply_state(
     some fields silently before, so each write is proven on its own before
     the next one is attempted. Restore-on-drift stays armed throughout.
     """
-    controls = unwrap_list(await client.request("GET", "/Control", timeout=60))
+    controls = unwrap_list(await client.request("GET", _EP_CONTROL, timeout=60))
     original = next(
         (c for c in controls if isinstance(c, dict) and "teams_chat_profile" in c),
         controls[0] if controls else None,
@@ -231,8 +235,8 @@ async def apply_state(
     for field, value in requested.items():
         candidate = copy.deepcopy(current)
         candidate[field] = value
-        await client.request("POST", "/Control", json_body=[candidate], timeout=120)
-        readback_controls = unwrap_list(await client.request("GET", "/Control", timeout=60))
+        await client.request("POST", _EP_CONTROL, json_body=[candidate], timeout=120)
+        readback_controls = unwrap_list(await client.request("GET", _EP_CONTROL, timeout=60))
         readback = next(
             (c for c in readback_controls if isinstance(c, dict) and "teams_chat_profile" in c),
             None,
@@ -259,7 +263,7 @@ async def apply_state(
     if result["drift"]:
         # restore the exact original object and report failure
         try:
-            await client.request("POST", "/Control", json_body=[original], timeout=120)
+            await client.request("POST", _EP_CONTROL, json_body=[original], timeout=120)
             result["restored"] = True
         except Exception as exc:  # noqa: BLE001
             result["restore_error"] = f"{type(exc).__name__}: {exc}"[:300]
@@ -277,7 +281,7 @@ async def tab_post_state(
     full-replace semantics cannot lose tab state.
     """
     result: dict[str, Any] = {}
-    tab = await client.request("GET", "/Control/Teams", timeout=60)
+    tab = await client.request("GET", _EP_CONTROL_TEAMS, timeout=60)
     if not isinstance(tab, dict):
         raise SystemExit("GET /Control/Teams returned no object")
     payload = dict(tab)
@@ -285,12 +289,12 @@ async def tab_post_state(
     payload["teams_chat_welcome_message"] = welcome
     payload["teams_chat_help_message"] = help_text
     try:
-        await client.request("POST", "/Control/Teams", json_body=payload, timeout=60)
+        await client.request("POST", _EP_CONTROL_TEAMS, json_body=payload, timeout=60)
         result["post"] = "accepted"
     except Exception as exc:  # noqa: BLE001
         result["post"] = f"{type(exc).__name__}: {exc}"[:300]
 
-    readback = unwrap_list(await client.request("GET", "/Control", timeout=60))
+    readback = unwrap_list(await client.request("GET", _EP_CONTROL, timeout=60))
     control = next(
         (c for c in readback if isinstance(c, dict) and "teams_chat_profile" in c),
         None,

@@ -186,8 +186,9 @@ def test_run_refuses_production(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
         "load_profile",
         lambda name: SimpleNamespace(tenant_url="https://midtowntg.halopsa.com"),
     )
+    pending = module.run(_args("--profile", "prod"))
     with pytest.raises(SystemExit):
-        asyncio.run(module.run(_args("--profile", "prod")))
+        asyncio.run(pending)
 
 
 def test_run_apply_persists_all_fields(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
