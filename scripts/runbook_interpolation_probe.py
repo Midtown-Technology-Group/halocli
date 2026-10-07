@@ -30,6 +30,8 @@ from typing import Any
 
 import probe_harness as ph
 
+
+_C_flag = "<<flag>>"
 SUBJECT_IN = "halocli-interp created-by-input"
 NOTE_IN = "halocli-interp dynamic note"
 
@@ -62,38 +64,38 @@ LEGS: dict[str, tuple] = {
     "aat3_var": ("aa8", 3, {}, {"note_text": NOTE_IN}),
     "bool_eq_t": (
         "cond",
-        [{"type": 0, "value_int": 1, "fieldname": "<<flag>>"}],
+        [{"type": 0, "value_int": 1, "fieldname": _C_flag}],
         {"flag": "1", "level": "5"},
     ),
     "bool_eq_f": (
         "cond",
-        [{"type": 0, "value_int": 1, "fieldname": "<<flag>>"}],
+        [{"type": 0, "value_int": 1, "fieldname": _C_flag}],
         {"flag": "0", "level": "5"},
     ),
     "boolset_t": (
         "cond",
-        [{"type": 23, "value_int": 0, "value_string": "1", "fieldname": "<<flag>>"}],
+        [{"type": 23, "value_int": 0, "value_string": "1", "fieldname": _C_flag}],
         {"flag": "1", "level": "5"},
     ),
     "boolset_f": (
         "cond",
-        [{"type": 23, "value_int": 0, "value_string": "1", "fieldname": "<<flag>>"}],
+        [{"type": 23, "value_int": 0, "value_string": "1", "fieldname": _C_flag}],
         {"flag": "0", "level": "5"},
     ),
     "boolset0_f": (
         "cond",
-        [{"type": 23, "value_int": 0, "value_string": "0", "fieldname": "<<flag>>"}],
+        [{"type": 23, "value_int": 0, "value_string": "0", "fieldname": _C_flag}],
         {"flag": "0", "level": "5"},
     ),
     "boolset0_t": (
         "cond",
-        [{"type": 23, "value_int": 0, "value_string": "0", "fieldname": "<<flag>>"}],
+        [{"type": 23, "value_int": 0, "value_string": "0", "fieldname": _C_flag}],
         {"flag": "1", "level": "5"},
     ),
     # case-only rename would collide (server names are case-insensitive)
     "boolset_capital": (
         "cond",
-        [{"type": 23, "value_int": 0, "value_string": "True", "fieldname": "<<flag>>"}],
+        [{"type": 23, "value_int": 0, "value_string": "True", "fieldname": _C_flag}],
         {"flag": "1", "level": "5"},
     ),
 }

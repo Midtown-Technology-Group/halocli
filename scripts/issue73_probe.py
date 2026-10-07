@@ -25,6 +25,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
+_EP_Appointment_Booking = "/Appointment/Booking"
+_EP_Users_onbehalf = "/Users/onbehalf"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -90,24 +93,24 @@ async def main() -> int:
                 out[key] = {"ok": False, "error": str(exc)[:250]}
 
         await probe("users_me", "GET", "/Users/me")
-        await probe("users_onbehalf_bare", "GET", "/Users/onbehalf")
+        await probe("users_onbehalf_bare", "GET", _EP_Users_onbehalf)
         await probe(
             "users_onbehalf_uname",
             "GET",
-            "/Users/onbehalf",
+            _EP_Users_onbehalf,
             params={"uname": "thomas@midtowntg.com"},
         )
-        await probe("users_onbehalf_userid", "GET", "/Users/onbehalf", params={"user_id": "3"})
-        await probe("booking_get_bare", "GET", "/Appointment/Booking")
+        await probe("users_onbehalf_userid", "GET", _EP_Users_onbehalf, params={"user_id": "3"})
+        await probe("booking_get_bare", "GET", _EP_Appointment_Booking)
         if appointment_id is not None:
             await probe(
                 "booking_get_appointment_id",
                 "GET",
-                "/Appointment/Booking",
+                _EP_Appointment_Booking,
                 params={"appointment_id": str(appointment_id)},
             )
         # empty array: a validation rejection is free evidence, no booking made
-        await probe("booking_post_empty", "POST", "/Appointment/Booking", body=[])
+        await probe("booking_post_empty", "POST", _EP_Appointment_Booking, body=[])
 
         # ---------------- item 4: action change fields ---------------------
         # safety: sendemail false, sendsms false, dont_do_rules true

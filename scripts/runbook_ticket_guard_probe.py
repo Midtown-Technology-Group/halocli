@@ -23,6 +23,12 @@ import sys
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
+
+def _safe_path(p: str | Path) -> Path:
+    """Canonicalize a CLI-supplied path before touching the disk (S8707)."""
+    return Path(p).expanduser().resolve()
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -331,7 +337,7 @@ async def main() -> int:
 
     payload = json.dumps(out, indent=2, default=str)
     if args.save:
-        Path(args.save).write_text(payload + "\n", encoding="utf-8")
+        _safe_path(args.save).write_text(payload + "\n", encoding="utf-8")
     print(payload)
     return 0
 

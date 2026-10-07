@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
+_C_Sleep_Finished = "Sleep Finished"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -76,14 +78,14 @@ RECIPES: dict[str, list[dict]] = {
     "S1_sleep1_to_success": [
         {
             **sleep_step(1, "Wait a second", 1, start=True),
-            "actions": [edge(32, "Sleep Finished", 1, 2, 1)],
+            "actions": [edge(32, _C_Sleep_Finished, 1, 2, 1)],
         },
         terminal(2, "Success", None, end=True),
     ],
     "S2_sleep0_to_success": [
         {
             **sleep_step(1, "Instant hop", 0, start=True),
-            "actions": [edge(32, "Sleep Finished", 1, 2, 1)],
+            "actions": [edge(32, _C_Sleep_Finished, 1, 2, 1)],
         },
         terminal(2, "Success", None, end=True),
     ],
@@ -123,9 +125,9 @@ RECIPES: dict[str, list[dict]] = {
     "S5_double_sleep": [
         {
             **sleep_step(1, "Hop one", 0, start=True),
-            "actions": [edge(32, "Sleep Finished", 1, 2, 1)],
+            "actions": [edge(32, _C_Sleep_Finished, 1, 2, 1)],
         },
-        {**sleep_step(2, "Hop two", 0), "actions": [edge(32, "Sleep Finished", 2, 3, 1)]},
+        {**sleep_step(2, "Hop two", 0), "actions": [edge(32, _C_Sleep_Finished, 2, 3, 1)]},
         terminal(3, "Success", None, end=True),
     ],
 }

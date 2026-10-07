@@ -92,7 +92,7 @@ def test_probe_legs_verdict_and_cleanup(
             "trigger_fire": {"ok": True},
         }
 
-    async def fake_gone(client: Any, label: str, path: str) -> str:
+    async def fake_gone(client: Any, path: str) -> str:
         return "deleted (clean)"
 
     monkeypatch.setattr(probe.ph.bc, "_fire_runbook", fake_fire)

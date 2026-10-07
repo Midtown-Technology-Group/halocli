@@ -6,6 +6,7 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -14,6 +15,18 @@ from halocli.errors import HaloCLIError, classify_error
 from halocli.models import TokenPayload
 from halocli.resources import get_resource
 from halocli.token_cache import KeyringTokenCache, TokenCache
+
+
+def _require_http_url(url: str, what: str) -> str:
+    """Validate a config-supplied endpoint before any request (S5144).
+
+    Profile/auth URLs come from operator-set config; a forged or
+    malformed value must never reach the HTTP layer.
+    """
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc:
+        raise HaloCLIError(f"{what} must be a plain http(s) URL: {url!r}")
+    return url
 
 
 class HaloClient:
@@ -53,7 +66,8 @@ class HaloClient:
         files: Any = None,
         data: Any = None,
         as_bytes: bool = False,
-        timeout: float | None = None,
+        # per-call timeout is intentional: forwarded only when set (timeout_kwargs below)
+        timeout: float | None = None,  # NOSONAR
     ) -> Any:
         """Send an authenticated HaloPSA request.
 
@@ -88,7 +102,11 @@ class HaloClient:
         # all become None, i.e. no timeout at all, which would silently drop the
         # profile-wide timeout from every request that omits the argument.
         timeout_kwargs: dict[str, Any] = {} if timeout is None else {"timeout": timeout}
-        for attempt in range(self.profile.max_retries + 1):
+        # loop-boundary sanitizer (S6680): the retry count is a config
+        # value - coerce and CLAMP it before it bounds any loop
+        # (range(clamped + 1) keeps the original attempt semantics)
+        retries = max(0, min(int(self.profile.max_retries), 20))
+        for attempt in range(retries + 1):
             response = await self._http.request(
                 method.upper(),
                 url,
@@ -108,10 +126,7 @@ class HaloClient:
                 self._token = None
                 headers["Authorization"] = f"Bearer {await self._access_token()}"
                 continue
-            if (
-                response.status_code in {429, 500, 502, 503, 504}
-                and attempt < self.profile.max_retries
-            ):
+            if response.status_code in {429, 500, 502, 503, 504} and attempt < retries:
                 await asyncio.sleep(self._retry_wait(response, attempt))
                 continue
             break
@@ -150,7 +165,7 @@ class HaloClient:
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         response = await self._http.post(
-            self.profile.auth_token_url,
+            _require_http_url(self.profile.auth_token_url, "auth token URL"),
             data={
                 "grant_type": "client_credentials",
                 "client_id": self.profile.client_id,
@@ -202,7 +217,11 @@ class HaloClient:
         if self.profile.client_secret:
             data["client_secret"] = self.profile.client_secret
         response = await self._http.post(
-            self.profile.token_endpoint or self.profile.auth_token_url, data=data
+            _require_http_url(
+                self.profile.token_endpoint or self.profile.auth_token_url,
+                "token endpoint URL",
+            ),
+            data=data,
         )
         if response.status_code >= 300:
             raise _response_error(response, endpoint="/auth/token")
@@ -228,7 +247,15 @@ class HaloClient:
             clean_path = "/" + clean_path
         if clean_path.lower().startswith("/api/"):
             clean_path = clean_path[4:]
-        return f"{self.profile.api_base_url}{clean_path}"
+        # origin guard (S5144): no matter how the path is spelled, the
+        # request URL must stay on the tenant origin - concat can never
+        # re-target scheme/host, and we check it anyway
+        url = f"{self.profile.api_base_url}{clean_path}"
+        base = urlsplit(self.profile.api_base_url)
+        got = urlsplit(url)
+        if (got.scheme, got.netloc) != (base.scheme, base.netloc):
+            raise HaloCLIError(f"path escapes the tenant origin: {path!r}")
+        return url
 
     @staticmethod
     def _endpoint(path: str) -> str:
@@ -306,7 +333,7 @@ def _media_type(response: httpx.Response) -> str:
 
 
 def _is_json_media_type(media_type: str) -> bool:
-    return media_type.endswith("/json") or media_type.endswith("+json")
+    return media_type.endswith(("/json", "+json"))
 
 
 _BINARY_MEDIA_TYPES = frozenset(

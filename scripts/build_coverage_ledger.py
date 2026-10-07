@@ -69,6 +69,7 @@ def registry_map() -> dict[tuple[str, str], str]:
         if resource.supports_get:
             mapping[(f"{resource.endpoint}/{{id}}", "get")] = f"halocli {name} get"
         if resource.supports_create or resource.supports_update:
+            single_verb = "create" if resource.supports_create else "update"
             verb = (
                 "create/update"
                 if (
@@ -76,7 +77,7 @@ def registry_map() -> dict[tuple[str, str], str]:
                     and resource.supports_update
                     and resource.create_endpoint == resource.update_endpoint
                 )
-                else ("create" if resource.supports_create else "update")
+                else single_verb
             )
             if resource.create_endpoint:
                 mapping[(resource.create_endpoint, "post")] = f"halocli {name} {verb}"
@@ -175,7 +176,9 @@ def build() -> dict:
 
     # Policy must describe reality: covered markers exactly match the registry's
     # segments, and every spec segment must be classified somewhere.
-    registry_segments = {p.strip("/").split("/")[0] for p, _ in reg if p.strip("/")}
+    registry_segments = {
+        p.strip("/").split("/")[0] for (p, _method), _cmd in reg.items() if p.strip("/")
+    }
     policy_covered = {s for s, v in segments.items() if v.get("disposition") == "covered"}
     if policy_covered != registry_segments:
         missing = sorted(registry_segments - policy_covered)

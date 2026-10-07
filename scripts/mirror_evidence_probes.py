@@ -26,9 +26,13 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Any, Awaitable, Callable
+from typing import Any
 
+
+_EP_Feed = "/Feed"
+_EP_Tickets = "/Tickets"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -43,11 +47,57 @@ def rows_of(body: Any) -> list[dict]:
     return []
 
 
-async def probe(out: dict, name: str, fn: Callable[[], Awaitable[dict]]) -> None:
+async def probe(out: dict, name: str, fn: Callable[[], Awaitable[dict] | dict]) -> None:
     try:
-        out[name] = await fn()
+        result = fn()
+        out[name] = await result if isinstance(result, Awaitable) else result
     except Exception as exc:  # noqa: BLE001 - evidence records failures verbatim
         out[name] = {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def dates(rows: list[dict]) -> list[str]:
+    return [str(r.get("dateoccurred") or "")[:19] for r in rows]
+
+
+def dates_probe(recent: list[dict]) -> dict:
+    return {
+        "sampled": len(recent),
+        "datecreated_blank": sum(1 for r in recent if r.get("datecreated") in (None, "")),
+        "dateoccurred_present": sum(1 for r in recent if r.get("dateoccurred") not in (None, "")),
+        "sample_pair": [
+            {
+                "datecreated": r.get("datecreated"),
+                "dateoccurred": r.get("dateoccurred"),
+                "datemodified": r.get("datemodified"),
+            }
+            for r in recent[:3]
+        ],
+    }
+
+
+def agent_probe(recent: list[dict]) -> dict:
+    return {
+        "sampled": len(recent),
+        "agent_id_present": sum(1 for r in recent if r.get("agent_id") not in (None, "", 0)),
+        "agent_name_present": sum(1 for r in recent if r.get("agent_name") not in (None, "")),
+    }
+
+
+def closed_cross(rows: list[dict]) -> dict[str, dict[str, int]]:
+    """status_id -> {hasbeenclosed spelling: count} (the closed-ish census)."""
+    cross: dict[str, dict[str, int]] = {}
+    for r in rows:
+        sid = str(r.get("status_id"))
+        hbc = r.get("hasbeenclosed")
+        if hbc is True:
+            closed = "true"
+        elif hbc is None:
+            closed = "null"
+        else:
+            closed = str(hbc)
+        cross.setdefault(sid, {}).setdefault(closed, 0)
+        cross[sid][closed] += 1
+    return cross
 
 
 async def main() -> int:
@@ -59,15 +109,12 @@ async def main() -> int:
     out: dict[str, dict] = {}
     async with HaloClient(profile, profile_name="thomas") as client:
 
-        async def dates(rows: list[dict]) -> list[str]:
-            return [str(r.get("dateoccurred") or "")[:19] for r in rows]
-
         async def ordering_probe() -> dict:
             attempts = []
             for orderdesc in ("true", "1"):
                 body = await client.request(
                     "GET",
-                    "/Tickets",
+                    _EP_Tickets,
                     params={
                         "pageinate": "true",
                         "page_no": "1",
@@ -77,10 +124,10 @@ async def main() -> int:
                     },
                     timeout=60,
                 )
-                attempts.append({"orderdesc": orderdesc, "dates": await dates(rows_of(body))})
+                attempts.append({"orderdesc": orderdesc, "dates": dates(rows_of(body))})
             base = await client.request(
                 "GET",
-                "/Tickets",
+                _EP_Tickets,
                 params={"pageinate": "true", "page_no": "1", "page_size": "5"},
                 timeout=60,
             )
@@ -91,7 +138,7 @@ async def main() -> int:
             )
             return {
                 "attempts": attempts,
-                "baseline_no_order": await dates(rows_of(base)),
+                "baseline_no_order": dates(rows_of(base)),
                 "newest_first_achieved": newest_first,
             }
 
@@ -106,7 +153,7 @@ async def main() -> int:
             recent = rows_of(
                 await client.request(
                     "GET",
-                    "/Tickets",
+                    _EP_Tickets,
                     params={
                         "pageinate": "true",
                         "page_no": "1",
@@ -129,39 +176,11 @@ async def main() -> int:
                 "_recent": recent,  # reused by the date/agent probes
             }
 
-        async def dates_probe(recent: list[dict]) -> dict:
-            return {
-                "sampled": len(recent),
-                "datecreated_blank": sum(1 for r in recent if r.get("datecreated") in (None, "")),
-                "dateoccurred_present": sum(
-                    1 for r in recent if r.get("dateoccurred") not in (None, "")
-                ),
-                "sample_pair": [
-                    {
-                        "datecreated": r.get("datecreated"),
-                        "dateoccurred": r.get("dateoccurred"),
-                        "datemodified": r.get("datemodified"),
-                    }
-                    for r in recent[:3]
-                ],
-            }
-
-        async def agent_probe(recent: list[dict]) -> dict:
-            return {
-                "sampled": len(recent),
-                "agent_id_present": sum(
-                    1 for r in recent if r.get("agent_id") not in (None, "", 0)
-                ),
-                "agent_name_present": sum(
-                    1 for r in recent if r.get("agent_name") not in (None, "")
-                ),
-            }
-
         async def feed_probe() -> dict:
             f1 = rows_of(
                 await client.request(
                     "GET",
-                    "/Feed",
+                    _EP_Feed,
                     params={"pageinate": "true", "page_no": "1", "page_size": "10"},
                     timeout=60,
                 )
@@ -169,7 +188,7 @@ async def main() -> int:
             f2 = rows_of(
                 await client.request(
                     "GET",
-                    "/Feed",
+                    _EP_Feed,
                     params={"pageinate": "true", "page_no": "2", "page_size": "10"},
                     timeout=60,
                 )
@@ -218,21 +237,12 @@ async def main() -> int:
             rows = rows_of(
                 await client.request(
                     "GET",
-                    "/Tickets",
+                    _EP_Tickets,
                     params={"pageinate": "true", "page_no": "1", "page_size": "50"},
                     timeout=60,
                 )
             )
-            cross: dict[str, dict[str, int]] = {}
-            for r in rows:
-                sid = str(r.get("status_id"))
-                closed = (
-                    "true"
-                    if r.get("hasbeenclosed") is True
-                    else ("null" if r.get("hasbeenclosed") is None else str(r.get("hasbeenclosed")))
-                )
-                cross.setdefault(sid, {}).setdefault(closed, 0)
-                cross[sid][closed] += 1
+            cross = closed_cross(rows)
             closed_dates = [r.get("dateclosed") for r in rows if r.get("dateclosed")]
             return {
                 "hasbeenclosed_by_status": cross,
@@ -259,14 +269,14 @@ async def main() -> int:
         async def feed_cursor_probe() -> dict:
             """Spec claims for /Feed (count + newer/older_than_id) - live check
             before list_all walks a cursor instead of page numbers."""
-            r1 = rows_of(await client.request("GET", "/Feed", params={"count": "5"}, timeout=30))
+            r1 = rows_of(await client.request("GET", _EP_Feed, params={"count": "5"}, timeout=30))
             ids1 = [int(r["id"]) for r in r1 if str(r.get("id", "")).isdigit()]
             result: dict[str, Any] = {"count_5_rows": len(r1), "count_5_ids": ids1}
             if ids1:
                 older = rows_of(
                     await client.request(
                         "GET",
-                        "/Feed",
+                        _EP_Feed,
                         params={"count": "5", "older_than_id": str(min(ids1))},
                         timeout=30,
                     )
@@ -281,7 +291,7 @@ async def main() -> int:
                 newer = rows_of(
                     await client.request(
                         "GET",
-                        "/Feed",
+                        _EP_Feed,
                         params={"count": "5", "newer_than_id": str(max(ids1))},
                         timeout=30,
                     )
@@ -293,12 +303,14 @@ async def main() -> int:
                     "strictly_newer": bool(nids) and min(nids) > max(ids1),
                     "note": "empty at the top of the feed is correct",
                 }
-            big = rows_of(await client.request("GET", "/Feed", params={"count": "500"}, timeout=60))
+            big = rows_of(
+                await client.request("GET", _EP_Feed, params={"count": "500"}, timeout=60)
+            )
             result["count_500_rows"] = len(big)
             duo = rows_of(
                 await client.request(
                     "GET",
-                    "/Feed",
+                    _EP_Feed,
                     params={
                         "count": "5",
                         "pageinate": "true",

@@ -5,7 +5,7 @@ Downloads the upstream swagger (read-only) and diffs the (path, method) set
 plus operationIds against src/halocli/spec/halo_openapi.json. Exit 0 when
 identical, exit 1 on drift (re-run scripts/vendor_halo_spec.py then).
 
-    python scripts/check_spec_currency.py [--url URL]
+    python scripts/check_spec_currency.py
 """
 
 from __future__ import annotations
@@ -14,6 +14,27 @@ import argparse
 import json
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlsplit
+
+
+# The only hosts this tool may fetch spec documents from (S8703): the
+# vendored spec's provenance (dtcdev) plus the production mirror that
+# vendor_halo_spec cross-checks. Anything else is a different origin.
+ALLOWED_SPEC_HOSTS = frozenset({"dtcdev.halopsa.com", "midtowntg.halopsa.com"})
+
+
+def _safe_url(url: str) -> str:
+    """Validate the fetch URL before requesting it (S8703).
+
+    https-only AND host-allowlisted: the URL must name one of the known
+    spec hosts, so no other origin can ever be reached. The fetch target
+    is the constant DEFAULT_URL - no CLI-supplied URL reaches the sink.
+    """
+    parts = urlsplit(url)
+    if parts.scheme != "https" or parts.hostname not in ALLOWED_SPEC_HOSTS:
+        raise ValueError(f"refusing spec URL outside the allowlist: {url!r}")
+    return url
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VENDORED = REPO_ROOT / "src" / "halocli" / "spec" / "halo_openapi.json"
@@ -33,9 +54,10 @@ def opset(doc: dict) -> set[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default=DEFAULT_URL)
-    args = parser.parse_args()
-    with urllib.request.urlopen(args.url, timeout=60) as resp:  # noqa: S310 (fixed vendor URL)
+    parser.parse_args()
+    # fixed fetch target: no CLI-supplied URL (the S8703 taint source) exists
+    url = _safe_url(DEFAULT_URL)
+    with urllib.request.urlopen(url, timeout=60) as resp:
         upstream = json.loads(resp.read().decode("utf-8"))
     vendored = json.loads(VENDORED.read_text(encoding="utf-8"))
     up, ven = opset(upstream), opset(vendored)
@@ -56,4 +78,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except ValueError as exc:
+        # validator failures keep the clean CLI message, not a traceback
+        raise SystemExit(str(exc)) from exc

@@ -164,7 +164,7 @@ def replace_rows(conn: sqlite3.Connection, resource: str, rows: Iterable[dict]) 
 # Top-level JSON keys promoted to view columns. Conservative: only plain
 # identifiers become json_extract projections (exotic keys stay reachable
 # through the data column), and the structural columns are reserved.
-_SAFE_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_SAFE_KEY = re.compile(r"^[A-Za-z_]\w*$", re.ASCII)
 _RESERVED_KEYS = {"row_key", "seq", "data"}
 _MAX_VIEW_KEYS = 200
 _VIEW_KEY_SAMPLE = 2000
@@ -312,7 +312,7 @@ async def sync_resources(
             }
             try:
                 rows = await list_all(
-                    lambda **kwargs: client.list_resource(name, **kwargs),
+                    lambda _name=name, **kwargs: client.list_resource(_name, **kwargs),
                     page_size=100,
                     max_records=max_records,
                     list_key=resource.list_key,

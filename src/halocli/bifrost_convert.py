@@ -608,12 +608,12 @@ def extract_http_methods(module_source: str) -> list[dict]:
 
     def literal_path(node: ast.expr) -> str | None:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value if node.value[:1] == "/" else None
+            return node.value if node.value.startswith("/") else None
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
             # base + "/path" -> the right side literal
             right = literal_path(node.right) if isinstance(node.right, ast.BinOp) else None
             if isinstance(node.right, ast.Constant) and isinstance(node.right.value, str):
-                return node.right.value if node.right.value[:1] == "/" else None
+                return node.right.value if node.right.value.startswith("/") else None
             return right
         if isinstance(node, ast.JoinedStr):
             # f"/v1/devices/{id}" -> the literal prefix (up to the first hole)
@@ -624,7 +624,7 @@ def extract_http_methods(module_source: str) -> list[dict]:
                 else:
                     break
             prefix = "".join(parts)
-            if prefix[:1] == "/":
+            if prefix.startswith("/"):
                 return prefix if len(prefix) > 1 else None
         return None
 
@@ -969,12 +969,12 @@ def classify_phases(
     all_args = [*func.args.posonlyargs, *func.args.args, *func.args.kwonlyargs]
     for a in all_args:
         ann = a.annotation
-        while isinstance(ann, ast.BinOp) and isinstance(ann.op, ast.BitOr):
-            # unwrap list[str] | None
+        if isinstance(ann, ast.BinOp) and isinstance(ann.op, ast.BitOr):
+            # unwrap list[str] | None (single-pass: the union has at
+            # most one null side to drop)
             sides = [ann.left, ann.right]
             non_null = [s for s in sides if not (isinstance(s, ast.Constant) and s.value is None)]
             ann = non_null[0] if len(non_null) == 1 else ann.left
-            break
         if isinstance(ann, ast.Subscript) and isinstance(ann.value, ast.Name):
             if ann.value.id in ("list", "tuple", "set"):
                 array_params.add(a.arg)
@@ -2420,6 +2420,12 @@ _EVENT_PLACEHOLDERS = (
 )
 
 
+# " - All" suffix carried by lookup64's full-scope event rows (the
+# bindings all use the "- All" variant - trial: eventno3 fires for
+# every new ticket)
+_EVENT_ALL_SUFFIX = " - all"
+
+
 def normalize_event_name(name: str) -> str:
     """Normalize a Halo event name for matching (catalog vs bound forms).
 
@@ -2429,8 +2435,8 @@ def normalize_event_name(name: str) -> str:
     and substitute the observed placeholders.
     """
     s = str(name).lower().strip()
-    if s.endswith(" - all"):
-        s = s[: -len(" - all")].strip()
+    if s.endswith(_EVENT_ALL_SUFFIX):
+        s = s[: -len(_EVENT_ALL_SUFFIX)].strip()
     for ph, word in _EVENT_PLACEHOLDERS:
         s = s.replace(ph.lower(), word)
     return " ".join(s.split())
@@ -2451,7 +2457,7 @@ def match_event(catalog: list[dict], wanted: str) -> dict | None:
     for row in catalog:
         name = str(row.get("name") or "")
         values = [name] + ([str(row["value2"])] if row.get("value2") else [])
-        is_all = name.lower().endswith(" - all")
+        is_all = name.lower().endswith(_EVENT_ALL_SUFFIX)
         for cand in values:
             if cand.lower().strip() == str(wanted).lower().strip() and exact is None:
                 exact = {"id": row.get("id"), "name": cand}

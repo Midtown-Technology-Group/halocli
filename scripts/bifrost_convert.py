@@ -54,6 +54,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
+_EP_Automation = "/Automation"
+_C_runbook = "runbook:"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
@@ -301,8 +304,8 @@ def _create_order(files: dict[str, Path]) -> list[str]:
     back to sorted order (the create then records an honest
     unresolved-target warning).
     """
-    others = sorted(k for k in files if not k.startswith("runbook:"))
-    runbooks = sorted(k for k in files if k.startswith("runbook:"))
+    others = sorted(k for k in files if not k.startswith(_C_runbook))
+    runbooks = sorted(k for k in files if k.startswith(_C_runbook))
     deps: dict[str, list[str]] = {}
     for k in runbooks:
         try:
@@ -440,7 +443,7 @@ async def apply_outputs(
 
         # ---- phase 2: fire (method ids alive) --------------------------
         for key, record in ev["applied"].items():
-            if not key.startswith("runbook:"):
+            if not key.startswith(_C_runbook):
                 continue
             wid = record.get("id")
             if not wid or record.get("create_error"):
@@ -520,7 +523,7 @@ async def apply_outputs(
             if not record:
                 continue
             try:
-                if key.startswith("runbook:") and record.get("id"):
+                if key.startswith(_C_runbook) and record.get("id"):
                     # children first: trigger bindings, then both runbooks
                     for trig_id in record.get("trigger_binding_ids") or []:
                         try:
@@ -532,9 +535,7 @@ async def apply_outputs(
                     rids = [record["id"], record.get("branch_runbook_id")]
                     for rid in [r for r in rids if r]:
                         await client.request("DELETE", f"/Webhook/{rid}", timeout=30)
-                    record["cleanup"] = await _gone(
-                        client, "DELETE check", f"/Webhook/{record['id']}"
-                    )
+                    record["cleanup"] = await _gone(client, f"/Webhook/{record['id']}")
                 elif key.startswith("integration:") and record.get("_integration_id"):
                     iid = record.pop("_integration_id")
                     for c in record.get("methods") or []:
@@ -558,7 +559,7 @@ async def apply_outputs(
     return ev
 
 
-async def _gone(client: Any, label: str, path: str) -> str:
+async def _gone(client: Any, path: str) -> str:
     try:
         await client.request("GET", path, timeout=30)
         return "STILL READABLE"
@@ -650,7 +651,7 @@ async def _event_proof(client: Any, wid: str) -> dict[str, Any]:
         return out
 
     async def runlog_list() -> list[dict]:
-        log = await client.request("GET", "/Automation", params={"count": "1000"}, timeout=45)
+        log = await client.request("GET", _EP_Automation, params={"count": "1000"}, timeout=45)
         return (
             log
             if isinstance(log, list)
@@ -870,9 +871,7 @@ async def _create_runbook(
                     str(f.get("op")), 0
                 ),
                 "value_int": int(f.get("value")) if isinstance(f.get("value"), int) else 0,
-                "value_string": str(f.get("value"))
-                if not isinstance(f.get("value"), int)
-                else str(f.get("value")),
+                "value_string": str(f.get("value")),
                 "value_display": str(f.get("value")),
                 "value_type": str(f.get("value_type") or "string"),
                 "tablename": "faults",
@@ -982,7 +981,7 @@ async def _fire_runbook(
     pairs = [{"Key": k, "Value": v} for k, v in inputs.items()]
 
     async def runlog_list() -> list[dict]:
-        log = await client.request("GET", "/Automation", params={"count": "1000"}, timeout=45)
+        log = await client.request("GET", _EP_Automation, params={"count": "1000"}, timeout=45)
         return (
             log
             if isinstance(log, list)
@@ -1094,7 +1093,7 @@ async def _chain_started_runs(
         found_row: dict | None = None
         for _attempt in range(10):  # ~30s for the chain to land a row
             await asyncio.sleep(3)
-            log = await client.request("GET", "/Automation", params={"count": "1000"}, timeout=45)
+            log = await client.request("GET", _EP_Automation, params={"count": "1000"}, timeout=45)
             rows = (
                 log
                 if isinstance(log, list)

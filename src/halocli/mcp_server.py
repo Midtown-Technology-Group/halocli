@@ -17,9 +17,10 @@ import asyncio
 import json
 import re
 import sys
+from collections.abc import Awaitable
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _package_version
-from typing import Any, Callable, TextIO, Coroutine
+from typing import Any, Callable, TextIO
 
 from halocli.client import HaloClient
 from halocli.config import load_profile
@@ -54,7 +55,9 @@ INVALID_REQUEST = -32600
 METHOD_NOT_FOUND = -32601
 INVALID_PARAMS = -32602
 
-ToolHandler = Callable[[dict[str, Any]], Coroutine[Any, Any, tuple[dict[str, Any], bool]]]
+ToolHandler = Callable[
+    [dict[str, Any]], Awaitable[tuple[dict[str, Any], bool]] | tuple[dict[str, Any], bool]
+]
 
 
 def _load_schema_search() -> Callable[..., Any] | None:
@@ -558,7 +561,7 @@ def search_catalog(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict[s
     return results
 
 
-async def _tool_halo_search(args: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+def _tool_halo_search(args: dict[str, Any]) -> tuple[dict[str, Any], bool]:
     query = args.get("query")
     if not isinstance(query, str) or not query.strip():
         return _validation_failure("'query' is required and must be a non-empty string")
@@ -582,7 +585,7 @@ async def _tool_halo_search(args: dict[str, Any]) -> tuple[dict[str, Any], bool]
     return payload, False
 
 
-async def _tool_halo_resources(args: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+def _tool_halo_resources(args: dict[str, Any]) -> tuple[dict[str, Any], bool]:
     entries = [_resource_entry(resource) for resource in RESOURCES]
     payload = {
         "ok": True,
@@ -698,9 +701,16 @@ def _tool_result(
 _TOOL_CHAR_CAPS: dict[str, int] = {"halo_resources": MAX_CATALOG_CHARS}
 
 
+async def _await(result: Awaitable[tuple[dict[str, Any], bool]]) -> tuple[dict[str, Any], bool]:
+    return await result
+
+
 def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     try:
-        payload, is_error = asyncio.run(_TOOL_HANDLERS[name](arguments))
+        outcome = _TOOL_HANDLERS[name](arguments)
+        payload, is_error = (
+            asyncio.run(_await(outcome)) if isinstance(outcome, Awaitable) else outcome
+        )
     except Exception as exc:
         print(f"halocli-mcp: tool {name} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         payload, is_error = _failure(exc)

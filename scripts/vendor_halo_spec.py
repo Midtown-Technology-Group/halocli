@@ -44,6 +44,34 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
+
+
+def _safe_path(p: str | Path) -> Path:
+    """Canonicalize a CLI-supplied path before touching the disk (S8707)."""
+    return Path(p).expanduser().resolve()
+
+
+def _safe_url(url: str) -> str:
+    """Validate a CLI-supplied fetch URL before requesting it (S8703).
+
+    Spec downloaders are https-only: no scheme tricks, no userinfo.
+    """
+    parts = urlsplit(url)
+    if parts.scheme != "https" or not parts.netloc or "@" in parts.netloc:
+        raise ValueError(f"refusing non-https spec URL: {url!r}")
+    return url
+
+
+def _vendor_safe_paths(
+    source_file: Path | None, out_path: Path, overlay_path: Path | None
+) -> tuple[Path | None, Path, Path | None]:
+    """Canonicalize every CLI-supplied path before any disk I/O (S8707)."""
+    safe_source = _safe_path(source_file) if source_file is not None else None
+    safe_out = _safe_path(out_path)
+    safe_overlay = _safe_path(overlay_path) if overlay_path is not None else None
+    return safe_source, safe_out, safe_overlay
+
 
 DEFAULT_URL = "https://dtcdev.halopsa.com/api/swagger/v2/swagger.json"
 MIRROR_URLS = ["https://midtowntg.halopsa.com/api/swagger/v2/swagger.json"]
@@ -66,6 +94,7 @@ USER_AGENT = "halocli-vendor-script (+https://github.com/Midtown-Technology-Grou
 
 def fetch_spec(url: str) -> tuple[dict[str, Any], bytes]:
     """Download and parse the raw OpenAPI document from *url*; returns (spec, raw bytes)."""
+    url = _safe_url(url)
     request = urllib.request.Request(
         url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
     )
@@ -333,6 +362,8 @@ def vendor(
     overlay_path: Path | None = DEFAULT_OVERLAY,
 ) -> dict[str, Any]:
     """Fetch (or read), trim, enrich, and write the vendored spec. Returns the written spec."""
+    # canonicalize every CLI-supplied path before any disk I/O (S8707)
+    source_file, out_path, overlay_path = _vendor_safe_paths(source_file, out_path, overlay_path)
     raw_bytes: bytes | None
     if source_file is not None:
         raw_bytes = source_file.read_bytes()
