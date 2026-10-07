@@ -211,6 +211,20 @@ def test_wait_pr_checks_timeout_is_bounded_and_visible(
     assert any("pending" in line for line in _lines(capsys))
 
 
+def test_wait_pr_checks_waits_for_initial_check_publication(
+    clock: FakeClock, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    responses = [
+        subprocess.CompletedProcess([], 1, "", "no checks reported on the branch"),
+        _ok([], json.dumps([{"name": "ci", "state": "SUCCESS", "bucket": "pass"}])),
+    ]
+    monkeypatch.setattr(rel.subprocess, "run", lambda args, **kwargs: responses.pop(0))
+    rel.wait_pr_checks(11, "Midtown-Technology-Group/mtg-winget", timeout_s=45)
+    assert not responses
+    assert any("no checks reported yet" in line for line in _lines(capsys))
+    assert clock.sleeps
+
+
 def test_find_winget_pr_skips_unrelated_titles(
     clock: FakeClock, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

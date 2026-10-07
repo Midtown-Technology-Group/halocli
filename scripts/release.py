@@ -136,6 +136,10 @@ def wait_pr_checks(pr: int, repo: str, *, timeout_s: int = 1800) -> None:
         except subprocess.TimeoutExpired:
             log(f"PR #{pr} check query timed out ({_elapsed(started)})")
             continue
+        if proc.returncode != 0 and "no checks reported" in (proc.stderr + proc.stdout).lower():
+            log(f"PR #{pr}: no checks reported yet ({_elapsed(started)})")
+            time.sleep(min(20, max(0, deadline - time.time())))
+            continue
         if proc.returncode not in {0, 1, 8}:
             raise SystemExit(f"PR #{pr} check query failed ({proc.returncode}): {proc.stderr}")
         try:
