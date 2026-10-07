@@ -66,6 +66,11 @@ def test_known_normalizations_are_not_drift() -> None:
     assert module.diff_other_fields(before, after) == {}
     norms = module.server_normalizations(before, after)
     assert norms == {"trophy_agents": {"before": "", "after": None}}
+    # prod re-ciphers the meraki secret on every save: server rewrite, not drift
+    assert "merakiapplicationsecret" in module.KNOWN_SERVER_NORMALIZATIONS
+    rekeyed = {"merakiapplicationsecret": "AAA", "teams_authorized": True}
+    rekeyed_after = {"merakiapplicationsecret": "BBB", "teams_authorized": True}
+    assert module.diff_other_fields(rekeyed, rekeyed_after) == {}
 
 
 def test_chatbot_state_includes_context() -> None:
@@ -266,3 +271,27 @@ def test_apply_requires_chat_profile(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     _install(module, monkeypatch, tmp_path)
     assert asyncio.run(module.run(_args("--profile", "dev", "--apply"))) == 2
     assert asyncio.run(module.run(_args("--profile", "dev", "--tab-post"))) == 2
+
+
+def test_allow_production_uses_prod_paths(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The explicit override unlocks midtowntg and isolates prod artifacts."""
+    module = importlib.import_module("teams_chatbot_config")
+    _install(module, monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        module,
+        "load_profile",
+        lambda name: SimpleNamespace(tenant_url="https://midtowntg.halopsa.com"),
+    )
+    # without the flag: refused
+    with pytest.raises(SystemExit):
+        asyncio.run(module.run(_args("--profile", "thomas", "--manifest")))
+    # with the flag: proceeds, prod-named evidence + manifest, nothing else written
+    code = asyncio.run(module.run(_args("--profile", "thomas", "--allow-production", "--manifest")))
+    assert code == 0
+    prod_evidence = tmp_path / "teams_chatbot_evidence_prod.json"
+    assert prod_evidence.exists()
+    evidence = json.loads(prod_evidence.read_text(encoding="utf-8"))
+    assert evidence["production"] is True
+    assert Path(evidence["manifest"]["artifact"]).name == "teams_chatbot_manifest_prod.zip"
+    assert not (tmp_path / "teams_chatbot_evidence.json").exists()
+    assert not (tmp_path / "teams_chatbot_manifest.zip").exists()

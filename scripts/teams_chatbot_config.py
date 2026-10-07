@@ -59,6 +59,10 @@ KNOWN_SERVER_NORMALIZATIONS = frozenset(
         "world_clock_5_timezone",
         "world_clock_5_label",
         "trophy_agents",
+        # re-ciphered by the server on EVERY Control save (prod observation
+        # 2026-10-07: the ciphertext changes while the stored secret is
+        # server-managed) - recorded as a server rewrite, never a restore
+        "merakiapplicationsecret",
     }
 )
 
@@ -85,10 +89,16 @@ DEFAULT_HELP = (
 )
 
 
+def _is_production_host(host: str) -> bool:
+    return "midtowntg" in host
+
+
 def refuse_production(host: str) -> None:
-    """Live writes are authorized for the trial only (house rule)."""
-    if "midtowntg" in host:
-        raise SystemExit("refusing: profile points at PRODUCTION")
+    """Live writes are refused for production without explicit authorization."""
+    if _is_production_host(host):
+        raise SystemExit(
+            "refusing: profile points at PRODUCTION (pass --allow-production to override)"
+        )
 
 
 def unwrap_list(payload: Any) -> list[Any]:
@@ -303,7 +313,9 @@ async def tab_post_state(
     return result
 
 
-async def generate_manifest(client: HaloClient, args: argparse.Namespace) -> dict[str, Any]:
+async def generate_manifest(
+    client: HaloClient, args: argparse.Namespace, out_path: Path
+) -> dict[str, Any]:
     """POST the manifest generator (guide Fig 26-27) and record the artifact."""
     body = {
         "name": args.manifest_name,
@@ -326,7 +338,7 @@ async def generate_manifest(client: HaloClient, args: argparse.Namespace) -> dic
         result["sha256"] = hashlib.sha256(data).hexdigest()
         result["looks_like_zip"] = data[:2] == b"PK"
         if data[:2] == b"PK":
-            out = REPO_ROOT / "teams_chatbot_manifest.zip"
+            out = out_path
             out.write_bytes(data)
             result["artifact"] = str(out)
         else:
@@ -342,13 +354,17 @@ async def generate_manifest(client: HaloClient, args: argparse.Namespace) -> dic
 async def run(args: argparse.Namespace) -> int:
     profile = load_profile(args.profile)
     host = profile.tenant_url.split("//", 1)[-1].split("/", 1)[0]
-    refuse_production(host)
+    if not args.allow_production:
+        refuse_production(host)
+    else:
+        print(f"WARNING: --allow-production set for {host}", file=sys.stderr)
 
     evidence: dict[str, Any] = {
         "tool": "teams_chatbot_config",
         "guide": "https://www.usehalo.com/guides/1080",
         "profile": args.profile,
         "tenant": host,
+        "production": _is_production_host(host),
         "mode": "apply" if (args.apply or args.tab_post) else "read",
         "ts": datetime.now(UTC).isoformat(timespec="seconds"),
     }
@@ -381,11 +397,19 @@ async def run(args: argparse.Namespace) -> int:
             )
 
         if args.manifest:
-            evidence["manifest"] = await generate_manifest(client, args)
+            manifest_out = REPO_ROOT / (
+                "teams_chatbot_manifest_prod.zip"
+                if _is_production_host(host)
+                else "teams_chatbot_manifest.zip"
+            )
+            evidence["manifest"] = await generate_manifest(client, args, manifest_out)
 
-    EVIDENCE_PATH.write_text(json.dumps(evidence, indent=2, default=str) + "\n", encoding="utf-8")
+    evidence_path = EVIDENCE_PATH
+    if _is_production_host(host):
+        evidence_path = EVIDENCE_PATH.with_name("teams_chatbot_evidence_prod.json")
+    evidence_path.write_text(json.dumps(evidence, indent=2, default=str) + "\n", encoding="utf-8")
     print(json.dumps(evidence, indent=2, default=str))
-    print(f"\nevidence -> {EVIDENCE_PATH}", file=sys.stderr)
+    print(f"\nevidence -> {evidence_path}", file=sys.stderr)
 
     apply_result = evidence.get("apply") or {}
     if apply_result.get("drift") or apply_result.get("not_persisted"):
@@ -396,7 +420,14 @@ async def run(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", default="dev")
-    parser.add_argument("--apply", action="store_true", help="write to Control (trial only)")
+    parser.add_argument(
+        "--allow-production",
+        action="store_true",
+        help="explicit authorization to write to the production host (midtowntg)",
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="write to Control (production needs the override flag)"
+    )
     parser.add_argument("--chat-profile", default=None, help="ChatProfile id to bind")
     parser.add_argument(
         "--only",
