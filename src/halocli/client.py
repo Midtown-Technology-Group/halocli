@@ -214,8 +214,11 @@ class HaloClient:
     async def _refresh_interactive_token(self, refresh_token: str) -> dict[str, Any]:
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
-        # SSRF guard (S5144): both inputs of the endpoint selection are
-        # validated on their own expression before anything is sent
+        # SSRF guard (S5144): validate every caller-supplied value before it
+        # can reach the HTTP layer - both endpoint inputs on their own
+        # expression, and the refresh token itself
+        if not refresh_token:
+            raise HaloCLIError("refresh token must be a non-empty value")
         auth_url = self.profile.auth_token_url
         endpoint = self.profile.token_endpoint
         auth_parts = urlsplit(auth_url)
