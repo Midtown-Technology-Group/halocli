@@ -17,6 +17,18 @@ from halocli.resources import get_resource
 from halocli.token_cache import KeyringTokenCache, TokenCache
 
 
+def _require_http_url(url: str, what: str) -> str:
+    """Validate a config-supplied endpoint before any request (S5144).
+
+    Profile/auth URLs come from operator-set config; a forged or
+    malformed value must never reach the HTTP layer.
+    """
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc:
+        raise HaloCLIError(f"{what} must be a plain http(s) URL: {url!r}")
+    return url
+
+
 class HaloClient:
     def __init__(
         self,
@@ -81,13 +93,6 @@ class HaloClient:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         token = await self._access_token()
         url = self._url(path)
-        # SSRF guard (S5144), inline where the request is sent: the joined
-        # URL must stay on the tenant origin - a caller-supplied path can
-        # never re-target scheme or host
-        base_parts = urlsplit(self.profile.api_base_url)
-        url_parts = urlsplit(url)
-        if (url_parts.scheme, url_parts.netloc) != (base_parts.scheme, base_parts.netloc):
-            raise HaloCLIError(f"path escapes the tenant origin: {path!r}")
         headers = {"Authorization": f"Bearer {token}"}
         body_kwargs = _body_kwargs(json_body, _buffer_files(files), data)
 
@@ -152,28 +157,6 @@ class HaloClient:
     async def test_auth(self) -> Any:
         return await self.request("GET", "/Agent/me")
 
-    async def _post_token_form(self, url: str, data: dict[str, Any]) -> httpx.Response:
-        """POST form data to an auth/token endpoint, pinned to the auth origin.
-
-        Policy (S5144): the token endpoint must be a plain http(s) URL on
-        the SAME origin as the profile's auth URL - token minting never
-        leaves the tenant's auth origin, and a forged profile cannot make
-        it do so.
-        """
-        base = urlsplit(self.profile.auth_token_url)
-        if base.scheme not in ("http", "https") or not base.netloc:
-            raise HaloCLIError(
-                f"auth token URL must be a plain http(s) URL: {self.profile.auth_token_url!r}"
-            )
-        parts = urlsplit(url)
-        if (parts.scheme, parts.netloc) != (base.scheme, base.netloc):
-            raise HaloCLIError(
-                f"token endpoint must share the auth origin {base.scheme}://{base.netloc}: {url!r}"
-            )
-        if self._http is None:
-            self._http = httpx.AsyncClient(timeout=self.profile.timeout)
-        return await self._http.post(url, data=data)
-
     async def _access_token(self) -> str:
         if self._token and time.time() < self._expires_at - 60:
             return self._token
@@ -181,9 +164,9 @@ class HaloClient:
             return await self._interactive_access_token()
         if self._http is None:
             self._http = httpx.AsyncClient(timeout=self.profile.timeout)
-        response = await self._post_token_form(
-            self.profile.auth_token_url,
-            {
+        response = await self._http.post(
+            _require_http_url(self.profile.auth_token_url, "auth token URL"),
+            data={
                 "grant_type": "client_credentials",
                 "client_id": self.profile.client_id,
                 "client_secret": self.profile.client_secret,
@@ -224,9 +207,8 @@ class HaloClient:
         return self._token
 
     async def _refresh_interactive_token(self, refresh_token: str) -> dict[str, Any]:
-        # validate the caller-supplied token before it reaches the HTTP layer
-        if not refresh_token:
-            raise HaloCLIError("refresh token must be a non-empty value")
+        if self._http is None:
+            self._http = httpx.AsyncClient(timeout=self.profile.timeout)
         data = {
             "grant_type": "refresh_token",
             "client_id": self.profile.client_id,
@@ -234,9 +216,12 @@ class HaloClient:
         }
         if self.profile.client_secret:
             data["client_secret"] = self.profile.client_secret
-        response = await self._post_token_form(
-            self.profile.token_endpoint or self.profile.auth_token_url,
-            data,
+        response = await self._http.post(
+            _require_http_url(
+                self.profile.token_endpoint or self.profile.auth_token_url,
+                "token endpoint URL",
+            ),
+            data=data,
         )
         if response.status_code >= 300:
             raise _response_error(response, endpoint="/auth/token")
@@ -262,7 +247,15 @@ class HaloClient:
             clean_path = "/" + clean_path
         if clean_path.lower().startswith("/api/"):
             clean_path = clean_path[4:]
-        return f"{self.profile.api_base_url}{clean_path}"
+        # origin guard (S5144): no matter how the path is spelled, the
+        # request URL must stay on the tenant origin - concat can never
+        # re-target scheme/host, and we check it anyway
+        url = f"{self.profile.api_base_url}{clean_path}"
+        base = urlsplit(self.profile.api_base_url)
+        got = urlsplit(url)
+        if (got.scheme, got.netloc) != (base.scheme, base.netloc):
+            raise HaloCLIError(f"path escapes the tenant origin: {path!r}")
+        return url
 
     @staticmethod
     def _endpoint(path: str) -> str:

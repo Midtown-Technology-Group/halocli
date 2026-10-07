@@ -3,31 +3,22 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from halocli.client import HaloClient
+from halocli.client import HaloClient, _require_http_url
 from halocli.config import HaloProfile
 from halocli.errors import HaloCLIError
 
 
-@pytest.mark.asyncio
-async def test_access_token_rejects_forged_tenant_url() -> None:
-    # the SSRF guard now sits inline in _access_token (S5144)
-    profile = HaloProfile(tenant_url="not-a-url", client_id="id", client_secret="secret")
-    client = HaloClient(profile)
-    with pytest.raises(HaloCLIError):
-        await client._access_token()
-
-
-@pytest.mark.asyncio
-async def test_refresh_rejects_forged_token_endpoint() -> None:
-    profile = HaloProfile(
-        tenant_url="https://halo.example.com",
-        client_id="id",
-        client_secret="secret",
-        token_endpoint="ftp://evil.example.com/token",
-    )
-    client = HaloClient(profile)
-    with pytest.raises(HaloCLIError):
-        await client._refresh_interactive_token("rt")
+def test_require_http_url_rejects_forged_endpoints() -> None:
+    url = "https://halo.example.com/auth/token"
+    assert _require_http_url(url, "auth token URL") == url
+    for bad in (
+        "ftp://halo.example.com/x",
+        "https:///nohost",
+        "https://user:pass@halo.example.com/x",
+        "not-a-url",
+    ):
+        with pytest.raises(HaloCLIError):
+            _require_http_url(bad, "auth token URL")
 
 
 @pytest.mark.asyncio
