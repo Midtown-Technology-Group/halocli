@@ -5,7 +5,7 @@
   "tenant": "midtowntg.halopsa.com",
   "production": true,
   "mode": "read",
-  "ts": "2026-10-07T20:31:19+00:00",
+  "ts": "2026-10-07T20:57:42+00:00",
   "read": {
     "teams_tab": {
       "appname": "Halo PSA",
@@ -22,7 +22,7 @@
         "teams_authorized": null,
         "show_chat_module": true,
         "teams_chat_management": false,
-        "allow_live_chat_teams": false,
+        "allow_live_chat_teams": true,
         "enableteamsmsg": true,
         "enableteamscall": true,
         "teamsbot_disabled": false
@@ -80,25 +80,6 @@
         "chat_available": null,
         "chat_mode": null
       }
-    ]
-  },
-  "manifest": {
-    "requested": {
-      "name": "Halo Service Chatbot",
-      "shortDescription": "Raise and track requests with the Halo service assistant.",
-      "longDescription": "Chat with the Halo service assistant to raise and track requests, start conversations, or ask to speak to a human agent.",
-      "icon_color": "0078D4",
-      "icons": "data-URI placeholder PNGs (192 color / 32 outline)"
-    },
-    "looks_like_zip": true,
-    "icons_injected": [],
-    "artifact": "C:\\Users\\ThomasBray\\src\\Midtown-Technology-Group\\halocli\\teams_chatbot_manifest_prod.zip",
-    "bytes": 1245,
-    "sha256": "dd868bd8f222225969b58f6e16bec4ac19f94177bd5461d26454bb80ca3cb0c9",
-    "entries": [
-      "manifest.json",
-      "color.png",
-      "outline.png"
     ]
   }
 }
