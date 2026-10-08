@@ -1,0 +1,1390 @@
+{
+  "tool": "control_census",
+  "ts": "2026-10-08T00:01:51+00:00",
+  "census": {
+    "total_properties": 4371,
+    "families": {
+      "teams": [
+        "allow_live_chat_teams",
+        "audit_teams_call",
+        "audit_teams_message",
+        "beyondtrust_teams",
+        "defaultteamsmsg",
+        "enable_teamsshifts",
+        "enableoppteamscall",
+        "enableteamscall",
+        "enableteamsmsg",
+        "halointegrator_microsoftteams",
+        "halointegrator_microsoftteams_lasterror",
+        "halointegrator_microsoftteams_lastsync",
+        "hide_other_dep_teams",
+        "keep_tickets_assigned_when_removing_teams",
+        "onlyshowmyteamsintree",
+        "order_teams_by_sequence",
+        "reset_halointegrator_microsoftteams_lastsync",
+        "show_lists_before_teams",
+        "teams_authorized",
+        "teams_azure_authority",
+        "teams_chat_closure_message",
+        "teams_chat_closure_message_name",
+        "teams_chat_default_name",
+        "teams_chat_help_message",
+        "teams_chat_management",
+        "teams_chat_profile",
+        "teams_chat_tenant_list",
+        "teams_chat_tenants",
+        "teams_chat_welcome_message",
+        "teams_client_id",
+        "teams_connected_user",
+        "teams_connected_user_id",
+        "teams_connected_user_name",
+        "teams_default_user_name",
+        "teams_filter_type",
+        "teams_options_style",
+        "teams_tenant_id",
+        "teamsbot_allowed_tenants",
+        "teamsbot_allowed_tenants_list",
+        "teamsbot_default_subject",
+        "teamsbot_default_user",
+        "teamsbot_disabled",
+        "teamsbot_outcome_id",
+        "teamsbot_ticket_type",
+        "teamsbot_ticket_type_guid",
+        "teamscallmethod",
+        "teamsshifts_authentication_type",
+        "teamsshifts_authorized",
+        "teamsshifts_azure_authority",
+        "teamsshifts_client_id",
+        "teamsshifts_mappings",
+        "teamsshifts_shifttype_mappings",
+        "teamsshifts_tenant_id",
+        "useteamshifts"
+      ],
+      "chat": [
+        "abandoned_live_chat_check_period",
+        "abandoned_live_chat_close_ticket",
+        "abandoned_live_chat_enabled",
+        "abandoned_live_chat_ticket_category1",
+        "abandoned_live_chat_ticket_category2",
+        "abandoned_live_chat_ticket_category3",
+        "abandoned_live_chat_ticket_category4",
+        "abandoned_live_chat_time_period",
+        "allow_live_chat_teams",
+        "allowlivechatonnewportal",
+        "azuretranslate_agent_chat_auto",
+        "azuretranslate_allowchat",
+        "azuretranslate_allowuserchat",
+        "azuretranslate_user_chat_auto",
+        "chat_agent_large_box",
+        "chat_canned_text_paste",
+        "chat_cannedtexts",
+        "chat_image_type",
+        "chat_service_url",
+        "chat_ticket_must_be_assigned",
+        "chatendtickettype",
+        "chatendtickettype_guid",
+        "chatshownewbubble",
+        "headers_determine_chat_lang",
+        "includechatsettings",
+        "livechatallowusers",
+        "livechatallowvisitors",
+        "livechatconnectionmethod",
+        "livechatincludeemailinname",
+        "livechatjoinmode",
+        "livechatnewchatmsg",
+        "livechattechmustonline",
+        "livechattechnamevisibility",
+        "livechattechnamevisibilitytext",
+        "livechatworkhours",
+        "logticketwhenchatend",
+        "new_chat_window_controls",
+        "one_open_live_chat_for_agents",
+        "piipci_automation_chat_ended",
+        "portalchatprofile",
+        "prevent_multi_agent_chat",
+        "show_chat_module",
+        "show_livechat_timer",
+        "show_livechat_url",
+        "teams_chat_closure_message",
+        "teams_chat_closure_message_name",
+        "teams_chat_default_name",
+        "teams_chat_help_message",
+        "teams_chat_management",
+        "teams_chat_profile",
+        "teams_chat_tenant_list",
+        "teams_chat_tenants",
+        "teams_chat_welcome_message",
+        "use_new_chat_transcript_style",
+        "zoom_access_chatbot"
+      ],
+      "notification": [
+        "addtional_agent_notifications",
+        "allnotificationoverridessections",
+        "allow_presence_notifications",
+        "appointment_notification_body",
+        "enable_notification_log",
+        "error_notification_min_severity_level",
+        "mark_notifications_as_done_before_deleting",
+        "notification_log_location_on_click",
+        "send_incomplete_timesheet_notifications",
+        "sendaccountmanagernotifications",
+        "sendfollowernotifications",
+        "sendmultiplenotifications",
+        "sendnotificationemailforrtbcc",
+        "show_notification_log_tab",
+        "stripenotificationemail",
+        "task_notification_body",
+        "use_optimised_getunamenotification_query",
+        "userviewedquotenotification",
+        "using_browser_push_notifications"
+      ],
+      "azure/entra": [
+        "_createbusinesscentralasset",
+        "agent_rolemappings_azuread",
+        "allow_azure_translator_on_portal",
+        "azure_365_group_followers",
+        "azure_ai_search_url",
+        "azure_ai_search_version",
+        "azure_allowed_tenants",
+        "azure_allowed_tenants_list",
+        "azure_allowed_tenants_type",
+        "azure_auto_create_users",
+        "azure_auto_creation_site",
+        "azure_auto_creation_site_name",
+        "azure_csp_consumption_invoice_method",
+        "azure_domain_matching_new_user",
+        "azure_federation_domain",
+        "azure_follower_type",
+        "azure_group_followers",
+        "azure_login_url",
+        "azure_monitor_action_type",
+        "azure_monitor_client_id",
+        "azure_monitor_tenant_id",
+        "azure_openai_url",
+        "azure_openai_version",
+        "azure_single_logout",
+        "azure_use_oid",
+        "azureadsso",
+        "azureaisearch_demo_enabled",
+        "azureautoredirect",
+        "azureautoredirectuser",
+        "azureb2c_domain",
+        "azureb2c_domain_matching_new_user",
+        "azureb2c_toplevel_domain",
+        "azureb2c_user_flow",
+        "azureconnection",
+        "azurecreatesites",
+        "azuremapping",
+        "azuremonitor_fieldmappings",
+        "azuremonitorreopenstatus",
+        "azuremonitorreopenstatus_guid",
+        "azuremonitortickettype",
+        "azuremonitortickettype_guid",
+        "azuremonitoruser",
+        "azuremonitoruser_name",
+        "azureopenai_embedding_enabled",
+        "azureopenai_embeddings_tickettypes",
+        "azureopenai_enable_ai_kb_articles",
+        "azureopenai_enabled",
+        "azuressoappid",
+        "azuressoconnectionid",
+        "azuressotenanttype",
+        "azuretenantid",
+        "azuretranslate_agent_chat_auto",
+        "azuretranslate_allowchat",
+        "azuretranslate_allowuserchat",
+        "azuretranslate_currentusage",
+        "azuretranslate_region",
+        "azuretranslate_user_chat_auto",
+        "azureuserfilter",
+        "b2cazure_auto_create_users",
+        "b2cazure_auto_creation_site",
+        "b2cazure_auto_creation_site_name",
+        "b2cazureadsso",
+        "b2cazureautoredirect",
+        "b2cazuressoappid",
+        "b2cazuretenantid",
+        "b2cenableazuresinglesignon",
+        "businesscentral_appid",
+        "businesscentral_authorised",
+        "businesscentral_domain",
+        "businesscentral_fieldmappings",
+        "businesscentral_redirect",
+        "businesscentral_site",
+        "businesscentral_tokenexpiry",
+        "businesscentral_url",
+        "businesscentralasset",
+        "businesscentralsite_name",
+        "client_secret_ncentral",
+        "default_azure_connection_followers",
+        "disablebusinesscentralautosync",
+        "enable_azureopenai_client_profiling",
+        "enable_azureopenai_emotion_detection",
+        "enable_azureopenai_insights",
+        "enableazuresinglesignon",
+        "enablebusinesscentralsync",
+        "entra_domain_owner_verification",
+        "exchange_azure_authority",
+        "graph_host",
+        "halointegrator_ncentral",
+        "halointegrator_ncentral_lasterror",
+        "halointegrator_ncentral_lastsync",
+        "importazureappid",
+        "importazuredomain",
+        "importazuresite",
+        "importazuresite_name",
+        "importazuresitefield",
+        "max_azure_group_members",
+        "ncentral_alerttype",
+        "ncentral_customerid",
+        "ncentral_delete_clients",
+        "ncentral_delete_devices",
+        "ncentral_fieldmappings",
+        "ncentral_sitemappings",
+        "ncentral_tickettype",
+        "ncentral_tickettype_guid",
+        "ncentral_username",
+        "ncentraldefaultgroup",
+        "ncentralimporttype",
+        "ncentralmatchname",
+        "ncentraltoplevel",
+        "ncentralurl",
+        "ncentraluser",
+        "ncentraluser_name",
+        "solarwindsncentraldontsyncaddress",
+        "teams_azure_authority",
+        "teamsshifts_azure_authority",
+        "use_azure_openai_surveys",
+        "use_embedding_scores_azureopenai"
+      ]
+    },
+    "family_counts": {
+      "teams": 54,
+      "chat": 55,
+      "notification": 19,
+      "azure/entra": 117
+    },
+    "action_fields": [
+      "_addactiontofaultid",
+      "_areaitems_to_convert",
+      "_automationticketid",
+      "_automationwebhookid",
+      "_automationwebhookmappings",
+      "_checkexport_returnerrors",
+      "_checkexportprogress",
+      "_clearsagetoken",
+      "_closealerts",
+      "_closealerts_integration",
+      "_contracts_to_convert",
+      "_createbusinesscentralasset",
+      "_dbintegrator_success",
+      "_deactivateagents",
+      "_deactivateagents_integration",
+      "_deactivateclients",
+      "_deactivateusers",
+      "_deactivateusers_integration",
+      "_delete_index",
+      "_deletedevices",
+      "_deletedevices_integration",
+      "_deletelicences",
+      "_disconnectintegration",
+      "_do_convert_to_prospects",
+      "_drop_deprecated_fields",
+      "_emailprocessed",
+      "_exchangeaction",
+      "_forceintegrationdisconnect",
+      "_generatecspmappings",
+      "_getautomationbody",
+      "_getgoogletoken",
+      "_getintegrationdata",
+      "_getoauthtoken",
+      "_getsnelstartlink",
+      "_getwebhookbody",
+      "_googlecalendardisconnect",
+      "_importtype",
+      "_index_kbs_now",
+      "_index_opp_lat_long",
+      "_index_services_now",
+      "_index_site_lat_long",
+      "_integrationid",
+      "_resendunsentemails",
+      "_sendautomationhook",
+      "_set_opp_address_from_company_name",
+      "_set_site_address_from_client",
+      "_warning",
+      "_webhookid",
+      "_webhookmappings",
+      "_webhookticketid"
+    ],
+    "type_histogram": {
+      "boolean": 1869,
+      "integer": 1098,
+      "string": 1090,
+      "array": 271,
+      "number": 35,
+      "ref": 8
+    }
+  },
+  "mode": "static+probe",
+  "known_cross_instance": {
+    "prod_teams_chatbot_fields_exist_but_api_refused": [
+      "teams_chat_welcome_message",
+      "teams_chat_help_message",
+      "teams_chat_tenants",
+      "teams_chat_tenant_list"
+    ],
+    "prod_notes": [
+      "teams_chat_profile: API-writable on prod (bound a34f0eb2... verified)",
+      "any Control save rewrites merakiapplicationsecret ciphertext server-side",
+      "UI End-User Chat tab writes fields the API application may not (field-level perms)"
+    ],
+    "trial_notes": [
+      "the four chatbot message/tenant fields are ABSENT from the trial Control object",
+      "azure AI toggles + browser push: silently dropped by the API even on trial"
+    ],
+    "sources": [
+      "teams_chatbot_evidence_prod.json",
+      "teams_chatbot_evidence.json",
+      "this file's probe"
+    ]
+  },
+  "probe": {
+    "profile": "dev",
+    "tenant": "clidev.trial.usehalo.com",
+    "target_count": 228,
+    "verdicts": {
+      "abandoned_live_chat_check_period": {
+        "verdict": "writable",
+        "original": 5,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "abandoned_live_chat_close_ticket": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "abandoned_live_chat_enabled": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "abandoned_live_chat_ticket_category1": {
+        "verdict": "absent-from-live-object"
+      },
+      "abandoned_live_chat_ticket_category2": {
+        "verdict": "absent-from-live-object"
+      },
+      "abandoned_live_chat_ticket_category3": {
+        "verdict": "absent-from-live-object"
+      },
+      "abandoned_live_chat_ticket_category4": {
+        "verdict": "absent-from-live-object"
+      },
+      "abandoned_live_chat_time_period": {
+        "verdict": "writable",
+        "original": 10,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "addtional_agent_notifications": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "agent_rolemappings_azuread": {
+        "verdict": "absent-from-live-object"
+      },
+      "allnotificationoverridessections": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "allow_azure_translator_on_portal": {
+        "verdict": "absent-from-live-object"
+      },
+      "allow_live_chat_teams": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "allow_presence_notifications": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "allowlivechatonnewportal": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "appointment_notification_body": {
+        "verdict": "absent-from-live-object"
+      },
+      "audit_teams_call": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "audit_teams_message": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "azure_365_group_followers": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_ai_search_url": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_ai_search_version": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_allowed_tenants": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_allowed_tenants_list": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_allowed_tenants_type": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azure_auto_create_users": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "azure_auto_creation_site": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azure_auto_creation_site_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_csp_consumption_invoice_method": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azure_domain_matching_new_user": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_federation_domain": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_follower_type": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_group_followers": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_login_url": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azure_monitor_action_type": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azure_monitor_client_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_monitor_tenant_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_openai_url": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_openai_version": {
+        "verdict": "absent-from-live-object"
+      },
+      "azure_single_logout": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "azure_use_oid": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "azureadsso": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azureaisearch_demo_enabled": {
+        "verdict": "silently-dropped",
+        "original": true,
+        "sentinel": false,
+        "readback": true,
+        "restored": "not-needed"
+      },
+      "azureautoredirect": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "azureautoredirectuser": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "azureb2c_domain": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureb2c_domain_matching_new_user": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureb2c_toplevel_domain": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureb2c_user_flow": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureconnection": {
+        "verdict": "absent-from-live-object"
+      },
+      "azurecreatesites": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "azuremapping": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuremonitor_fieldmappings": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuremonitorreopenstatus": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azuremonitorreopenstatus_guid": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuremonitortickettype": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azuremonitortickettype_guid": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuremonitoruser": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azuremonitoruser_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureopenai_embedding_enabled": {
+        "verdict": "silently-dropped",
+        "original": false,
+        "sentinel": true,
+        "readback": false,
+        "restored": "not-needed"
+      },
+      "azureopenai_embeddings_tickettypes": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureopenai_enable_ai_kb_articles": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "azureopenai_enabled": {
+        "verdict": "silently-dropped",
+        "original": false,
+        "sentinel": true,
+        "readback": false,
+        "restored": "not-needed"
+      },
+      "azuressoappid": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "azuressoconnectionid": {
+        "verdict": "writable",
+        "original": -1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azuressotenanttype": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "azuretenantid": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "azuretranslate_agent_chat_auto": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuretranslate_allowchat": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "azuretranslate_allowuserchat": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuretranslate_currentusage": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuretranslate_region": {
+        "verdict": "absent-from-live-object"
+      },
+      "azuretranslate_user_chat_auto": {
+        "verdict": "absent-from-live-object"
+      },
+      "azureuserfilter": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "b2cazure_auto_create_users": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cazure_auto_creation_site": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cazure_auto_creation_site_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cazureadsso": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cazureautoredirect": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cazuressoappid": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cazuretenantid": {
+        "verdict": "absent-from-live-object"
+      },
+      "b2cenableazuresinglesignon": {
+        "verdict": "absent-from-live-object"
+      },
+      "beyondtrust_teams": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_appid": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_authorised": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_domain": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_fieldmappings": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_redirect": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_site": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "businesscentral_tokenexpiry": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentral_url": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentralasset": {
+        "verdict": "absent-from-live-object"
+      },
+      "businesscentralsite_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "chat_agent_large_box": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "chat_canned_text_paste": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "chat_cannedtexts": {
+        "verdict": "absent-from-live-object"
+      },
+      "chat_image_type": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "chat_service_url": {
+        "verdict": "absent-from-live-object"
+      },
+      "chat_ticket_must_be_assigned": {
+        "verdict": "absent-from-live-object"
+      },
+      "chatendtickettype": {
+        "verdict": "writable",
+        "original": -1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "chatendtickettype_guid": {
+        "verdict": "absent-from-live-object"
+      },
+      "chatshownewbubble": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "client_secret_ncentral": {
+        "verdict": "absent-from-live-object"
+      },
+      "default_azure_connection_followers": {
+        "verdict": "absent-from-live-object"
+      },
+      "defaultteamsmsg": {
+        "verdict": "writable",
+        "original": "Ticket ID: $FAULTID, Ticket Subject: $symptom",
+        "sentinel": "Ticket ID: $FAULTID, Ticket Subject: $symptom__probe",
+        "readback": "Ticket ID: $FAULTID, Ticket Subject: $symptom__probe"
+      },
+      "disablebusinesscentralautosync": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "enable_azureopenai_client_profiling": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "enable_azureopenai_emotion_detection": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "enable_azureopenai_insights": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "enable_notification_log": {
+        "verdict": "absent-from-live-object"
+      },
+      "enable_teamsshifts": {
+        "verdict": "absent-from-live-object"
+      },
+      "enableazuresinglesignon": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "enablebusinesscentralsync": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "enableoppteamscall": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "enableteamscall": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "enableteamsmsg": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "entra_domain_owner_verification": {
+        "verdict": "absent-from-live-object"
+      },
+      "error_notification_min_severity_level": {
+        "verdict": "writable",
+        "original": 2,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "exchange_azure_authority": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "graph_host": {
+        "verdict": "absent-from-live-object"
+      },
+      "halointegrator_microsoftteams": {
+        "verdict": "absent-from-live-object"
+      },
+      "halointegrator_microsoftteams_lasterror": {
+        "verdict": "absent-from-live-object"
+      },
+      "halointegrator_microsoftteams_lastsync": {
+        "verdict": "absent-from-live-object"
+      },
+      "halointegrator_ncentral": {
+        "verdict": "absent-from-live-object"
+      },
+      "halointegrator_ncentral_lasterror": {
+        "verdict": "absent-from-live-object"
+      },
+      "halointegrator_ncentral_lastsync": {
+        "verdict": "absent-from-live-object"
+      },
+      "headers_determine_chat_lang": {
+        "verdict": "absent-from-live-object"
+      },
+      "hide_other_dep_teams": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "importazureappid": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "importazuredomain": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "importazuresite": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "importazuresite_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "importazuresitefield": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "includechatsettings": {
+        "verdict": "absent-from-live-object"
+      },
+      "keep_tickets_assigned_when_removing_teams": {
+        "verdict": "absent-from-live-object"
+      },
+      "livechatallowusers": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "livechatallowvisitors": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "livechatconnectionmethod": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "livechatincludeemailinname": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "livechatjoinmode": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "livechatnewchatmsg": {
+        "verdict": "writable",
+        "original": "Hello, how can we help?",
+        "sentinel": "Hello, how can we help?__probe",
+        "readback": "Hello, how can we help?__probe"
+      },
+      "livechattechmustonline": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "livechattechnamevisibility": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "livechattechnamevisibilitytext": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "livechatworkhours": {
+        "verdict": "writable",
+        "original": -1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "logticketwhenchatend": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "mark_notifications_as_done_before_deleting": {
+        "verdict": "absent-from-live-object"
+      },
+      "max_azure_group_members": {
+        "verdict": "writable",
+        "original": 100,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentral_alerttype": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentral_customerid": {
+        "verdict": "absent-from-live-object"
+      },
+      "ncentral_delete_clients": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "ncentral_delete_devices": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "ncentral_fieldmappings": {
+        "verdict": "absent-from-live-object"
+      },
+      "ncentral_sitemappings": {
+        "verdict": "absent-from-live-object"
+      },
+      "ncentral_tickettype": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentral_tickettype_guid": {
+        "verdict": "absent-from-live-object"
+      },
+      "ncentral_username": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "ncentraldefaultgroup": {
+        "verdict": "writable",
+        "original": 20,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentralimporttype": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentralmatchname": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "ncentraltoplevel": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentralurl": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "ncentraluser": {
+        "verdict": "writable",
+        "original": 20,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "ncentraluser_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "new_chat_window_controls": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "notification_log_location_on_click": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "one_open_live_chat_for_agents": {
+        "verdict": "absent-from-live-object"
+      },
+      "onlyshowmyteamsintree": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "order_teams_by_sequence": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "piipci_automation_chat_ended": {
+        "verdict": "absent-from-live-object"
+      },
+      "portalchatprofile": {
+        "verdict": "writable",
+        "original": "df75d4fc-89a7-4760-b595-b7c345adca23",
+        "sentinel": "df75d4fc-89a7-4760-b595-b7c345adca23__probe",
+        "readback": "df75d4fc-89a7-4760-b595-b7c345adca23__probe"
+      },
+      "prevent_multi_agent_chat": {
+        "verdict": "absent-from-live-object"
+      },
+      "reset_halointegrator_microsoftteams_lastsync": {
+        "verdict": "absent-from-live-object"
+      },
+      "send_incomplete_timesheet_notifications": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "sendaccountmanagernotifications": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "sendfollowernotifications": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "sendmultiplenotifications": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "sendnotificationemailforrtbcc": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "show_chat_module": {
+        "verdict": "server-transformed",
+        "original": true,
+        "sentinel": false,
+        "readback": null
+      },
+      "show_lists_before_teams": {
+        "verdict": "absent-from-live-object"
+      },
+      "show_livechat_timer": {
+        "verdict": "absent-from-live-object"
+      },
+      "show_livechat_url": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "show_notification_log_tab": {
+        "verdict": "absent-from-live-object"
+      },
+      "solarwindsncentraldontsyncaddress": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "stripenotificationemail": {
+        "verdict": "absent-from-live-object"
+      },
+      "task_notification_body": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_authorized": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_azure_authority": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teams_chat_closure_message": {
+        "verdict": "writable",
+        "original": 354,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teams_chat_closure_message_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_chat_default_name": {
+        "verdict": "writable",
+        "original": "$FAULTID - $SYMPTOM",
+        "sentinel": "$FAULTID - $SYMPTOM__probe",
+        "readback": "$FAULTID - $SYMPTOM__probe"
+      },
+      "teams_chat_help_message": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_chat_management": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "teams_chat_profile": {
+        "verdict": "writable",
+        "original": "a34f0eb2-5f48-44af-87f7-5ba3307339a9",
+        "sentinel": "a34f0eb2-5f48-44af-87f7-5ba3307339a9__probe",
+        "readback": "a34f0eb2-5f48-44af-87f7-5ba3307339a9__probe"
+      },
+      "teams_chat_tenant_list": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_chat_tenants": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_chat_welcome_message": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_client_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_connected_user": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_connected_user_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_connected_user_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_default_user_name": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_filter_type": {
+        "verdict": "absent-from-live-object"
+      },
+      "teams_options_style": {
+        "verdict": "writable",
+        "original": 1,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teams_tenant_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsbot_allowed_tenants": {
+        "verdict": "writable",
+        "original": "",
+        "sentinel": "__probe",
+        "readback": "__probe"
+      },
+      "teamsbot_allowed_tenants_list": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsbot_default_subject": {
+        "verdict": "writable",
+        "original": "Microsoft Teams Message: Sent by ${From} on ${Sent}",
+        "sentinel": "Microsoft Teams Message: Sent by ${From} on ${Sent}__probe",
+        "readback": "Microsoft Teams Message: Sent by ${From} on ${Sent}__probe"
+      },
+      "teamsbot_default_user": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teamsbot_disabled": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "teamsbot_outcome_id": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teamsbot_ticket_type": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teamsbot_ticket_type_guid": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamscallmethod": {
+        "verdict": "writable",
+        "original": 0,
+        "sentinel": -999001,
+        "readback": -999001
+      },
+      "teamsshifts_authentication_type": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsshifts_authorized": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsshifts_azure_authority": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsshifts_client_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsshifts_mappings": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsshifts_shifttype_mappings": {
+        "verdict": "absent-from-live-object"
+      },
+      "teamsshifts_tenant_id": {
+        "verdict": "absent-from-live-object"
+      },
+      "use_azure_openai_surveys": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "use_embedding_scores_azureopenai": {
+        "verdict": "writable",
+        "original": false,
+        "sentinel": true,
+        "readback": true
+      },
+      "use_new_chat_transcript_style": {
+        "verdict": "absent-from-live-object"
+      },
+      "use_optimised_getunamenotification_query": {
+        "verdict": "absent-from-live-object"
+      },
+      "userviewedquotenotification": {
+        "verdict": "writable",
+        "original": true,
+        "sentinel": false,
+        "readback": false
+      },
+      "useteamshifts": {
+        "verdict": "absent-from-live-object"
+      },
+      "using_browser_push_notifications": {
+        "verdict": "silently-dropped",
+        "original": false,
+        "sentinel": true,
+        "readback": false,
+        "restored": "not-needed"
+      },
+      "zoom_access_chatbot": {
+        "verdict": "absent-from-live-object"
+      }
+    },
+    "residuals_after_restore": [],
+    "clean": true,
+    "tally": {
+      "writable": 107,
+      "absent-from-live-object": 116,
+      "silently-dropped": 4,
+      "server-transformed": 1
+    }
+  }
+}

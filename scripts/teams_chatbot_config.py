@@ -148,11 +148,16 @@ def apply_chatbot_fields(
     return updated, changed
 
 
-def diff_other_fields(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
-    """Fields that differ outside the intended chatbot set (drift check)."""
+def diff_other_fields(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    intended: object = (),
+) -> dict[str, Any]:
+    """Fields that differ outside the intended write set (drift check)."""
+    skip = set(CHATBOT_FIELDS) | set(intended)  # type: ignore[arg-type]
     drift: dict[str, Any] = {}
     for key in set(before) | set(after):
-        if key in CHATBOT_FIELDS or key in KNOWN_SERVER_NORMALIZATIONS:
+        if key in skip or key in KNOWN_SERVER_NORMALIZATIONS:
             continue
         if before.get(key) != after.get(key):
             drift[key] = {"before": before.get(key), "after": after.get(key)}
@@ -217,6 +222,7 @@ async def apply_state(
     welcome: str,
     help_text: str,
     only: str = "all",
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Full-object save, one field at a time, with per-field readback.
 
@@ -244,6 +250,8 @@ async def apply_state(
     }
     if only != "all":
         requested = {key_by_choice[only]: requested[key_by_choice[only]]}
+    if extra:
+        requested.update(extra)
 
     current = copy.deepcopy(original)
     persistence: dict[str, Any] = {}
@@ -269,7 +277,7 @@ async def apply_state(
         "persistence": persistence,
         "readback_chatbot": chatbot_state(current),
         "server_normalizations": server_normalizations(original, current),
-        "drift": diff_other_fields(original, current),
+        "drift": diff_other_fields(original, current, set(requested)),
     }
     result["not_persisted"] = [
         field for field, entry in persistence.items() if not entry["persisted"]
@@ -462,12 +470,23 @@ async def run(args: argparse.Namespace) -> int:
                     file=sys.stderr,
                 )
                 return 2
+            extra: dict[str, Any] = {}
+            for raw in args.set_fields:
+                key, sep, value = raw.partition("=")
+                if not sep or not key:
+                    print(f"error: --set expects KEY=VALUE, got {raw!r}", file=sys.stderr)
+                    return 2
+                try:
+                    extra[key] = json.loads(value)
+                except ValueError:
+                    extra[key] = value
             evidence["apply"] = await apply_state(
                 client,
                 args.chat_profile,
                 args.welcome,
                 args.help_text,
                 args.only,
+                extra,
             )
 
         if args.tab_post:
@@ -516,6 +535,14 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("all", "profile", "welcome", "help"),
         default="all",
         help="apply a single field (persistence diagnostics)",
+    )
+    parser.add_argument(
+        "--set",
+        dest="set_fields",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="narrow extra Control write (VALUE parsed as JSON when valid); repeatable",
     )
     parser.add_argument(
         "--tab-post",

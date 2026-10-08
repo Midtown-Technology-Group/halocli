@@ -75,6 +75,16 @@ def test_diff_other_fields_detects_drift() -> None:
     assert drift == {"teams_authorized": {"before": True, "after": False}}
 
 
+def test_diff_respects_intended_writes() -> None:
+    module = importlib.import_module("teams_chatbot_config")
+    before = {"teams_chat_tenants": None}
+    after = {"teams_chat_tenants": "abc-def"}
+    # an unreviewed change is drift...
+    assert "teams_chat_tenants" in module.diff_other_fields(before, after)
+    # ...but the field we deliberately wrote is not
+    assert module.diff_other_fields(before, after, {"teams_chat_tenants"}) == {}
+
+
 def test_known_normalizations_are_not_drift() -> None:
     module = importlib.import_module("teams_chatbot_config")
     before = {"trophy_agents": "", "teams_authorized": True}
@@ -286,6 +296,36 @@ def test_manifest_generates_zip_artifact(monkeypatch: pytest.MonkeyPatch, tmp_pa
     assert manifest["requested"]["name"] == "Halo Service Chatbot"
     # evidence records metadata, never the multi-KB data URIs
     assert "data:image" not in json.dumps(manifest["requested"])
+
+
+def test_run_apply_set_fields_persist(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """--set performs narrow Control writes with the same guard (tenant map)."""
+    module = importlib.import_module("teams_chatbot_config")
+    fake = _install(module, monkeypatch, tmp_path, mode="persist")
+    code = asyncio.run(
+        module.run(
+            _args(
+                "--profile",
+                "dev",
+                "--apply",
+                "--chat-profile",
+                "prof-external",
+                "--set",
+                "teams_chat_tenants=abc-def-ghi",
+                "--set",
+                'teams_chat_tenant_list=[{"value":"abc-def-ghi","label":"Test Org"}]',
+            )
+        )
+    )
+    assert code == 0
+    evidence = json.loads((tmp_path / "evidence.json").read_text(encoding="utf-8"))
+    persistence = evidence["apply"]["persistence"]
+    assert persistence["teams_chat_tenants"]["persisted"] is True
+    assert persistence["teams_chat_tenant_list"]["persisted"] is True
+    # intended fields are not treated as drift
+    assert evidence["apply"]["drift"] == {}
+    assert fake.control["teams_chat_tenants"] == "abc-def-ghi"
+    assert fake.control["teams_chat_tenant_list"] == [{"value": "abc-def-ghi", "label": "Test Org"}]
 
 
 def test_apply_requires_chat_profile(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
