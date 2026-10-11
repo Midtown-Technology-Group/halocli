@@ -119,6 +119,66 @@ async def test_list_all_detects_ignored_paging_and_recovers_single_page() -> Non
 
 
 @pytest.mark.asyncio
+async def test_list_all_bounds_ignored_paging_recovery_by_record_limit() -> None:
+    """Recovery must bound the response before Halo sends or we parse it."""
+    first_page = {"notes": [{"id": i} for i in range(50)], "record_count": 10_000}
+    calls: list[dict[str, Any]] = []
+
+    async def fetch(**kwargs: Any) -> Any:
+        calls.append(dict(kwargs))
+        if "count" in kwargs:
+            count = kwargs["count"]
+            return {"notes": [{"id": i} for i in range(count)], "record_count": 10_000}
+        return first_page
+
+    stats: dict[str, Any] = {}
+    rows = await list_all(fetch, page_size=50, max_records=500, stats=stats)
+
+    assert len(calls) == 3
+    assert calls[2]["count"] == 500
+    assert len(rows) == 500
+    assert stats["truncated"] is True
+
+
+@pytest.mark.asyncio
+async def test_list_all_does_not_exceed_page_budget_for_recovery() -> None:
+    """Detecting a duplicate on the last allowed request cannot add a third."""
+    first_page = {"notes": [{"id": i} for i in range(50)], "record_count": 10_000}
+    calls: list[dict[str, Any]] = []
+
+    async def fetch(**kwargs: Any) -> Any:
+        calls.append(dict(kwargs))
+        return first_page
+
+    stats: dict[str, Any] = {}
+    rows = await list_all(fetch, page_size=50, max_pages=2, stats=stats)
+
+    assert len(calls) == 2
+    assert len(rows) == 50
+    assert stats["paging_ignored"] is True
+    assert stats["truncated"] is True
+
+
+@pytest.mark.asyncio
+async def test_list_all_bounds_recovery_size_by_remaining_page_budget() -> None:
+    first_page = {"notes": [{"id": i} for i in range(50)], "record_count": 10_000}
+    calls: list[dict[str, Any]] = []
+
+    async def fetch(**kwargs: Any) -> Any:
+        calls.append(dict(kwargs))
+        if "count" in kwargs:
+            count = kwargs["count"]
+            return {"notes": [{"id": i} for i in range(count)], "record_count": 10_000}
+        return first_page
+
+    rows = await list_all(fetch, page_size=50, max_pages=3)
+
+    assert len(calls) == 3
+    assert calls[2]["count"] == 100
+    assert len(rows) == 100
+
+
+@pytest.mark.asyncio
 async def test_list_all_paging_ignored_and_count_ignored_is_honest_truncation() -> None:
     """If count is ignored too (TimesheetEvent shape): page 1 stands, flagged."""
 

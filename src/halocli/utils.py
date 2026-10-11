@@ -89,9 +89,9 @@ async def list_all(
     page instead of advancing — some endpoints ignore ``page_no``/``pageinate``
     entirely (issue #24: /CRMNote answers every page with page 1). The repeated
     page is never appended. Unless the caller already pinned ``count``, one
-    bounded recovery follows the documented workaround: a single fetch with
-    ``count=<record_count>``. If that also repeats, the first page stands and
-    the result is honestly truncated.
+    bounded recovery follows the documented workaround: a single fetch whose
+    ``count`` cannot exceed the caller's record or page budget. If that also
+    repeats, the first page stands and the result is honestly truncated.
 
     ``cursor_paging=True`` switches to window-cursor walking for streams like
     /Feed where page numbers do not exist at all (see ``_list_cursor``).
@@ -131,15 +131,24 @@ async def list_all(
             # The server handed back the previous page verbatim: paging params
             # are ignored here. Never append the duplicate (issue #24).
             paging_ignored = True
-            if not count_pinned and record_count is not None and len(rows) < record_count:
+            recovery_count = record_count
+            if recovery_count is not None and max_records is not None:
+                recovery_count = min(recovery_count, max_records)
+            if recovery_count is not None and max_pages is not None:
+                remaining_pages = max(0, max_pages - page_no)
+                recovery_count = min(
+                    recovery_count,
+                    len(rows) + remaining_pages * safe_page_size,
+                )
+            if not count_pinned and recovery_count is not None and recovery_count > len(rows):
                 # One bounded recovery attempt: fetch everything as a single
-                # page (the workaround from the issue, automated).
+                # page, up to the caller's original resource limits.
                 retry = parse_page_result(
                     await fetch(
                         pageinate=True,
                         page_no=1,
                         page_size=safe_page_size,
-                        count=record_count,
+                        count=recovery_count,
                         **params,
                     ),
                     list_key=list_key,

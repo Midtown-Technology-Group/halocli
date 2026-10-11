@@ -1880,7 +1880,7 @@ async def _list_resource(
     if stats.get("paging_ignored"):
         # Halo answered page 2 with page 1 verbatim (issue #24): the endpoint
         # ignores paging. The duplicate was never appended, and one
-        # single-page recovery (count=<total>) was already attempted.
+        # single-page recovery bounded by the caller's limits was attempted.
         payload["paging_ignored"] = True
     if stats.get("truncated"):
         # Say so plainly: a truncated payload must never read as a complete one.

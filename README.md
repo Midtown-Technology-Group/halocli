@@ -269,9 +269,11 @@ preview-all-then-apply contract so a bulk run is never a blind blast.
 
 Some endpoints ignore paging entirely (`/CRMNote` answers every `page_no` with
 page 1). The list loop detects the repeated page, never appends it, recovers
-the full set with one `count=<total>` request, and reports
-`"paging_ignored": true` — so a lying pager can no longer duplicate rows (the
-`/CRMNote` case went from 150 items/50 distinct to 133/133, verified live).
+with one `count` request bounded by the caller's record and page ceilings, and
+reports `"paging_ignored": true` — so a lying pager can neither duplicate rows
+nor turn a bounded list into an unbounded download. `--all` remains the explicit
+opt-in to a full recovery (`/CRMNote` went from 150 items/50 distinct to
+133/133, verified live).
 
 `/Feed` is a different animal: an activity stream with **no page numbers at
 all** — the pageinate trio is ignored (page 2 is page 1 verbatim, `page_size`
