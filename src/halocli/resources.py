@@ -2257,9 +2257,10 @@ RESOURCES: tuple[HaloResource, ...] = (
         # filter such as toplevel_id is required); `count` is honored (default
         # 50) but page_no/pageinate/page_size are IGNORED by Halo. Since 1.8.0
         # the generic list loop detects the repeated page, never appends it,
-        # recovers the full set with one count=<record_count> fetch, and reports
-        # `paging_ignored` in the payload (issue #24, live-verified: 133 of 133
-        # distinct). --param count=<total> remains the manual workaround.
+        # recovers with one count fetch bounded by the caller's record/page
+        # ceilings, and reports `paging_ignored` in the payload (issue #24,
+        # live-verified: 133 of 133 distinct with an unbounded --all request).
+        # --param count=<total> remains the manual workaround.
         # table_fields corrected: live rows carry `datetime`, never `date`.
         # POST/DELETE are fired live on the dev trial 2026-10-03 (no write authorization)
         # -> writes stay verification: spec.
