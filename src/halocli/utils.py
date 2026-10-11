@@ -154,7 +154,7 @@ async def list_all(
                     list_key=list_key,
                 )
                 if len(retry.items) > len(rows):
-                    rows = retry.items
+                    rows = retry.items[:recovery_count]
                     if retry.record_count is not None:
                         record_count = retry.record_count
                     if max_records is not None and len(rows) > max_records:

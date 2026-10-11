@@ -179,6 +179,21 @@ async def test_list_all_bounds_recovery_size_by_remaining_page_budget() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_all_slices_oversized_recovery_to_page_budget() -> None:
+    """A server that ignores recovery count cannot exceed the caller's bound."""
+    first_page = {"notes": [{"id": i} for i in range(50)], "record_count": 10_000}
+
+    async def fetch(**kwargs: Any) -> Any:
+        if "count" in kwargs:
+            return {"notes": [{"id": i} for i in range(500)], "record_count": 10_000}
+        return first_page
+
+    rows = await list_all(fetch, page_size=50, max_pages=3)
+
+    assert len(rows) == 100
+
+
+@pytest.mark.asyncio
 async def test_list_all_paging_ignored_and_count_ignored_is_honest_truncation() -> None:
     """If count is ignored too (TimesheetEvent shape): page 1 stands, flagged."""
 
