@@ -428,24 +428,26 @@ there" answerable offline:
 
 - **`halo_version_snapshot.json`** — per-instance `/InstanceInfo`
   captures with our belief-state (spec sha, op counts) at capture time.
-  Current record: `midtowntg` (prod) and `dtcdev.halopsa.com` — the
-  swagger upstream we vendor from — both run **2.236.133** on stable
-  tracks, while the `clidev` trial runs **2.250.32**. Re-run with
-  `python scripts/halo_version_snapshot.py --profile dev` (or
-  `--public-url` for credential-less instances — `/InstanceInfo` answers
-  without auth on these builds).
+  Current record: `midtowntg` (prod) runs **2.236.134** on the stable
+  track; the `clidev` trial runs **2.250.47**; and `dtcdev.halopsa.com`
+  — the swagger upstream we vendor from — has moved to **2.250.48**.
+  Re-run with `python scripts/halo_version_snapshot.py --profile dev`
+  (or `--public-url` for credential-less instances — `/InstanceInfo`
+  answers without auth on these builds).
 - **`halo_release_ladder.json`** — the community release ladder parsed
   from [usehalo.co](https://www.usehalo.co/) (community-run, not
   affiliated with Halo): versions with Stable/Beta/Unreleased status and
   dates, plus `current: {latest_stable, latest_beta, latest_unreleased}`.
-  Re-run `python scripts/release_ladder.py` when releases move.
+  This *is* Remmy.dev's tracker — [haloreleases.remmy.dev](https://haloreleases.remmy.dev)
+  now redirects to usehalo.co — so following the ladder here is following
+  that source. Re-run `python scripts/release_ladder.py` when releases move.
 - **The track nuance that matters**: hosted-group *names* mislead
-  (`USDEMODB2-TRIALS1` is not the beta track) — the ladder shows2.250
-  went **Stable on 28 Sept 2026**, so the trial runs a *current GA build*
-  ahead of prod, not a beta. Conversely `check_spec_currency` compares us
-  to *dtcdev* (stable2.236) — surface newer than that (2.252+ beta,2.254/2.256
-  unreleased) is spec-uncovered by definition; trial probes are the only
-  lens on it, and the snapshot's drift flags mark stale captures.
+  (`USDEMODB2-TRIALS1` is not the beta track) — the ladder shows 2.250
+  went **Stable on 13 Oct 2026**, so both the trial and dtcdev run a
+  *current GA build* ahead of prod, not a beta. With dtcdev itself now on
+  2.250 (was 2.236), the swagger upstream we vendor from has moved ahead of
+  our vendored 2.236 spec — a re-vendor is due; the trial/prod diff axis
+  below is how that gap gets measured.
 - **The uncovered axis, quantified**: each instance serves its *own*
   swagger, and `python scripts/trial_spec_diff.py` diffs it against our
   vendored spec. Trial (2.250.32) vs vendored (2.236): **961 vs 927

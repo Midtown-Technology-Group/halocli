@@ -7,14 +7,17 @@ parses that server-rendered HTML into halo_release_ladder.json so our
 version snapshots can say WHICH track an instance sits on and what the
 current stable/beta/unreleased lines are.
 
+usehalo.co is the tracker Remmy.dev maintains (haloreleases.remmy.dev
+redirects here), so this is the follow-on to that source.
+
 Re-run when releases move:
 
     python scripts/release_ladder.py
 
 Also corrects a narrative trap we fell into: hosted_group names like
-USDEMODB2-TRIALS1 say "TRIALS", not the track - usehalo.co shows2.250
-went STABLE on28 Sept2026, so our trial runs a GA build ahead of prod
-(2.236), not a beta.
+USDEMODB2-TRIALS1 say "TRIALS", not the track - usehalo.co puts 2.250 on
+the STABLE line, so our trial runs a GA build ahead of prod (2.236), not
+a beta.
 """
 
 from __future__ import annotations
