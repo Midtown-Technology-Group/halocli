@@ -14,10 +14,10 @@ Re-run when releases move:
 
     python scripts/release_ladder.py
 
-Also corrects a narrative trap we fell into: hosted_group names like
-USDEMODB2-TRIALS1 say "TRIALS", not the track - usehalo.co puts 2.250 on
-the STABLE line, so our trial runs a GA build ahead of prod (2.236), not
-a beta.
+Also corrects a narrative trap we fell into: hosted_group names like the
+trial's (ending "TRIALS1") say "TRIALS", not the track - usehalo.co puts
+2.250 on the STABLE line, so our trial runs a GA build ahead of prod
+(2.236), not a beta.
 """
 
 from __future__ import annotations

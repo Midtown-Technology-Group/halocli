@@ -442,7 +442,7 @@ there" answerable offline:
   now redirects to usehalo.co — so following the ladder here is following
   that source. Re-run `python scripts/release_ladder.py` when releases move.
 - **The track nuance that matters**: hosted-group *names* mislead
-  (`USDEMODB2-TRIALS1` is not the beta track) — the ladder shows 2.250
+  (a hosted-group name ending `-TRIALS1` is not the beta track) — the ladder shows 2.250
   went **Stable on 13 Oct 2026**, so both the trial and dtcdev run a
   *current GA build* ahead of prod, not a beta. With dtcdev itself now on
   2.250 (was 2.236), the swagger upstream we vendor from has moved ahead of

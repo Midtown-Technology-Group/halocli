@@ -37,6 +37,12 @@ PROBE = "halocli-dev-probe"
 async def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", default="dev")
+    parser.add_argument(
+        "--uname",
+        default="user@example.com",
+        help="username for the /Users/onbehalf probe; supply a real one at "
+        "run time - never commit a tenant address here.",
+    )
     args = parser.parse_args()
 
     from halocli.client import HaloClient
@@ -98,7 +104,7 @@ async def main() -> int:
             "users_onbehalf_uname",
             "GET",
             _EP_Users_onbehalf,
-            params={"uname": "thomas@midtowntg.com"},
+            params={"uname": args.uname},
         )
         await probe("users_onbehalf_userid", "GET", _EP_Users_onbehalf, params={"user_id": "3"})
         await probe("booking_get_bare", "GET", _EP_Appointment_Booking)
