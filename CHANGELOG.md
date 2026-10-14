@@ -6,6 +6,26 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.18.0 - 2026-10-14
+
+- **Release harness: resumable, bounded and safe to re-run** (`scripts/release.py`,
+  consolidating PRs #115/#117, issue #65):
+  - the whole dance logs timestamped progress, and every wait is bounded by a
+    wall clock — `wait_pr_checks` polls with a timeout instead of hanging on
+    `gh pr checks --watch` forever.
+  - the MSI stage is now idempotent: it reuses a version-matched active run,
+    skips dispatch when the release already carries `halocli.msi`, and **aborts**
+    on multiple active runs or on active runs whose version identity is unknown.
+    A re-run after a partial failure can no longer double-dispatch or silently
+    attach the wrong build.
+  - a lost `gh workflow run` response is reconciled by observing the workflow
+    runs rather than blindly retrying (which could double-fire the build).
+  - `.github/workflows/release-msi.yml`: the workflow run name carries the
+    target version, and the MSI upload drops `--clobber` so an overlapping build
+    cannot replace the asset the release script already verified.
+  - `tests/test_release.py`: 25 tests pin the resume, reconcile and
+    dispatch-uncertainty branches; `RELEASE.md` documents the resumable flow.
+
 ## 1.17.0 - 2026-10-14
 
 - **Bifrost → Halo converter** (`scripts/bifrost_convert.py` over the new
