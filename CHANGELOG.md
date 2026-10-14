@@ -6,6 +6,77 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.17.0 - 2026-10-14
+
+- **Bifrost → Halo converter** (`scripts/bifrost_convert.py` over the new
+  importable `src/halocli/bifrost_convert.py`): Bifrost integration YAML →
+  `POST /CustomIntegration` bodies, method YAML → `POST /CustomIntegrationMethod`
+  cascades, and Bifrost workflow functions → **executable** `/Webhook {type:1}`
+  runbook graphs (steps + action edges, plus a `_phase_bindings` sidecar).
+  Offline by default (writes `halo_out/` JSON, no network); `--apply --profile`
+  fires on a tenant, trial-only. Every converted primitive was fire-proven on
+  both branch edges rather than assumed, and the converter grew v2 → v23
+  against live evidence:
+  - v3–v9: branch translation + the `approval_result` rule, else-branches and
+    native event triggers, comparison guards decoded from Halo's own criteria
+    operator table, the ticket-writer primitive (`aa8`/`aat3`), runbook
+    chaining (`aa24`), ticket-field guards, and the subscriber-filter port
+    (`--trigger-filter`);
+  - v10–v17: helper inlining + constant folding + unreachable pruning (a real
+    voicemail workflow ran to completion), multi-runbook orchestration in one
+    apply, variable-vs-variable comparisons **proven non-transferable** by a
+    control-leg probe, membership guards (`in`/`not in`), int/float/bool
+    truthiness, ticket create/update joining the note writer, dynamic `aa8`
+    bodies (`<<input>>` interpolation), and `try/except` → failure-edge
+    routing;
+  - v18–v23: the voicemail capstone (three workflows, one apply, every run
+    `status2`), the message-template catalog, AI/SQL actions
+    (`aa18`/`aa25`/`aa26`) with Halo's own templates as a regression oracle,
+    the Huntress integration (102/102 catalog methods created and read back),
+    and the await-result / `try`-else mapping gaps.
+- **Spec-generated method catalogs** (`scripts/openapi_methods.py`): a vendor
+  OpenAPI spec renders straight into the converter's `--methods` pipeline,
+  proven live end-to-end (run 2780 `status2`, recovery edge exercised).
+- **Huntress integration builder** (`scripts/build_huntress_integration.py`):
+  a persistent (not self-cleaning) integration — refuses production hosts and
+  double-create, `--cleanup` removes it explicitly; evidence in
+  `huntress_integration_evidence.json`.
+- **Teams end-user chatbot configuration** (`scripts/teams_chatbot_config.py`,
+  usehalo guide 1080): read mode snapshots `GET /Control/Teams`, the three
+  Control chatbot fields and every `ChatProfile` (secrets presence-only);
+  `--apply` does a per-field read-modify-write of `POST /Control` with readback,
+  drift detection and restore-on-drift. Trial-only by default — production
+  requires the explicit, logged `--allow-production` override, and host-aware
+  output paths keep trial evidence separate (`..._prod.json`).
+- **Teams manifest packaging**: the same tool now generates the `color.png` /
+  `outline.png` icons Teams requires (stdlib PNG, from the data-URI format the
+  UI sends) — Teams rejects icon-less packages, which is what blocked the first
+  production upload.
+- **Control census** (`scripts/control_census.py`): the `/Control` singleton
+  (4371 properties) gets a durable family map (offline, vendored spec: teams 54,
+  chat 55, notification 19, Azure/entra 117) plus an empirical `--probe`
+  writability sweep (trial-only) that records which fields Halo silently refuses
+  and which it normalizes or re-encrypts server-side.
+- **Registry enrichment** (`spec/halo_overlay.json`): `/ClientCache`, `/Workflow`
+  (create/update + delete), `/CustomIntegration` (CRUD) and
+  `/CustomIntegrationMethod` carry curated descriptions now, each promoted from
+  raw on a live create-verify-delete round-trip.
+- **Security**: duplicate-page recovery is bounded by the caller's
+  `max_records`/`max_pages` budget — it can no longer issue unbounded
+  `count=<total>` downloads, and `--all` stays the only unbounded opt-in
+  (finding 478). The SSRF/S5144 stragglers in `client.py` are closed with inline
+  origin/scheme/userinfo guards at the exact sinks (helper-based guards never
+  counted), and the token POST is pinned to the auth origin. The Sonar backlog
+  was cleared across three batches: all 14 vulnerabilities, all 3 bugs, the 82
+  composite test assertions split (S9073), and the mechanical smell sweep.
+- **README**: restructured into Install / Configure / Examples / Resource
+  Commands / Endpoint Coverage / Bifrost Compatibility / MCP Server sections;
+  added Halo's documented rate limit (700 req / 5 min, 429 + Fair Use Policy),
+  release-ladder tracking, and per-instance version snapshots.
+- Tests grew alongside every item above (converter fixtures, the census probe
+  loop and `run()` paths, the Teams fake-client paths, and the paging-recovery
+  ceiling regression) — all local, no tenant contact in CI.
+
 ## 1.16.0 - 2026-10-03
 
 - **/Feed is now walked properly (cursor paging).** `/Feed` has no page
