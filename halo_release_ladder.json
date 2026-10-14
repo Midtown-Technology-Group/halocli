@@ -1,7 +1,7 @@
 {
   "source": "https://www.usehalo.co/",
   "note": "community-run, not affiliated with Halo; parsed from server-rendered HTML",
-  "captured_at": "2026-10-04T12:39:36+00:00",
+  "captured_at": "2026-10-14T19:21:43+00:00",
   "current": {
     "latest_stable": "2.250",
     "latest_beta": "2.252",
@@ -11,7 +11,7 @@
     {
       "version": "2.256",
       "status": "Unreleased",
-      "date": null
+      "date": "13 Oct 2026"
     },
     {
       "version": "2.254",
@@ -31,7 +31,7 @@
     {
       "version": "2.250",
       "status": "Stable",
-      "date": "28 Sept 2026"
+      "date": "13 Oct 2026"
     },
     {
       "version": "2.248",
@@ -66,7 +66,7 @@
     {
       "version": "2.236",
       "status": "Stable",
-      "date": "02 Oct 2026"
+      "date": "09 Oct 2026"
     },
     {
       "version": "2.234",
@@ -357,16 +357,6 @@
       "version": "2.139",
       "status": "Beta",
       "date": "07 Feb 2024"
-    },
-    {
-      "version": "2.138",
-      "status": "Unreleased",
-      "date": "19 Jan 2024"
-    },
-    {
-      "version": "2.137",
-      "status": "Beta",
-      "date": "19 Jan 2024"
     }
   ]
 }
