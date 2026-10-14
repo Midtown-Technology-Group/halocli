@@ -38,6 +38,23 @@ SPEC_FILE = REPO_ROOT / "src" / "halocli" / "spec" / "halo_openapi.json"
 LEDGER_FILE = REPO_ROOT / "coverage_ledger.json"
 
 
+_PUBLIC_REDACT = ("dbid", "hosted_group")
+
+
+def _public_view(info: dict) -> dict:
+    """The /InstanceInfo payload with internal identifiers redacted.
+
+    The snapshot file is committed to a public repository, so drop the fields
+    that name our infrastructure rather than describe the build. Console output
+    still prints the real values locally.
+    """
+    view = dict(info)
+    for field in _PUBLIC_REDACT:
+        if field in view:
+            view[field] = "[redacted]"
+    return view
+
+
 def _belief_state() -> dict:
     spec_bytes = SPEC_FILE.read_bytes()
     spec = json.loads(spec_bytes.decode("utf-8"))
@@ -112,7 +129,7 @@ def main() -> int:
         "profile": profile_name,
         "source": source,
         "tenant_id": info.get("tenant_id"),
-        "halo": info,
+        "halo": _public_view(info),
         "beliefs": _belief_state(),
     }
 
