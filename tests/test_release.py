@@ -562,3 +562,29 @@ def test_manifest_mismatch_aborts_before_any_push(monkeypatch: pytest.MonkeyPatc
     assert "dance" not in calls
     assert "checks" not in calls
     assert "feed" not in calls
+
+
+def test_find_winget_pr_queries_the_winget_repository(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The PR lives in mtg-winget; gh must run there, not in halocli.
+
+    Regression: the lookup ran without cwd, so gh resolved the halocli repository
+    from the working directory and never saw the winget PR - the 1.19.0 dance
+    waited the full 3600s while PR #55 sat open.
+    """
+    seen: list[Any] = []
+
+    def fake_gh(args: list[str], *, cwd: Any = None) -> str:
+        seen.append(cwd)
+        if "open" in args:
+            return json.dumps(
+                [{"number": 55, "title": "Update halocli to 1.19.0", "headRefName": "auto-1.19.0"}]
+            )
+        return "[]"
+
+    monkeypatch.setattr(rel, "gh", fake_gh)
+    found = rel.find_winget_pr("1.19.0")
+
+    assert found["number"] == 55
+    assert seen and all(cwd == rel.WINGET for cwd in seen), seen

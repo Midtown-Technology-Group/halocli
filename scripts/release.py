@@ -243,18 +243,30 @@ def verify_release_assets(version: str) -> tuple[str, str]:
 
 
 def find_winget_pr(version: str, *, timeout_s: int = 3600) -> dict:
-    """Wait for an open winget-releaser PR; fail fast if it already merged."""
+    """Wait for an open winget-releaser PR; fail fast if it already merged.
+
+    The PR lives in the separate mtg-winget repository, so every gh call here
+    must run with cwd=WINGET: without it gh resolves the halocli repository
+    from the current directory, never sees the winget PR, and waits out the
+    full timeout (observed on the 1.19.0 release: PR #55 sat open for 60
+    minutes while the dance reported "no winget PR ... yet").
+    """
     started = time.time()
     deadline = started + timeout_s
     log(f"waiting for the winget-releaser PR for {version} (timeout {timeout_s}s)")
     while time.time() < deadline:
-        out = gh(["pr", "list", "--state", "open", "--json", "number,title,headRefName"])
+        out = gh(
+            ["pr", "list", "--state", "open", "--json", "number,title,headRefName"], cwd=WINGET
+        )
         for pr in json.loads(out):
             if pr["title"] == f"Update halocli to {version}":
                 log(f"found winget PR #{pr['number']} ({pr['headRefName']})")
                 return pr
         merged = json.loads(
-            gh(["pr", "list", "--state", "merged", "--limit", "100", "--json", "number,title"])
+            gh(
+                ["pr", "list", "--state", "merged", "--limit", "100", "--json", "number,title"],
+                cwd=WINGET,
+            )
         )
         for pr in merged:
             if pr["title"] == f"Update halocli to {version}":
