@@ -650,3 +650,102 @@ def test_pipx_install_accepts_the_version_prefix(
     rel.pipx_install("1.19.0")
 
     assert ["halocli", "--version"] in calls
+
+
+_SHA = "a" * 64
+_PC = "{20252E2C-CC71-4390-A1A4-9B048BFAA8D8}"
+
+
+def _manifest(sha: str = _SHA, pc: str = _PC) -> str:
+    return f"InstallerSha256: {sha}\nProductCode: '{pc}'\n"
+
+
+def _patch_merge_seams(
+    monkeypatch: pytest.MonkeyPatch, *, feed: Any, conclusion: str = "success"
+) -> list[list[str]]:
+    merged: list[list[str]] = []
+
+    def fake_gh(args: list[str], *, cwd: Any = None) -> str:
+        if args[:3] == ["pr", "list", "--state"]:
+            return json.dumps([{"number": 55, "title": "Update halocli to 1.19.0"}])
+        merged.append(args)
+        return ""
+
+    monkeypatch.setattr(rel, "WINGET", rel.REPO)
+    monkeypatch.setattr(rel, "gh", fake_gh)
+    monkeypatch.setattr(rel, "wait_workflow", lambda *a, **k: conclusion)
+    monkeypatch.setattr(rel, "feed_versions", lambda **k: feed)
+    monkeypatch.setattr(
+        rel,
+        "time",
+        type("T", (), {"sleep": staticmethod(lambda s: None), "time": staticmethod(lambda: 0.0)}),
+    )
+    return merged
+
+
+def test_merge_skips_feed_check_when_it_requires_auth(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A 401 feed must not fail a release whose winget PR merged and deployed."""
+    merged = _patch_merge_seams(monkeypatch, feed=None)
+    rel.merge_winget_and_verify_feed("1.19.0")
+
+    assert merged and merged[0][:2] == ["pr", "merge"]
+    assert any("feed check skipped" in line for line in _lines(capsys))
+
+
+def test_merge_confirms_when_the_feed_serves_the_version(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _patch_merge_seams(monkeypatch, feed=["1.18.0", "1.19.0"])
+    rel.merge_winget_and_verify_feed("1.19.0")
+    assert any("feed serves 1.19.0" in line for line in _lines(capsys))
+
+
+def test_merge_fails_when_the_feed_serves_versions_without_ours(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_merge_seams(monkeypatch, feed=["1.18.0"])
+    with pytest.raises(SystemExit, match="feed never served 1.19.0"):
+        rel.merge_winget_and_verify_feed("1.19.0")
+
+
+def test_merge_fails_when_the_feed_deploy_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_merge_seams(monkeypatch, feed=["1.19.0"], conclusion="failure")
+    with pytest.raises(SystemExit, match="feed deploy finished failure"):
+        rel.merge_winget_and_verify_feed("1.19.0")
+
+
+def test_merge_fails_when_the_pr_vanished(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(rel, "gh", lambda args, *, cwd=None: "[]")
+    with pytest.raises(SystemExit, match="winget PR vanished"):
+        rel.merge_winget_and_verify_feed("1.19.0")
+
+
+def test_verify_existing_passes_without_a_feed_answer(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Rehearsal must still work when the feed is auth-protected (ok_feed=None)."""
+    monkeypatch.setattr(rel, "verify_release_assets", lambda v: (_SHA, _PC))
+    monkeypatch.setattr(rel, "run", lambda cmd, **kw: _manifest())
+    monkeypatch.setattr(rel, "feed_versions", lambda **k: None)
+    rel.verify_existing("1.19.0")
+    assert any("feed_serves=skipped (auth required)" in line for line in _lines(capsys))
+
+
+def test_verify_existing_fails_on_a_manifest_mismatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(rel, "verify_release_assets", lambda v: (_SHA, _PC))
+    monkeypatch.setattr(rel, "run", lambda cmd, **kw: _manifest(sha="b" * 64))
+    monkeypatch.setattr(rel, "feed_versions", lambda **k: ["1.19.0"])
+    with pytest.raises(SystemExit, match="rehearsal FAILED"):
+        rel.verify_existing("1.19.0")
+
+
+def test_verify_existing_fails_when_the_feed_lacks_the_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(rel, "verify_release_assets", lambda v: (_SHA, _PC))
+    monkeypatch.setattr(rel, "run", lambda cmd, **kw: _manifest())
+    monkeypatch.setattr(rel, "feed_versions", lambda **k: ["1.18.0"])
+    with pytest.raises(SystemExit, match="rehearsal FAILED"):
+        rel.verify_existing("1.19.0")
