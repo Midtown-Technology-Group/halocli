@@ -322,6 +322,33 @@ def winget_dance(pr_number: int, pr_branch: str, version: str, sha: str, pc: str
     log(f"force-pushed {pr_branch}; winget repo restored to {RESTORE_BRANCH}")
 
 
+def feed_versions(*, timeout: float = 30) -> list[str] | None:
+    """Package versions the feed advertises; None when the feed requires auth.
+
+    The feed moved behind Entra authentication (mtg-winget PR #50), so an
+    anonymous poll answers 401. That is an auth boundary this script does not
+    own - the merged manifest on winget `main` is the source of truth for what
+    the feed will serve - so a 401 is reported and skipped rather than failing
+    an otherwise complete release.
+    """
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(FEED_URL, timeout=timeout) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code in {401, 403}:
+            log(
+                f"feed requires authentication (HTTP {exc.code}); skipping the anonymous feed check"
+            )
+            return None
+        raise SystemExit(f"feed check failed: HTTP {exc.code}")
+    except OSError as exc:
+        raise SystemExit(f"feed check failed: {exc}") from exc
+    return [v.get("PackageVersion") for v in payload.get("Data", {}).get("Versions", [])]
+
+
 def merge_winget_and_verify_feed(version: str) -> None:
     out = gh(["pr", "list", "--state", "open", "--json", "number,title"], cwd=WINGET)
     prs = [p for p in json.loads(out) if f"Update halocli to {version}" in p["title"]]
@@ -334,20 +361,18 @@ def merge_winget_and_verify_feed(version: str) -> None:
         raise SystemExit(f"feed deploy finished {conclusion}")
     log("feed deploy: success")
     # the merge-push auto-deploys; give the CDN a moment, then verify the feed
-    import urllib.request
-
     versions: list[str] = []
     for attempt in range(10):
-        try:
-            with urllib.request.urlopen(FEED_URL, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            versions = [v.get("PackageVersion") for v in data.get("Data", {}).get("Versions", [])]
-            if version in versions:
-                log(f"feed serves {version} (versions: {versions})")
-                return
-            log(f"feed poll {attempt}: {version} not served yet (versions: {versions})")
-        except Exception as exc:  # noqa: BLE001
-            log(f"feed poll {attempt}: {exc}")
+        versions = feed_versions()
+        if versions is None:
+            log(
+                "feed check skipped (authenticated endpoint); the merged winget manifest is the source of truth"
+            )
+            return
+        if version in versions:
+            log(f"feed serves {version} (versions: {versions})")
+            return
+        log(f"feed poll {attempt}: {version} not served yet (versions: {versions})")
         time.sleep(10)
     raise SystemExit(f"feed never served {version} (last versions: {versions})")
 
@@ -376,7 +401,10 @@ def pipx_install(version: str) -> None:
         ]
     )
     shown = run(["halocli", "--version"])
-    if shown != version:
+    # `halocli --version` prints "halocli <version>"; comparing the raw output to a
+    # bare version marked a successful install as failed on every release.
+    reported = shown.split()[-1] if shown else ""
+    if reported != version:
         raise SystemExit(f"installed halocli reports {shown!r}, expected {version!r}")
     log(f"pipx: halocli {shown} installed with extras")
 
@@ -394,16 +422,13 @@ def verify_existing(version: str) -> None:
     assert sha and pc, "manifest not found on main"
     ok_sha = sha.group(1).lower() == digest.lower()
     ok_pc = pc.group(1).upper() == code.upper()
-    import urllib.request
-
-    with urllib.request.urlopen(FEED_URL, timeout=30) as resp:
-        versions = [
-            v.get("PackageVersion")
-            for v in json.loads(resp.read().decode("utf-8")).get("Data", {}).get("Versions", [])
-        ]
-    ok_feed = version in versions
-    log(f"rehearsal v{version}: sha_match={ok_sha} productcode_match={ok_pc} feed_serves={ok_feed}")
-    if not (ok_sha and ok_pc and ok_feed):
+    versions = feed_versions()
+    ok_feed = None if versions is None else version in versions
+    log(
+        f"rehearsal v{version}: sha_match={ok_sha} productcode_match={ok_pc} "
+        f"feed_serves={ok_feed if ok_feed is not None else 'skipped (auth required)'}"
+    )
+    if not (ok_sha and ok_pc) or ok_feed is False:
         raise SystemExit("rehearsal FAILED")
 
 

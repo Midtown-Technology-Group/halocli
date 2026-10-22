@@ -17,6 +17,7 @@ import importlib.util
 import json
 import re
 import subprocess
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -588,3 +589,64 @@ def test_find_winget_pr_queries_the_winget_repository(
 
     assert found["number"] == 55
     assert seen and all(cwd == rel.WINGET for cwd in seen), seen
+
+
+def test_feed_versions_treats_401_as_requires_auth(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The feed is Entra-protected; an anonymous 401 is a skip, not a failure."""
+    import urllib.error
+
+    def fake_urlopen(url: str, timeout: float = 0) -> Any:
+        raise urllib.error.HTTPError(url, 401, "Unauthorized", {}, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    assert rel.feed_versions() is None
+    assert any("requires authentication" in line for line in _lines(capsys))
+
+
+def test_feed_versions_returns_versions(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = {"Data": {"Versions": [{"PackageVersion": "1.19.0"}]}}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(payload).encode("utf-8")
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda url, timeout=0: FakeResponse())
+    assert rel.feed_versions() == ["1.19.0"]
+
+
+def test_feed_versions_raises_on_other_http_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.error
+
+    def fake_urlopen(url: str, timeout: float = 0) -> Any:
+        raise urllib.error.HTTPError(url, 500, "boom", {}, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    with pytest.raises(SystemExit, match="feed check failed"):
+        rel.feed_versions()
+
+
+def test_pipx_install_accepts_the_version_prefix(
+    clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`halocli --version` prints "halocli 1.19.0"; that install is a success."""
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **kwargs: Any) -> str:
+        calls.append(cmd)
+        if cmd[:2] == ["halocli", "--version"]:
+            return "halocli 1.19.0"
+        return ""
+
+    monkeypatch.setattr(rel, "run", fake_run)
+    monkeypatch.setattr(urllib.request, "urlretrieve", lambda url, path: None)
+    rel.pipx_install("1.19.0")
+
+    assert ["halocli", "--version"] in calls
