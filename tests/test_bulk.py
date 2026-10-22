@@ -161,8 +161,11 @@ def test_bulk_cli_refuses_apply_without_yes(tmp_path: Path) -> None:
     plan = tmp_path / "plan.jsonl"
     plan.write_text(PLAN, encoding="utf-8")
     result = runner.invoke(app, ["bulk", "--file", str(plan), "--apply"])
-    assert result.exit_code != 0
-    assert "--yes" in (result.output + (result.stderr or ""))
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["category"] == "validation"
+    assert "without --yes" in payload["error"]
 
 
 def test_bulk_cli_rejects_a_bad_line(tmp_path: Path) -> None:

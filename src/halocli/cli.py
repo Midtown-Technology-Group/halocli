@@ -1107,7 +1107,14 @@ def bulk(
         _local_error(exc, "validation")
         return
     if apply and not yes:
-        raise typer.BadParameter(f"Refusing to apply {len(items)} operations without --yes.")
+        # Structured refusal rather than a usage panel: the panel is truncated to the
+        # terminal width and drops the reason, which made the guard untestable across
+        # platforms and hid the explanation from the operator.
+        _local_error(
+            ValueError(f"Refusing to apply {len(items)} operations without --yes."),
+            "validation",
+        )
+        return
     if not apply:
         render(preview_plan(items, source=file, limit=limit), output=output)
         return
