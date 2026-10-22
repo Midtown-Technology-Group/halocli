@@ -37,6 +37,13 @@ from halocli.mirror import (
     sync_resources,
 )
 from halocli.ops import DEFAULT_CLOSED_STATUSES, OpsError, run_standup, run_triage
+from halocli.bulk import (
+    BULK_PREVIEW_LIMIT,
+    BulkError,
+    execute_plan,
+    parse_jsonl,
+    preview_plan,
+)
 from halocli.sqlguard import SQLGuardError, validate_select_only
 from halocli.writes import delete_resource, execute_write
 from halocli.todo import (
@@ -1054,6 +1061,105 @@ def raw(
     )
 
 
+# --------------------------------------------------------------------- bulk
+
+
+@app.command()
+def bulk(
+    file: Annotated[str, typer.Option("--file", help="JSONL plan: one operation per line.")],
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    apply: Annotated[  # noqa: A002
+        bool, typer.Option("--apply", help="Execute the plan (requires --yes).")
+    ] = False,
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Confirm execution (requires --apply).")
+    ] = False,
+    continue_on_error: Annotated[
+        bool,
+        typer.Option("--continue-on-error", help="Keep applying after a failed operation."),
+    ] = False,
+    limit: Annotated[
+        int, typer.Option("--limit", min=1, help="Operations shown in the preview.")
+    ] = BULK_PREVIEW_LIMIT,
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Check write operations against the vendored spec (default on).",
+        ),
+    ] = True,
+) -> None:
+    """Preview, then apply, a bounded JSONL plan of REST operations.
+
+    Preview is the default and performs zero network calls. Execution requires both
+    --apply and --yes, runs sequentially, and stops at the first failure unless
+    --continue-on-error is passed.
+    """
+    try:
+        plan_text = Path(file).read_text(encoding="utf-8")
+    except OSError as exc:
+        _local_error(exc, "validation")
+        return
+    try:
+        items = parse_jsonl(plan_text, source=file)
+    except BulkError as exc:
+        _local_error(exc, "validation")
+        return
+    if apply and not yes:
+        raise typer.BadParameter(f"Refusing to apply {len(items)} operations without --yes.")
+    if not apply:
+        render(preview_plan(items, source=file, limit=limit), output=output)
+        return
+    if validate:
+        problems: list[str] = []
+        for item in items:
+            if not item.write:
+                continue
+            for message in validate_schema_request(item.method, item.path, item.body):
+                problems.append(f"line {item.lineno}: {message}")
+        _, blocking = _split_spec_problems(problems)
+        if blocking:
+            render_error(
+                {
+                    "ok": False,
+                    "category": "validation",
+                    "status_code": None,
+                    "error": "Refusing the plan: write operations failed spec validation.",
+                    "problems": blocking,
+                    "diagnostic": (
+                        "Fix the plan, or pass --no-validate to bypass the vendored "
+                        "OpenAPI spec check."
+                    ),
+                }
+            )
+            raise typer.Exit(1)
+    _run(
+        _bulk_apply(
+            profile=profile,
+            output=output,
+            items=items,
+            continue_on_error=continue_on_error,
+        )
+    )
+
+
+async def _bulk_apply(
+    *,
+    profile: str,
+    output: str,
+    items: list,
+    continue_on_error: bool,
+) -> dict:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        payload = await execute_plan(client, items, continue_on_error=continue_on_error)
+    render(payload, output=output)
+    if not payload["ok"]:
+        raise typer.Exit(1)
+    return payload
+
+
 # --------------------------------------------------------------------- mirror
 # Offline mirror: bounded GET sync into local SQLite, then local-only reads
 # (sql/standup/triage). No command below writes to Halo; the write contract
@@ -1448,12 +1554,22 @@ def serve(
     host: Annotated[
         str, typer.Option("--host", help="Bind address for stdio (ignored; reserved).")
     ] = "stdio",
+    profile: Annotated[
+        str,
+        typer.Option(
+            "--profile", help="Default HaloCLI profile for tool calls (per-call args still win)."
+        ),
+    ] = "default",
+    db: Annotated[
+        str | None,
+        typer.Option("--db", help="Mirror database used by the halo_sql tool."),
+    ] = None,
 ) -> None:
     """Run the code-mode MCP server on stdin/stdout (newline-delimited JSON-RPC 2.0)."""
     from halocli import mcp_server
 
     del host  # reserved so future transports can be added without breaking callers
-    mcp_server.main()
+    mcp_server.main(default_profile=profile, db_path=db)
 
 
 @todo_app.command("import-ms")

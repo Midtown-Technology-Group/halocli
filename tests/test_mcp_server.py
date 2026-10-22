@@ -124,12 +124,14 @@ def test_initialized_notification_produces_no_response() -> None:
     assert responses[1]["result"] == {}
 
 
-def test_tools_list_returns_exactly_three_tools() -> None:
+def test_tools_list_returns_exactly_five_tools() -> None:
     result = rpc("tools/list")["result"]
     tools = result["tools"]
     assert {tool["name"] for tool in tools} == {
         "halo_search",
         "halo_execute",
+        "halo_batch",
+        "halo_sql",
         "halo_resources",
     }
     for tool in tools:
@@ -411,7 +413,7 @@ def test_malformed_json_line_does_not_kill_server() -> None:
     assert responses[0]["error"]["code"] == -32700
     assert responses[0]["id"] is None
     assert responses[1]["result"] == {}
-    assert len(responses[2]["result"]["tools"]) == 3
+    assert len(responses[2]["result"]["tools"]) == 5
 
 
 def test_blank_lines_are_ignored() -> None:
@@ -421,3 +423,203 @@ def test_blank_lines_are_ignored() -> None:
     )
     assert len(responses) == 1
     assert responses[0]["result"] == {}
+
+
+# --------------------------------------------------------------------------------------
+# halo_batch / halo_sql / serve defaults
+# --------------------------------------------------------------------------------------
+class EchoClient(FakeClient):
+    """Returns a per-path payload so batch ordering is observable."""
+
+    async def raw(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        body: Any = None,
+    ) -> Any:
+        self.calls.append({"method": method, "path": path, "params": params, "body": body})
+        if self.error is not None:
+            raise self.error
+        return {"path": path, "params": params}
+
+
+def test_batch_runs_gets_in_input_order(monkeypatch: Any) -> None:
+    fake = EchoClient()
+    install_fake(monkeypatch, fake)
+    _, payload = call_tool(
+        "halo_batch",
+        {
+            "calls": [
+                {"path": "/Tickets/1"},
+                {"path": "/Tickets/2", "params": {"take": "2"}},
+                {"path": "/Tickets/3"},
+            ],
+            "concurrency": 1,
+        },
+    )
+    assert payload["ok"] is True
+    assert payload["count"] == 3
+    assert payload["errors"] == 0
+    assert [entry["index"] for entry in payload["results"]] == [0, 1, 2]
+    assert [entry["path"] for entry in payload["results"]] == [
+        "/Tickets/1",
+        "/Tickets/2",
+        "/Tickets/3",
+    ]
+    assert payload["results"][1]["data"]["params"] == {"take": "2"}
+    assert [call["method"] for call in fake.calls] == ["GET", "GET", "GET"]
+
+
+def test_batch_isolates_a_failing_call(monkeypatch: Any) -> None:
+    fake = EchoClient(error=HaloCLIError("boom", category="server", status_code=500))
+    install_fake(monkeypatch, fake)
+    _, payload = call_tool(
+        "halo_batch", {"calls": [{"path": "/Tickets/1"}, {"path": "/Tickets/2"}]}
+    )
+    assert payload["ok"] is False
+    assert payload["errors"] == 2
+    assert payload["results"][0]["ok"] is False
+    assert payload["results"][0]["category"] == "server"
+
+
+def test_batch_refuses_writes() -> None:
+    _, payload = call_tool("halo_batch", {"calls": [{"method": "POST", "path": "/Tickets"}]})
+    assert payload["ok"] is False
+    assert payload["category"] == "validation"
+    assert "read-only" in payload["error"]
+
+
+def test_batch_enforces_call_ceiling() -> None:
+    calls = [{"path": f"/Tickets/{index}"} for index in range(26)]
+    _, payload = call_tool("halo_batch", {"calls": calls})
+    assert payload["ok"] is False
+    assert "ceiling" in payload["error"]
+
+
+def test_batch_rejects_bad_params_index(monkeypatch: Any) -> None:
+    install_fake(monkeypatch, EchoClient())
+    _, payload = call_tool(
+        "halo_batch", {"calls": [{"path": "/Tickets/1", "params": {"nested": {"a": 1}}}]}
+    )
+    assert payload["ok"] is False
+    assert "calls[0]" in payload["error"]
+
+
+def _mirror(tmp_path: Any) -> str:
+    from halocli.mirror import connect, replace_rows
+
+    path = tmp_path / "mirror.db"
+    conn = connect(path)
+    replace_rows(
+        conn,
+        "tickets",
+        [
+            {"id": 1, "status_name": "New", "priority_name": "High", "client_name": "A"},
+            {"id": 2, "status_name": "New", "priority_name": "Low", "client_name": "B"},
+            {"id": 3, "status_name": "Closed", "priority_name": "Low", "client_name": "C"},
+        ],
+    )
+    conn.close()
+    return str(path)
+
+
+def test_sql_reads_the_local_mirror(tmp_path: Any) -> None:
+    db = _mirror(tmp_path)
+    _, payload = call_tool(
+        "halo_sql",
+        {"query": "SELECT status_name, COUNT(*) AS n FROM tickets GROUP BY 1 ORDER BY 1", "db": db},
+    )
+    assert payload["ok"] is True
+    assert payload["columns"] == ["status_name", "n"]
+    assert payload["row_count"] == 2
+    assert payload["truncated"] is False
+    assert {row["status_name"]: row["n"] for row in payload["items"]} == {"New": 2, "Closed": 1}
+
+
+def test_sql_reports_truncation(tmp_path: Any) -> None:
+    db = _mirror(tmp_path)
+    _, payload = call_tool(
+        "halo_sql", {"query": "SELECT id FROM tickets ORDER BY id", "limit": 2, "db": db}
+    )
+    assert payload["truncated"] is True
+    assert payload["row_count"] == 2
+    assert "hint" in payload
+
+
+def test_sql_refuses_mutations(tmp_path: Any) -> None:
+    db = _mirror(tmp_path)
+    _, payload = call_tool("halo_sql", {"query": "DELETE FROM tickets", "db": db})
+    assert payload["ok"] is False
+    assert payload["category"] == "validation"
+
+
+def test_sql_missing_mirror_points_at_sync(tmp_path: Any) -> None:
+    _, payload = call_tool("halo_sql", {"query": "SELECT 1", "db": str(tmp_path / "absent.db")})
+    assert payload["ok"] is False
+    assert payload["category"] == "not_found"
+    assert "halocli sync" in payload["hint"]
+
+
+def test_serve_default_profile_reaches_halo_execute(monkeypatch: Any) -> None:
+    seen: list[str] = []
+    fake = FakeClient(response={"ok": True})
+    monkeypatch.setattr(mcp_server, "_client_for", lambda profile: (seen.append(profile), fake)[1])
+    message = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": "halo_execute", "arguments": {"method": "GET", "path": "/Tickets"}},
+    }
+    stdin = io.StringIO(json.dumps(message) + "\n")
+    stdout = io.StringIO()
+    mcp_server.main(input_stream=stdin, output_stream=stdout, default_profile="midtown")
+    assert seen == ["midtown"]
+    payload = json.loads(json.loads(stdout.getvalue())["result"]["content"][0]["text"])
+    assert payload["ok"] is True
+
+
+def test_serve_db_option_is_the_sql_default(monkeypatch: Any, tmp_path: Any) -> None:
+    db = _mirror(tmp_path)
+    message = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": "halo_sql", "arguments": {"query": "SELECT COUNT(*) AS n FROM tickets"}},
+    }
+    stdin = io.StringIO(json.dumps(message) + "\n")
+    stdout = io.StringIO()
+    mcp_server.main(input_stream=stdin, output_stream=stdout, db_path=db)
+    payload = json.loads(json.loads(stdout.getvalue())["result"]["content"][0]["text"])
+    assert payload["ok"] is True
+    assert payload["db"] == db
+    assert payload["items"] == [{"n": 3}]
+
+
+def test_wire_output_is_ascii_safe_for_non_ascii_tenant_data(monkeypatch: Any) -> None:
+    """A cp1252 console must not be able to crash the server mid-session."""
+    fake = FakeClient(response={"summary": "Backup ok \u2728", "client_name": "Caf\u00e9 Dental"})
+    install_fake(monkeypatch, fake)
+    stdin = io.StringIO(
+        json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                    "name": "halo_execute",
+                    "arguments": {"method": "GET", "path": "/Tickets/1"},
+                },
+            }
+        )
+        + "\n"
+    )
+    stdout = io.StringIO()
+    mcp_server.main(input_stream=stdin, output_stream=stdout)
+    raw = stdout.getvalue()
+    # Wire bytes stay ASCII, so any console encoding can write them.
+    raw.encode("ascii")
+    payload = json.loads(json.loads(raw)["result"]["content"][0]["text"])
+    assert payload["data"]["summary"] == "Backup ok \u2728"
+    assert payload["data"]["client_name"] == "Caf\u00e9 Dental"
