@@ -263,9 +263,21 @@ far under budget — sequential fetches are why a full `--all` walk of even a
 HaloCLI pattern: page through targets with `list` (`--param` filters +
 `--max-records`), build payloads from what you read, preview every write
 (zero network), then apply sequentially with `--apply --yes` — which the
-rate limit above rewards. A first-class JSONL bulk driver is an open
-decision (issue #73): whatever shape it takes inherits the
-preview-all-then-apply contract so a bulk run is never a blind blast.
+rate limit above rewards. `halocli bulk` is that driver (issue #73): a JSONL
+plan (one operation per line, `#` comments allowed) that previews with zero
+network calls and applies in order only with `--apply --yes`:
+
+```powershell
+halocli bulk --file plan.jsonl                          # preview: zero network
+halocli bulk --file plan.jsonl --apply --yes              # sequential apply
+halocli bulk --file plan.jsonl --apply --yes --continue-on-error
+```
+
+Parsing is strict before anything is sent (unknown method, malformed line or
+non-scalar query parameter fails the whole plan), write operations are
+spec-validated unless `--no-validate`, the run stops at the first failure
+unless `--continue-on-error` is passed, and `applied`/`failed`/`skipped` always
+sum to the plan size so an early stop is explicit rather than implied.
 
 Some endpoints ignore paging entirely (`/CRMNote` answers every `page_no` with
 page 1). The list loop detects the repeated page, never appends it, recovers
@@ -1294,19 +1306,37 @@ Distilled from
 
 `halocli serve` runs a code-mode MCP server over stdio (newline-delimited
 JSON-RPC 2.0, no extra dependencies). Instead of exposing one tool per Halo
-operation — which floods the model's context — it exposes exactly three tools
+operation — which floods the model's context — it exposes exactly five tools
 with rich descriptions:
 
 | Tool | Purpose |
 | --- | --- |
 | `halo_search` | Discover resources/operations (registry + OpenAPI) |
 | `halo_execute` | Run one REST call with server-side guardrails |
+| `halo_batch` | Run up to 25 GETs in one call (read-only fan-out) |
+| `halo_sql` | SELECT-only query against the local mirror (never the tenant) |
 | `halo_resources` | Dump the full resource catalog when search misses |
 
 Guardrails are enforced server-side: non-GET methods require `apply: true`
 (otherwise you get a structured refusal and no request is sent), and
 responses are bounded at ~40,000 characters so a large collection cannot
 flood the context window.
+
+`halo_batch` exists for codemode-shaped clients — one call with up to 25 GET
+operations (default concurrency 5, capped at 10), each result bounded to 6k
+chars and failures isolated per item, so a script can fetch broadly and filter
+before the model sees anything. It accepts **GET only**: batching must never
+amplify a write guardrail, so writes stay one-at-a-time through `halo_execute`
+or go through `halocli bulk`. `halo_sql` answers cross-resource questions from
+the offline mirror built by `halocli sync`; a missing mirror fails with a hint
+to sync rather than reaching the tenant.
+
+Process-wide defaults come from the command line, and a per-call argument still
+wins:
+
+```powershell
+halocli serve --profile midtown --db C:\path\mirror.db
+```
 
 Register it with an MCP client (example for a generic MCP config):
 

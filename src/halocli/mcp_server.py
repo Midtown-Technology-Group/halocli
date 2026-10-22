@@ -1,11 +1,18 @@
 """Code-mode MCP server for HaloCLI.
 
 Instead of exposing one MCP tool per HaloPSA operation (32 resources x verbs = massive
-context bloat), this server exposes a tiny three-tool catalog:
+context bloat), this server exposes a tiny five-tool catalog:
 
 * ``halo_search``   - discover resources/endpoints (registry + vendored OpenAPI spec)
 * ``halo_execute``  - generic, schema-bounded executor with explicit write guardrails
+* ``halo_batch``    - bounded parallel GET fan-out in one call (read-only)
+* ``halo_sql``      - SELECT-only query against the local offline mirror (never Halo)
 * ``halo_resources`` - dump the full resource catalog when search misses
+
+``halo_batch`` and ``halo_sql`` exist for codemode-style scripts: they collapse N
+round trips (or a fetch-then-filter loop) into one call whose result the script can
+filter before the model sees it. Writes stay single-call via ``halo_execute`` so the
+apply guardrail is never batch-amplified.
 
 Transport: newline-delimited JSON-RPC 2.0 over stdin/stdout, stdlib only. Nothing but
 protocol messages is ever written to stdout; all diagnostics go to stderr.
@@ -18,14 +25,19 @@ import json
 import re
 import sys
 from collections.abc import Awaitable
+from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _package_version
+from pathlib import Path
 from typing import Any, Callable, TextIO
 
 from halocli.client import HaloClient
 from halocli.config import load_profile
 from halocli.errors import HaloCLIError
+from halocli.mirror import DEFAULT_SYNC_LIMIT  # noqa: F401  (documents the mirror default)
+from halocli.mirror import MirrorMissingError, default_mirror_path, open_existing
 from halocli.resources import RESOURCES, HaloResource, ResourceOperation
+from halocli.sqlguard import SQLGuardError, validate_select_only
 
 JSONRPC_VERSION = "2.0"
 LATEST_PROTOCOL_VERSION = "2025-06-18"
@@ -47,6 +59,14 @@ MAX_RESPONSE_CHARS = 40_000
 MAX_CATALOG_CHARS = 262_144
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
+# Batch fan-out: a script should collapse many small reads, not download a tenant.
+DEFAULT_BATCH_CONCURRENCY = 5
+MAX_BATCH_CONCURRENCY = 10
+MAX_BATCH_CALLS = 25
+MAX_BATCH_ITEM_CHARS = 6_000
+# Local mirror SQL: bounded like `halocli sql`, which defaults to 500 rows.
+DEFAULT_SQL_LIMIT = 500
+MAX_SQL_LIMIT = 5_000
 ALLOWED_METHODS: tuple[str, ...] = ("GET", "POST", "PUT", "PATCH", "DELETE")
 WRITE_METHODS: frozenset[str] = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -79,10 +99,23 @@ def _detect_version() -> str:
 schema_search_operations: Callable[..., Any] | None = _load_schema_search()
 SERVER_VERSION = _detect_version()
 
+
+@dataclass(frozen=True)
+class ServerOptions:
+    """Process-wide defaults set by ``halocli serve`` (per-call args still win)."""
+
+    profile: str = "default"
+    db_path: str | None = None
+
+
+_OPTIONS = ServerOptions()
+
 _SERVER_INSTRUCTIONS = (
     "Code-mode HaloPSA access with a tiny tool catalog. Workflow: (1) halo_search or "
-    "halo_resources to discover endpoints, (2) halo_execute to run one REST call. "
-    "Non-GET methods require apply: true; responses over 40k chars come back truncated."
+    "halo_resources to discover endpoints, (2) halo_execute to run one REST call, or "
+    "halo_batch to run up to 25 GETs in one call. halo_sql answers cross-resource "
+    "questions from the local offline mirror (never the tenant). Non-GET methods "
+    "require apply: true; responses over 40k chars come back truncated."
 )
 
 _SEARCH_DESCRIPTION = (
@@ -148,6 +181,52 @@ _EXECUTE_DESCRIPTION = (
     "as structured data with isError: true (this server never crashes on API errors): "
     "{ok: false, category, status_code, error} where category is one of auth, "
     "permission, validation, rate_limit, not_found, server, timeout, unknown."
+)
+
+_SQL_DESCRIPTION = (
+    "Query the local offline mirror of HaloPSA data with one read-only SELECT. This "
+    "never reaches the tenant: it reads the SQLite file built by `halocli sync`, so "
+    "cross-resource questions (status x priority x agent, aging buckets, joins "
+    "between tickets and clients) answer instantly instead of paging the API.\n"
+    "\n"
+    "Arguments:\n"
+    "  query (required): a single SELECT statement. The mirror exposes one view per "
+    "synced resource (SELECT status_name, COUNT(*) AS n FROM tickets GROUP BY 1) plus "
+    "the raw JSON in `mirror_rows`. The guard is conservative: one statement, SELECT "
+    "only, no semicolons or comment tricks.\n"
+    "  limit (optional): row ceiling, default 500, max 5000; truncation is reported, "
+    "never implied.\n"
+    "  db (optional): mirror database path; defaults to the standard mirror location "
+    "(overridable process-wide with `halocli serve --db`).\n"
+    "\n"
+    "Result shape: {ok, db, query, columns, row_count, truncated, items: [...]}. When "
+    "the mirror file is missing the call fails with category 'not_found' and a hint to "
+    "run `halocli sync`. Mirror state, including per-resource truncation, is recorded "
+    "in the mirror_state table - consult it before trusting a total."
+)
+
+_BATCH_DESCRIPTION = (
+    "Run up to 25 GET requests against HaloPSA in one call and return every result in "
+    "input order. This is the codemode workhorse: fetch many independent records "
+    "(for example the actions on 40 ticket ids) without 40 separate tool calls, then "
+    "filter or aggregate in the script so only the digest reaches the model.\n"
+    "\n"
+    "Arguments:\n"
+    "  calls (required): array of {method, path, params?, body?}. method defaults to "
+    "GET and must be GET - batch is read-only by design, so a write guardrail can "
+    "never be amplified across many records. Use halo_execute with apply: true for a "
+    "single write, or the `halocli bulk` JSONL driver (preview-all-then-apply) for a "
+    "reviewed write plan.\n"
+    "  concurrency (optional): parallel in-flight requests, default 5, max 10. Halo's "
+    "fair-use limit is 700 requests per rolling 5 minutes; keep batches modest.\n"
+    "  profile (optional): HaloCLI profile name; defaults to the server default."
+    "\n"
+    "Results: {ok, count, concurrency, errors, results: [{index, method, path, ok, "
+    "data | category, status_code, error}]}. Failures are isolated per call: one bad "
+    "id does not sink the batch, and a failing item is reported rather than thrown. "
+    "Each item's payload is independently bounded (6k chars) so one huge record cannot "
+    "crowd out the rest; oversized items come back as {truncated, total_chars, "
+    "preview}."
 )
 
 _RESOURCES_DESCRIPTION = (
@@ -248,6 +327,93 @@ _TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 },
             },
             "required": ["method", "path"],
+        },
+    },
+    {
+        "name": "halo_batch",
+        "description": _BATCH_DESCRIPTION,
+        # Read-only by construction: only GET is accepted, so no confirmation flag
+        # applies and every call in the batch is a pure read.
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        },
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "calls": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": MAX_BATCH_CALLS,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "method": {
+                                "type": "string",
+                                "enum": ["GET"],
+                                "default": "GET",
+                                "description": "Batch is read-only: GET only.",
+                            },
+                            "path": {
+                                "type": "string",
+                                "description": "REST path relative to the API root, e.g. '/Tickets/123'.",
+                            },
+                            "params": {
+                                "type": "object",
+                                "additionalProperties": {"type": "string"},
+                                "description": "Query parameters as string values.",
+                            },
+                        },
+                        "required": ["path"],
+                    },
+                    "description": f"1-{MAX_BATCH_CALLS} GET operations, each {{path, params?}}.",
+                },
+                "concurrency": {
+                    "type": "integer",
+                    "default": DEFAULT_BATCH_CONCURRENCY,
+                    "minimum": 1,
+                    "maximum": MAX_BATCH_CONCURRENCY,
+                    "description": "Parallel in-flight requests (default 5, max 10).",
+                },
+                "profile": {
+                    "type": "string",
+                    "description": "HaloCLI profile name; defaults to the server default.",
+                },
+            },
+            "required": ["calls"],
+        },
+    },
+    {
+        "name": "halo_sql",
+        "description": _SQL_DESCRIPTION,
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "One SELECT statement against the local mirror.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": DEFAULT_SQL_LIMIT,
+                    "minimum": 1,
+                    "maximum": MAX_SQL_LIMIT,
+                    "description": f"Row ceiling (default {DEFAULT_SQL_LIMIT}, max {MAX_SQL_LIMIT}).",
+                },
+                "db": {
+                    "type": "string",
+                    "description": "Mirror database path; defaults to the standard location.",
+                },
+            },
+            "required": ["query"],
         },
     },
     {
@@ -644,7 +810,7 @@ async def _tool_halo_execute(args: dict[str, Any]) -> tuple[dict[str, Any], bool
     # Guardrail: refuse before any client is built, so no network work happens.
     if method in WRITE_METHODS and args.get("apply", False) is not True:
         return _refuse_write(method, path)
-    profile = args.get("profile", "default")
+    profile = args.get("profile") or _OPTIONS.profile
     if not isinstance(profile, str) or not profile.strip():
         return _validation_failure("'profile' must be a non-empty string")
     try:
@@ -664,9 +830,194 @@ async def _tool_halo_execute(args: dict[str, Any]) -> tuple[dict[str, Any], bool
     return payload, False
 
 
+def _coerce_int(raw: Any, *, default: int, low: int, high: int, name: str) -> int:
+    """Clamp a caller-supplied integer option, refusing nonsense with a clear message."""
+    if raw is None:
+        return default
+    if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+        raise ValueError(f"'{name}' must be an integer between {low} and {high}")
+    try:
+        value = int(raw.strip()) if isinstance(raw, str) else int(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"'{name}' must be an integer between {low} and {high}") from exc
+    return max(low, min(value, high))
+
+
+def _bound_item(data: Any, *, max_chars: int = MAX_BATCH_ITEM_CHARS) -> Any:
+    """Bound one batch item so a single huge record cannot crowd out its siblings."""
+    text = json.dumps(data, ensure_ascii=False, default=str)
+    if len(text) <= max_chars:
+        return data
+    return {"truncated": True, "total_chars": len(text), "preview": text[:max_chars]}
+
+
+def _tool_halo_sql(args: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    query = args.get("query")
+    if not isinstance(query, str) or not query.strip():
+        return _validation_failure(
+            "'query' is required: one SELECT statement against the local mirror"
+        )
+    try:
+        limit = _coerce_int(
+            args.get("limit"),
+            default=DEFAULT_SQL_LIMIT,
+            low=1,
+            high=MAX_SQL_LIMIT,
+            name="limit",
+        )
+    except ValueError as exc:
+        return _validation_failure(str(exc))
+    db = args.get("db") or _OPTIONS.db_path
+    if db is not None and (not isinstance(db, str) or not db.strip()):
+        return _validation_failure("'db' must be a non-empty path string")
+    try:
+        cleaned = validate_select_only(query)
+    except SQLGuardError as exc:
+        return _validation_failure(str(exc))
+    mirror_path = Path(db) if db else default_mirror_path()
+    try:
+        conn = open_existing(mirror_path)
+    except MirrorMissingError as exc:
+        payload = {
+            "ok": False,
+            "category": "not_found",
+            "status_code": None,
+            "error": str(exc),
+            "db": str(mirror_path),
+            "hint": (
+                "Build the mirror first: `halocli sync` (bounded, ops-relevant core) or "
+                "`halocli sync --all-resources`. This tool never reads the live tenant."
+            ),
+        }
+        return payload, True
+    try:
+        cursor = conn.execute(cleaned)
+        columns = [column[0] for column in cursor.description] if cursor.description else []
+        raw_rows = cursor.fetchmany(limit + 1)
+    except Exception as exc:  # sqlite surfaces SQL errors as exceptions
+        return _validation_failure(f"Mirror query failed: {exc}")
+    finally:
+        conn.close()
+    truncated = len(raw_rows) > limit
+    items = [dict(row) for row in raw_rows[:limit]]
+    payload = {
+        "ok": True,
+        "db": str(mirror_path),
+        "query": cleaned,
+        "columns": columns,
+        "row_count": len(items),
+        "truncated": truncated,
+        "items": items,
+    }
+    if truncated:
+        payload["hint"] = (
+            f"Showing the first {limit} rows. Raise 'limit' (max {MAX_SQL_LIMIT}) or "
+            "narrow the query with WHERE/GROUP BY."
+        )
+    return payload, False
+
+
+async def _tool_halo_batch(args: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    calls = args.get("calls")
+    if not isinstance(calls, list) or not calls:
+        return _validation_failure(
+            "'calls' is required: a non-empty array of {path, params?} GET operations"
+        )
+    if len(calls) > MAX_BATCH_CALLS:
+        return _validation_failure(
+            f"Too many calls ({len(calls)}); the batch ceiling is {MAX_BATCH_CALLS}. "
+            "Split the work into more than one batch."
+        )
+    try:
+        concurrency = _coerce_int(
+            args.get("concurrency"),
+            default=DEFAULT_BATCH_CONCURRENCY,
+            low=1,
+            high=MAX_BATCH_CONCURRENCY,
+            name="concurrency",
+        )
+    except ValueError as exc:
+        return _validation_failure(str(exc))
+    profile = args.get("profile") or _OPTIONS.profile
+    if not isinstance(profile, str) or not profile.strip():
+        return _validation_failure("'profile' must be a non-empty string")
+
+    normalized: list[tuple[str, str, dict[str, str] | None]] = []
+    for index, call in enumerate(calls):
+        if not isinstance(call, dict):
+            return _validation_failure(f"calls[{index}] must be an object")
+        method = str(call.get("method") or "GET").strip().upper()
+        if method != "GET":
+            return _validation_failure(
+                f"calls[{index}]: halo_batch is read-only and accepts GET only (got {method}). "
+                "Use halo_execute with apply: true for a single write, or `halocli bulk` "
+                "for a previewed write plan."
+            )
+        path = call.get("path")
+        if not isinstance(path, str) or not path.strip():
+            return _validation_failure(f"calls[{index}]: 'path' is required")
+        if "body" in call and call.get("body") is not None:
+            return _validation_failure(f"calls[{index}]: GET requests do not take a body")
+        try:
+            params = _normalize_params(call.get("params"))
+        except ValueError as exc:
+            return _validation_failure(f"calls[{index}]: {exc}")
+        normalized.append((method, path.strip(), params))
+
+    client = _client_for(profile.strip())
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def run_one(
+        index: int, method: str, path: str, params: dict[str, str] | None
+    ) -> dict[str, Any]:
+        entry: dict[str, Any] = {"index": index, "method": method, "path": path}
+        async with semaphore:
+            try:
+                data = await client.raw(method, path, params=params, body=None)
+            except HaloCLIError as exc:
+                entry.update(
+                    ok=False,
+                    category=exc.category,
+                    status_code=exc.status_code,
+                    error=str(exc),
+                )
+                return entry
+            except Exception as exc:  # isolate: one bad call must not sink the batch
+                entry.update(ok=False, category="unknown", error=f"{type(exc).__name__}: {exc}")
+                return entry
+        entry.update(ok=True, data=_bound_item(data))
+        return entry
+
+    try:
+        results = await asyncio.gather(
+            *(
+                run_one(index, method, path, params)
+                for index, (method, path, params) in enumerate(normalized)
+            )
+        )
+    finally:
+        await _close_client(client)
+    failures = sum(1 for entry in results if not entry.get("ok"))
+    payload = {
+        "ok": failures == 0,
+        "count": len(results),
+        "concurrency": concurrency,
+        "errors": failures,
+        "results": results,
+        "hint": (
+            "Each item is bounded independently; filter or aggregate in the script so "
+            "only the digest reaches the model. Halo's fair-use limit is 700 requests "
+            f"per rolling 5 minutes - {MAX_BATCH_CALLS} calls per batch is deliberate."
+        ),
+    }
+    return payload, False
+
+
 _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "halo_search": _tool_halo_search,
     "halo_execute": _tool_halo_execute,
+    "halo_batch": _tool_halo_batch,
+    "halo_sql": _tool_halo_sql,
     "halo_resources": _tool_halo_resources,
 }
 
@@ -797,16 +1148,40 @@ def _handle_line(raw: str) -> str | None:
     response = _handle_message(message, is_notification="id" not in message)
     if response is None:
         return None
-    return json.dumps(response, ensure_ascii=False)
+    # ensure_ascii keeps the wire ASCII-only: JSON escapes are valid for every
+    # decoder, and a Windows console in cp1252 can otherwise crash the server on
+    # the first non-ASCII character in tenant data (a ticket summary emoji is
+    # enough). Proven by the stdio smoke test that surfaced this.
+    return json.dumps(response, ensure_ascii=True)
 
 
 def main(
     input_stream: TextIO | None = None,
     output_stream: TextIO | None = None,
+    *,
+    default_profile: str = "default",
+    db_path: str | None = None,
 ) -> None:
-    """Serve newline-delimited JSON-RPC 2.0 on stdin/stdout until EOF."""
+    """Serve newline-delimited JSON-RPC 2.0 on stdin/stdout until EOF.
+
+    ``default_profile`` and ``db_path`` come from ``halocli serve --profile/--db`` and
+    act as process-wide defaults: an explicit ``profile``/``db`` argument on a tool call
+    still wins, so one server can reach several profiles while pointing mirror queries
+    at a chosen database.
+    """
+    global _OPTIONS
+    _OPTIONS = ServerOptions(profile=default_profile, db_path=db_path)
     stdin = input_stream if input_stream is not None else sys.stdin
     stdout = output_stream if output_stream is not None else sys.stdout
+    # MCP speaks UTF-8. Reconfigure the real streams so tenant data in any script
+    # survives the round trip; test doubles (StringIO) have no reconfigure.
+    for stream in (stdin, stdout):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):  # pragma: no cover - stream already bound
+                pass
     for line in stdin:
         stripped = line.strip()
         if not stripped:

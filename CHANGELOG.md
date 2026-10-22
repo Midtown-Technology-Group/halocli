@@ -6,6 +6,32 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.19.0 - 2026-10-22
+
+- **Codemode sugar for the MCP server** (`halocli serve`), so scripts can fetch
+  broadly and filter before the model sees anything:
+  - `halo_batch` runs up to 25 **GET** operations in one call (default
+    concurrency 5, cap 10), bounds each item at 6k chars and isolates failures
+    per item. It is deliberately read-only: batching must never amplify the
+    write guardrail.
+  - `halo_sql` runs one guarded SELECT against the local offline mirror. It
+    never reaches the tenant; a missing mirror fails with a hint to
+    `halocli sync` instead of silently querying live data.
+  - `serve --profile NAME` and `serve --db PATH` set process-wide defaults
+    (a per-call `profile`/`db` argument still wins), removing the old
+    single-profile accident where `serve` had no profile flag at all.
+- **`halocli bulk`: the bounded JSONL bulk driver** (issue #73). A plan is one
+  operation per line (`#` comments allowed); preview performs zero network
+  calls; execution requires `--apply --yes`, runs sequentially, spec-validates
+  writes unless `--no-validate`, and stops at the first failure unless
+  `--continue-on-error`. `applied`/`failed`/`skipped` always sum to the plan
+  size, so an early stop is explicit rather than implied.
+- Evidence: `tests/test_mcp_server.py` (five-tool catalog, batch ordering and
+  isolation, SQL guard/truncation/missing-mirror, serve defaults) and
+  `tests/test_bulk.py` (strict parsing, offline preview, ordered apply, stop
+  and continue semantics, CLI refusal paths). No tenant writes were added; the
+  preview/apply contract is unchanged.
+
 ## 1.18.0 - 2026-10-14
 
 - **Release harness: resumable, bounded and safe to re-run** (`scripts/release.py`,

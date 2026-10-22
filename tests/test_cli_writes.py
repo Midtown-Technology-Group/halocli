@@ -58,7 +58,13 @@ def test_serve_lists_tools_over_stdio() -> None:
 
     assert len(responses) == 2
     tools = responses[1]["result"]["tools"]
-    assert [tool["name"] for tool in tools] == ["halo_search", "halo_execute", "halo_resources"]
+    assert [tool["name"] for tool in tools] == [
+        "halo_search",
+        "halo_execute",
+        "halo_batch",
+        "halo_sql",
+        "halo_resources",
+    ]
     assert all(tool["description"] for tool in tools)
 
 
