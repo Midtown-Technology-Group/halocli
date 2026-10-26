@@ -6,6 +6,30 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.19.1 - 2026-10-26
+
+- **`halocli bulk` now refuses a plan that would fail on the wire**, before the
+  preview prints and long before anything is sent. Two real failures from a
+  production run are now caught up front with exact messages:
+  - **Array-body shape**: Halo's collection writes take an array, and passing an
+    object answers `400 Cannot deserialize the current JSON object ... into type
+    'Actions[]'`. `schema.validate_request` returned *no opinion* for an object
+    where the spec declares an array, so `bulk` previewed clean and died on its
+    first call. That mismatch is now a validation problem (`body must be a JSON
+    array for POST /Actions ...`), and it applies to `raw` too.
+  - **Spec-blind mandatory fields**: the vendored spec declares no required
+    properties anywhere, so a ticket without `category_1` previewed clean and was
+    refused with `Category is mandatory`. `bulk` now applies a small, documented
+    house-rule table (`HOUSE_REQUIRED_FIELDS`) keyed by method and collection
+    path, each row naming the wire error it prevents.
+- Validation moved **ahead of the preview** instead of running only on `--apply`:
+  a plan that cannot complete should fail where nothing has been sent. Payload
+  shape (`problems[]`, `category: validation`, exit 1) is unchanged, and
+  `--no-validate` still bypasses both the spec check and the house rules.
+- Evidence: `tests/test_bulk.py` (house rule, array shape, reads ignored, CLI
+  refusal before preview) and `tests/test_schema.py` (object-where-array problem,
+  array still accepted); the two affected fixtures now encode the real wire shape.
+
 ## 1.19.0 - 2026-10-22
 
 - **Codemode sugar for the MCP server** (`halocli serve`), so scripts can fetch

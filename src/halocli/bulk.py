@@ -29,6 +29,17 @@ WRITE_METHODS: frozenset[str] = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 BULK_PREVIEW_LIMIT = 25
 
+# Fields the vendored spec does not declare but our tenants enforce at the wire.
+# Halo's spec declares no required properties anywhere, so a plan missing one of
+# these previewed clean and died on the first real call ("Category is mandatory").
+# These are house knowledge, kept deliberately small and keyed by (method, path):
+# add a row with the exact wire error it prevents, never a guess.
+HOUSE_REQUIRED_FIELDS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("POST", "/tickets"): (
+        "category_1",  # Halo 400: "Category is mandatory"
+    ),
+}
+
 
 class BulkError(ValueError):
     """A plan line could not be turned into a safe operation."""
@@ -127,6 +138,48 @@ def parse_jsonl(text: str, *, source: str = "<plan>") -> list[BulkItem]:
     if not items:
         raise BulkError(f"{source}: no operations found")
     return items
+
+
+def house_rule_problems(item: BulkItem) -> list[str]:
+    """Field/shape rules Halo enforces but the vendored spec does not declare."""
+    problems: list[str] = []
+    required = HOUSE_REQUIRED_FIELDS.get((item.method, _canonical_path(item.path)), ())
+    if required:
+        entries = item.body if isinstance(item.body, list) else [item.body]
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            missing = [name for name in required if entry.get(name) in (None, "", [], {})]
+            if missing:
+                where = f"body[{index}]" if isinstance(item.body, list) else "body"
+                problems.append(
+                    f"line {item.lineno}: {where} is missing {', '.join(missing)} "
+                    f"(Halo rejects {item.method} {item.path} without it)"
+                )
+    return problems
+
+
+def _canonical_path(path: str) -> str:
+    """Lower-case the collection path so '/Tickets' and '/tickets' match one rule."""
+    return path.rstrip("/").lower()
+
+
+def plan_problems(items: Iterable[BulkItem]) -> list[str]:
+    """Every problem the preview can catch before a plan goes near the wire.
+
+    Combines the vendored-spec check (``validate_request``) with the house rules
+    above, so a plan that would fail halfway through a run fails up front instead.
+    """
+    from halocli.schema import validate_request
+
+    problems: list[str] = []
+    for item in items:
+        if item.write:
+            for problem in validate_request(item.method, item.path, item.body):
+                if not problem.startswith("warning: "):
+                    problems.append(f"line {item.lineno}: {problem}")
+        problems.extend(house_rule_problems(item))
+    return problems
 
 
 def preview_plan(

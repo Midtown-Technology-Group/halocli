@@ -265,3 +265,22 @@ def test_degrades_when_spec_file_is_renamed_away(
         assert schema.load_spec() is not None
     finally:
         schema.clear_cache()
+
+
+def test_validate_object_body_where_spec_requires_an_array() -> None:
+    """Halo answers 400 'Cannot deserialize the current JSON object ... into X[]'.
+
+    The spec declares an array, so previewing an object body must be a problem:
+    it previously returned "no opinion", which let a bulk plan pass preview and
+    then fail on its very first call.
+    """
+    problems = schema.validate_request("POST", "/Actions", {"ticket_id": 1, "note": "x"})
+
+    assert len(problems) == 1
+    assert "must be a JSON array" in problems[0]
+    assert "POST /Actions" in problems[0]
+    assert "got dict" in problems[0]
+
+
+def test_validate_array_body_still_passes() -> None:
+    assert schema.validate_request("POST", "/Actions", [{"ticket_id": 1, "note": "x"}]) == []
