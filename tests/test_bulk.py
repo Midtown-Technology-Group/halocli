@@ -19,6 +19,7 @@ from halocli.bulk import (
     BulkItem,
     execute_plan,
     parse_jsonl,
+    plan_problems,
     preview_plan,
 )
 from halocli.cli import app
@@ -56,7 +57,7 @@ class ExplodingClient(RecordingClient):
 
 PLAN = "\n".join(
     [
-        json.dumps({"method": "POST", "path": "/Actions", "body": {"note": "hello"}}),
+        json.dumps({"method": "POST", "path": "/Actions", "body": [{"note": "hello"}]}),
         "# a comment line is allowed",
         "",
         json.dumps({"method": "GET", "path": "/Tickets", "params": {"take": 5}}),
@@ -120,7 +121,7 @@ async def test_execute_applies_in_order() -> None:
     assert payload["applied"] == 3
     assert payload["skipped"] == 0
     assert [call["path"] for call in client.calls] == ["/Actions", "/Tickets", "/Tickets/7"]
-    assert client.calls[0]["body"] == {"note": "hello"}
+    assert client.calls[0]["body"] == [{"note": "hello"}]
 
 
 @pytest.mark.anyio
@@ -187,3 +188,53 @@ def test_bulk_item_operation_shape() -> None:
         "path": "/Tickets",
         "params": {"a": "b"},
     }
+
+
+def test_plan_problems_flags_a_missing_house_required_field() -> None:
+    """Halo says 'Category is mandatory'; the spec declares no required fields."""
+    items = parse_jsonl(
+        json.dumps({"method": "POST", "path": "/Tickets", "body": [{"summary": "x"}]})
+    )
+    problems = plan_problems(items)
+    assert problems and "category_1" in problems[0]
+    assert "line 1" in problems[0]
+
+
+def test_plan_problems_accepts_the_same_ticket_with_a_category() -> None:
+    items = parse_jsonl(
+        json.dumps(
+            {
+                "method": "POST",
+                "path": "/Tickets",
+                "body": [{"summary": "x", "category_1": "Standard"}],
+            }
+        )
+    )
+    assert [p for p in plan_problems(items) if "category_1" in p] == []
+
+
+def test_plan_problems_flags_an_object_body_where_the_spec_needs_an_array() -> None:
+    items = parse_jsonl(
+        json.dumps({"method": "POST", "path": "/Actions", "body": {"ticket_id": 1, "note": "x"}})
+    )
+    problems = plan_problems(items)
+    assert problems and "must be a JSON array" in problems[0]
+
+
+def test_plan_problems_ignores_reads() -> None:
+    items = parse_jsonl(json.dumps({"path": "/Tickets/1"}))
+    assert plan_problems(items) == []
+
+
+def test_bulk_cli_refuses_an_invalid_plan_before_the_preview(tmp_path: Path) -> None:
+    plan = tmp_path / "plan.jsonl"
+    plan.write_text(
+        json.dumps({"method": "POST", "path": "/Tickets", "body": [{"summary": "x"}]}) + "\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["bulk", "--file", str(plan)])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["category"] == "validation"
+    assert any("category_1" in problem for problem in payload["problems"])
+    assert "apply" not in payload

@@ -42,6 +42,7 @@ from halocli.bulk import (
     BulkError,
     execute_plan,
     parse_jsonl,
+    plan_problems,
     preview_plan,
 )
 from halocli.sqlguard import SQLGuardError, validate_select_only
@@ -1106,6 +1107,26 @@ def bulk(
     except BulkError as exc:
         _local_error(exc, "validation")
         return
+    # Validation runs before the preview, not just before the apply: a plan that
+    # would die halfway through a run must die here, where nothing has been sent.
+    # This is what would have caught an object body on POST /Actions and a ticket
+    # missing category_1, both of which previewed clean and failed on the wire.
+    problems = plan_problems(items) if validate else []
+    if problems:
+        render_error(
+            {
+                "ok": False,
+                "category": "validation",
+                "status_code": None,
+                "error": "Refusing the plan: operations would fail on the wire.",
+                "problems": problems,
+                "diagnostic": (
+                    "Fix the plan, or pass --no-validate to bypass the vendored "
+                    "OpenAPI spec check and the house field rules."
+                ),
+            }
+        )
+        raise typer.Exit(1)
     if apply and not yes:
         # Structured refusal rather than a usage panel: the panel is truncated to the
         # terminal width and drops the reason, which made the guard untestable across
@@ -1118,29 +1139,6 @@ def bulk(
     if not apply:
         render(preview_plan(items, source=file, limit=limit), output=output)
         return
-    if validate:
-        problems: list[str] = []
-        for item in items:
-            if not item.write:
-                continue
-            for message in validate_schema_request(item.method, item.path, item.body):
-                problems.append(f"line {item.lineno}: {message}")
-        _, blocking = _split_spec_problems(problems)
-        if blocking:
-            render_error(
-                {
-                    "ok": False,
-                    "category": "validation",
-                    "status_code": None,
-                    "error": "Refusing the plan: write operations failed spec validation.",
-                    "problems": blocking,
-                    "diagnostic": (
-                        "Fix the plan, or pass --no-validate to bypass the vendored "
-                        "OpenAPI spec check."
-                    ),
-                }
-            )
-            raise typer.Exit(1)
     _run(
         _bulk_apply(
             profile=profile,

@@ -342,7 +342,14 @@ def validate_request(method: str, path: str, body: object) -> list[str]:
     resolved = _resolve_ref(spec, schema)
     if resolved.get("type") == "array" or isinstance(resolved.get("items"), dict):
         if not isinstance(body, list):
-            return []
+            # Halo's collection writes take an array; an object here is refused by
+            # the tenant ("Cannot deserialize the current JSON object ... into type
+            # 'X[]'"). Returning "no opinion" let a plan preview clean and then fail
+            # on the wire, so the shape mismatch is a problem, not a shrug.
+            return [
+                f"body must be a JSON array for {method_key.upper()} {template} "
+                f"(the spec declares an array of objects); got {type(body).__name__}"
+            ]
         items_schema = resolved.get("items")
         problems: list[str] = []
         for index, element in enumerate(body):
