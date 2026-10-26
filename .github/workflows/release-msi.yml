@@ -126,9 +126,32 @@ jobs:
       - name: Upload MSI to release
         if: steps.release.outputs.exists == 'true'
         shell: pwsh
-        # An overlapping build must not replace the asset already verified by
-        # the release script. A duplicate upload fails for operator review.
-        run: gh release upload "${{ steps.version.outputs.tag }}" dist/halocli.msi
+        # Two rules that pull against each other, both load-bearing:
+        #  * an overlapping build must never REPLACE an already verified asset, so
+        #    the upload still has no --clobber;
+        #  * a rerun after a late failure (quota, runner) must be able to finish,
+        #    so an asset that already exists with the same SHA256 is accepted
+        #    instead of failing the job. Without this, `gh run rerun --failed`
+        #    always dies here and recovery needs a human dispatch (observed on
+        #    1.19.1).
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $sha = "${{ steps.msi.outputs.sha256 }}"
+          $existing = gh release view $tag --json assets --jq '.assets[] | select(.name=="halocli.msi") | .name'
+          if ($LASTEXITCODE -ne 0) { throw "could not read release assets for $tag" }
+          if ($existing) {
+            $url = "https://github.com/Midtown-Technology-Group/halocli/releases/download/$tag/halocli.msi"
+            $tmp = Join-Path $env:RUNNER_TEMP "existing-halocli.msi"
+            Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
+            $actual = (Get-FileHash -Algorithm SHA256 -Path $tmp).Hash.ToLower()
+            if ($actual -ne $sha.ToLower()) {
+              throw "halocli.msi already attached to $tag with sha256 $actual, expected $sha - refusing to replace a verified asset"
+            }
+            Write-Host "halocli.msi already attached to $tag with the expected sha256; nothing to upload"
+          } else {
+            gh release upload $tag dist/halocli.msi
+            if ($LASTEXITCODE -ne 0) { throw "gh release upload failed" }
+          }
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -174,7 +197,26 @@ jobs:
           if (-not (Test-Path dispatch.json)) {
             throw "Failed to write dispatch.json."
           }
-          gh api repos/Midtown-Technology-Group/mtg-winget/dispatches --method POST --input dispatch.json
-          if ($LASTEXITCODE -ne 0) {
-            throw "mtg-winget repository dispatch failed."
+          # A 403 here is the *dispatch token's* rate limit, not a build failure -
+          # conflating the two made the 1.19.1 run look broken when the MSI was
+          # already built, verified and attached. Retry with backoff, then fail with
+          # wording that names the real cause and the recovery.
+          $attempt = 0
+          $maxAttempts = 5
+          while ($true) {
+            $attempt++
+            $output = gh api repos/Midtown-Technology-Group/mtg-winget/dispatches --method POST --input dispatch.json 2>&1
+            $code = $LASTEXITCODE
+            if ($code -eq 0) { Write-Host "mtg-winget dispatch accepted (attempt $attempt)"; break }
+            $text = ($output | Out-String)
+            if ($text -match "rate limit" -and $attempt -lt $maxAttempts) {
+              $delay = 60 * $attempt
+              Write-Warning "dispatch rate limited (attempt $attempt/$maxAttempts); retrying in ${delay}s"
+              Start-Sleep -Seconds $delay
+              continue
+            }
+            if ($text -match "rate limit") {
+              throw "mtg-winget dispatch blocked by the dispatch token's API rate limit after $maxAttempts attempts. The MSI is already built and attached; rerun this job once the quota resets (no rebuild needed)."
+            }
+            throw "mtg-winget repository dispatch failed (exit $code): $text"
           }

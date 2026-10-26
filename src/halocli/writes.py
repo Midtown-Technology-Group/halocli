@@ -87,6 +87,16 @@ def collect_warnings(resource: HaloResource, payload: Mapping[str, Any]) -> list
                 f"field '{key}' is not part of the {resource.name} write shape; "
                 "Halo will receive it as-is"
             )
+    if resource.name == "tickets" and "status_id" in payload:
+        # Halo's own flows close a ticket by submitting an action whose outcome
+        # carries the new status; that is what records the note, agent and audit
+        # trail. A direct status write skips all of it, so the preview points at
+        # the supported path instead of silently teaching the shortcut.
+        warnings.append(
+            "status_id changes the ticket status directly and skips Halo's action/outcome "
+            "audit trail; to close a ticket use `halocli tickets close <id> --outcome "
+            "Resolved` so the closure carries its note and history"
+        )
     return warnings
 
 

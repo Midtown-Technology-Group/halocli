@@ -40,6 +40,7 @@ from halocli.ops import DEFAULT_CLOSED_STATUSES, OpsError, run_standup, run_tria
 from halocli.bulk import (
     BULK_PREVIEW_LIMIT,
     BulkError,
+    BulkItem,
     execute_plan,
     parse_jsonl,
     plan_problems,
@@ -972,7 +973,195 @@ def _resource_command(resource: HaloResource):
         )
         resource_app.command(operation.name, help=_operation_help(operation))(callback)
 
+    if resource.name == "tickets":
+
+        @resource_app.command("close")
+        def close_command(
+            ticket_ids: Annotated[
+                list[str], typer.Argument(help="One or more ticket ids to close.")
+            ],
+            note: Annotated[
+                str, typer.Option("--note", help="Closure note recorded on the action.")
+            ] = "",
+            outcome: Annotated[
+                str,
+                typer.Option(
+                    "--outcome",
+                    help="Halo outcome that closes the ticket (its newstatus must be a closed status).",
+                ),
+            ] = CLOSING_OUTCOME,
+            profile: Annotated[str, typer.Option("--profile")] = "default",
+            output: Annotated[str, typer.Option("--output", "-o")] = "json",
+            apply: Annotated[  # noqa: A002
+                bool, typer.Option("--apply", help="Execute the closures (requires --yes).")
+            ] = False,
+            yes: Annotated[
+                bool, typer.Option("--yes", help="Confirm the closures (requires --apply).")
+            ] = False,
+        ) -> None:
+            """Close tickets through a Halo action/outcome, never a bare status write.
+
+            Halo's own flows close a ticket by submitting an action whose outcome
+            carries the new status, which is what records the closure note, the
+            agent, and the audit trail. Writing `status_id` directly skips all of
+            that, so this command is the supported path: it builds the action
+            payload, proves the outcome actually closes before sending anything,
+            and reports one result per ticket.
+            """
+            ids = _parse_ticket_ids(ticket_ids)
+            execute = _resolve_apply(apply, yes)
+            _run(
+                _close_tickets(
+                    ids=ids,
+                    note=note,
+                    outcome_name=outcome,
+                    profile=profile,
+                    output=output,
+                    apply=execute,
+                )
+            )
+
     return resource_app
+
+
+CLOSING_OUTCOME = "Resolved"
+
+
+def _parse_ticket_ids(raw: list[str]) -> list[int]:
+    ids: list[int] = []
+    for value in raw:
+        for token in str(value).split(","):
+            token = token.strip()
+            if not token:
+                continue
+            if not token.isdigit():
+                raise typer.BadParameter(f"ticket id must be numeric, got {token!r}")
+            ticket_id = int(token)
+            if ticket_id not in ids:
+                ids.append(ticket_id)
+    if not ids:
+        raise typer.BadParameter("at least one ticket id is required")
+    return ids
+
+
+def _close_actions(ticket_ids: list[int], *, outcome: str, note: str) -> list[dict]:
+    """The POST /Actions operations that close each ticket."""
+    body_note = note.strip() or f"Closed via {outcome}."
+    return [
+        {
+            "method": "POST",
+            "path": "/Actions",
+            "body": [
+                {
+                    "ticket_id": ticket_id,
+                    "outcome": outcome,
+                    "note": body_note,
+                    "hiddenfromuser": False,
+                }
+            ],
+        }
+        for ticket_id in ticket_ids
+    ]
+
+
+async def _resolve_closing_outcome(client, outcome_name: str) -> tuple[dict, str]:
+    """Return (outcome row, status name) after proving the outcome closes a ticket.
+
+    Refuses when the outcome does not exist or its ``newstatus`` is not one of the
+    tenant's closed statuses: a "close" that leaves the ticket open is the exact
+    failure this command exists to prevent.
+    """
+    outcomes = normalize_halo_result(await client.raw("GET", "/Outcome"))
+    rows = (
+        outcomes
+        if isinstance(outcomes, list)
+        else outcomes.get("outcomes") or outcomes.get("items") or []
+    )
+    wanted = outcome_name.strip().casefold()
+    match = next(
+        (row for row in rows if str(row.get("outcome") or "").strip().casefold() == wanted), None
+    )
+    if match is None:
+        available = sorted({str(row.get("outcome")) for row in rows if row.get("outcome")})
+        raise ValueError(
+            f"no outcome named {outcome_name!r}; available: " + ", ".join(available[:15])
+        )
+    new_status = match.get("newstatus")
+    if str(new_status or "") in {"", "0"}:
+        raise ValueError(
+            f"outcome {outcome_name!r} does not set a new status, so it cannot close a ticket"
+        )
+    statuses = normalize_halo_result(await client.raw("GET", "/Status"))
+    status_rows = (
+        statuses
+        if isinstance(statuses, list)
+        else statuses.get("statuses") or statuses.get("items") or []
+    )
+    status_name = next(
+        (str(row.get("name")) for row in status_rows if str(row.get("id")) == str(new_status)),
+        None,
+    )
+    if status_name is None:
+        raise ValueError(f"outcome {outcome_name!r} points at unknown status id {new_status}")
+    if status_name.strip().casefold() not in DEFAULT_CLOSED_STATUSES:
+        raise ValueError(
+            f"outcome {outcome_name!r} sets status {status_name!r}, which is not a closed "
+            "status; pick an outcome that closes (e.g. 'Resolved')"
+        )
+    return match, status_name
+
+
+async def _close_tickets(
+    *,
+    ids: list[int],
+    note: str,
+    outcome_name: str,
+    profile: str,
+    output: str,
+    apply: bool,
+) -> dict:
+    operations = _close_actions(ids, outcome=outcome_name, note=note)
+    if not apply:
+        payload = {
+            "ok": True,
+            "apply": False,
+            "outcome": outcome_name,
+            "count": len(operations),
+            "operations": operations,
+            "hint": (
+                "Preview only - zero network calls. Apply re-reads /Outcome and /Status first "
+                "to prove this outcome closes a ticket, then submits one action per ticket."
+            ),
+        }
+        render(payload, output=output)
+        return payload
+
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        _, status_name = await _resolve_closing_outcome(client, outcome_name)
+        items = [
+            BulkItem(
+                index=index,
+                lineno=index + 1,
+                method=str(operation["method"]),
+                path=str(operation["path"]),
+                params=None,
+                body=operation["body"],
+            )
+            for index, operation in enumerate(operations)
+        ]
+        payload = await execute_plan(client, items)
+    payload = {
+        **payload,
+        "outcome": outcome_name,
+        "closed_status": status_name,
+        # status changes only ever come from the outcome; the CLI never writes status_id.
+        "status_source": "outcome",
+    }
+    render(payload, output=output)
+    if not payload["ok"]:
+        raise typer.Exit(1)
+    return payload
 
 
 for _resource in RESOURCES:

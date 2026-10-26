@@ -6,6 +6,40 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.20.0 - 2026-10-26
+
+- **`halocli tickets close` closes through a Halo action/outcome, never a bare
+  status write.** Halo's own flows close a ticket by submitting an action whose
+  outcome carries the new status (this tenant's `Resolved` -> `Closed`), which is
+  what records the closure note, the agent and the audit trail; writing
+  `status_id` skips all of it. The command takes one or more ticket ids, previews
+  the exact `POST /Actions` payloads with zero network calls, and on apply
+  re-reads `/Outcome` and `/Status` first to *prove* the outcome closes a ticket
+  before sending anything - an outcome that sets no status, points at an unknown
+  status, or lands somewhere other than a closed status is refused. Results are
+  one row per ticket, and `status_source: outcome` records where the status came
+  from.
+- **Ticket writes that carry `status_id` now warn** in their preview, pointing at
+  `halocli tickets close` so the direct-status shortcut is never taught silently.
+  The write is still offered: the CLI steers, it does not forbid raw work.
+- **Release pipeline hardening** (both defects proven on the 1.19.1 release):
+  - `Notify mtg-winget` retries a rate-limited dispatch with backoff and, if the
+    dispatch token's quota is exhausted, fails with wording that says so and
+    tells the operator to rerun the job - instead of reporting a build failure for
+    a quota problem.
+  - `Upload MSI to release` accepts an already-attached asset when its SHA256
+    matches, so `gh run rerun --failed` can finish a late-stage failure. It still
+    refuses to replace a verified asset with different bytes.
+- **Quota-free release probes**: `find_winget_pr` now discovers the releaser's
+  branch and PR number from `git ls-remote` (branch prefix + `refs/pull/*/head`)
+  before touching the API, and `release_has_msi` answers via a HEAD on the release
+  download URL. GitHub's ref-shaped facts and asset bytes do not come out of the
+  5,000/hour REST budget, so a release keeps its footing when that budget is gone.
+- Evidence: `tests/test_cli_close.py` (offline preview, one action per ticket,
+  refusal of non-closing/unknown/no-status outcomes, id parsing),
+  `tests/test_cli_writes.py` (the status_id steer), `tests/test_release.py`
+  (git-first discovery, URL-based MSI probe, API fallback retained).
+
 ## 1.19.1 - 2026-10-26
 
 - **`halocli bulk` now refuses a plan that would fail on the wire**, before the
