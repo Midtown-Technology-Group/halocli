@@ -894,3 +894,17 @@ def test_winget_dance_refuses_a_stale_parent(monkeypatch: pytest.MonkeyPatch) ->
 
     with pytest.raises(SystemExit, match="stale base"):
         rel.winget_dance(59, "automation/update-halocli-1.20.1-1", "1.20.1", "a" * 64, "{PC}")
+
+
+def test_release_scratch_paths_stay_inside_a_temp_dir() -> None:
+    """The dance must not depend on one machine's absolute paths.
+
+    Regression: the commit-message and artifact scratch paths were hardcoded to
+    C:/Users/<name>/AppData/... so every release test that touched the dance failed
+    on a Linux runner with FileNotFoundError.
+    """
+    import tempfile
+
+    assert rel.WORK_DIR.is_relative_to(Path(tempfile.gettempdir()))
+    source = Path(rel.__file__).read_text(encoding="utf-8")
+    assert "AppData/Local/Temp" not in source.replace("\\\\", "/")

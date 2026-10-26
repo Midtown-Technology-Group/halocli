@@ -27,6 +27,7 @@ import hashlib
 import json
 import re
 import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -39,6 +40,10 @@ WINGET = REPO.parent / "mtg-winget"
 FEED_URL = "https://winget.midtowntg.com/api/packageManifests/MidtownTechnologyGroup.Halocli"
 RELEASE_URL = "https://github.com/Midtown-Technology-Group/halocli/releases/download"
 RESTORE_BRANCH = "codex/fix-swa-deploy-auth-sku"  # dance returns the winget repo here
+# Scratch space for the downloaded MSI/wheel and the generated commit message.
+# These were absolute Windows paths, so the release tooling (and its tests)
+# could only ever run on one machine.
+WORK_DIR = Path(tempfile.gettempdir()) / "halocli-release"
 
 
 def utc_now() -> str:
@@ -232,7 +237,7 @@ def verify_release_assets(version: str) -> tuple[str, str]:
     """Download the release MSI; return (sha256, productcode) - the known goods."""
     import urllib.request
 
-    msi = Path(f"C:/Users/ThomasBray/AppData/Local/Temp/opencode/release-{version}.msi")
+    msi = WORK_DIR / f"release-{version}.msi"
     msi.parent.mkdir(parents=True, exist_ok=True)
     url = f"{RELEASE_URL}/v{version}/halocli.msi"
     log(f"downloading {url}")
@@ -319,7 +324,8 @@ def winget_dance(pr_number: int, pr_branch: str, version: str, sha: str, pc: str
     run(["git", "fetch", "origin", f"pull/{pr_number}/head:pr-{pr_number}"], cwd=WINGET)
     run(["git", "checkout", f"pr-{pr_number}"], cwd=WINGET)
     run(["git", "reset", "--soft", "origin/main"], cwd=WINGET)
-    msg = Path(f"C:/Users/ThomasBray/AppData/Local/Temp/opencode/winget-{version}.txt")
+    msg = WORK_DIR / f"winget-{version}.txt"
+    msg.parent.mkdir(parents=True, exist_ok=True)
     msg.write_text(
         f"Update halocli to {version}\n\n"
         f"Automated release: SHA256 {sha.lower()} and ProductCode {pc} "
@@ -405,9 +411,7 @@ def merge_winget_and_verify_feed(version: str) -> None:
 def pipx_install(version: str) -> None:
     import urllib.request
 
-    wheel = Path(
-        f"C:/Users/ThomasBray/AppData/Local/Temp/opencode/halocli-{version}-py3-none-any.whl"
-    )
+    wheel = Path(WORK_DIR / f"halocli-{version}-py3-none-any.whl")
     wheel.parent.mkdir(parents=True, exist_ok=True)
     urllib.request.urlretrieve(
         f"{RELEASE_URL}/v{version}/halocli-{version}-py3-none-any.whl", wheel

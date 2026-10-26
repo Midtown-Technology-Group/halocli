@@ -7,6 +7,14 @@ small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
 ## 1.20.2 - 2026-10-26
+- **Release scratch paths are portable.** `scripts/release.py` wrote its
+  downloaded MSI/wheel and generated commit message to a hardcoded
+  `C:/Users/<name>/AppData/...` directory, so the release tooling (and any test
+  touching the dance) could only run on one machine - CI failed with
+  `FileNotFoundError` on every leg. Scratch space now comes from
+  `tempfile.gettempdir()`, with the directory created before use.
+
+
 
 - **The winget re-commit no longer rebases onto a stale local `main`.** Found on
   the 1.20.1 release: `winget_dance` runs `git reset --soft origin/main`, and the
