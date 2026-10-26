@@ -849,7 +849,6 @@ def test_winget_dance_fetches_main_before_rebasing(monkeypatch: pytest.MonkeyPat
     """
     commands: list[list[str]] = []
     main_sha = "1" * 40
-    pr_sha = "2" * 40
 
     def fake_run(cmd: list[str], **kwargs: Any) -> str:
         commands.append(cmd)
