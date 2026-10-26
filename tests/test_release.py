@@ -837,3 +837,61 @@ def test_git_discovery_returns_the_key_main_consumes(monkeypatch: pytest.MonkeyP
     assert found is not None
     assert found["headRefName"] == "automation/update-halocli-9.9.9-1"
     assert found["number"] == 70
+
+
+def test_winget_dance_fetches_main_before_rebasing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stale local main must never become the rebase base.
+
+    Regression: 1.20.1's PR conflicted because `reset --soft origin/main` used a
+    clone whose main still pointed at the previous release, so the re-commit
+    reintroduced 1.20.0's manifests. The dance must fetch main first and prove the
+    commit's parent is the tip it fetched.
+    """
+    commands: list[list[str]] = []
+    main_sha = "1" * 40
+    pr_sha = "2" * 40
+
+    def fake_run(cmd: list[str], **kwargs: Any) -> str:
+        commands.append(cmd)
+        if cmd[:3] == ["git", "fetch", "origin"]:
+            return ""
+        if cmd[:2] == ["git", "rev-parse"]:
+            return main_sha if "origin/main" in cmd else main_sha
+        if cmd[:2] == ["git", "log"]:
+            return "G"
+        if cmd[:2] == ["git", "reset"]:
+            return ""
+        if cmd[:2] in (["git", "checkout"], ["git", "commit"]):
+            return ""
+        return ""
+
+    monkeypatch.setattr(rel, "run", fake_run)
+    monkeypatch.setattr(rel, "log", lambda *a, **k: None)
+    monkeypatch.setattr(rel, "WINGET", rel.REPO)
+
+    rel.winget_dance(59, "automation/update-halocli-1.20.1-1", "1.20.1", "a" * 64, "{PC}")
+
+    fetch_main = [c for c in commands if c[:4] == ["git", "fetch", "origin", "main"]]
+    assert fetch_main, commands
+    # the fetch must precede the soft reset that consumes origin/main
+    first_fetch = commands.index(fetch_main[0])
+    reset_at = next(i for i, c in enumerate(commands) if c[:3] == ["git", "reset", "--soft"])
+    assert first_fetch < reset_at, commands
+
+
+def test_winget_dance_refuses_a_stale_parent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """If the re-commit is not parented on origin/main, refuse to push."""
+
+    def fake_run(cmd: list[str], **kwargs: Any) -> str:
+        if cmd[:2] == ["git", "rev-parse"]:
+            return "1" * 40 if "origin/main" in cmd else "9" * 40  # diverged
+        if cmd[:2] == ["git", "log"]:
+            return "G"
+        return ""
+
+    monkeypatch.setattr(rel, "run", fake_run)
+    monkeypatch.setattr(rel, "log", lambda *a, **k: None)
+    monkeypatch.setattr(rel, "WINGET", rel.REPO)
+
+    with pytest.raises(SystemExit, match="stale base"):
+        rel.winget_dance(59, "automation/update-halocli-1.20.1-1", "1.20.1", "a" * 64, "{PC}")

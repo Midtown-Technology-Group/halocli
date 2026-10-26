@@ -306,7 +306,16 @@ def winget_manifest_values(pr_branch: str, version: str) -> tuple[str, str]:
 
 
 def winget_dance(pr_number: int, pr_branch: str, version: str, sha: str, pc: str) -> None:
-    """Re-commit the automation PR with our SSH signature (branch rules)."""
+    """Re-commit the automation PR with our SSH signature (branch rules).
+
+    Fetching `main` first is load-bearing. `git reset --soft origin/main` rebases
+    the releaser's PR onto whatever origin/main the LOCAL clone believes in, so a
+    stale clone silently rebases onto the previous release and reintroduces the
+    previous version's manifests - which made the 1.20.1 PR conflict with main
+    (its parent was the 1.19.1 merge, not the 1.20.0 one). Refresh, then prove the
+    commit's parent is the tip we just fetched.
+    """
+    run(["git", "fetch", "origin", "main"], cwd=WINGET)
     run(["git", "fetch", "origin", f"pull/{pr_number}/head:pr-{pr_number}"], cwd=WINGET)
     run(["git", "checkout", f"pr-{pr_number}"], cwd=WINGET)
     run(["git", "reset", "--soft", "origin/main"], cwd=WINGET)
@@ -319,6 +328,14 @@ def winget_dance(pr_number: int, pr_branch: str, version: str, sha: str, pc: str
         encoding="utf-8",
     )
     run(["git", "commit", "-F", str(msg)], cwd=WINGET)
+    expected_parent = run(["git", "rev-parse", "origin/main"], cwd=WINGET)
+    actual_parent = run(["git", "rev-parse", "HEAD^"], cwd=WINGET)
+    if actual_parent != expected_parent:
+        raise SystemExit(
+            f"re-commit parent {actual_parent[:7]} is not origin/main {expected_parent[:7]}: "
+            "refusing to force-push a rebase onto a stale base"
+        )
+    log(f"re-commit parented on origin/main ({expected_parent[:7]})")
     sig = run(["git", "log", "-1", "--format=%G?"], cwd=WINGET)
     if sig not in {"G", "E", "U"}:  # G=good SSH sig (ours), E=expired-but-signed
         raise SystemExit(f"unexpected signature status after commit: {sig!r}")

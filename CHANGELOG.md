@@ -6,6 +6,19 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.20.2 - 2026-10-26
+
+- **The winget re-commit no longer rebases onto a stale local `main`.** Found on
+  the 1.20.1 release: `winget_dance` runs `git reset --soft origin/main`, and the
+  local clone's `origin/main` still pointed at the *1.19.1* merge, so the signed
+  re-commit reintroduced `1.20.0`'s manifests and the pull request conflicted with
+  `main` (`mergeable: CONFLICTING`, parent `85e6a19` instead of the 1.20.0 merge).
+  The dance now fetches `main` first and refuses to push unless the new commit's
+  parent is exactly the tip it fetched - so a stale clone fails loudly instead of
+  producing a conflicted PR that looks like a generator problem.
+- Evidence: `tests/test_release.py` pins both halves (the fetch happens before the
+  soft reset; a divergent parent aborts with "stale base").
+
 ## 1.20.1 - 2026-10-26
 
 - **`halocli tickets close` sends `outcome_id`, not the outcome label.** Found by
