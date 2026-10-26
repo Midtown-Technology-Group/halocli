@@ -6,6 +6,38 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.20.1 - 2026-10-26
+
+- **`halocli tickets close` sends `outcome_id`, not the outcome label.** Found by
+  reading a ticket back after a live run of 1.20.0: 25 tickets reported
+  `applied=25` while every one of them was still in `Pre Process`. Halo accepts an
+  action carrying a plain `outcome` string as a *label* and records it without
+  applying the outcome's status - the numeric `outcome_id` is what makes Halo run
+  the outcome. Verified live: `outcome_id: 4` (`Resolved`) with `sendemail: false`
+  moves the ticket to `Closed` and sets `dateclosed`.
+- **Closure is now verified, not assumed.** After posting, the command re-reads
+  each ticket and compares its `status_id` to the outcome's target status. A
+  closure that did not land is reported as a failure (`action posted but ticket is
+  still status 37; expected 9`), and the process exits non-zero. `closed`,
+  `skipped` and `failed` are reported per run.
+- **Already-closed tickets are skipped** rather than closed twice, so a re-run is
+  safe.
+- **Email is explicit**: closure is internal by default (`sendemail: false`,
+  hidden from the user); `--notify-user` opts into the outcome emailing the end
+  user.
+- **Fixed the exit-code double render**: a failed close printed its report and
+  then a bogus `{"error": "1"}` payload, because `_run` turns a `SystemExit` into
+  its own error document. The command now decides the exit code after rendering.
+- **Fixed the git probe's contract**: `find_winget_pr_via_git` returned `branch`
+  while the caller reads `headRefName`, so the 1.20.0 dance discovered the winget
+  PR in under a second and then crashed with `KeyError`. The probe now returns
+  both keys, pinned by a test.
+- Evidence: `tests/test_cli_close.py` (payload uses `outcome_id`, verification
+  catches a no-op action, already-closed skip, explicit notify, id parsing) and
+  `tests/test_release.py` (git discovery returns the caller's key). Live proof:
+  24 tickets closed through outcome 4, each confirmed by readback with a
+  `dateclosed` timestamp.
+
 ## 1.20.0 - 2026-10-26
 
 - **`halocli tickets close` closes through a Halo action/outcome, never a bare
