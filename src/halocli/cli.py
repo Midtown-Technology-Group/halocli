@@ -1053,38 +1053,6 @@ def _parse_ticket_ids(raw: list[str]) -> list[int]:
     return ids
 
 
-def _close_actions(
-    ticket_ids: list[int], *, outcome_id: int, outcome: str, note: str, notify_user: bool
-) -> list[dict]:
-    """The POST /Actions operations that close each ticket.
-
-    `outcome_id` is load-bearing: Halo records a plain `outcome` string as a label
-    and does NOT apply the outcome's status, so a ticket "closed" that way stays
-    open (observed live - the action said Resolved, the status stayed Pre
-    Process). The numeric id is what makes Halo run the outcome, which is also why
-    it then wants to email the user: `sendemail` is explicit here rather than
-    implied, defaulting to internal closure.
-    """
-    body_note = note.strip() or f"Closed via {outcome}."
-    return [
-        {
-            "method": "POST",
-            "path": "/Actions",
-            "body": [
-                {
-                    "ticket_id": ticket_id,
-                    "outcome_id": outcome_id,
-                    "outcome": outcome,
-                    "sendemail": bool(notify_user),
-                    "note": body_note,
-                    "hiddenfromuser": not notify_user,
-                }
-            ],
-        }
-        for ticket_id in ticket_ids
-    ]
-
-
 async def _resolve_closing_outcome(client, outcome_name: str) -> tuple[int, str, str]:
     """Return (outcome row, status name) after proving the outcome closes a ticket.
 

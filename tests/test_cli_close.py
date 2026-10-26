@@ -171,3 +171,119 @@ def test_notify_user_is_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.exit_code == 0, result.output
     # default is internal closure; notifying is an explicit opt-in
     assert json.loads(result.output)["ok"] is True
+
+
+class RaisingClient(FakeClient):
+    """Fails at a chosen stage so each error branch is exercised."""
+
+    def __init__(
+        self, *, fail_read: str | None = None, fail_post: bool = False, fail_verify: bool = False
+    ) -> None:
+        super().__init__()
+        self.fail_read = fail_read
+        self.fail_post = fail_post
+        self.fail_verify = fail_verify
+        self.reads = 0
+
+    async def raw(self, method: str, path: str, *, params: Any = None, body: Any = None) -> Any:
+        if method == "GET" and path.startswith("/Tickets/"):
+            self.reads += 1
+            if self.fail_read == "before" and self.reads == 1:
+                raise RuntimeError("ticket read failed")
+            if self.fail_read == "after" and self.reads == 2:
+                raise RuntimeError("ticket re-read failed")
+            ticket_id = int(path.rsplit("/", 1)[1])
+            return {"id": ticket_id, "status_id": 9 if ticket_id in self.closed else 37}
+        if method == "POST" and path == "/Actions" and self.fail_post:
+            raise RuntimeError("action post failed")
+        return await super().raw(method, path, params=params, body=body)
+
+
+def test_reports_a_ticket_read_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_fake(monkeypatch, RaisingClient(fail_read="before"))
+    result = runner.invoke(app, ["tickets", "close", "10", "--apply", "--yes"])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["results"][0]["category"] == "read_failed"
+
+
+def test_reports_an_action_post_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_fake(monkeypatch, RaisingClient(fail_post=True))
+    result = runner.invoke(app, ["tickets", "close", "10", "--apply", "--yes"])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["failed"] == 1
+    assert payload["closed"] == 0
+
+
+def test_reports_a_verification_read_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_fake(monkeypatch, RaisingClient(fail_read="after"))
+    result = runner.invoke(app, ["tickets", "close", "10", "--apply", "--yes"])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["results"][0]["category"] == "verify_failed"
+
+
+def test_preview_shows_the_notify_choice() -> None:
+    quiet = json.loads(runner.invoke(app, ["tickets", "close", "10"]).output)
+    loud = json.loads(runner.invoke(app, ["tickets", "close", "10", "--notify-user"]).output)
+    assert quiet["operations"][0]["body"][0]["sendemail"] is False
+    assert loud["operations"][0]["body"][0]["sendemail"] is True
+
+
+def test_comma_and_repeated_ids_are_deduplicated() -> None:
+    payload = json.loads(runner.invoke(app, ["tickets", "close", "1,2", "2", "3"]).output)
+    assert [op["body"][0]["ticket_id"] for op in payload["operations"]] == [1, 2, 3]
+
+
+class OutcomeClient(FakeClient):
+    """FakeClient with a caller-supplied outcome table."""
+
+    def __init__(self, outcomes: list[dict]) -> None:
+        super().__init__()
+        self.outcomes = outcomes
+        self.bodies: list[Any] = []
+
+    async def raw(self, method: str, path: str, *, params: Any = None, body: Any = None) -> Any:
+        if path == "/Outcome":
+            return self.outcomes
+        if method == "POST" and path == "/Actions":
+            self.bodies.append(body)
+        return await super().raw(method, path, params=params, body=body)
+
+
+def test_blank_tokens_are_skipped() -> None:
+    payload = json.loads(runner.invoke(app, ["tickets", "close", "1,,2"]).output)
+    assert [op["body"][0]["ticket_id"] for op in payload["operations"]] == [1, 2]
+
+
+def test_an_empty_id_list_is_refused() -> None:
+    result = runner.invoke(app, ["tickets", "close", ""])
+    assert result.exit_code != 0
+    assert "at least one ticket id" in (result.output + (result.stderr or ""))
+
+
+def test_apply_without_a_note_uses_a_default_note(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = OutcomeClient(OUTCOMES)
+    install_fake(monkeypatch, client)
+    result = runner.invoke(app, ["tickets", "close", "10", "--apply", "--yes"])
+    assert result.exit_code == 0, result.output
+    assert client.bodies and client.bodies[0][0]["note"] == "Closed via Resolved."
+
+
+def test_refuses_an_outcome_pointing_at_an_unknown_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = OutcomeClient([{"id": 4, "outcome": "Resolved", "newstatus": 999}])
+    install_fake(monkeypatch, client)
+    result = runner.invoke(app, ["tickets", "close", "10", "--apply", "--yes"])
+    assert result.exit_code == 1
+    assert "unknown status id" in (result.output + (result.stderr or ""))
+
+
+def test_refuses_an_outcome_without_a_numeric_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = OutcomeClient([{"id": "not-a-number", "outcome": "Resolved", "newstatus": 9}])
+    install_fake(monkeypatch, client)
+    result = runner.invoke(app, ["tickets", "close", "10", "--apply", "--yes"])
+    assert result.exit_code == 1
+    assert "no numeric id" in (result.output + (result.stderr or ""))
