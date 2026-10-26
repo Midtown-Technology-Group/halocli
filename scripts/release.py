@@ -30,6 +30,7 @@ import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 
 _C_Build_MSI_Release = "Build MSI Release"
@@ -255,6 +256,13 @@ def find_winget_pr(version: str, *, timeout_s: int = 3600) -> dict:
     deadline = started + timeout_s
     log(f"waiting for the winget-releaser PR for {version} (timeout {timeout_s}s)")
     while time.time() < deadline:
+        # Quota-free first: the branch name carries the version and the pull refs
+        # carry the number. The API is only consulted while the pull ref has not
+        # appeared yet (it lands slightly after the branch).
+        discovered = find_winget_pr_via_git(version)
+        if discovered and discovered.get("number"):
+            log(f"found winget PR #{discovered['number']} ({discovered['branch']}) via git")
+            return discovered
         out = gh(
             ["pr", "list", "--state", "open", "--json", "number,title,headRefName"], cwd=WINGET
         )
@@ -664,7 +672,72 @@ def ensure_tag_pushed(tag: str) -> str:
     return "already-pushed"
 
 
+def git_refs(patterns: list[str], *, cwd: Path) -> dict[str, str]:
+    """refs -> commit from `git ls-remote origin`, which costs no GitHub API quota.
+
+    SSH/HTTPS git is a different credential and a different budget from the REST
+    token, so ref-shaped facts stay readable while the API is exhausted.
+    """
+    out = run(["git", "ls-remote", "origin", *patterns], cwd=cwd)
+    refs: dict[str, str] = {}
+    for line in out.splitlines():
+        sha, _, ref = line.partition("	")
+        if sha and ref:
+            refs[ref] = sha
+    return refs
+
+
+def find_winget_pr_via_git(version: str) -> dict[str, Any] | None:
+    """Find the releaser's branch - and its PR number - without the REST API.
+
+    The automation branch is named `automation/update-halocli-<version>-<run>`, so
+    `ls-remote --heads` finds it for free; the PR number comes from
+    `refs/pull/*/head`, whose commit matches that branch. Returns None when the
+    branch is absent or no pull ref points at it yet, so the caller falls back.
+    """
+    heads = git_refs([f"refs/heads/automation/update-halocli-{version}-*"], cwd=WINGET)
+    if not heads:
+        return None
+    ref, sha = next(iter(heads.items()))
+    branch = ref.removeprefix("refs/heads/")
+    numbers = [
+        int(pull.split("/")[2])
+        for pull, pull_sha in git_refs(["refs/pull/*/head"], cwd=WINGET).items()
+        if pull_sha == sha and pull.count("/") >= 3
+    ]
+    return {
+        "branch": branch,
+        "sha": sha,
+        "number": max(numbers) if numbers else None,
+        "title": f"Update halocli to {version}",
+        "discovered_via": "git",
+    }
+
+
 def release_has_msi(version: str) -> bool:
+    """True when `v{version}` already serves `halocli.msi` (no API quota used).
+
+    Release assets are served from the storage host, not the REST API, so a HEAD
+    on the download URL answers this without touching the 5,000/hr token budget.
+    """
+    import urllib.error
+    import urllib.request
+
+    url = f"{RELEASE_URL}/v{version}/halocli.msi"
+    try:
+        with urllib.request.urlopen(
+            urllib.request.Request(url, method="HEAD"), timeout=30
+        ) as response:
+            return response.status == 200
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return False
+        raise SystemExit(f"could not check {url}: HTTP {exc.code}") from exc
+    except OSError as exc:
+        raise SystemExit(f"could not check {url}: {exc}") from exc
+
+
+def release_has_msi_via_api(version: str) -> bool:
     """True when release `v{version}` already carries the `halocli.msi` asset.
 
     Read-only: lets a resumed run skip dispatching a duplicate MSI build.

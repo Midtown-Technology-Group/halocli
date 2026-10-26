@@ -233,6 +233,7 @@ def test_find_winget_pr_skips_unrelated_titles(
         {"number": 3, "title": "Update halocli to 9.9.9", "headRefName": "other"},
         {"number": 4, "title": "Update halocli to 1.16.0", "headRefName": "auto-1.16.0"},
     ]
+    monkeypatch.setattr(rel, "find_winget_pr_via_git", lambda v: None)
     monkeypatch.setattr(rel, "gh", lambda args, *, cwd=None: json.dumps(prs))
     found = rel.find_winget_pr("1.16.0")
     assert found["number"] == 4
@@ -249,6 +250,7 @@ def test_find_winget_pr_reports_already_merged(
             return json.dumps([{"number": 4, "title": "Update halocli to 1.16.0"}])
         return "[]"
 
+    monkeypatch.setattr(rel, "find_winget_pr_via_git", lambda v: None)
     monkeypatch.setattr(rel, "gh", fake_gh)
     with pytest.raises(SystemExit, match="already merged.*--verify-existing"):
         rel.find_winget_pr("1.16.0")
@@ -368,26 +370,27 @@ def test_ensure_tag_pushed_rejects_remote_mismatch(monkeypatch: pytest.MonkeyPat
 
 
 def test_release_has_msi_variants(monkeypatch: pytest.MonkeyPatch) -> None:
+    """API fallback: still the authoritative reader when the URL probe is unavailable."""
     monkeypatch.setattr(
         rel, "gh", lambda args, *, cwd=None: json.dumps({"assets": [{"name": "halocli.msi"}]})
     )
-    assert rel.release_has_msi("1.16.0") is True
+    assert rel.release_has_msi_via_api("1.16.0") is True
 
     monkeypatch.setattr(rel, "gh", lambda args, *, cwd=None: json.dumps({"assets": []}))
-    assert rel.release_has_msi("1.16.0") is False
+    assert rel.release_has_msi_via_api("1.16.0") is False
 
     def missing(args: list[str], *, cwd: Any = None) -> str:
         raise SystemExit("FAILED (1): gh release view v1.16.0\nrelease not found")
 
     monkeypatch.setattr(rel, "gh", missing)
-    assert rel.release_has_msi("1.16.0") is False
+    assert rel.release_has_msi_via_api("1.16.0") is False
 
     def broken(args: list[str], *, cwd: Any = None) -> str:
         raise SystemExit("FAILED (1): gh release view\nconnection reset by peer")
 
     monkeypatch.setattr(rel, "gh", broken)
     with pytest.raises(SystemExit, match="connection reset"):
-        rel.release_has_msi("1.16.0")
+        rel.release_has_msi_via_api("1.16.0")
 
 
 def _stub_dance(monkeypatch: pytest.MonkeyPatch, calls: list[str], *, msi_attached: bool) -> None:
@@ -584,6 +587,7 @@ def test_find_winget_pr_queries_the_winget_repository(
             )
         return "[]"
 
+    monkeypatch.setattr(rel, "find_winget_pr_via_git", lambda v: None)
     monkeypatch.setattr(rel, "gh", fake_gh)
     found = rel.find_winget_pr("1.19.0")
 
@@ -749,3 +753,63 @@ def test_verify_existing_fails_when_the_feed_lacks_the_version(
     monkeypatch.setattr(rel, "feed_versions", lambda **k: ["1.18.0"])
     with pytest.raises(SystemExit, match="rehearsal FAILED"):
         rel.verify_existing("1.19.0")
+
+
+def test_find_winget_pr_via_git_uses_branch_and_pull_refs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Discovery must cost no API quota: branch by prefix, number by pull ref."""
+    sha = "a" * 40
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **kwargs: Any) -> str:
+        calls.append(cmd)
+        if any("refs/heads/automation/update-halocli-1.19.1-*" in c for c in cmd):
+            return f"{sha}\trefs/heads/automation/update-halocli-1.19.1-40351958940"
+        if any("refs/pull/*/head" in c for c in cmd):
+            return f"{sha}\trefs/pull/56/head\n{'b' * 40}\trefs/pull/55/head"
+        return ""
+
+    monkeypatch.setattr(rel, "run", fake_run)
+    found = rel.find_winget_pr_via_git("1.19.1")
+    assert found is not None
+    assert found["number"] == 56
+    assert found["branch"] == "automation/update-halocli-1.19.1-40351958940"
+    assert found["discovered_via"] == "git"
+    assert all("ls-remote" in " ".join(c) for c in calls)
+
+
+def test_find_winget_pr_via_git_returns_none_without_the_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(rel, "run", lambda cmd, **kw: "")
+    assert rel.find_winget_pr_via_git("9.9.9") is None
+
+
+def test_release_has_msi_uses_the_download_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str] = []
+
+    class Ok:
+        status = 200
+
+        def __enter__(self) -> "Ok":
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    def fake_urlopen(request: Any, timeout: float = 0) -> Any:
+        seen.append(request.full_url)
+        return Ok()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    assert rel.release_has_msi("1.19.1") is True
+    assert seen and seen[0].endswith("/v1.19.1/halocli.msi")
+
+
+def test_release_has_msi_reports_false_on_404(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.error
+
+    def fake_urlopen(request: Any, timeout: float = 0) -> Any:
+        raise urllib.error.HTTPError(request.full_url, 404, "missing", {}, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    assert rel.release_has_msi("0.0.0") is False

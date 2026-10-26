@@ -263,3 +263,17 @@ def test_malformed_data_on_write_paths_is_a_clean_error() -> None:
         assert payload["ok"] is False, argv
         assert payload["category"] == "validation", argv
         assert "Invalid --data" in payload["error"], argv
+
+
+def test_ticket_status_write_warns_about_bypassing_the_closure_action() -> None:
+    """Halo closes via outcome actions; a bare status_id write must be flagged."""
+    result = runner.invoke(
+        app, ["tickets", "update", "147513", "--data", json.dumps({"status_id": 9})]
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    warnings = " ".join(payload.get("warnings") or [])
+    assert "halocli tickets close" in warnings
+    assert "audit trail" in warnings
+    # the write is still offered - the CLI steers, it does not forbid raw work
+    assert payload["payload"]["status_id"] == 9
