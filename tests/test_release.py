@@ -813,3 +813,27 @@ def test_release_has_msi_reports_false_on_404(monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
     assert rel.release_has_msi("0.0.0") is False
+
+
+def test_git_discovery_returns_the_key_main_consumes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """main() reads pr["headRefName"]; the git probe must provide it.
+
+    Regression: the 1.20.0 dance found the winget PR via git in under a second and
+    then crashed with a KeyError, because the git dict used `branch` while main()
+    reads `headRefName`. Silent-fail-open would have been worse: the probe is a
+    quota saver, so its contract must match the caller's.
+    """
+    sha = "c" * 40
+
+    def fake_run(cmd: list[str], **kwargs: Any) -> str:
+        if any("refs/heads/automation" in c for c in cmd):
+            return f"{sha}\trefs/heads/automation/update-halocli-9.9.9-1"
+        if any("refs/pull/*/head" in c for c in cmd):
+            return f"{sha}\trefs/pull/70/head"
+        return ""
+
+    monkeypatch.setattr(rel, "run", fake_run)
+    found = rel.find_winget_pr_via_git("9.9.9")
+    assert found is not None
+    assert found["headRefName"] == "automation/update-halocli-9.9.9-1"
+    assert found["number"] == 70

@@ -40,7 +40,6 @@ from halocli.ops import DEFAULT_CLOSED_STATUSES, OpsError, run_standup, run_tria
 from halocli.bulk import (
     BULK_PREVIEW_LIMIT,
     BulkError,
-    BulkItem,
     execute_plan,
     parse_jsonl,
     plan_problems,
@@ -998,6 +997,13 @@ def _resource_command(resource: HaloResource):
             yes: Annotated[
                 bool, typer.Option("--yes", help="Confirm the closures (requires --apply).")
             ] = False,
+            notify_user: Annotated[
+                bool,
+                typer.Option(
+                    "--notify-user",
+                    help="Let the outcome email the end user (default: internal closure).",
+                ),
+            ] = False,
         ) -> None:
             """Close tickets through a Halo action/outcome, never a bare status write.
 
@@ -1010,7 +1016,7 @@ def _resource_command(resource: HaloResource):
             """
             ids = _parse_ticket_ids(ticket_ids)
             execute = _resolve_apply(apply, yes)
-            _run(
+            result = _run(
                 _close_tickets(
                     ids=ids,
                     note=note,
@@ -1018,8 +1024,11 @@ def _resource_command(resource: HaloResource):
                     profile=profile,
                     output=output,
                     apply=execute,
+                    notify_user=notify_user,
                 )
             )
+            if isinstance(result, dict) and result.get("ok") is False:
+                raise typer.Exit(1)
 
     return resource_app
 
@@ -1044,8 +1053,18 @@ def _parse_ticket_ids(raw: list[str]) -> list[int]:
     return ids
 
 
-def _close_actions(ticket_ids: list[int], *, outcome: str, note: str) -> list[dict]:
-    """The POST /Actions operations that close each ticket."""
+def _close_actions(
+    ticket_ids: list[int], *, outcome_id: int, outcome: str, note: str, notify_user: bool
+) -> list[dict]:
+    """The POST /Actions operations that close each ticket.
+
+    `outcome_id` is load-bearing: Halo records a plain `outcome` string as a label
+    and does NOT apply the outcome's status, so a ticket "closed" that way stays
+    open (observed live - the action said Resolved, the status stayed Pre
+    Process). The numeric id is what makes Halo run the outcome, which is also why
+    it then wants to email the user: `sendemail` is explicit here rather than
+    implied, defaulting to internal closure.
+    """
     body_note = note.strip() or f"Closed via {outcome}."
     return [
         {
@@ -1054,9 +1073,11 @@ def _close_actions(ticket_ids: list[int], *, outcome: str, note: str) -> list[di
             "body": [
                 {
                     "ticket_id": ticket_id,
+                    "outcome_id": outcome_id,
                     "outcome": outcome,
+                    "sendemail": bool(notify_user),
                     "note": body_note,
-                    "hiddenfromuser": False,
+                    "hiddenfromuser": not notify_user,
                 }
             ],
         }
@@ -1064,7 +1085,7 @@ def _close_actions(ticket_ids: list[int], *, outcome: str, note: str) -> list[di
     ]
 
 
-async def _resolve_closing_outcome(client, outcome_name: str) -> tuple[dict, str]:
+async def _resolve_closing_outcome(client, outcome_name: str) -> tuple[int, str, str]:
     """Return (outcome row, status name) after proving the outcome closes a ticket.
 
     Refuses when the outcome does not exist or its ``newstatus`` is not one of the
@@ -1108,7 +1129,10 @@ async def _resolve_closing_outcome(client, outcome_name: str) -> tuple[dict, str
             f"outcome {outcome_name!r} sets status {status_name!r}, which is not a closed "
             "status; pick an outcome that closes (e.g. 'Resolved')"
         )
-    return match, status_name
+    outcome_id = match.get("id")
+    if not isinstance(outcome_id, int):
+        raise ValueError(f"outcome {outcome_name!r} has no numeric id; cannot submit it")
+    return outcome_id, str(new_status), status_name
 
 
 async def _close_tickets(
@@ -1119,18 +1143,34 @@ async def _close_tickets(
     profile: str,
     output: str,
     apply: bool,
+    notify_user: bool = False,
 ) -> dict:
-    operations = _close_actions(ids, outcome=outcome_name, note=note)
     if not apply:
         payload = {
             "ok": True,
             "apply": False,
             "outcome": outcome_name,
-            "count": len(operations),
-            "operations": operations,
+            "count": len(ids),
+            "operations": [
+                {
+                    "method": "POST",
+                    "path": "/Actions",
+                    "body": [
+                        {
+                            "ticket_id": ticket_id,
+                            "outcome_id": f"<id of {outcome_name!r}, resolved on apply>",
+                            "sendemail": bool(notify_user),
+                            "note": note.strip() or f"Closed via {outcome_name}.",
+                        }
+                    ],
+                }
+                for ticket_id in ids
+            ],
             "hint": (
-                "Preview only - zero network calls. Apply re-reads /Outcome and /Status first "
-                "to prove this outcome closes a ticket, then submits one action per ticket."
+                "Preview only - zero network calls. Apply resolves the outcome's numeric id "
+                "(Halo ignores a plain 'outcome' label and leaves the ticket open), skips "
+                "tickets already closed, and re-reads each ticket afterwards to prove the "
+                "closure landed."
             ),
         }
         render(payload, output=output)
@@ -1138,29 +1178,78 @@ async def _close_tickets(
 
     halo_profile = load_profile(profile)
     async with HaloClient(halo_profile, profile_name=profile) as client:
-        _, status_name = await _resolve_closing_outcome(client, outcome_name)
-        items = [
-            BulkItem(
-                index=index,
-                lineno=index + 1,
-                method=str(operation["method"]),
-                path=str(operation["path"]),
-                params=None,
-                body=operation["body"],
-            )
-            for index, operation in enumerate(operations)
-        ]
-        payload = await execute_plan(client, items)
+        outcome_id, status_id, status_name = await _resolve_closing_outcome(client, outcome_name)
+        results: list[dict] = []
+        for ticket_id in ids:
+            entry: dict = {"ticket_id": ticket_id}
+            try:
+                before = normalize_halo_result(await client.raw("GET", f"/Tickets/{ticket_id}"))
+                before_row = before[0] if isinstance(before, list) and before else before
+                current_status = (
+                    before_row.get("status_id") if isinstance(before_row, dict) else None
+                )
+            except Exception as exc:  # noqa: BLE001 - report, never mask
+                entry.update(ok=False, category="read_failed", error=str(exc))
+                results.append(entry)
+                continue
+            if str(current_status) == str(status_id):
+                entry.update(ok=True, skipped="already closed")
+                results.append(entry)
+                continue
+            body = [
+                {
+                    "ticket_id": ticket_id,
+                    "outcome_id": outcome_id,
+                    "outcome": outcome_name,
+                    "sendemail": bool(notify_user),
+                    "note": note.strip() or f"Closed via {outcome_name}.",
+                    "hiddenfromuser": not notify_user,
+                }
+            ]
+            try:
+                await client.raw("POST", "/Actions", body=body)
+            except Exception as exc:  # noqa: BLE001
+                entry.update(ok=False, category=getattr(exc, "category", "unknown"), error=str(exc))
+                results.append(entry)
+                continue
+            # Verify the effect: an action labelled with the outcome is not proof.
+            try:
+                after = normalize_halo_result(await client.raw("GET", f"/Tickets/{ticket_id}"))
+                after_row = after[0] if isinstance(after, list) and after else after
+                landed = isinstance(after_row, dict) and str(after_row.get("status_id")) == str(
+                    status_id
+                )
+            except Exception as exc:  # noqa: BLE001
+                entry.update(ok=False, category="verify_failed", error=str(exc))
+                results.append(entry)
+                continue
+            entry.update(ok=landed, verified=landed, status_id=status_id, status_name=status_name)
+            if not landed:
+                entry.update(
+                    error=(
+                        f"action posted but ticket is still status {after_row.get('status_id')!r}; "
+                        f"expected {status_id!r} ({status_name})"
+                    )
+                )
+            results.append(entry)
+    failed = [r for r in results if not r.get("ok")]
     payload = {
-        **payload,
+        "ok": not failed,
+        "apply": True,
         "outcome": outcome_name,
+        "outcome_id": outcome_id,
         "closed_status": status_name,
-        # status changes only ever come from the outcome; the CLI never writes status_id.
         "status_source": "outcome",
+        "count": len(results),
+        "closed": sum(1 for r in results if r.get("verified")),
+        "skipped": sum(1 for r in results if r.get("skipped")),
+        "failed": len(failed),
+        "results": results,
     }
     render(payload, output=output)
-    if not payload["ok"]:
-        raise typer.Exit(1)
+    # Do not raise here: _run() turns a SystemExit into a second error payload, so
+    # a failed close printed the report AND a bogus {"error": "1"}. The command
+    # decides the exit code once, after this renders.
     return payload
 
 

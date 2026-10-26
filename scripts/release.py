@@ -706,6 +706,11 @@ def find_winget_pr_via_git(version: str) -> dict[str, Any] | None:
         if pull_sha == sha and pull.count("/") >= 3
     ]
     return {
+        # `headRefName` is the key main() consumes from gh's shape; `branch` is the
+        # same value under the git probe's own name. Returning both keeps the
+        # caller contract identical whichever probe found the PR - omitting it
+        # crashed the 1.20.0 dance with a KeyError right after discovery succeeded.
+        "headRefName": branch,
         "branch": branch,
         "sha": sha,
         "number": max(numbers) if numbers else None,
