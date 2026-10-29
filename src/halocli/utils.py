@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
 
@@ -52,9 +53,16 @@ def parse_page_result(result: Any, *, list_key: str | None = None) -> PageResult
     # A page length is not a collection total. Unknown totals require a
     # short/empty page or an explicit caller ceiling to stop the walk.
     record_count = data.get("record_count")
+    if isinstance(record_count, bool) or (
+        isinstance(record_count, float)
+        and (not math.isfinite(record_count) or not record_count.is_integer())
+    ):
+        record_count = None
     try:
         record_count = int(record_count) if record_count is not None else None
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        record_count = None
+    if record_count is not None and record_count < 0:
         record_count = None
     return PageResult(items=items, list_key=detected_key, record_count=record_count)
 
@@ -164,10 +172,16 @@ async def list_all(
                         stopped_at_limit = True
             break
         prev_signature = signature
-        for item in page.items:
+        for index, item in enumerate(page.items):
             rows.append(item)
             if max_records is not None and len(rows) >= max_records:
-                stopped_at_limit = True
+                # An entirely consumed short page proves exhaustion even
+                # when its final row lands exactly on the caller ceiling.
+                stopped_at_limit = (
+                    record_count is not None
+                    or index < len(page.items) - 1
+                    or len(page.items) >= safe_page_size
+                )
                 break
         if stopped_at_limit:
             break
@@ -243,10 +257,12 @@ async def _list_cursor(
             break  # stall: the server repeated a window (no progress possible)
         for item in page.items:
             seen.add(str(item.get("id")))
-        for item in fresh:
+        for index, item in enumerate(fresh):
             rows.append(item)
             if max_records is not None and len(rows) >= max_records:
-                stopped_at_limit = True
+                stopped_at_limit = (
+                    record_count is not None or index < len(fresh) - 1 or len(page.items) >= window
+                )
                 break
         if stopped_at_limit:
             break

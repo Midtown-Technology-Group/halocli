@@ -139,7 +139,12 @@ class HaloClient:
 
     async def get_resource(self, resource: str, item_id: str | int) -> Any:
         resource_def = get_resource(resource)
-        return await self.request("GET", f"{resource_def.endpoint}/{quote(str(item_id), safe='')}")
+        encoded_id = quote(str(item_id), safe="")
+        # quote always preserves dots. HTTPX resolves literal dot-only path
+        # segments, so encode those explicitly to keep the detail route.
+        if encoded_id in {".", ".."}:
+            encoded_id = encoded_id.replace(".", "%2E")
+        return await self.request("GET", f"{resource_def.endpoint}/{encoded_id}")
 
     async def raw(
         self, method: str, path: str, *, params: dict[str, Any] | None = None, body: Any = None
