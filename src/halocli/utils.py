@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
 
@@ -43,17 +44,26 @@ def clamp_page_size(page_size: int) -> int:
 def parse_page_result(result: Any, *, list_key: str | None = None) -> PageResult:
     data = normalize_halo_result(result)
     if isinstance(data, list):
-        return PageResult(items=data, list_key=None, record_count=len(data))
+        return PageResult(items=data, list_key=None, record_count=None)
     if not isinstance(data, dict):
         return PageResult(items=[], list_key=None, record_count=0)
 
     raw_items, detected_key = _first_list(data, list_key)
     items = [normalize_halo_result(item) for item in (raw_items or [])]
-    record_count = data.get("record_count", len(items))
+    # A page length is not a collection total. Unknown totals require a
+    # short/empty page or an explicit caller ceiling to stop the walk.
+    record_count = data.get("record_count")
+    if isinstance(record_count, bool) or (
+        isinstance(record_count, float)
+        and (not math.isfinite(record_count) or not record_count.is_integer())
+    ):
+        record_count = None
     try:
-        record_count = int(record_count)
-    except (TypeError, ValueError):
-        record_count = len(items)
+        record_count = int(record_count) if record_count is not None else None
+    except (TypeError, ValueError, OverflowError):
+        record_count = None
+    if record_count is not None and record_count < 0:
+        record_count = None
     return PageResult(items=items, list_key=detected_key, record_count=record_count)
 
 
@@ -162,10 +172,16 @@ async def list_all(
                         stopped_at_limit = True
             break
         prev_signature = signature
-        for item in page.items:
+        for index, item in enumerate(page.items):
             rows.append(item)
             if max_records is not None and len(rows) >= max_records:
-                stopped_at_limit = True
+                # An entirely consumed short page proves exhaustion even
+                # when its final row lands exactly on the caller ceiling.
+                stopped_at_limit = (
+                    record_count is not None
+                    or index < len(page.items) - 1
+                    or len(page.items) >= safe_page_size
+                )
                 break
         if stopped_at_limit:
             break
@@ -182,7 +198,7 @@ async def list_all(
         # fetch, a page that came back empty while Halo's total is unmet, and
         # a paging-ignored endpoint whose first page is all that exists.
         # Hitting max_records exactly at the total is a full read.
-        stats["truncated"] = (record_count is None and stopped_at_limit) or (
+        stats["truncated"] = (record_count is None and (stopped_at_limit or paging_ignored)) or (
             record_count is not None and len(rows) < record_count
         )
         if paging_ignored:
@@ -219,6 +235,7 @@ async def _list_cursor(
     record_count: int | None = None
     stopped_at_limit = False
     cursor: int | None = None
+    stalled = False
     seen: set[str] = set()
     page_no = 0
     while True:
@@ -236,27 +253,33 @@ async def _list_cursor(
             break
         fresh = [item for item in page.items if str(item.get("id")) not in seen]
         if not fresh:
+            stalled = True
             break  # stall: the server repeated a window (no progress possible)
         for item in page.items:
             seen.add(str(item.get("id")))
-        for item in fresh:
+        for index, item in enumerate(fresh):
             rows.append(item)
             if max_records is not None and len(rows) >= max_records:
-                stopped_at_limit = True
+                stopped_at_limit = (
+                    record_count is not None or index < len(fresh) - 1 or len(page.items) >= window
+                )
                 break
         if stopped_at_limit:
             break
-        next_cursor = _min_int_id(fresh)
-        if next_cursor is None or (cursor is not None and next_cursor >= cursor):
-            break  # ids unusable or cursor not advancing: honest stop
-        cursor = next_cursor
         if len(page.items) < window:
             break  # drained: last window came back short
+        next_cursor = _min_int_id(fresh)
+        if next_cursor is None or (cursor is not None and next_cursor >= cursor):
+            stalled = True
+            break  # ids unusable or cursor not advancing: honest stop
+        cursor = next_cursor
     if stats is not None:
         stats["record_count"] = record_count
         stats["returned"] = len(rows)
-        stats["truncated"] = (record_count is None and stopped_at_limit) or (
-            record_count is not None and len(rows) < record_count
+        stats["truncated"] = (
+            stalled
+            or (record_count is None and stopped_at_limit)
+            or (record_count is not None and len(rows) < record_count)
         )
     return rows
 

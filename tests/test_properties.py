@@ -224,5 +224,5 @@ def test_parse_page_result_invariants(payload: dict) -> None:
     """PageResult shape holds for arbitrary dict payloads."""
     page = parse_page_result(payload)
     assert isinstance(page.items, list)
-    assert isinstance(page.record_count, int)
-    assert page.record_count >= 0
+    assert page.record_count is None or isinstance(page.record_count, int)
+    assert page.record_count is None or page.record_count >= 0
