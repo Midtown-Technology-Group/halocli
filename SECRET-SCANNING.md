@@ -7,13 +7,13 @@ A change to any outgoing commit requires a fresh scan. This gate scans committed
 history; it does not certify uncommitted files. It performs no push or PR write.
 
 ```sh
-python3 scripts/secret_gate.py
+python3 -I scripts/secret_gate.py
 # Explicit non-default PR target or destination tip (fetch it first):
-python3 scripts/secret_gate.py --base origin/release
+python3 -I scripts/secret_gate.py --base origin/release
 # Initial publication, empty remote or orphan history, explicitly:
-python3 scripts/secret_gate.py --all-history
+python3 -I scripts/secret_gate.py --all-history
 # Offline regression checks (no GitGuardian calls):
-python3 tests/test_secret_gate.py -q
+python3 -I tests/test_secret_gate.py -q
 ```
 
 Use `python` instead of `python3` on native Windows. Python 3.12+, Git, and
@@ -85,8 +85,12 @@ The gate rejects checkout-owned tools and Windows implicit current-directory
 lookup; use an approved user-managed tool environment outside the repository.
 Follow this repository's higher Python minimum when applicable.
 
-Ambient Git repository-location overrides are removed from Git and scanner
-children; run from the intended checkout. Tool lookup excludes every Git
-checkout, including linked siblings. Checkout/relative Python import paths and
-Python home overrides are removed from the scanner environment. Approved
-external coverage/import directories remain available.
+
+Always invoke the gate with Python isolated mode (`-I`); an unisolated CLI
+returns exit 21 before importing the rest of the gate. Ambient Git location
+overrides and Python import/home overrides are removed. Scanner processes run
+from a temporary directory with Git explicitly pinned to the intended worktree.
+Tool lookup excludes this repository and its linked worktrees, while approved
+external installations may be Git-managed. Standard `.git` and linked-worktree
+layouts are supported; unsupported metadata layouts block with exit 20.
+For an unsupported ref spelling, resolve and pass its full commit SHA.

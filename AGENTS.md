@@ -27,7 +27,7 @@ CI is the authoritative analysis mode; automatic analysis stays disabled.
 ## Secret gate before publication
 
 Before publishing the current PR branch, commit the complete candidate and run
-`python3 scripts/secret_gate.py --base origin/main` (native Windows: `python`). Require exit 0;
+`python3 -I scripts/secret_gate.py --base origin/main` (native Windows: `python -I`). Require exit 0;
 missing tooling/authentication, scan errors and skipped scans block publication.
 Then run the existing repository gates. Repeat after changing outgoing commits.
 Push exactly the scanned HEAD. This PR scan covers the current branch against its

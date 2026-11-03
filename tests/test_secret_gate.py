@@ -16,11 +16,17 @@ secret_gate = importlib.util.module_from_spec(SPEC)
 sys.modules["secret_gate"] = secret_gate
 SPEC.loader.exec_module(secret_gate)
 FAKE = """import os, subprocess, sys
+sys.excepthook = lambda *_: os._exit(97)
 from pathlib import Path
 args = sys.argv[1:]
+assert not Path.cwd().resolve().is_relative_to(
+    Path(os.environ["GIT_WORK_TREE"]).resolve()
+)
 if args == ["--version"]:
     print("ggshield, version " + os.environ.get("GATE_VERSION", "1.56.1"))
     sys.exit(0)
+if os.environ.get("GATE_BREAK_FIXTURE"):
+    raise RuntimeError("fixture precondition failure")
 assert not any(
     Path(entry).resolve().is_relative_to(Path.cwd().resolve())
     for entry in os.get_exec_path()
@@ -112,7 +118,7 @@ class SecretGateTests(unittest.TestCase):
     def run_gate(self, *args, input_text=None):
         """Execute the gate without inheriting real scanner credentials."""
         return subprocess.run(
-            [sys.executable, str(GATE), *args],
+            [sys.executable, "-I", str(GATE), *args],
             check=False,
             cwd=self.repo,
             env=self.env,
@@ -213,7 +219,7 @@ class SecretGateTests(unittest.TestCase):
         self.git("clone", "--no-hardlinks", "-q", str(self.root / "remote.git"), str(stale))
         self.git("push", "-q", "origin", "HEAD:main")
         result = subprocess.run(
-            [sys.executable, str(GATE)],
+            [sys.executable, "-I", str(GATE)],
             check=False,
             cwd=stale,
             env=self.env,
@@ -349,7 +355,7 @@ class SecretGateTests(unittest.TestCase):
         decoy.chmod(0o700)
         self.env["PATH"] = str(self.repo) + os.pathsep + self.env["PATH"]
         # Older Windows lookup can reject the decoy rather than find the next tool.
-        expected = (1, 21) if os.name == "nt" else (1,)
+        expected = (1,)
         self.assertIn(self.run_gate("--base", self.base).returncode, expected)
 
     def test_implicit_current_directory_tool_is_rejected(self):
@@ -388,7 +394,7 @@ class SecretGateTests(unittest.TestCase):
         clean_env = dict(self.env)
         clean_env.pop("PYTHONPATH", None)
         result = subprocess.run(
-            [sys.executable, "-c", program],
+            [sys.executable, "-I", "-c", program],
             cwd=self.repo,
             env=clean_env,
             capture_output=True,
@@ -408,14 +414,14 @@ class SecretGateTests(unittest.TestCase):
         decoy.chmod(0o700)
         env = dict(self.env, PATH=str(self.repo) + os.pathsep + self.env["PATH"])
         result = subprocess.run(
-            [sys.executable, str(GATE), "--base", self.base],
+            [sys.executable, "-I", str(GATE), "--base", self.base],
             cwd=linked,
             env=env,
             capture_output=True,
             text=True,
             check=False,
         )
-        expected = (1, 21) if os.name == "nt" else (1,)
+        expected = (1,)
         self.assertIn(result.returncode, expected, result.stderr)
 
     def test_annotated_tags_are_blocked_before_scanner_success(self):
@@ -433,9 +439,13 @@ class SecretGateTests(unittest.TestCase):
     def test_valid_equal_ref_and_at_remote_are_supported(self):
         """Support ordinary configured names without accepting shell syntax."""
         self.git("branch", "fix=api", self.base)
+        self.git("branch", "fix,api", self.base)
         self.git("remote", "add", "team@code", str(self.root / "remote.git"))
         self.assertEqual(self.run_gate("--base", "fix=api").returncode, 0)
         self.assertEqual(self.run_gate("--remote", "team@code").returncode, 0)
+        self.git("remote", "add", "team+mirror", str(self.root / "remote.git"))
+        self.assertEqual(self.run_gate("--remote", "team+mirror").returncode, 0)
+        self.assertEqual(self.run_gate("--base", "fix,api").returncode, 0)
 
     def test_scan_uses_the_original_resolved_head(self):
         """A ref change cannot switch the immutable commit sent to the scanner."""
@@ -466,6 +476,39 @@ class SecretGateTests(unittest.TestCase):
         ):
             self.assertEqual(secret_gate.main(["--all-history"]), 21)
             lookup.assert_not_called()
+
+    def test_fixture_failure_is_not_reported_as_findings(self):
+        """A fixture error must not satisfy a secret-detection assertion."""
+        self.env["GATE_BREAK_FIXTURE"] = "1"
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 4)
+        self.assertFalse(self.calls.exists())
+
+    def test_unrelated_git_managed_tool_installation_is_allowed(self):
+        """Approved external installations can themselves be Git-managed."""
+        self.git("init", "-q", str(self.bin))
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_gate_startup_cannot_import_checkout_shadow_modules(self):
+        """The documented isolated command ignores a sibling stdlib decoy."""
+        scripts = self.repo / "scripts"
+        scripts.mkdir()
+        copied_gate = scripts / "secret_gate.py"
+        copied_gate.write_text(GATE.read_text())
+        (scripts / "argparse.py").write_text("import sys\nprint('CLEAN: decoy')\nsys.exit(0)\n")
+        for isolated, expected in ((False, 21), (True, 0)):
+            command = [sys.executable, *(["-I"] if isolated else []), str(copied_gate)]
+            result = subprocess.run(
+                [*command, "--base", self.base],
+                cwd=self.repo,
+                env=self.env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, expected, result.stderr)
+            self.assertNotIn("CLEAN: decoy", result.stdout)
 
     def test_unsupported_scanner_version_blocks(self):
         """Unknown scanner contracts must not yield a clean publication result."""
