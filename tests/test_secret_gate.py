@@ -170,7 +170,7 @@ class SecretGateTests(unittest.TestCase):
 
     def test_empty_range_is_skipped(self):
         """Prove empty range is skipped."""
-        result = self.run_gate("--base", "HEAD")
+        result = self.run_gate("--base", self.head)
         self.assertEqual(result.returncode, 10)
         self.assertIn("SKIPPED:", result.stderr)
         self.assertFalse(self.calls.exists())
@@ -233,6 +233,30 @@ class SecretGateTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 20)
+
+    def test_short_base_cannot_be_shadowed_by_a_local_branch(self):
+        """Use the complete destination ref when a local branch shadows origin."""
+        self.git("fetch", "origin")
+        self.commit("synthetic-secret-marker")
+        hidden = self.commit("removed synthetic marker")
+        self.commit("extra clean feature")
+        self.git("branch", "origin/main", hidden)
+        short = self.run_gate("--base", "origin/main")
+        self.assertEqual(short.returncode, 20, short.stderr)
+        self.assertFalse(self.calls.exists())
+        exact = self.run_gate("--base", "refs/remotes/origin/main")
+        self.assertEqual(exact.returncode, 1, exact.stderr)
+        self.assertTrue(self.calls.exists())
+
+    def test_invalid_metadata_encoding_is_a_base_error(self):
+        """Unsupported path bytes block with the documented metadata outcome."""
+        directory = self.repo / ".git/worktrees/invalid-encoding"
+        directory.mkdir(parents=True)
+        (directory / "gitdir").write_bytes(b"../bad-\xff/.git\n")
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertFalse(self.calls.exists())
         self.assertFalse(self.calls.exists())
 
     def test_prepush_multiple_refs_and_new_branch(self):
@@ -579,11 +603,11 @@ class SecretGateTests(unittest.TestCase):
         self.git("branch", "fix=api", self.base)
         self.git("branch", "fix,api", self.base)
         self.git("remote", "add", "team@code", str(self.root / "remote.git"))
-        self.assertEqual(self.run_gate("--base", "fix=api").returncode, 0)
+        self.assertEqual(self.run_gate("--base", "refs/heads/fix=api").returncode, 0)
         self.assertEqual(self.run_gate("--remote", "team@code").returncode, 0)
         self.git("remote", "add", "team+mirror", str(self.root / "remote.git"))
         self.assertEqual(self.run_gate("--remote", "team+mirror").returncode, 0)
-        self.assertEqual(self.run_gate("--base", "fix,api").returncode, 0)
+        self.assertEqual(self.run_gate("--base", "refs/heads/fix,api").returncode, 0)
         self.git("remote", "add", "team=code", str(self.root / "remote.git"))
         self.assertEqual(self.run_gate("--remote", "team=code").returncode, 0)
 

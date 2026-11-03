@@ -9,7 +9,7 @@ history; it does not certify uncommitted files. It performs no push or PR write.
 ```sh
 python3 -I scripts/secret_gate.py
 # Explicit non-default PR target or destination tip (fetch it first):
-python3 -I scripts/secret_gate.py --base origin/release
+python3 -I scripts/secret_gate.py --base refs/remotes/origin/release
 # Initial publication, empty remote or orphan history, explicitly:
 python3 -I scripts/secret_gate.py --all-history
 # Offline regression checks (no GitGuardian calls):
@@ -116,3 +116,9 @@ Tool exclusion includes linked worktrees of the enclosing metadata owner for
 submodules. Metadata symlink loops return BASE_ERROR (exit 20). Git and scanner
 children discard GIT_EXEC_PATH, GIT_SSH and GIT_SSH_COMMAND overrides and Python
 startup variables; native SSH agent/config authentication is retained.
+
+
+Explicit `--base` accepts only a fully qualified ref (for example,
+`refs/remotes/origin/main`) or a full commit SHA. Short names such as
+`origin/main` block with exit 20 because a local branch can shadow them.
+Unsupported metadata path encodings also block with BASE_ERROR (exit 20).
