@@ -311,6 +311,20 @@ def scan(revisions, executable):
     return 0
 
 
+def verify_snapshot(args, head, selected):
+    """Reject a changed candidate or destination after the scan completes."""
+    if not args.pre_push and head != commit("HEAD"):
+        raise GateError(
+            4,
+            "SCAN_ERROR: HEAD changed; rerun for the new candidate.",
+        )
+    if not args.pre_push and not args.all_history and ".." in selected[0]:
+        scanned_base = selected[0].split("..", 1)[0]
+        current_base = commit(args.base) if args.base else remote_base(args.remote)
+        if current_base != scanned_base:
+            raise GateError(4, "SCAN_ERROR: base changed; rerun for the new destination.")
+
+
 def main(argv=None, stream=None):
     """Run the publication gate and return its classified exit status."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -353,16 +367,7 @@ def main(argv=None, stream=None):
                 "UNAVAILABLE: install approved ggshield; publication blocked.",
             )
         scan(revisions, scanner)
-        if not args.pre_push and head != commit("HEAD"):
-            raise GateError(
-                4,
-                "SCAN_ERROR: HEAD changed; rerun for the new candidate.",
-            )
-        if not args.pre_push and not args.all_history and ".." in selected[0]:
-            scanned_base = selected[0].split("..", 1)[0]
-            current_base = commit(args.base) if args.base else remote_base(args.remote)
-            if current_base != scanned_base:
-                raise GateError(4, "SCAN_ERROR: base changed; rerun for the new destination.")
+        verify_snapshot(args, head, selected)
         print(f"CLEAN: ggshield passed for {sum(n for _, n in revisions)} commit scan(s).")
         return 0
     except GateError as error:
