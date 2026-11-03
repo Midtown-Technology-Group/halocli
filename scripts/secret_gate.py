@@ -26,6 +26,7 @@ def git(*args):
     env = dict(
         os.environ,
         GIT_NO_REPLACE_OBJECTS="1",
+        GIT_GRAFT_FILE=os.devnull,
         GIT_TERMINAL_PROMPT="0",
         GCM_INTERACTIVE="Never",
     )
@@ -68,6 +69,9 @@ def remote_base(remote):
 
 def ranges(args, stream):
     """Select complete PR or pre-push commit ranges."""
+    grafts = Path(git("rev-parse", "--git-common-dir")) / "info/grafts"
+    if (grafts.exists() and grafts.stat().st_size) or os.environ.get("GIT_GRAFT_FILE"):
+        raise GateError(20, "BASE_ERROR: grafted history is unsupported; restore complete history.")
     if git("rev-parse", "--is-shallow-repository") != "false":
         raise GateError(20, "BASE_ERROR: shallow history; fetch --unshallow before scanning.")
     if not args.pre_push:
@@ -110,6 +114,7 @@ def scan(revisions, executable):
         GITGUARDIAN_EXIT_ZERO="false",
         GITGUARDIAN_FAIL_ON_SERVER_ERROR="true",
         GIT_NO_REPLACE_OBJECTS="1",
+        GIT_GRAFT_FILE=os.devnull,
         GIT_TERMINAL_PROMPT="0",
         GCM_INTERACTIVE="Never",
     )
@@ -185,7 +190,7 @@ def main(argv=None, stream=None):
     try:
         if not shutil.which("git"):
             raise GateError(21, "UNAVAILABLE: install Git before running this gate.")
-        head = commit("HEAD")
+        head = None if args.pre_push else commit("HEAD")
         selected = ranges(args, sys.stdin if stream is None else stream)
         revisions = [(r, int(git("rev-list", "--count", r, "--"))) for r in selected]
         revisions = [(r, n) for r, n in revisions if n]

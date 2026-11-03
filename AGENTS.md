@@ -26,9 +26,12 @@ CI is the authoritative analysis mode; automatic analysis stays disabled.
 
 ## Secret gate before publication
 
-Before every push and PR creation/update, commit the complete candidate and run
+Before publishing the current PR branch, commit the complete candidate and run
 `python3 scripts/secret_gate.py` (native Windows: `python`). Require exit 0;
 missing tooling/authentication, scan errors and skipped scans block publication.
 Then run the existing repository gates. Repeat after changing outgoing commits.
-See [secret scanning](SECRET-SCANNING.md) for base selection, new branches,
+Push exactly the scanned HEAD. This PR scan covers the current branch against its
+fetched intended base; other refs, multi-ref pushes and rewritten history require
+`--pre-push` with Git's complete ref-update stream. Stop if any pushed ref is
+uncovered. See [secret scanning](SECRET-SCANNING.md) for base selection, new branches,
 pre-push input and prerequisites. Preserve GitGuardian App, CI and Gitleaks checks.

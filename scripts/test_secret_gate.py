@@ -1,6 +1,7 @@
 """Offline regression tests: real Git histories and a fake scanner, never an API."""
 
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -20,7 +21,8 @@ assert os.environ["GITGUARDIAN_DONT_LOAD_ENV"] == "1"
 assert "GITGUARDIAN_LOG_FILE" not in os.environ
 assert "ignored_paths" not in Path(args[args.index("--config-path")+1]).read_text()
 revision = args[-1]
-Path(os.environ["GATE_CALLS"]).write_text(revision)
+with open(os.environ["GATE_CALLS"], "a", encoding="utf-8") as calls:
+    calls.write(revision + "\\n")
 if "GATE_CODE" in os.environ:
     print("sensitive-output-must-stay-private")
     sys.exit(int(os.environ["GATE_CODE"]))
@@ -63,13 +65,16 @@ class SecretGateTests(unittest.TestCase):
         self.bin = self.root / "bin"
         self.bin.mkdir()
         fake = self.bin / "ggshield"
+        (self.bin / "fake.py").write_text(FAKE)
         if os.name == "nt":
-            (self.bin / "fake.py").write_text(FAKE)
             fake.with_suffix(".cmd").write_text(
                 f'@"{sys.executable}" "{self.bin / "fake.py"}" %*\n'
             )
         else:
-            fake.write_text(f"#!{sys.executable}\n" + FAKE)
+            fake.write_text(
+                f"#!/bin/sh\nexec {shlex.quote(sys.executable)} "
+                f'{shlex.quote(str(self.bin / "fake.py"))} "$@"\n'
+            )
             fake.chmod(0o700)
         self.calls = self.root / "calls"
         self.env.update(
@@ -111,7 +116,7 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("CLEAN:", result.stdout)
-        self.assertEqual(self.calls.read_text(), f"{self.base}..{self.head}")
+        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"])
 
     def test_feature_upstream_does_not_hide_pr_commits(self):
         """Prove feature upstream does not hide pr commits."""
@@ -119,7 +124,7 @@ class SecretGateTests(unittest.TestCase):
         self.git("config", "branch.feature.remote", "origin")
         self.git("config", "branch.feature.merge", "refs/heads/feature")
         self.assertEqual(self.run_gate().returncode, 0)
-        self.assertEqual(self.calls.read_text(), f"{self.base}..{self.head}")
+        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"])
 
     def test_added_then_removed_secret_is_in_history(self):
         """Prove added then removed secret is in history."""
@@ -128,7 +133,7 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(self.git("diff", self.head, "HEAD"), "")
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 1)
-        self.assertIn(first, self.git("rev-list", self.calls.read_text()))
+        self.assertIn(first, self.git("rev-list", self.calls.read_text().strip()))
         self.assertNotIn("synthetic-secret-marker", result.stdout + result.stderr)
 
     def test_non_main_base_and_detached_head(self):
@@ -174,6 +179,11 @@ class SecretGateTests(unittest.TestCase):
         ):
             self.assertEqual(secret_gate.main(["--base", self.base]), 21)
 
+    def test_missing_git_blocks(self):
+        """An absent Git executable must not claim a successful scan."""
+        with patch("secret_gate.shutil.which", return_value=None):
+            self.assertEqual(secret_gate.main(["--base", self.base]), 21)
+
     def test_shallow_history_blocks(self):
         """Prove shallow history blocks."""
         (self.repo / ".git/shallow").write_text(self.base + "\n")
@@ -184,8 +194,8 @@ class SecretGateTests(unittest.TestCase):
         self.git("remote", "remove", "origin")
         self.assertEqual(self.run_gate().returncode, 20)
         self.assertEqual(self.run_gate("--all-history").returncode, 0)
-        self.assertEqual(self.calls.read_text(), self.head)
-        self.assertIn(self.base, self.git("rev-list", self.calls.read_text()))
+        self.assertEqual(self.calls.read_text().splitlines(), [self.head])
+        self.assertIn(self.base, self.git("rev-list", self.calls.read_text().strip()))
 
     def test_remote_base_object_must_be_fetched(self):
         """Prove remote base object must be fetched."""
@@ -209,7 +219,33 @@ class SecretGateTests(unittest.TestCase):
         updates += f"refs/heads/other {self.head} refs/heads/other {'0' * 40}\n"
         result = self.run_gate("--pre-push", input_text=updates)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.calls.read_text(), self.head)
+        self.assertEqual(
+            self.calls.read_text().splitlines(), [f"{self.base}..{self.head}", self.head]
+        )
+
+    def test_prepush_with_unborn_checkout_scans_the_pushed_ref(self):
+        """Pushing an existing ref does not depend on the checked-out HEAD."""
+        self.git("switch", "--orphan", "unborn")
+        updates = f"refs/heads/feature {self.head} refs/heads/feature {self.base}\n"
+        result = self.run_gate("--pre-push", input_text=updates)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"])
+
+    def test_grafted_history_blocks(self):
+        """Legacy grafts must not hide a secret-bearing ancestor."""
+        self.commit("synthetic-secret-marker")
+        final = self.commit("clean-again")
+        (self.repo / ".git/info/grafts").write_text(f"{final} {self.head}\n")
+        self.assertEqual(self.run_gate("--base", self.base).returncode, 20)
+        self.assertFalse(self.calls.exists())
+
+    def test_environment_grafted_history_blocks(self):
+        """An environment-selected graft file must not hide history."""
+        grafts = self.root / "external-grafts"
+        grafts.write_text(f"{self.head}\n")
+        self.env["GIT_GRAFT_FILE"] = str(grafts)
+        self.assertEqual(self.run_gate("--base", self.base).returncode, 20)
+        self.assertFalse(self.calls.exists())
 
     def test_prepush_delete_malformed_and_unknown_tip(self):
         """Prove prepush delete malformed and unknown tip."""
@@ -252,7 +288,7 @@ class SecretGateTests(unittest.TestCase):
         rewritten = self.commit("rewritten")
         updates = f"refs/heads/feature {rewritten} refs/heads/feature {self.head}\n"
         self.assertEqual(self.run_gate("--pre-push", input_text=updates).returncode, 0)
-        self.assertEqual(self.calls.read_text(), f"{self.head}..{rewritten}")
+        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.head}..{rewritten}"])
 
     def test_merged_side_branch_commits_are_included(self):
         """Prove merged side branch commits are included."""
@@ -264,7 +300,7 @@ class SecretGateTests(unittest.TestCase):
         self.git("merge", "--no-ff", "-s", "ours", "-m", "fixture merge", "side")
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 1)
-        self.assertIn(secret, self.git("rev-list", self.calls.read_text()))
+        self.assertIn(secret, self.git("rev-list", self.calls.read_text().strip()))
 
     def test_option_like_ref_rejected_before_git(self):
         """Reject agent-supplied option arguments before command invocation."""
