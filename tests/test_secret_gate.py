@@ -18,6 +18,13 @@ SPEC.loader.exec_module(secret_gate)
 FAKE = """import os, subprocess, sys
 from pathlib import Path
 args = sys.argv[1:]
+if args == ["--version"]:
+    print("ggshield, version " + os.environ.get("GATE_VERSION", "1.56.1"))
+    sys.exit(0)
+assert not any(
+    Path(entry).resolve().is_relative_to(Path.cwd().resolve())
+    for entry in os.get_exec_path()
+)
 assert "--all-secrets" in args
 assert os.environ["GITGUARDIAN_EXIT_ZERO"] == "false"
 assert os.environ["GITGUARDIAN_DONT_LOAD_ENV"] == "1"
@@ -380,6 +387,12 @@ class SecretGateTests(unittest.TestCase):
         ):
             self.assertEqual(secret_gate.main(["--all-history"]), 21)
             lookup.assert_not_called()
+
+    def test_unsupported_scanner_version_blocks(self):
+        """Unknown scanner contracts must not yield a clean publication result."""
+        self.env["GATE_VERSION"] = "1.55.0"
+        self.assertEqual(self.run_gate("--base", self.base).returncode, 21)
+        self.assertFalse(self.calls.exists())
 
 
 if __name__ == "__main__":

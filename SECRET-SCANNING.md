@@ -17,7 +17,7 @@ python3 tests/test_secret_gate.py -q
 ```
 
 Use `python` instead of `python3` on native Windows. Python 3.12+, Git, and
-ggshield on PATH are required. This gate was tested with ggshield **1.56.1**.
+ggshield on PATH are required. Require ggshield **>=1.56.1,<2**; this gate was tested with **1.56.1**.
 Install ggshield through the approved development-tool environment. Use existing
 native ggshield authentication or an approved process-injected
 `GITGUARDIAN_API_KEY`; never put credentials in the repository. For a private

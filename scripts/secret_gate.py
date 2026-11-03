@@ -33,7 +33,8 @@ def executable(name):
         directory = Path(entry)
         if directory.is_absolute() and not directory.resolve().is_relative_to(root):
             directories.append(str(directory.resolve()))
-    found = shutil.which(name, path=os.pathsep.join(directories))
+    os.environ["PATH"] = os.pathsep.join(directories)
+    found = shutil.which(name, path=os.environ["PATH"])
     if found:
         resolved = Path(found).resolve()
         if not resolved.is_relative_to(root):
@@ -142,6 +143,19 @@ def scan(revisions, executable):
         GIT_TERMINAL_PROMPT="0",
         GCM_INTERACTIVE="Never",
     )
+    version = subprocess.run(
+        [executable, "--version"],
+        check=False,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    match = re.fullmatch(r"ggshield, version (\d+)\.(\d+)\.(\d+)\s*", version.stdout)
+    if version.returncode or not match:
+        raise GateError(21, "UNAVAILABLE: cannot verify the approved ggshield version.")
+    if not (1, 56, 1) <= tuple(map(int, match.groups())) < (2, 0, 0):
+        raise GateError(21, "UNAVAILABLE: ggshield >=1.56.1,<2 is required.")
     with tempfile.TemporaryDirectory(prefix="secret-gate-") as directory:
         config = Path(directory) / "config.yaml"
         config.write_text(
