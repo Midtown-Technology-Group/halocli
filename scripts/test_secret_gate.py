@@ -266,6 +266,27 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn(secret, self.git("rev-list", self.calls.read_text()))
 
+    def test_option_like_ref_rejected_before_git(self):
+        """Reject agent-supplied option arguments before command invocation."""
+        with patch("secret_gate.git") as command:
+            with self.assertRaises(secret_gate.GateError):
+                secret_gate.commit("--help")
+            command.assert_not_called()
+
+    def test_option_like_remote_rejected_before_git(self):
+        """Reject option-like remote names even if a repo config lists one."""
+        with patch("secret_gate.git", return_value="--heads") as command:
+            with self.assertRaises(secret_gate.GateError):
+                secret_gate.remote_base("--heads")
+            command.assert_not_called()
+
+    def test_git_boundary_rejects_unexpected_argument_characters(self):
+        """Prevent arbitrary agent arguments from reaching the Git process."""
+        with patch("secret_gate.subprocess.run") as command:
+            with self.assertRaises(secret_gate.GateError):
+                secret_gate.git("ls-remote", "--symref", "bad;command", "HEAD")
+            command.assert_not_called()
+
     def test_replace_refs_cannot_hide_outgoing_commits(self):
         """Prove replace refs cannot hide outgoing commits."""
         self.commit("synthetic-secret-marker")

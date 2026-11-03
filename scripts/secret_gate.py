@@ -21,6 +21,8 @@ class GateError(Exception):
 
 def git(*args):
     """Run Git without interactive authentication or replacement objects."""
+    if not args or not all(re.fullmatch(r"[\w./@{}^~+:-]+", arg) for arg in args):
+        raise GateError(20, "BASE_ERROR: invalid Git argument.")
     env = dict(
         os.environ,
         GIT_NO_REPLACE_OBJECTS="1",
@@ -40,14 +42,21 @@ def git(*args):
 
 def commit(ref):
     """Resolve a ref to an immutable commit before selecting history."""
-    return git("rev-parse", "--verify", "--end-of-options", ref + "^{commit}")
+    if not re.fullmatch(r"(?!-)[\w./@{}^~+-]+", ref):
+        raise GateError(20, "BASE_ERROR: invalid commit reference.")
+    sha = git("rev-parse", "--verify", "--end-of-options", ref + "^{commit}")
+    if not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", sha):
+        raise GateError(20, "BASE_ERROR: reference did not resolve to one commit.")
+    return sha
 
 
 def remote_base(remote):
     """Resolve the configured remote default tip without guessing a branch."""
+    if not re.fullmatch(r"(?!-)[\w./-]+", remote):
+        raise GateError(20, "BASE_ERROR: invalid remote name.")
     if remote not in git("remote").splitlines():
         raise GateError(20, "BASE_ERROR: select a configured remote or an explicit --base.")
-    for line in git("ls-remote", "--symref", remote, "HEAD").splitlines():
+    for line in git("ls-remote", "--symref", "--", remote, "HEAD").splitlines():
         parts = line.split()
         if len(parts) == 2 and parts[1] == "HEAD" and re.fullmatch(r"[0-9a-f]{40,64}", parts[0]):
             return commit(parts[0])
