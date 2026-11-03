@@ -230,7 +230,8 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate("--pre-push", input_text=updates)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
-            self.calls.read_text().splitlines(), [f"{self.base}..{self.head}", self.head]
+            self.calls.read_text().splitlines(),
+            [f"{self.base}..{self.head}", self.head],
         )
 
     def test_prepush_with_unborn_checkout_scans_the_pushed_ref(self):
@@ -348,15 +349,93 @@ class SecretGateTests(unittest.TestCase):
         decoy.chmod(0o700)
         self.env["PATH"] = str(self.repo) + os.pathsep + self.env["PATH"]
         # Older Windows lookup can reject the decoy rather than find the next tool.
-        self.assertIn(self.run_gate("--base", self.base).returncode, (1, 21))
+        expected = (1, 21) if os.name == "nt" else (1,)
+        self.assertIn(self.run_gate("--base", self.base).returncode, expected)
 
     def test_implicit_current_directory_tool_is_rejected(self):
         """Reject a tool returned through Windows' implicit cwd lookup."""
         with (
+            patch.dict(os.environ),
             patch("secret_gate.Path.cwd", return_value=self.repo),
             patch("secret_gate.shutil.which", return_value=str(self.repo / "ggshield.cmd")),
         ):
             self.assertIsNone(secret_gate.executable("ggshield"))
+
+    def test_git_environment_cannot_select_a_different_repository(self):
+        """Scan the current checkout despite ambient repository selectors."""
+        self.commit("synthetic-secret-marker")
+        self.env.update(
+            GIT_DIR=str(self.root / "remote.git"),
+            GIT_WORK_TREE=str(self.root),
+            GIT_COMMON_DIR=str(self.root / "remote.git"),
+        )
+        self.assertEqual(self.run_gate("--base", self.base).returncode, 1)
+
+    def test_scanner_python_import_path_cannot_load_checkout_code(self):
+        """Check both scanner invocations reject checkout import overrides."""
+        marker = self.repo / "shadow-imported"
+        (self.repo / "sitecustomize.py").write_text(
+            f"from pathlib import Path\nPath({str(marker)!r}).touch()\n"
+        )
+        self.env["PYTHONPATH"] = str(self.repo) + os.pathsep + self.env.get("PYTHONPATH", "")
+        # Run the gate without startup imports, then set the scanner's input.
+        program = (
+            "import os, runpy, sys; "
+            f"os.environ['PYTHONPATH'] = {self.env['PYTHONPATH']!r}; "
+            f"sys.argv = [{str(GATE)!r}, '--base', {self.base!r}]; "
+            f"runpy.run_path({str(GATE)!r}, run_name='__main__')"
+        )
+        clean_env = dict(self.env)
+        clean_env.pop("PYTHONPATH", None)
+        result = subprocess.run(
+            [sys.executable, "-c", program],
+            cwd=self.repo,
+            env=clean_env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(marker.exists())
+
+    def test_linked_worktree_rejects_tools_from_main_checkout(self):
+        """A main-checkout decoy cannot become a linked worktree's scanner."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        decoy = self.repo / ("ggshield.cmd" if os.name == "nt" else "ggshield")
+        decoy.write_text("@exit /b 0\n" if os.name == "nt" else "#!/bin/sh\nexit 0\n")
+        decoy.chmod(0o700)
+        env = dict(self.env, PATH=str(self.repo) + os.pathsep + self.env["PATH"])
+        result = subprocess.run(
+            [sys.executable, str(GATE), "--base", self.base],
+            cwd=linked,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        expected = (1, 21) if os.name == "nt" else (1,)
+        self.assertIn(result.returncode, expected, result.stderr)
+
+    def test_annotated_tags_are_blocked_before_scanner_success(self):
+        """Never claim coverage for unscanned annotation text."""
+        self.git("tag", "-a", "-m", "synthetic-secret-marker", "release")
+        tag = self.git("rev-parse", "release")
+        result = self.run_gate(
+            "--pre-push",
+            input_text=f"refs/tags/release {tag} refs/tags/release {'0' * 40}\n",
+        )
+        self.assertEqual(result.returncode, 20)
+        self.assertIn("annotated tags", result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_valid_equal_ref_and_at_remote_are_supported(self):
+        """Support ordinary configured names without accepting shell syntax."""
+        self.git("branch", "fix=api", self.base)
+        self.git("remote", "add", "team@code", str(self.root / "remote.git"))
+        self.assertEqual(self.run_gate("--base", "fix=api").returncode, 0)
+        self.assertEqual(self.run_gate("--remote", "team@code").returncode, 0)
 
     def test_scan_uses_the_original_resolved_head(self):
         """A ref change cannot switch the immutable commit sent to the scanner."""

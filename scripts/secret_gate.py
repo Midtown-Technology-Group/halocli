@@ -21,6 +21,46 @@ class GateError(Exception):
         self.message = message
 
 
+def checkout_owned(path):
+    """Reject code from any checkout, including sibling linked worktrees."""
+    return any((parent / ".git").exists() for parent in (path, *path.parents))
+
+
+def command_environment():
+    """Bind children to the current checkout and approved import directories."""
+    env = dict(os.environ)
+    for name in (
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_COMMON_DIR",
+        "GIT_INDEX_FILE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_NAMESPACE",
+        "GIT_CEILING_DIRECTORIES",
+        "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+        "GIT_CONFIG_COUNT",
+        "GIT_CONFIG_PARAMETERS",
+        "PYTHONHOME",
+        "PYTHONUSERBASE",
+        "PYTHONSTARTUP",
+        "PYTHONINSPECT",
+    ):
+        env.pop(name, None)
+    if "PYTHONPATH" in env:
+        paths = []
+        for entry in env["PYTHONPATH"].split(os.pathsep):
+            path = Path(entry)
+            if path.is_absolute() and not checkout_owned(path.resolve()):
+                paths.append(str(path.resolve()))
+        if paths:
+            env["PYTHONPATH"] = os.pathsep.join(paths)
+        else:
+            env.pop("PYTHONPATH", None)
+    env["PYTHONSAFEPATH"] = "1"
+    return env
+
+
 def executable(name):
     """Resolve approved tools outside the checkout, including on Windows."""
     if name not in {"git", "ggshield"}:
@@ -31,26 +71,30 @@ def executable(name):
     directories = []
     for entry in os.get_exec_path():
         directory = Path(entry)
-        if directory.is_absolute() and not directory.resolve().is_relative_to(root):
+        if (
+            directory.is_absolute()
+            and not directory.resolve().is_relative_to(root)
+            and not checkout_owned(directory.resolve())
+        ):
             directories.append(str(directory.resolve()))
     os.environ["PATH"] = os.pathsep.join(directories)
     found = shutil.which(name, path=os.environ["PATH"])
     if found:
         resolved = Path(found).resolve()
-        if not resolved.is_relative_to(root):
+        if not resolved.is_relative_to(root) and not checkout_owned(resolved):
             return str(resolved)
     return None
 
 
 def git(*args):
     """Run Git without interactive authentication or replacement objects."""
-    if not args or not all(re.fullmatch(r"[\w./@{}^~+:-]+", arg) for arg in args):
+    if not args or not all(re.fullmatch(r"[\w./@{}^~+:=-]+", arg) for arg in args):
         raise GateError(20, "BASE_ERROR: invalid Git argument.")
     tool = executable("git")
     if not tool:
         raise GateError(21, "UNAVAILABLE: install approved Git outside the checkout.")
     env = dict(
-        os.environ,
+        command_environment(),
         GIT_NO_REPLACE_OBJECTS="1",
         GIT_GRAFT_FILE=os.devnull,
         GIT_TERMINAL_PROMPT="0",
@@ -69,7 +113,7 @@ def git(*args):
 
 def commit(ref):
     """Resolve a ref to an immutable commit before selecting history."""
-    if not re.fullmatch(r"(?!-)[\w./@{}^~+-]+", ref):
+    if not re.fullmatch(r"(?!-)[\w./@{}^~+=-]+", ref):
         raise GateError(20, "BASE_ERROR: invalid commit reference.")
     sha = git("rev-parse", "--verify", "--end-of-options", ref + "^{commit}")
     if not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", sha):
@@ -79,7 +123,7 @@ def commit(ref):
 
 def remote_base(remote):
     """Resolve the configured remote default tip without guessing a branch."""
-    if not re.fullmatch(r"(?!-)[\w./-]+", remote):
+    if not re.fullmatch(r"(?!-)[\w./@-]+", remote):
         raise GateError(20, "BASE_ERROR: invalid remote name.")
     if remote not in git("remote").splitlines():
         raise GateError(20, "BASE_ERROR: select a configured remote or an explicit --base.")
@@ -121,6 +165,11 @@ def push_range(line):
     _, local, _, old = fields
     if set(local) == {"0"}:
         return None
+    if git("cat-file", "-t", local) == "tag":
+        raise GateError(
+            20,
+            "BASE_ERROR: annotated tags require an approved annotation scan; publication blocked.",
+        )
     head = commit(local)
     # New refs include root history, without a hook commit limit or HEAD~1 guess.
     return head if set(old) == {"0"} else f"{commit(old)}..{head}"
@@ -130,7 +179,9 @@ def scan(revisions, executable):
     # Keep native authentication, but prevent config/dotenv/fail-open/logging
     # settings from changing this gate. Never persist or forward findings.
     """Run strict ggshield scans and suppress sensitive scanner diagnostics."""
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("GITGUARDIAN_", "GG_"))}
+    env = {
+        k: v for k, v in command_environment().items() if not k.startswith(("GITGUARDIAN_", "GG_"))
+    }
     for key in ("GITGUARDIAN_API_KEY", "GITGUARDIAN_INSTANCE"):
         if key in os.environ:
             env[key] = os.environ[key]

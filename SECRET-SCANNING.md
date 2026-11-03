@@ -41,9 +41,10 @@ publication is not covered by the scan, stop; do not reuse its clean result.
 `--pre-push` reads Git's standard four-column ref updates from stdin, validates
 all updates, then scans each `old..new` range. Force pushes include all commits
 unique to the new tip. A new ref scans **all reachable history**, including root
-commits; it can cost more API quota. Multiple updates and annotated commit tags
-are supported through the target commit history only; tag objects and annotation
-text are not scanned and need a separate approved check before publication. Unknown tips and non-commit tags block. Deletes have no content.
+commits; it can cost more API quota. Multiple updates and lightweight commit tags are supported. Annotated tags are
+blocked with exit 20 because commit-range scanning does not cover annotation
+text. Use an approved annotation-scanning publication procedure before retrying;
+this gate does not offer a bypass. Unknown tips and non-commit tags block. Deletes have no content.
 No hooks or Git configuration are installed automatically; compose existing hooks
 rather than replacing them. Agent instructions require the gate even without hooks.
 
@@ -83,3 +84,9 @@ Tool executables must resolve outside the checkout through absolute PATH entries
 The gate rejects checkout-owned tools and Windows implicit current-directory
 lookup; use an approved user-managed tool environment outside the repository.
 Follow this repository's higher Python minimum when applicable.
+
+Ambient Git repository-location overrides are removed from Git and scanner
+children; run from the intended checkout. Tool lookup excludes every Git
+checkout, including linked siblings. Checkout/relative Python import paths and
+Python home overrides are removed from the scanner environment. Approved
+external coverage/import directories remain available.
