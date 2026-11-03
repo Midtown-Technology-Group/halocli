@@ -17,6 +17,8 @@ sys.modules["secret_gate"] = secret_gate
 SPEC.loader.exec_module(secret_gate)
 FAKE = """import os, subprocess, sys
 sys.excepthook = lambda *_: os._exit(97)
+if sys.flags.optimize:
+    raise RuntimeError("fixture requires enabled assertions")
 from pathlib import Path
 args = sys.argv[1:]
 assert not Path.cwd().resolve().is_relative_to(
@@ -35,6 +37,10 @@ assert "--all-secrets" in args
 assert os.environ["GITGUARDIAN_EXIT_ZERO"] == "false"
 assert os.environ["GITGUARDIAN_DONT_LOAD_ENV"] == "1"
 assert "GITGUARDIAN_LOG_FILE" not in os.environ
+assert not any(name in os.environ for name in (
+    "PYTHONPATH", "PYTHONHOME", "PYTHONUSERBASE", "PYTHONSTARTUP", "PYTHONINSPECT",
+    "GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND",
+))
 assert "ignored_paths" not in Path(args[args.index("--config-path")+1]).read_text()
 revision = args[-1]
 with open(os.environ["GATE_CALLS"], "a", encoding="utf-8") as calls:
@@ -84,11 +90,11 @@ class SecretGateTests(unittest.TestCase):
         (self.bin / "fake.py").write_text(FAKE)
         if os.name == "nt":
             fake.with_suffix(".cmd").write_text(
-                f'@"{sys.executable}" "{self.bin / "fake.py"}" %*\n'
+                f'@"{sys.executable}" -I "{self.bin / "fake.py"}" %*\n'
             )
         else:
             fake.write_text(
-                f"#!/bin/sh\nexec {shlex.quote(sys.executable)} "
+                f"#!/bin/sh\nexec {shlex.quote(sys.executable)} -I "
                 f'{shlex.quote(str(self.bin / "fake.py"))} "$@"\n'
             )
             fake.chmod(0o700)
@@ -366,6 +372,138 @@ class SecretGateTests(unittest.TestCase):
             patch("secret_gate.shutil.which", return_value=str(self.repo / "ggshield.cmd")),
         ):
             self.assertIsNone(secret_gate.executable("ggshield"))
+
+    def test_git_exec_path_cannot_load_checkout_transport_helpers(self):
+        """An inherited helper directory must not execute checkout code."""
+        helpers = self.repo / "transport-helpers"
+        helpers.mkdir()
+        marker = self.root / "helper-executed"
+        program = helpers / "helper.py"
+        program.write_text(
+            "import sys\nfrom pathlib import Path\n"
+            f"Path({str(marker)!r}).write_text('executed')\n"
+            "for command in sys.stdin:\n"
+            "    if command.strip() == 'capabilities':\n"
+            "        print('', flush=True)\n"
+            "    elif command.startswith('list'):\n"
+            f"        print({self.base!r} + ' HEAD\\n', flush=True)\n"
+        )
+        helper = helpers / "git-remote-gateprobe"
+        if os.name == "nt":
+            helper.with_suffix(".cmd").write_text(f'@"{sys.executable}" -I "{program}" %*\n')
+        else:
+            helper.write_text(
+                f"#!/bin/sh\nexec {shlex.quote(sys.executable)} -I "
+                f'{shlex.quote(str(program))} "$@"\n'
+            )
+            helper.chmod(0o700)
+        self.git("remote", "set-url", "origin", "gateprobe::fixture")
+        self.env["GIT_EXEC_PATH"] = str(helpers)
+        result = self.run_gate()
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(marker.exists())
+        self.assertFalse(self.calls.exists())
+
+    def test_transport_command_overrides_are_removed(self):
+        """Keep native SSH agent authentication without injected executables."""
+        env = {
+            "GIT_EXEC_PATH": "unsafe",
+            "GIT_SSH": "unsafe",
+            "GIT_SSH_COMMAND": "unsafe",
+            "SSH_AUTH_SOCK": "native-agent",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            clean = secret_gate.command_environment()
+        self.assertFalse(
+            any(name in clean for name in ("GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND"))
+        )
+        self.assertEqual(clean["SSH_AUTH_SOCK"], "native-agent")
+
+    def test_relative_linked_pointer_excludes_sibling_decoy(self):
+        """Model Git's relative registration format on older Git versions too."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "relative-linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        pointer = next((self.repo / ".git/worktrees").glob("*/gitdir"))
+        pointer.write_text(os.path.relpath(linked / ".git", pointer.parent) + "\n")
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(self.calls.exists())
+
+    def test_metadata_symlink_loop_is_classified(self):
+        """A metadata loop blocks without a traceback or findings classification."""
+        loop = self.repo / ".git/commondir"
+        try:
+            loop.symlink_to(loop.name)
+        except OSError:
+            self.skipTest("symlink creation is unavailable")
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def scanner_decoy(self, directory):
+        """Create a version-compatible no-scan decoy to prove tool exclusion."""
+        decoy = directory / ("ggshield.cmd" if os.name == "nt" else "ggshield")
+        if os.name == "nt":
+            decoy.write_text('@if "%~1"=="--version" echo ggshield, version 1.56.1\n@exit /b 0\n')
+        else:
+            decoy.write_text(
+                '#!/bin/sh\nif [ "$1" = "--version" ]; then\n'
+                'echo "ggshield, version 1.56.1"\nfi\nexit 0\n'
+            )
+        decoy.chmod(0o700)
+
+    def test_nested_submodule_excludes_enclosing_linked_worktree(self):
+        """Protect both an enclosing linked checkout and its nested submodule."""
+        self.commit("synthetic-secret-marker")
+        parent = self.root / "parent"
+        parent.mkdir()
+        self.git("-C", str(parent), "init", "-q")
+        self.git(
+            "-C",
+            str(parent),
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            str(self.repo),
+            "modules/child",
+        )
+        self.git("-C", str(parent), "commit", "-q", "-m", "fixture", "--no-gpg-sign")
+        linked = self.root / "parent-linked"
+        self.git("-C", str(parent), "worktree", "add", "--detach", str(linked), "HEAD")
+        self.git(
+            "-C",
+            str(linked),
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "update",
+            "--init",
+        )
+        self.scanner_decoy(linked)
+        child = linked / "modules/child"
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = subprocess.run(
+            [sys.executable, "-I", str(GATE), "--base", self.base],
+            cwd=child,
+            env=self.env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(self.calls.exists())
+
+    def test_fake_scanner_assertions_survive_python_optimization(self):
+        """Optimized parent environments must not weaken the scanner fixture."""
+        self.env["PYTHONOPTIMIZE"] = "1"
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.calls.exists())
 
     def test_git_environment_cannot_select_a_different_repository(self):
         """Scan the current checkout despite ambient repository selectors."""

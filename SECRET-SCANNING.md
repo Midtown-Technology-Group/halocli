@@ -104,3 +104,15 @@ Metadata reads are bounded and confined to Git administrative directories;
 symlinks escaping those directories block. PR mode rechecks its selected base
 after scanning. This narrows the race window; rerun against the exact current
 destination before publication, with server checks as the backstop.
+
+
+Inherited `GIT_EXEC_PATH` is removed from Git and scanner children so it cannot
+select a checkout-owned transport helper. Native `pre-push` targets, where
+present, consume the complete four-column Git ref-update stream on standard
+input. No input returns SKIPPED (exit 10) and blocks publication.
+
+Relative worktree registration pointers resolve against their own directory.
+Tool exclusion includes linked worktrees of the enclosing metadata owner for
+submodules. Metadata symlink loops return BASE_ERROR (exit 20). Git and scanner
+children discard GIT_EXEC_PATH, GIT_SSH and GIT_SSH_COMMAND overrides and Python
+startup variables; native SSH agent/config authentication is retained.

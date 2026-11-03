@@ -29,10 +29,10 @@ class GateError(Exception):
 
 def metadata_path(path, anchor):
     """Confine metadata access, including symlinks, to its allowed Git directory."""
-    anchor = anchor.resolve()
     try:
+        anchor = anchor.resolve()
         relative = path.resolve().relative_to(anchor)
-    except ValueError as error:
+    except (ValueError, OSError, RuntimeError) as error:
         raise GateError(20, "BASE_ERROR: Git metadata escapes its allowed directory.") from error
     return anchor / relative
 
@@ -51,7 +51,10 @@ def linked_roots(common):
     """Read registered worktree pointers inside this Git metadata directory."""
     roots = set()
     for pointer in (common / "worktrees").glob("*/gitdir"):
-        target = Path(metadata_text(pointer, common)).resolve()
+        try:
+            target = (pointer.parent / metadata_text(pointer, common)).resolve()
+        except (OSError, RuntimeError) as error:
+            raise GateError(20, "BASE_ERROR: invalid linked-worktree metadata.") from error
         if target.name != ".git":
             raise GateError(20, "BASE_ERROR: unsupported linked-worktree metadata.")
         roots.add(target.parent)
@@ -83,7 +86,7 @@ def checkout_roots():
     )
     if not (common / "objects").is_dir():
         raise GateError(20, "BASE_ERROR: unsupported Git metadata layout.")
-    return {root, owner.parent, common, gitdir} | linked_roots(common)
+    return {root, owner.parent, common, gitdir} | linked_roots(common) | linked_roots(owner)
 
 
 def checkout_owned(path, roots):
@@ -93,7 +96,7 @@ def checkout_owned(path, roots):
 
 def command_environment():
     """Bind children to the current checkout and approved import directories."""
-    env = dict(os.environ)
+    env = {name: value for name, value in os.environ.items() if not name.startswith("PYTHON")}
     for name in (
         "GIT_DIR",
         "GIT_WORK_TREE",
@@ -106,6 +109,9 @@ def command_environment():
         "GIT_DISCOVERY_ACROSS_FILESYSTEM",
         "GIT_CONFIG_COUNT",
         "GIT_CONFIG_PARAMETERS",
+        "GIT_EXEC_PATH",
+        "GIT_SSH",
+        "GIT_SSH_COMMAND",
         "PYTHONPATH",
         "PYTHONHOME",
         "PYTHONUSERBASE",
@@ -373,7 +379,7 @@ def main(argv=None, stream=None):
     except GateError as error:
         print(error.message, file=sys.stderr)
         return error.code
-    except (OSError, ValueError, subprocess.TimeoutExpired):
+    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired):
         print(
             "SCAN_ERROR: command failed or timed out; publication blocked.",
             file=sys.stderr,
