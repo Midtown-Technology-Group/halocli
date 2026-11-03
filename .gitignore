@@ -67,3 +67,7 @@ halo_out/
 coverage.xml
 .sonar-coverage/
 .scannerwork/
+
+# Reviewed local publication gate.
+!/scripts/secret_gate.py
+!/scripts/test_secret_gate.py
