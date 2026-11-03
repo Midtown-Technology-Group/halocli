@@ -13,10 +13,10 @@ python3 scripts/secret_gate.py --base origin/release
 # Initial publication, empty remote or orphan history, explicitly:
 python3 scripts/secret_gate.py --all-history
 # Offline regression checks (no GitGuardian calls):
-python3 scripts/test_secret_gate.py -q
+python3 tests/test_secret_gate.py -q
 ```
 
-Use `python` instead of `python3` on native Windows. Python 3.10+, Git, and
+Use `python` instead of `python3` on native Windows. Python 3.12+, Git, and
 ggshield on PATH are required. This gate was tested with ggshield **1.56.1**.
 Install ggshield through the approved development-tool environment. Use existing
 native ggshield authentication or an approved process-injected
@@ -42,7 +42,8 @@ publication is not covered by the scan, stop; do not reuse its clean result.
 all updates, then scans each `old..new` range. Force pushes include all commits
 unique to the new tip. A new ref scans **all reachable history**, including root
 commits; it can cost more API quota. Multiple updates and annotated commit tags
-are supported. Unknown tips and non-commit tags block. Deletes have no content.
+are supported through the target commit history only; tag objects and annotation
+text are not scanned and need a separate approved check before publication. Unknown tips and non-commit tags block. Deletes have no content.
 No hooks or Git configuration are installed automatically; compose existing hooks
 rather than replacing them. Agent instructions require the gate even without hooks.
 
@@ -77,3 +78,8 @@ and existing approval controls remain required and unchanged. Local scanning add
 an earlier gate; it does not replace them. Existing offline CI entry points remain
 offline; agent guidance requires this additional gate. Use the local wrapper where
 one is documented; otherwise invoke the Python command explicitly.
+
+Tool executables must resolve outside the checkout through absolute PATH entries.
+The gate rejects checkout-owned tools and Windows implicit current-directory
+lookup; use an approved user-managed tool environment outside the repository.
+Follow this repository's higher Python minimum when applicable.

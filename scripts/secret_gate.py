@@ -9,6 +9,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+MINIMUM_PYTHON = (3, 11)
+
 
 class GateError(Exception):
     """A safe, classified publication-blocking failure."""
@@ -19,10 +21,33 @@ class GateError(Exception):
         self.message = message
 
 
+def executable(name):
+    """Resolve approved tools outside the checkout, including on Windows."""
+    if name not in {"git", "ggshield"}:
+        return None
+    cwd = Path.cwd().resolve()
+    root = next((p for p in (cwd, *cwd.parents) if (p / ".git").exists()), cwd)
+    os.environ["NODEFAULTCURRENTDIRECTORYINEXEPATH"] = "1"
+    directories = []
+    for entry in os.get_exec_path():
+        directory = Path(entry)
+        if directory.is_absolute() and not directory.resolve().is_relative_to(root):
+            directories.append(str(directory.resolve()))
+    found = shutil.which(name, path=os.pathsep.join(directories))
+    if found:
+        resolved = Path(found).resolve()
+        if not resolved.is_relative_to(root):
+            return str(resolved)
+    return None
+
+
 def git(*args):
     """Run Git without interactive authentication or replacement objects."""
     if not args or not all(re.fullmatch(r"[\w./@{}^~+:-]+", arg) for arg in args):
         raise GateError(20, "BASE_ERROR: invalid Git argument.")
+    tool = executable("git")
+    if not tool:
+        raise GateError(21, "UNAVAILABLE: install approved Git outside the checkout.")
     env = dict(
         os.environ,
         GIT_NO_REPLACE_OBJECTS="1",
@@ -31,7 +56,7 @@ def git(*args):
         GCM_INTERACTIVE="Never",
     )
     result = subprocess.run(
-        ["git", *args], check=False, env=env, capture_output=True, text=True, timeout=90
+        [tool, *args], check=False, env=env, capture_output=True, text=True, timeout=90
     )
     if result.returncode:
         raise GateError(
@@ -67,7 +92,7 @@ def remote_base(remote):
     )
 
 
-def ranges(args, stream):
+def ranges(args, stream, head):
     """Select complete PR or pre-push commit ranges."""
     grafts = Path(git("rev-parse", "--git-common-dir")) / "info/grafts"
     if (grafts.exists() and grafts.stat().st_size) or os.environ.get("GIT_GRAFT_FILE"):
@@ -75,7 +100,6 @@ def ranges(args, stream):
     if git("rev-parse", "--is-shallow-repository") != "false":
         raise GateError(20, "BASE_ERROR: shallow history; fetch --unshallow before scanning.")
     if not args.pre_push:
-        head = commit("HEAD")
         base = commit(args.base) if args.base else None
         if not base and not args.all_history:
             base = remote_base(args.remote)
@@ -188,21 +212,23 @@ def main(argv=None, stream=None):
     )
     args = parser.parse_args(argv)
     try:
-        if not shutil.which("git"):
+        if sys.version_info < MINIMUM_PYTHON:
+            raise GateError(21, "UNAVAILABLE: use supported Python 3.11 or newer.")
+        if not executable("git"):
             raise GateError(21, "UNAVAILABLE: install Git before running this gate.")
         head = None if args.pre_push else commit("HEAD")
-        selected = ranges(args, sys.stdin if stream is None else stream)
+        selected = ranges(args, sys.stdin if stream is None else stream, head)
         revisions = [(r, int(git("rev-list", "--count", r, "--"))) for r in selected]
         revisions = [(r, n) for r, n in revisions if n]
         if not revisions:
             raise GateError(10, "SKIPPED: no outgoing commits; no clean scan is claimed.")
-        executable = shutil.which("ggshield")
-        if not executable:
+        scanner = executable("ggshield")
+        if not scanner:
             raise GateError(
                 21,
                 "UNAVAILABLE: install approved ggshield; publication blocked.",
             )
-        scan(revisions, executable)
+        scan(revisions, scanner)
         if not args.pre_push and head != commit("HEAD"):
             raise GateError(
                 4,

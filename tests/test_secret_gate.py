@@ -1,5 +1,6 @@
 """Offline regression tests: real Git histories and a fake scanner, never an API."""
 
+import importlib.util
 import os
 import shlex
 import subprocess
@@ -9,9 +10,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import secret_gate
-
-GATE = Path(__file__).with_name("secret_gate.py")
+GATE = Path(__file__).resolve().parents[1] / "scripts" / "secret_gate.py"
+SPEC = importlib.util.spec_from_file_location("secret_gate", GATE)
+secret_gate = importlib.util.module_from_spec(SPEC)
+sys.modules["secret_gate"] = secret_gate
+SPEC.loader.exec_module(secret_gate)
 FAKE = """import os, subprocess, sys
 from pathlib import Path
 args = sys.argv[1:]
@@ -172,7 +175,7 @@ class SecretGateTests(unittest.TestCase):
     def test_missing_scanner_blocks(self):
         """Prove missing scanner blocks."""
         with (
-            patch("secret_gate.shutil.which", side_effect=["git", None]),
+            patch("secret_gate.executable", side_effect=["git", None]),
             patch("secret_gate.commit", return_value=self.head),
             patch("secret_gate.ranges", return_value=[self.head]),
             patch("secret_gate.git", return_value="1"),
@@ -181,7 +184,7 @@ class SecretGateTests(unittest.TestCase):
 
     def test_missing_git_blocks(self):
         """An absent Git executable must not claim a successful scan."""
-        with patch("secret_gate.shutil.which", return_value=None):
+        with patch("secret_gate.executable", return_value=None):
             self.assertEqual(secret_gate.main(["--base", self.base]), 21)
 
     def test_shallow_history_blocks(self):
@@ -260,7 +263,7 @@ class SecretGateTests(unittest.TestCase):
     def test_changed_head_does_not_claim_clean(self):
         """Prove changed head does not claim clean."""
         with (
-            patch("secret_gate.shutil.which", return_value="tool"),
+            patch("secret_gate.executable", return_value="tool"),
             patch("secret_gate.commit", side_effect=[self.head, self.base]),
             patch("secret_gate.ranges", return_value=[self.head]),
             patch("secret_gate.git", return_value="1"),
@@ -271,7 +274,7 @@ class SecretGateTests(unittest.TestCase):
     def test_timeout_does_not_claim_clean(self):
         """Prove timeout does not claim clean."""
         with (
-            patch("secret_gate.shutil.which", return_value="tool"),
+            patch("secret_gate.executable", return_value="tool"),
             patch("secret_gate.commit", return_value=self.head),
             patch("secret_gate.ranges", return_value=[self.head]),
             patch("secret_gate.git", return_value="1"),
@@ -329,6 +332,54 @@ class SecretGateTests(unittest.TestCase):
         final = self.commit("clean-again")
         self.git("replace", "--graft", final, self.head)
         self.assertEqual(self.run_gate("--base", self.base).returncode, 1)
+
+    def test_checkout_executable_cannot_claim_clean(self):
+        """A checkout-owned decoy must not replace the approved scanner."""
+        self.commit("synthetic-secret-marker")
+        decoy = self.repo / ("ggshield.cmd" if os.name == "nt" else "ggshield")
+        decoy.write_text("@exit /b 0\n" if os.name == "nt" else "#!/bin/sh\nexit 0\n")
+        decoy.chmod(0o700)
+        self.env["PATH"] = str(self.repo) + os.pathsep + self.env["PATH"]
+        # Older Windows lookup can reject the decoy rather than find the next tool.
+        self.assertIn(self.run_gate("--base", self.base).returncode, (1, 21))
+
+    def test_implicit_current_directory_tool_is_rejected(self):
+        """Reject a tool returned through Windows' implicit cwd lookup."""
+        with (
+            patch("secret_gate.Path.cwd", return_value=self.repo),
+            patch("secret_gate.shutil.which", return_value=str(self.repo / "ggshield.cmd")),
+        ):
+            self.assertIsNone(secret_gate.executable("ggshield"))
+
+    def test_scan_uses_the_original_resolved_head(self):
+        """A ref change cannot switch the immutable commit sent to the scanner."""
+        with (
+            patch("secret_gate.executable", return_value="tool"),
+            patch("secret_gate.commit", side_effect=[self.head, self.base, self.head]),
+            patch("secret_gate.git", side_effect=[str(self.repo / ".git"), "false", "1"]),
+            patch("secret_gate.scan", return_value=0) as scanner,
+        ):
+            self.assertEqual(secret_gate.main(["--all-history"]), 4)
+            scanner.assert_called_once_with([(self.head, 1)], "tool")
+
+    def test_explicit_release_base_includes_default_branch_history(self):
+        """A release PR must scan commits already present on the default branch."""
+        self.commit("synthetic-secret-marker")
+        self.git("push", "-q", "origin", "HEAD:main")
+        (self.repo / "other.txt").write_text("unrelated change")
+        self.git("add", "other.txt")
+        self.git("commit", "-q", "-m", "fixture", "--no-gpg-sign")
+        self.assertEqual(self.run_gate().returncode, 0)
+        self.assertEqual(self.run_gate("--base", self.base).returncode, 1)
+
+    def test_unsupported_python_blocks_before_tool_lookup(self):
+        """An unsupported gate runtime must not start a publication scan."""
+        with (
+            patch("secret_gate.sys.version_info", (3, 10, 20)),
+            patch("secret_gate.executable") as lookup,
+        ):
+            self.assertEqual(secret_gate.main(["--all-history"]), 21)
+            lookup.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -92,11 +92,21 @@ jobs:
           path: pytest-coverage.json
           if-no-files-found: ignore
 
+      - name: Measure secret-gate subprocess coverage
+        env:
+          COVERAGE_FILE: ${{ github.workspace }}/.coverage.secret-gate
+        run: |
+          python -m coverage run --rcfile=.coveragerc.secret-gate tests/test_secret_gate.py -q
+          python -m coverage combine --rcfile=.coveragerc.secret-gate
+          python -m coverage xml --rcfile=.coveragerc.secret-gate
+
       - name: Upload Sonar coverage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: sonar-coverage
-          path: coverage.xml
+          path: |
+            coverage.xml
+            secret-gate-coverage.xml
           if-no-files-found: error
 
       # Fails when registry write metadata points at endpoints the spec lacks
