@@ -27,6 +27,37 @@ class GateError(Exception):
         self.message = message
 
 
+def metadata_path(path, anchor):
+    """Confine metadata access, including symlinks, to its allowed Git directory."""
+    anchor = anchor.resolve()
+    try:
+        relative = path.resolve().relative_to(anchor)
+    except ValueError as error:
+        raise GateError(20, "BASE_ERROR: Git metadata escapes its allowed directory.") from error
+    return anchor / relative
+
+
+def metadata_text(path, anchor):
+    """Read only a bounded, confined Git metadata record; never display it."""
+    path = metadata_path(path, anchor)
+    with path.open("rb") as stream:
+        data = stream.read(8193)
+    if len(data) > 8192:
+        raise GateError(20, "BASE_ERROR: oversized Git metadata record.")
+    return data.decode("utf-8").strip()
+
+
+def linked_roots(common):
+    """Read registered worktree pointers inside this Git metadata directory."""
+    roots = set()
+    for pointer in (common / "worktrees").glob("*/gitdir"):
+        target = Path(metadata_text(pointer, common)).resolve()
+        if target.name != ".git":
+            raise GateError(20, "BASE_ERROR: unsupported linked-worktree metadata.")
+        roots.add(target.parent)
+    return roots
+
+
 def checkout_roots():
     """Read this checkout's standard Git metadata without executing a tool."""
     cwd = Path.cwd().resolve()
@@ -36,26 +67,23 @@ def checkout_roots():
     marker = root / ".git"
     gitdir = marker
     if marker.is_file():
-        text = marker.read_text(encoding="utf-8").strip()
+        text = metadata_text(marker, root)
         if not text.startswith("gitdir:") or "\n" in text:
             raise GateError(20, "BASE_ERROR: unsupported Git worktree metadata.")
         gitdir = (root / text[len("gitdir:") :].strip()).resolve()
-    common_file = gitdir / "commondir"
-    common = (
-        (gitdir / common_file.read_text(encoding="utf-8").strip()).resolve()
-        if common_file.is_file()
-        else gitdir.resolve()
-    )
-    owner = next((p for p in (common, *common.parents) if p.name == ".git"), None)
-    if owner is None or not (common / "objects").is_dir():
+    gitdir = gitdir.resolve()
+    owner = next((p for p in (gitdir, *gitdir.parents) if p.name == ".git"), None)
+    if owner is None:
         raise GateError(20, "BASE_ERROR: unsupported Git metadata layout.")
-    roots = {root, owner.parent, common, gitdir.resolve()}
-    for pointer in (common / "worktrees").glob("*/gitdir"):
-        target = Path(pointer.read_text(encoding="utf-8").strip()).resolve()
-        if target.name != ".git":
-            raise GateError(20, "BASE_ERROR: unsupported linked-worktree metadata.")
-        roots.add(target.parent)
-    return roots
+    common_file = metadata_path(gitdir / "commondir", owner)
+    common = (
+        metadata_path(gitdir / metadata_text(common_file, owner), owner)
+        if common_file.is_file()
+        else gitdir
+    )
+    if not (common / "objects").is_dir():
+        raise GateError(20, "BASE_ERROR: unsupported Git metadata layout.")
+    return {root, owner.parent, common, gitdir} | linked_roots(common)
 
 
 def checkout_owned(path, roots):
@@ -150,7 +178,7 @@ def commit(ref):
 
 def remote_base(remote):
     """Resolve the configured remote default tip without guessing a branch."""
-    if not re.fullmatch(r"(?!-)[\w./@+,-]+", remote):
+    if not re.fullmatch(r"(?!-)[\w./@+=,-]+", remote):
         raise GateError(20, "BASE_ERROR: invalid remote name.")
     if remote not in git("remote").splitlines():
         raise GateError(20, "BASE_ERROR: select a configured remote or an explicit --base.")
@@ -330,6 +358,11 @@ def main(argv=None, stream=None):
                 4,
                 "SCAN_ERROR: HEAD changed; rerun for the new candidate.",
             )
+        if not args.pre_push and not args.all_history and ".." in selected[0]:
+            scanned_base = selected[0].split("..", 1)[0]
+            current_base = commit(args.base) if args.base else remote_base(args.remote)
+            if current_base != scanned_base:
+                raise GateError(4, "SCAN_ERROR: base changed; rerun for the new destination.")
         print(f"CLEAN: ggshield passed for {sum(n for _, n in revisions)} commit scan(s).")
         return 0
     except GateError as error:

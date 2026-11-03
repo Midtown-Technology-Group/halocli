@@ -446,6 +446,8 @@ class SecretGateTests(unittest.TestCase):
         self.git("remote", "add", "team+mirror", str(self.root / "remote.git"))
         self.assertEqual(self.run_gate("--remote", "team+mirror").returncode, 0)
         self.assertEqual(self.run_gate("--base", "fix,api").returncode, 0)
+        self.git("remote", "add", "team=code", str(self.root / "remote.git"))
+        self.assertEqual(self.run_gate("--remote", "team=code").returncode, 0)
 
     def test_scan_uses_the_original_resolved_head(self):
         """A ref change cannot switch the immutable commit sent to the scanner."""
@@ -476,6 +478,37 @@ class SecretGateTests(unittest.TestCase):
         ):
             self.assertEqual(secret_gate.main(["--all-history"]), 21)
             lookup.assert_not_called()
+
+    def test_metadata_symlink_escape_blocks_before_scanning(self):
+        """A linked-worktree pointer must not read outside Git metadata."""
+        external = self.root / "external-metadata"
+        external.write_text(str(self.root / "elsewhere/.git"))
+        pointer = self.repo / ".git/worktrees/escape/gitdir"
+        pointer.parent.mkdir(parents=True)
+        try:
+            pointer.symlink_to(external)
+        except OSError:
+            if os.name == "nt":
+                self.skipTest("File symlinks are unavailable to this Windows test user")
+            raise
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertIn("metadata escapes", result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_remote_base_change_blocks_after_scanning(self):
+        """Do not claim clean against a remote base that changed during the scan."""
+        previous = Path.cwd()
+        try:
+            os.chdir(self.repo)
+            with (
+                patch.dict(os.environ, self.env, clear=True),
+                patch("secret_gate.remote_base", side_effect=[self.base, self.head]),
+                patch("secret_gate.scan", return_value=0),
+            ):
+                self.assertEqual(secret_gate.main([]), 4)
+        finally:
+            os.chdir(previous)
 
     def test_fixture_failure_is_not_reported_as_findings(self):
         """A fixture error must not satisfy a secret-detection assertion."""

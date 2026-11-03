@@ -43,8 +43,8 @@ all updates, then scans each `old..new` range. Force pushes include all commits
 unique to the new tip. A new ref scans **all reachable history**, including root
 commits; it can cost more API quota. Multiple updates and lightweight commit tags are supported. Annotated tags are
 blocked with exit 20 because commit-range scanning does not cover annotation
-text. Use an approved annotation-scanning publication procedure before retrying;
-this gate does not offer a bypass. Unknown tips and non-commit tags block. Deletes have no content.
+text. Rerunning this gate still exits 20, even after an external annotation scan.
+This gate does not offer a bypass. Unknown tips and non-commit tags block. Deletes have no content.
 No hooks or Git configuration are installed automatically; compose existing hooks
 rather than replacing them. Agent instructions require the gate even without hooks.
 
@@ -98,3 +98,9 @@ For an unsupported ref spelling, resolve and pass its full commit SHA.
 
 For submodules, tool lookup also excludes the enclosing checkout that owns its
 Git metadata. The scan remains pinned to the submodule worktree and commits.
+
+
+Metadata reads are bounded and confined to Git administrative directories;
+symlinks escaping those directories block. PR mode rechecks its selected base
+after scanning. This narrows the race window; rerun against the exact current
+destination before publication, with server checks as the backstop.
