@@ -490,6 +490,40 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_linked_submodule_worktree_uses_its_metadata_owner(self):
+        """Support submodule metadata without accepting its main-worktree decoy."""
+        self.commit("synthetic-secret-marker")
+        parent = self.root / "parent"
+        parent.mkdir()
+        self.git("-C", str(parent), "init", "-q")
+        self.git(
+            "-C",
+            str(parent),
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            str(self.repo),
+            "modules/child",
+        )
+        child = parent / "modules/child"
+        linked = self.root / "submodule-linked"
+        self.git("-C", str(child), "worktree", "add", "--detach", str(linked), "HEAD")
+        decoy = child / ("ggshield.cmd" if os.name == "nt" else "ggshield")
+        decoy.write_text("@exit /b 0\n" if os.name == "nt" else "#!/bin/sh\nexit 0\n")
+        decoy.chmod(0o700)
+        env = dict(self.env, PATH=str(child) + os.pathsep + self.env["PATH"])
+        result = subprocess.run(
+            [sys.executable, "-I", str(GATE), "--base", self.base],
+            cwd=linked,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(self.calls.exists())
+
     def test_gate_startup_cannot_import_checkout_shadow_modules(self):
         """The documented isolated command ignores a sibling stdlib decoy."""
         scripts = self.repo / "scripts"

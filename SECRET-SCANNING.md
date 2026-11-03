@@ -91,6 +91,10 @@ returns exit 21 before importing the rest of the gate. Ambient Git location
 overrides and Python import/home overrides are removed. Scanner processes run
 from a temporary directory with Git explicitly pinned to the intended worktree.
 Tool lookup excludes this repository and its linked worktrees, while approved
-external installations may be Git-managed. Standard `.git` and linked-worktree
+external installations may be Git-managed. Standard `.git`, submodule and linked-worktree
 layouts are supported; unsupported metadata layouts block with exit 20.
 For an unsupported ref spelling, resolve and pass its full commit SHA.
+
+
+For submodules, tool lookup also excludes the enclosing checkout that owns its
+Git metadata. The scan remains pinned to the submodule worktree and commits.

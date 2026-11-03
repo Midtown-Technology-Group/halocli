@@ -46,9 +46,10 @@ def checkout_roots():
         if common_file.is_file()
         else gitdir.resolve()
     )
-    if common.name != ".git" or not (common / "objects").is_dir():
+    owner = next((p for p in (common, *common.parents) if p.name == ".git"), None)
+    if owner is None or not (common / "objects").is_dir():
         raise GateError(20, "BASE_ERROR: unsupported Git metadata layout.")
-    roots = {root, common.parent, common, gitdir.resolve()}
+    roots = {root, owner.parent, common, gitdir.resolve()}
     for pointer in (common / "worktrees").glob("*/gitdir"):
         target = Path(pointer.read_text(encoding="utf-8").strip()).resolve()
         if target.name != ".git":
