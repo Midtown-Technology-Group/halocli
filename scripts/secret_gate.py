@@ -77,19 +77,24 @@ def ranges(args, stream):
             base = remote_base(args.remote)
         return [f"{base}..{head}" if base else head]
     result = []
-    # Validate all updates before scanning. Deletions contain no content.
     for line in stream:
-        fields = line.split()
-        if len(fields) != 4 or not all(re.fullmatch(r"[0-9a-f]{40,64}", fields[i]) for i in (1, 3)):
-            raise GateError(20, "BASE_ERROR: malformed Git pre-push input.")
-        _, local, _, old = fields
-        if set(local) == {"0"}:
-            continue
-        head = commit(local)
-        # New refs have no previous tip: scan all reachable history, including
-        # the root. No hook commit limit, final-diff-only scan or HEAD~1 fallback.
-        result.append(head if set(old) == {"0"} else f"{commit(old)}..{head}")
+        revision = push_range(line)
+        if revision:
+            result.append(revision)
     return list(dict.fromkeys(result))
+
+
+def push_range(line):
+    """Parse one complete Git pre-push update into its outgoing range."""
+    fields = line.split()
+    if len(fields) != 4 or not all(re.fullmatch(r"[0-9a-f]{40,64}", fields[i]) for i in (1, 3)):
+        raise GateError(20, "BASE_ERROR: malformed Git pre-push input.")
+    _, local, _, old = fields
+    if set(local) == {"0"}:
+        return None
+    head = commit(local)
+    # New refs include root history, without a hook commit limit or HEAD~1 guess.
+    return head if set(old) == {"0"} else f"{commit(old)}..{head}"
 
 
 def scan(revisions, executable):
