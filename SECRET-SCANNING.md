@@ -151,3 +151,9 @@ The Python interpreter is a trusted bootstrap prerequisite. Use an approved
 installation outside all repository checkouts. On Windows, use its absolute path
 for direct invocations (for example, `& $env:MTG_SECRET_GATE_PYTHON -I scripts/secret_gate.py`).
 Set that variable to the existing approved installation; it is not a credential.
+
+
+Tool candidates are checked against their own Git association as well as the
+registered roots. A stale or rewritten registration cannot admit a scanner from
+a linked checkout. Obsolete registrations are left untouched; this gate does not
+prune other tasks worktree metadata.

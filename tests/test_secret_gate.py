@@ -944,14 +944,47 @@ class SecretGateTests(unittest.TestCase):
         self.env.update(GIT_ASKPASS=str(approved), SSH_ASKPASS=str(approved))
         fake = self.bin / "fake.py"
         checks = (
-            f"assert os.environ['GIT_ASKPASS'] == {str(approved)!r}\n"
-            f"assert os.environ['SSH_ASKPASS'] == {str(approved)!r}\n"
+            f"assert os.environ['GIT_ASKPASS'] == {str(approved.resolve())!r}\n"
+            f"assert os.environ['SSH_ASKPASS'] == {str(approved.resolve())!r}\n"
         )
         fake.write_text(
             fake.read_text().replace("args = sys.argv[1:]", checks + "args = sys.argv[1:]")
         )
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.calls.exists())
+
+    def test_rewritten_registry_pointer_cannot_admit_a_linked_scanner(self):
+        """The candidate's own Git association excludes an omitted sibling."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "rewritten-pointer-linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        pointer = next((self.repo / ".git/worktrees").glob("*/gitdir"))
+        pointer.write_text(str(self.root / "missing-worktree/.git") + "\n")
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(self.calls.exists())
+
+    def test_duplicate_registry_target_cannot_admit_a_linked_scanner(self):
+        """An alias to another registration cannot hide the tool's actual owner."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "aliased-pointer-linked"
+        other = self.root / "other-linked-checkout"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        self.git("worktree", "add", "--detach", str(other), "HEAD")
+        registry = self.repo / ".git/worktrees"
+        pointer = next(
+            p
+            for p in registry.glob("*/gitdir")
+            if Path(p.read_text().strip()).resolve() == (linked / ".git").resolve()
+        )
+        pointer.write_text(str(other / ".git") + "\n")
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 1, result.stderr)
         self.assertTrue(self.calls.exists())
 
     def test_repository_python_floor_is_enforced(self):

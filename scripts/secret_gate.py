@@ -128,7 +128,18 @@ def checkout_roots():
 
 def checkout_owned(path, roots):
     """Reject code owned by this repository or its linked worktrees."""
-    return any(path.is_relative_to(root) for root in roots)
+    if any(path.is_relative_to(root) for root in roots):
+        return True
+    for directory in (path, *path.parents):
+        marker = directory / ".git"
+        if marker.is_file():
+            text = metadata_text(marker, directory)
+            if not text.startswith("gitdir:") or "\n" in text:
+                raise GateError(20, "BASE_ERROR: unsupported tool-checkout metadata.")
+            gitdir = (directory / text[len("gitdir:") :].strip()).resolve()
+            if any(gitdir.is_relative_to(root) for root in roots):
+                return True
+    return False
 
 
 def command_environment():
