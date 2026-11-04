@@ -62,10 +62,10 @@ Only exit **0 / CLEAN** means a successful scanner run. Other outcomes block:
 | 1 | Findings; remediate before publication |
 | 2 | Invalid gate arguments |
 | 3 | Authentication failed/unavailable; owner must restore approved native auth |
-| 4 | Scan/transport/server/timeout error, or HEAD/base changed during the scan |
+| 4 | Scan/transport/server/timeout error, or HEAD/base changed between initial resolution and final verification |
 | 10 | Skipped: empty range or deletion-only input; no clean scan claimed |
 | 20 | Invalid/unavailable base, Git operation, history or hook input |
-| 21 | Required executable unavailable |
+| 21 | Missing/untrusted executable, unsupported Python, or unverifiable/unsupported ggshield version |
 
 No skip or fail-open switch is provided. Strict temporary scanner configuration
 ignores local/global exclusions and exit-zero settings; dotenv loading and scanner
@@ -124,8 +124,9 @@ Explicit `--base` accepts only a fully qualified ref (for example,
 Unsupported metadata path encodings also block with BASE_ERROR (exit 20).
 
 
-Git/scanner credential boundary: Git children do not receive ggshield credential
-variables. Only the scanner receives the approved API key/instance selectors.
+Git/scanner credential boundary: Git children launched directly by this gate do not receive ggshield credential
+variables. ggshield receives the approved API key/instance selectors, and Git
+processes launched by ggshield can inherit them.
 Git trace and executable proxy overrides are removed. Existing native Git
 configuration and credential helpers remain trusted prerequisites. Explicit
 global/system config selectors must resolve to approved absolute paths outside
@@ -136,3 +137,17 @@ Metadata reads reject non-regular records, NUL path bytes and missing registered
 worktree pointers. The opener is nonblocking where supported and validates its
 descriptor. Grafts symlinks are confined to Git metadata. An empty explicit base
 blocks rather than selecting a different destination.
+
+
+Askpass selectors follow the same external absolute-path rule as explicit Git
+configuration selectors; unsafe values block without changing authentication
+contexts. Native approved external askpass programs remain available. Git metadata
+symlinks, malformed registrations and unreadable registries block. Metadata opens
+use O_NOFOLLOW where supported; platforms without it retain pre-open confinement
+and descriptor checks. Concurrent replacement of parent directories is outside
+the gate isolation guarantee.
+
+The Python interpreter is a trusted bootstrap prerequisite. Use an approved
+installation outside all repository checkouts. On Windows, use its absolute path
+for direct invocations (for example, `& $env:MTG_SECRET_GATE_PYTHON -I scripts/secret_gate.py`).
+Set that variable to the existing approved installation; it is not a credential.

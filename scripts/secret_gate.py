@@ -32,6 +32,9 @@ def metadata_path(path, anchor):
     """Confine metadata access, including symlinks, to its allowed Git directory."""
     try:
         anchor = anchor.resolve()
+        path = path.absolute()
+        if any(p.is_symlink() for p in (path, *path.parents) if p.is_relative_to(anchor)):
+            raise ValueError("metadata symlink")
         resolved = path.resolve()
         relative = resolved.relative_to(anchor)
         if any(p.is_symlink() for p in (resolved, *resolved.parents) if p.is_relative_to(anchor)):
@@ -65,7 +68,7 @@ def metadata_text(path, anchor):
 
 def metadata_opener(path, flags):
     """Avoid blocking on a FIFO swapped in before descriptor validation."""
-    return os.open(path, flags | getattr(os, "O_NONBLOCK", 0))
+    return os.open(path, flags | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0))
 
 
 def linked_roots(common):
@@ -76,10 +79,14 @@ def linked_roots(common):
         return roots
     if not registry.is_dir():
         raise GateError(20, "BASE_ERROR: non-directory worktree registry.")
-    for entry in registry.iterdir():
+    try:
+        entries = list(registry.iterdir())
+    except OSError as error:
+        raise GateError(20, "BASE_ERROR: unreadable worktree registry.") from error
+    for entry in entries:
         entry = metadata_path(entry, common)
-        if entry.is_file():
-            continue
+        if not entry.is_dir():
+            raise GateError(20, "BASE_ERROR: non-directory worktree registration.")
         pointer = entry / "gitdir"
         try:
             target = (pointer.parent / metadata_text(pointer, common)).resolve()
@@ -111,7 +118,7 @@ def checkout_roots():
     common_file = metadata_path(gitdir / "commondir", owner)
     common = (
         metadata_path(gitdir / metadata_text(common_file, owner), owner)
-        if common_file.is_file()
+        if common_file.exists()
         else gitdir
     )
     if not (common / "objects").is_dir():
@@ -155,14 +162,19 @@ def command_environment():
         "PYTHONINSPECT",
     ):
         env.pop(name, None)
-    for name in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"):
+    for name in (
+        "GIT_CONFIG_GLOBAL",
+        "GIT_CONFIG_SYSTEM",
+        "GIT_ASKPASS",
+        "SSH_ASKPASS",
+    ):
         value = env.get(name)
         if value is not None and os.path.normcase(value) != os.path.normcase(os.devnull):
             path = Path(value)
             if not path.is_absolute() or checkout_owned(path.resolve(), checkout_roots()):
                 raise GateError(
                     20,
-                    "BASE_ERROR: Git config override requires an approved absolute path "
+                    "BASE_ERROR: Git config/askpass override requires an approved absolute path "
                     "outside the checkout.",
                 )
             env[name] = str(path.resolve())
@@ -258,7 +270,11 @@ def ranges(args, stream, head):
     """Select complete PR or pre-push commit ranges."""
     common = Path(git("rev-parse", "--git-common-dir"))
     grafts = metadata_path(common / "info/grafts", common)
-    if (grafts.exists() and grafts.stat().st_size) or os.environ.get("GIT_GRAFT_FILE"):
+    try:
+        active_grafts = grafts.exists() and grafts.stat().st_size
+    except OSError as error:
+        raise GateError(20, "BASE_ERROR: unreadable graft metadata.") from error
+    if active_grafts or os.environ.get("GIT_GRAFT_FILE"):
         raise GateError(20, "BASE_ERROR: grafted history is unsupported; restore complete history.")
     if git("rev-parse", "--is-shallow-repository") != "false":
         raise GateError(20, "BASE_ERROR: shallow history; fetch --unshallow before scanning.")

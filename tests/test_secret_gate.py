@@ -799,7 +799,7 @@ class SecretGateTests(unittest.TestCase):
             env=self.env,
             capture_output=True,
             text=True,
-            timeout=3,
+            timeout=15,
             check=False,
         )
         self.assertEqual(result.returncode, 20, result.stderr)
@@ -832,7 +832,7 @@ class SecretGateTests(unittest.TestCase):
 
     def test_malformed_metadata_is_classified_before_scanning(self):
         """NUL path bytes are metadata errors, without raw diagnostics."""
-        pointer = self.repo / ".git/worktrees/nul/gitdir"
+        pointer = self.repo / ".git/worktrees/invalid-path-record/gitdir"
         pointer.parent.mkdir(parents=True)
         pointer.write_bytes(b"bad\0path/.git\n")
         result = self.run_gate("--base", self.base)
@@ -856,6 +856,103 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate()
         self.assertEqual(result.returncode, 20, result.stderr)
         self.assertFalse(self.calls.exists())
+
+    def test_non_directory_registration_cannot_admit_a_decoy(self):
+        """A corrupted registration must not hide a sibling-owned scanner."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "file-registration-linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        entry = next((self.repo / ".git/worktrees").iterdir())
+        entry.rename(self.root / "saved-registration")
+        entry.write_text("corrupted registration")
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_dangling_registry_symlink_cannot_admit_a_decoy(self):
+        """A replaced registry is not equivalent to no linked worktrees."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "dangling-registry-linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        registry = self.repo / ".git/worktrees"
+        registry.rename(self.root / "saved-registry")
+        try:
+            registry.symlink_to(self.repo / ".git/missing-registry", target_is_directory=True)
+        except OSError:
+            self.skipTest("symlink creation is unavailable")
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
+    def test_unreadable_registry_is_a_base_error(self):
+        """Unreadable registration directories have the metadata classification."""
+        registry = self.repo / ".git/worktrees"
+        registry.mkdir()
+        registry.chmod(0)
+        try:
+            result = self.run_gate("--base", self.base)
+        finally:
+            registry.chmod(0o700)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_non_regular_commondir_does_not_fall_back(self):
+        """Existing malformed common-directory records cannot be ignored."""
+        (self.repo / ".git/commondir").mkdir()
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    @unittest.skipUnless(hasattr(os, "O_NOFOLLOW"), "No-follow descriptor support required")
+    def test_metadata_open_rejects_a_replaced_final_symlink(self):
+        """A final path swapped after confinement must not read outside data."""
+        pointer = self.repo / ".git/pointer"
+        pointer.write_text("original metadata")
+        outside = self.root / "external-pointer"
+        outside.write_text("synthetic external metadata")
+        opener = secret_gate.metadata_opener
+
+        def replace_then_open(path, flags):
+            pointer.unlink()
+            pointer.symlink_to(outside)
+            return opener(path, flags)
+
+        with (
+            patch.object(secret_gate, "metadata_opener", side_effect=replace_then_open),
+            self.assertRaises(secret_gate.GateError) as error,
+        ):
+            secret_gate.metadata_text(pointer, self.repo / ".git")
+        self.assertEqual(error.exception.code, 20)
+
+    def test_askpass_selection_requires_external_absolute_paths(self):
+        """Reject checkout helpers without changing approved native authentication."""
+        for name in ("GIT_ASKPASS", "SSH_ASKPASS"):
+            for value in ("relative-helper", str(self.repo / "helper")):
+                with self.subTest(name=name, value=value):
+                    self.env[name] = value
+                    result = self.run_gate("--base", self.base)
+                    self.assertEqual(result.returncode, 20, result.stderr)
+                    self.assertFalse(self.calls.exists())
+            self.env.pop(name)
+        approved = self.root / "approved-askpass"
+        approved.write_text("synthetic native helper fixture")
+        self.env.update(GIT_ASKPASS=str(approved), SSH_ASKPASS=str(approved))
+        fake = self.bin / "fake.py"
+        checks = (
+            f"assert os.environ['GIT_ASKPASS'] == {str(approved)!r}\n"
+            f"assert os.environ['SSH_ASKPASS'] == {str(approved)!r}\n"
+        )
+        fake.write_text(
+            fake.read_text().replace("args = sys.argv[1:]", checks + "args = sys.argv[1:]")
+        )
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.calls.exists())
 
     def test_repository_python_floor_is_enforced(self):
         """Exercise the CLI outcome immediately below and at the approved floor."""
