@@ -5,6 +5,7 @@ import importlib.util
 import io
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1003,11 +1004,99 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertTrue(self.calls.exists())
 
+    def test_external_common_directory_cannot_admit_a_linked_scanner(self):
+        """File and directory Git layouts cannot hide a protected common owner."""
+        self.commit("synthetic-secret-marker")
+        for form in ("directory", "file"):
+            for spelling in ("absolute", "relative"):
+                with self.subTest(form=form, spelling=spelling):
+                    linked = self.root / f"external-common-{form}-{spelling}"
+                    self.git("worktree", "add", "--detach", str(linked), "HEAD")
+                    entry = self.repo / ".git/worktrees" / linked.name
+                    (linked / ".git").unlink()
+                    metadata = (
+                        linked / ".git"
+                        if form == "directory"
+                        else self.root / (linked.name + "-metadata")
+                    )
+                    shutil.copytree(entry, metadata)
+                    common = self.repo / ".git"
+                    value = (
+                        str(common) if spelling == "absolute" else os.path.relpath(common, metadata)
+                    )
+                    (metadata / "commondir").write_text(value + "\n")
+                    if form == "file":
+                        (linked / ".git").write_text("gitdir: " + str(metadata) + "\n")
+                    # Git must recognize the fixture as this repository before
+                    # the registration is deliberately redirected.
+                    self.assertEqual(
+                        self.git("-C", str(linked), "rev-parse", "HEAD"),
+                        self.git("rev-parse", "HEAD"),
+                    )
+                    (entry / "gitdir").write_text(
+                        str(self.root / (linked.name + "-missing") / ".git") + "\n"
+                    )
+                    self.scanner_decoy(linked)
+                    self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+                    self.calls.unlink(missing_ok=True)
+                    result = self.run_gate("--base", self.base)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertTrue(self.calls.exists())
+
+    @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
+    def test_suppressed_permission_errors_still_exclude_unsearchable_path(self):
+        """A real scan drops inaccessible PATH even with Python3.14 predicates."""
+        blocked = (self.root / "suppressed-permission-tools").resolve()
+        blocked.mkdir()
+        original_methods = {
+            name: getattr(Path, name) for name in ("is_dir", "is_file", "exists", "is_symlink")
+        }
+
+        def suppress_errors(method):
+            def predicate(path, *args, **kwargs):
+                try:
+                    return method(path, *args, **kwargs)
+                except OSError:
+                    return False
+
+            return predicate
+
+        fake = self.bin / "fake.py"
+        fake.write_text(
+            fake.read_text().replace(
+                "args = sys.argv[1:]",
+                f"assert {str(blocked)!r} not in os.environ['PATH'].split(os.pathsep)\nargs = sys.argv[1:]",
+            )
+        )
+        self.env["PATH"] = str(blocked) + os.pathsep + self.env["PATH"]
+        blocked.chmod(0)
+        previous = Path.cwd()
+        try:
+            os.chdir(self.repo)
+            with contextlib.ExitStack() as stack:
+                for name, method in original_methods.items():
+                    stack.enter_context(patch.object(Path, name, suppress_errors(method)))
+                stack.enter_context(patch.dict(os.environ, self.env, clear=True))
+                stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+                stack.enter_context(contextlib.redirect_stderr(io.StringIO()))
+                self.assertEqual(secret_gate.main(["--base", self.base]), 0)
+        finally:
+            os.chdir(previous)
+            blocked.chmod(0o700)
+        self.assertTrue(self.calls.exists())
+
     @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
     def test_unsearchable_path_entry_does_not_hide_approved_tools(self):
         """Exclude an inaccessible directory while using reachable trusted tools."""
-        blocked = self.root / "unsearchable-tools"
+        blocked = (self.root / "unsearchable-tools").resolve()
         blocked.mkdir()
+        fake = self.bin / "fake.py"
+        fake.write_text(
+            fake.read_text().replace(
+                "args = sys.argv[1:]",
+                f"assert {str(blocked)!r} not in os.environ['PATH'].split(os.pathsep)\nargs = sys.argv[1:]",
+            )
+        )
         blocked.chmod(0)
         self.env["PATH"] = str(blocked) + os.pathsep + self.env["PATH"]
         try:

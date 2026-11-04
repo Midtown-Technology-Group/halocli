@@ -164,3 +164,8 @@ Windows Make/Just gate targets require MTG_SECRET_GATE_PYTHON to name an existin
 approved absolute Python installation outside all Git checkouts. Configure the
 selector in the trusted caller environment, never from checkout-provided values.
 Unix direct entrypoints require the same approved interpreter prerequisite.
+
+
+Tool association follows commondir for both Git-file and directory metadata.
+Inaccessible PATH candidates are excluded using explicit lstat calls, including
+on Python versions whose type predicates suppress permission errors.

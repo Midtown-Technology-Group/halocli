@@ -128,20 +128,34 @@ def checkout_roots():
 
 
 def metadata_owned(directory, roots):
-    """Recognize Git file/directory aliases; exclude unsearchable candidates."""
+    """Recognize Git associations and exclude unsearchable tool candidates."""
     marker = directory / ".git"
     try:
+        try:
+            marker.lstat()
+        except (FileNotFoundError, NotADirectoryError):
+            return False
         if marker.is_dir():
-            return any(marker.resolve().is_relative_to(root) for root in roots)
-        if not marker.is_file():
-            return marker.exists() or marker.is_symlink()
-        text = metadata_text(marker, directory)
-        if not text.startswith(GITDIR_PREFIX) or "\n" in text:
-            raise GateError(20, "BASE_ERROR: unsupported tool-checkout metadata.")
-        gitdir = (directory / text[len(GITDIR_PREFIX) :].strip()).resolve()
-        return any(gitdir.is_relative_to(root) for root in roots)
+            gitdir = marker.resolve()
+        elif marker.is_file():
+            text = metadata_text(marker, directory)
+            if not text.startswith(GITDIR_PREFIX) or "\n" in text:
+                raise GateError(20, "BASE_ERROR: unsupported tool-checkout metadata.")
+            gitdir = (directory / text[len(GITDIR_PREFIX) :].strip()).resolve()
+        else:
+            return True
+        if any(gitdir.is_relative_to(root) for root in roots):
+            return True
+        common_file = gitdir / "commondir"
+        try:
+            common_file.lstat()
+        except FileNotFoundError:
+            return False
+        common = (gitdir / metadata_text(common_file, gitdir)).resolve()
+        return any(common.is_relative_to(root) for root in roots)
     except OSError:
-        # An unsearchable directory cannot supply a runnable trusted tool.
+        # lstat retains permission errors on Python versions whose predicates
+        # suppress them. Exclude the candidate before constructing child PATH.
         return True
 
 
