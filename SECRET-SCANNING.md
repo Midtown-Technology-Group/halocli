@@ -16,7 +16,8 @@ python3 -I scripts/secret_gate.py --all-history
 python3 -I tests/test_secret_gate.py -q
 ```
 
-Use `python` instead of `python3` on native Windows. Python 3.12+, Git, and
+On native Windows, invoke the approved absolute interpreter with PowerShell:
+`& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py`. Python 3.12+, Git, and
 ggshield on PATH are required. Require ggshield **>=1.56.1,<2**; this gate was tested with **1.56.1**.
 Install ggshield through the approved development-tool environment. Use existing
 native ggshield authentication or an approved process-injected
@@ -149,7 +150,7 @@ the gate isolation guarantee.
 
 The Python interpreter is a trusted bootstrap prerequisite. Use an approved
 installation outside all repository checkouts. On Windows, use its absolute path
-for direct invocations (for example, `& $env:MTG_SECRET_GATE_PYTHON -I scripts/secret_gate.py`).
+for direct invocations (for example, `& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py`).
 Set that variable to the existing approved installation; it is not a credential.
 
 
@@ -157,3 +158,9 @@ Tool candidates are checked against their own Git association as well as the
 registered roots. A stale or rewritten registration cannot admit a scanner from
 a linked checkout. Obsolete registrations are left untouched; this gate does not
 prune other tasks worktree metadata.
+
+
+Windows Make/Just gate targets require MTG_SECRET_GATE_PYTHON to name an existing
+approved absolute Python installation outside all Git checkouts. Configure the
+selector in the trusted caller environment, never from checkout-provided values.
+Unix direct entrypoints require the same approved interpreter prerequisite.

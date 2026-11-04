@@ -127,20 +127,29 @@ def checkout_roots():
     return {root, owner.parent, common, gitdir} | linked_roots(common) | linked_roots(owner)
 
 
+def metadata_owned(directory, roots):
+    """Recognize Git file/directory aliases; exclude unsearchable candidates."""
+    marker = directory / ".git"
+    try:
+        if marker.is_dir():
+            return any(marker.resolve().is_relative_to(root) for root in roots)
+        if not marker.is_file():
+            return marker.exists() or marker.is_symlink()
+        text = metadata_text(marker, directory)
+        if not text.startswith(GITDIR_PREFIX) or "\n" in text:
+            raise GateError(20, "BASE_ERROR: unsupported tool-checkout metadata.")
+        gitdir = (directory / text[len(GITDIR_PREFIX) :].strip()).resolve()
+        return any(gitdir.is_relative_to(root) for root in roots)
+    except OSError:
+        # An unsearchable directory cannot supply a runnable trusted tool.
+        return True
+
+
 def checkout_owned(path, roots):
     """Reject code owned by this repository or its linked worktrees."""
-    if any(path.is_relative_to(root) for root in roots):
-        return True
-    for directory in (path, *path.parents):
-        marker = directory / ".git"
-        if marker.is_file():
-            text = metadata_text(marker, directory)
-            if not text.startswith(GITDIR_PREFIX) or "\n" in text:
-                raise GateError(20, "BASE_ERROR: unsupported tool-checkout metadata.")
-            gitdir = (directory / text[len(GITDIR_PREFIX) :].strip()).resolve()
-            if any(gitdir.is_relative_to(root) for root in roots):
-                return True
-    return False
+    return any(path.is_relative_to(root) for root in roots) or any(
+        metadata_owned(directory, roots) for directory in (path, *path.parents)
+    )
 
 
 def command_environment():

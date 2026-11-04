@@ -975,16 +975,46 @@ class SecretGateTests(unittest.TestCase):
         self.git("worktree", "add", "--detach", str(linked), "HEAD")
         self.git("worktree", "add", "--detach", str(other), "HEAD")
         registry = self.repo / ".git/worktrees"
-        pointer = next(
-            p
-            for p in registry.glob("*/gitdir")
-            if Path(p.read_text().strip()).resolve() == (linked / ".git").resolve()
-        )
+        pointer = registry / linked.name / "gitdir"
+        self.assertTrue(pointer.is_file(), "fixture registration must exist")
         pointer.write_text(str(other / ".git") + "\n")
         self.scanner_decoy(linked)
         self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(self.calls.exists())
+
+    def test_git_directory_alias_cannot_admit_a_linked_scanner(self):
+        """Directory aliases into owned metadata cannot supply executable code."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "directory-alias-linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        entry = self.repo / ".git/worktrees" / linked.name
+        self.assertTrue((entry / "gitdir").is_file())
+        (entry / "gitdir").write_text(str(self.root / "missing-linked/.git") + "\n")
+        (linked / ".git").unlink()
+        try:
+            (linked / ".git").symlink_to(entry, target_is_directory=True)
+        except OSError:
+            self.skipTest("directory symlink creation is unavailable")
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(self.calls.exists())
+
+    @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
+    def test_unsearchable_path_entry_does_not_hide_approved_tools(self):
+        """Exclude an inaccessible directory while using reachable trusted tools."""
+        blocked = self.root / "unsearchable-tools"
+        blocked.mkdir()
+        blocked.chmod(0)
+        self.env["PATH"] = str(blocked) + os.pathsep + self.env["PATH"]
+        try:
+            result = self.run_gate("--base", self.base)
+        finally:
+            blocked.chmod(0o700)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(self.calls.exists())
 
     def test_repository_python_floor_is_enforced(self):
