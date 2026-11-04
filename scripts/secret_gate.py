@@ -127,20 +127,43 @@ def checkout_roots():
     return {root, owner.parent, common, gitdir} | linked_roots(common) | linked_roots(owner)
 
 
-def checkout_owned(path, roots):
-    """Reject code owned by this repository or its linked worktrees."""
-    if any(path.is_relative_to(root) for root in roots):
-        return True
-    for directory in (path, *path.parents):
-        marker = directory / ".git"
-        if marker.is_file():
+def metadata_owned(directory, roots):
+    """Recognize Git associations and exclude unsearchable tool candidates."""
+    marker = directory / ".git"
+    try:
+        try:
+            marker.lstat()
+        except (FileNotFoundError, NotADirectoryError):
+            return False
+        if marker.is_dir():
+            gitdir = marker.resolve()
+        elif marker.is_file():
             text = metadata_text(marker, directory)
             if not text.startswith(GITDIR_PREFIX) or "\n" in text:
                 raise GateError(20, "BASE_ERROR: unsupported tool-checkout metadata.")
             gitdir = (directory / text[len(GITDIR_PREFIX) :].strip()).resolve()
-            if any(gitdir.is_relative_to(root) for root in roots):
-                return True
-    return False
+        else:
+            return True
+        if any(gitdir.is_relative_to(root) for root in roots):
+            return True
+        common_file = gitdir / "commondir"
+        try:
+            common_file.lstat()
+        except FileNotFoundError:
+            return False
+        common = (gitdir / metadata_text(common_file, gitdir)).resolve()
+        return any(common.is_relative_to(root) for root in roots)
+    except OSError:
+        # lstat retains permission errors on Python versions whose predicates
+        # suppress them. Exclude the candidate before constructing child PATH.
+        return True
+
+
+def checkout_owned(path, roots):
+    """Reject code owned by this repository or its linked worktrees."""
+    return any(path.is_relative_to(root) for root in roots) or any(
+        metadata_owned(directory, roots) for directory in (path, *path.parents)
+    )
 
 
 def command_environment():
