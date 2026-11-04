@@ -11,11 +11,12 @@ import argparse  # noqa: E402
 import os  # noqa: E402
 import re  # noqa: E402
 import shutil  # noqa: E402
+import stat  # noqa: E402
 import subprocess  # noqa: E402
 import tempfile  # noqa: E402
 from pathlib import Path  # noqa: E402
 
-MINIMUM_PYTHON = (3, 11)
+MINIMUM_PYTHON = (3, 12)
 
 
 class GateError(Exception):
@@ -31,7 +32,10 @@ def metadata_path(path, anchor):
     """Confine metadata access, including symlinks, to its allowed Git directory."""
     try:
         anchor = anchor.resolve()
-        relative = path.resolve().relative_to(anchor)
+        resolved = path.resolve()
+        relative = resolved.relative_to(anchor)
+        if any(p.is_symlink() for p in (resolved, *resolved.parents) if p.is_relative_to(anchor)):
+            raise ValueError("unresolved metadata symlink")
     except (ValueError, OSError, RuntimeError) as error:
         raise GateError(20, "BASE_ERROR: Git metadata escapes its allowed directory.") from error
     return anchor / relative
@@ -40,23 +44,46 @@ def metadata_path(path, anchor):
 def metadata_text(path, anchor):
     """Read only a bounded, confined Git metadata record; never display it."""
     path = metadata_path(path, anchor)
-    with path.open("rb") as stream:
-        data = stream.read(8193)
+    try:
+        if not path.is_file():
+            raise GateError(20, "BASE_ERROR: missing or non-regular Git metadata.")
+        with open(path, "rb", opener=metadata_opener) as stream:
+            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                raise GateError(20, "BASE_ERROR: non-regular Git metadata.")
+            data = stream.read(8193)
+    except (OSError, ValueError) as error:
+        raise GateError(20, "BASE_ERROR: unreadable Git metadata.") from error
     if len(data) > 8192:
         raise GateError(20, "BASE_ERROR: oversized Git metadata record.")
+    if b"\0" in data:
+        raise GateError(20, "BASE_ERROR: invalid Git metadata path.")
     try:
         return data.decode("utf-8").strip()
     except UnicodeError as error:
         raise GateError(20, "BASE_ERROR: unsupported Git metadata path encoding.") from error
 
 
+def metadata_opener(path, flags):
+    """Avoid blocking on a FIFO swapped in before descriptor validation."""
+    return os.open(path, flags | getattr(os, "O_NONBLOCK", 0))
+
+
 def linked_roots(common):
     """Read registered worktree pointers inside this Git metadata directory."""
     roots = set()
-    for pointer in (common / "worktrees").glob("*/gitdir"):
+    registry = metadata_path(common / "worktrees", common)
+    if not registry.exists():
+        return roots
+    if not registry.is_dir():
+        raise GateError(20, "BASE_ERROR: non-directory worktree registry.")
+    for entry in registry.iterdir():
+        entry = metadata_path(entry, common)
+        if entry.is_file():
+            continue
+        pointer = entry / "gitdir"
         try:
             target = (pointer.parent / metadata_text(pointer, common)).resolve()
-        except (OSError, RuntimeError) as error:
+        except (OSError, ValueError, RuntimeError) as error:
             raise GateError(20, "BASE_ERROR: invalid linked-worktree metadata.") from error
         if target.name != ".git":
             raise GateError(20, "BASE_ERROR: unsupported linked-worktree metadata.")
@@ -99,7 +126,11 @@ def checkout_owned(path, roots):
 
 def command_environment():
     """Bind children to the current checkout and approved import directories."""
-    env = {name: value for name, value in os.environ.items() if not name.startswith("PYTHON")}
+    env = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith(("PYTHON", "GITGUARDIAN_", "GG_", "GIT_TRACE"))
+    }
     for name in (
         "GIT_DIR",
         "GIT_WORK_TREE",
@@ -115,6 +146,8 @@ def command_environment():
         "GIT_EXEC_PATH",
         "GIT_SSH",
         "GIT_SSH_COMMAND",
+        "GIT_PROXY_COMMAND",
+        "GIT_CURL_VERBOSE",
         "PYTHONPATH",
         "PYTHONHOME",
         "PYTHONUSERBASE",
@@ -122,6 +155,17 @@ def command_environment():
         "PYTHONINSPECT",
     ):
         env.pop(name, None)
+    for name in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"):
+        value = env.get(name)
+        if value is not None and os.path.normcase(value) != os.path.normcase(os.devnull):
+            path = Path(value)
+            if not path.is_absolute() or checkout_owned(path.resolve(), checkout_roots()):
+                raise GateError(
+                    20,
+                    "BASE_ERROR: Git config override requires an approved absolute path "
+                    "outside the checkout.",
+                )
+            env[name] = str(path.resolve())
     env["PYTHONSAFEPATH"] = "1"
     return env
 
@@ -212,13 +256,14 @@ def base_commit(ref):
 
 def ranges(args, stream, head):
     """Select complete PR or pre-push commit ranges."""
-    grafts = Path(git("rev-parse", "--git-common-dir")) / "info/grafts"
+    common = Path(git("rev-parse", "--git-common-dir"))
+    grafts = metadata_path(common / "info/grafts", common)
     if (grafts.exists() and grafts.stat().st_size) or os.environ.get("GIT_GRAFT_FILE"):
         raise GateError(20, "BASE_ERROR: grafted history is unsupported; restore complete history.")
     if git("rev-parse", "--is-shallow-repository") != "false":
         raise GateError(20, "BASE_ERROR: shallow history; fetch --unshallow before scanning.")
     if not args.pre_push:
-        base = base_commit(args.base) if args.base else None
+        base = base_commit(args.base) if args.base is not None else None
         if not base and not args.all_history:
             base = remote_base(args.remote)
         return [f"{base}..{head}" if base else head]
@@ -338,7 +383,7 @@ def verify_snapshot(args, head, selected):
         )
     if not args.pre_push and not args.all_history and ".." in selected[0]:
         scanned_base = selected[0].split("..", 1)[0]
-        current_base = base_commit(args.base) if args.base else remote_base(args.remote)
+        current_base = base_commit(args.base) if args.base is not None else remote_base(args.remote)
         if current_base != scanned_base:
             raise GateError(4, "SCAN_ERROR: base changed; rerun for the new destination.")
 
@@ -369,7 +414,11 @@ def main(argv=None, stream=None):
     args = parser.parse_args(argv)
     try:
         if sys.version_info < MINIMUM_PYTHON:
-            raise GateError(21, "UNAVAILABLE: use supported Python 3.11 or newer.")
+            raise GateError(
+                21,
+                "UNAVAILABLE: use supported Python "
+                f"{MINIMUM_PYTHON[0]}.{MINIMUM_PYTHON[1]} or newer.",
+            )
         if not executable("git"):
             raise GateError(21, "UNAVAILABLE: install Git before running this gate.")
         head = None if args.pre_push else commit("HEAD")

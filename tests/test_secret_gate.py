@@ -1,6 +1,8 @@
 """Offline regression tests: real Git histories and a fake scanner, never an API."""
 
+import contextlib
 import importlib.util
+import io
 import os
 import shlex
 import subprocess
@@ -39,7 +41,8 @@ assert os.environ["GITGUARDIAN_DONT_LOAD_ENV"] == "1"
 assert "GITGUARDIAN_LOG_FILE" not in os.environ
 assert not any(name in os.environ for name in (
     "PYTHONPATH", "PYTHONHOME", "PYTHONUSERBASE", "PYTHONSTARTUP", "PYTHONINSPECT",
-    "GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND",
+    "GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND", "GIT_PROXY_COMMAND",
+    "GIT_TRACE2_EVENT", "GIT_TRACE2_ENV_VARS",
 ))
 assert "ignored_paths" not in Path(args[args.index("--config-path")+1]).read_text()
 revision = args[-1]
@@ -55,6 +58,8 @@ for sha in commits.splitlines():
         sys.exit(1)
 sys.exit(0)
 """
+
+PYTHON_FLOOR_CASES = (((3, 10), 21), ((3, 11), 21), ((3, 12), 0))
 
 
 class SecretGateTests(unittest.TestCase):
@@ -434,12 +439,21 @@ class SecretGateTests(unittest.TestCase):
             "GIT_EXEC_PATH": "unsafe",
             "GIT_SSH": "unsafe",
             "GIT_SSH_COMMAND": "unsafe",
+            "GIT_PROXY_COMMAND": "unsafe",
             "SSH_AUTH_SOCK": "native-agent",
         }
         with patch.dict(os.environ, env, clear=True):
             clean = secret_gate.command_environment()
         self.assertFalse(
-            any(name in clean for name in ("GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND"))
+            any(
+                name in clean
+                for name in (
+                    "GIT_EXEC_PATH",
+                    "GIT_SSH",
+                    "GIT_SSH_COMMAND",
+                    "GIT_PROXY_COMMAND",
+                )
+            )
         )
         self.assertEqual(clean["SSH_AUTH_SOCK"], "native-agent")
 
@@ -744,6 +758,121 @@ class SecretGateTests(unittest.TestCase):
         self.env["GATE_VERSION"] = "1.55.0"
         self.assertEqual(self.run_gate("--base", self.base).returncode, 21)
         self.assertFalse(self.calls.exists())
+
+    def test_empty_explicit_base_does_not_fall_back(self):
+        """An empty wrapper argument must not select a different destination."""
+        result = self.run_gate("--base", "")
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_git_tracing_does_not_receive_scanner_credentials(self):
+        """A synthetic credential reaches the scanner without a Git trace file."""
+        trace = self.root / "git-trace.json"
+        marker = "synthetic-auth-context-marker"
+        self.env.update(
+            GITGUARDIAN_API_KEY=marker,
+            GIT_TRACE2_EVENT=str(trace),
+            GIT_TRACE2_ENV_VARS="GITGUARDIAN_API_KEY",
+        )
+        fake = self.bin / "fake.py"
+        fake.write_text(
+            fake.read_text().replace(
+                "args = sys.argv[1:]",
+                f"assert os.environ.get('GITGUARDIAN_API_KEY') == {marker!r}\nargs = sys.argv[1:]",
+            )
+        )
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.calls.exists())
+        self.assertFalse(trace.exists())
+
+    def test_nonregular_metadata_cannot_block_the_gate(self):
+        """An owned FIFO fixture must produce a classified error promptly."""
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("FIFO creation is unavailable")
+        pointer = self.repo / ".git/worktrees/fifo/gitdir"
+        pointer.parent.mkdir(parents=True)
+        os.mkfifo(pointer)
+        result = subprocess.run(
+            [sys.executable, "-I", str(GATE), "--base", self.base],
+            cwd=self.repo,
+            env=self.env,
+            capture_output=True,
+            text=True,
+            timeout=3,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_missing_worktree_pointer_cannot_admit_a_decoy(self):
+        """Incomplete registration must not turn a sibling into a trusted tool."""
+        self.commit("synthetic-secret-marker")
+        linked = self.root / "missing-pointer-linked"
+        self.git("worktree", "add", "--detach", str(linked), "HEAD")
+        next((self.repo / ".git/worktrees").glob("*/gitdir")).unlink()
+        self.scanner_decoy(linked)
+        self.env["PATH"] = str(linked) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_escaping_grafts_symlink_is_not_accepted(self):
+        """Even an empty external grafts target is outside approved metadata."""
+        target = self.root / "external-empty"
+        target.touch()
+        grafts = self.repo / ".git/info/grafts"
+        try:
+            grafts.symlink_to(target)
+        except OSError:
+            self.skipTest("symlink creation is unavailable")
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_malformed_metadata_is_classified_before_scanning(self):
+        """NUL path bytes are metadata errors, without raw diagnostics."""
+        pointer = self.repo / ".git/worktrees/nul/gitdir"
+        pointer.parent.mkdir(parents=True)
+        pointer.write_bytes(b"bad\0path/.git\n")
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_checkout_config_override_cannot_redirect_the_base(self):
+        """A checkout config cannot hide history by redirecting the destination."""
+        self.commit("synthetic-secret-marker")
+        self.commit("removed marker")
+        alternate = self.root / "alternate.git"
+        self.git("clone", "--bare", "-q", ".", str(alternate))
+        self.commit("extra clean feature")
+        config = self.repo / "untrusted-global.cfg"
+        config.write_text(
+            f'[url "{alternate.as_posix()}"]\n'
+            f"\tinsteadOf = {(self.root / 'remote.git').as_posix()}\n"
+        )
+        self.env["GIT_CONFIG_GLOBAL"] = str(config)
+        result = self.run_gate()
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_repository_python_floor_is_enforced(self):
+        """Exercise the CLI outcome immediately below and at the approved floor."""
+        previous = Path.cwd()
+        try:
+            os.chdir(self.repo)
+            for version, expected in PYTHON_FLOOR_CASES:
+                with (
+                    self.subTest(version=version),
+                    patch.dict(os.environ, self.env, clear=True),
+                    patch.object(sys, "version_info", (*version, 0)),
+                    contextlib.redirect_stdout(io.StringIO()),
+                    contextlib.redirect_stderr(io.StringIO()),
+                ):
+                    self.assertEqual(secret_gate.main(["--base", self.base]), expected)
+        finally:
+            os.chdir(previous)
 
 
 if __name__ == "__main__":

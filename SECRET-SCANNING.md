@@ -62,7 +62,7 @@ Only exit **0 / CLEAN** means a successful scanner run. Other outcomes block:
 | 1 | Findings; remediate before publication |
 | 2 | Invalid gate arguments |
 | 3 | Authentication failed/unavailable; owner must restore approved native auth |
-| 4 | Scan/transport/server/timeout error, or HEAD changed during the scan |
+| 4 | Scan/transport/server/timeout error, or HEAD/base changed during the scan |
 | 10 | Skipped: empty range or deletion-only input; no clean scan claimed |
 | 20 | Invalid/unavailable base, Git operation, history or hook input |
 | 21 | Required executable unavailable |
@@ -122,3 +122,17 @@ Explicit `--base` accepts only a fully qualified ref (for example,
 `refs/remotes/origin/main`) or a full commit SHA. Short names such as
 `origin/main` block with exit 20 because a local branch can shadow them.
 Unsupported metadata path encodings also block with BASE_ERROR (exit 20).
+
+
+Git/scanner credential boundary: Git children do not receive ggshield credential
+variables. Only the scanner receives the approved API key/instance selectors.
+Git trace and executable proxy overrides are removed. Existing native Git
+configuration and credential helpers remain trusted prerequisites. Explicit
+global/system config selectors must resolve to approved absolute paths outside
+this checkout and its related worktrees; unsafe selectors block without falling
+back to another credential context. This gate is not an operating-system sandbox.
+
+Metadata reads reject non-regular records, NUL path bytes and missing registered
+worktree pointers. The opener is nonblocking where supported and validates its
+descriptor. Grafts symlinks are confined to Git metadata. An empty explicit base
+blocks rather than selecting a different destination.
