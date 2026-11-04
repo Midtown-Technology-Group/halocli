@@ -238,6 +238,7 @@ class SecretGateTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 20)
+        self.assertFalse(self.calls.exists())
 
     def test_short_base_cannot_be_shadowed_by_a_local_branch(self):
         """Use the complete destination ref when a local branch shadows origin."""
@@ -261,7 +262,6 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 20, result.stderr)
         self.assertNotIn("Traceback", result.stderr)
-        self.assertFalse(self.calls.exists())
         self.assertFalse(self.calls.exists())
 
     def test_prepush_multiple_refs_and_new_branch(self):
