@@ -27,7 +27,10 @@ CI is the authoritative analysis mode; automatic analysis stays disabled.
 ## Secret gate before publication
 
 Before publishing the current PR branch, commit the complete candidate and run
-`python3 -I scripts/secret_gate.py --base refs/remotes/origin/main` (native Windows PowerShell: `& "$env:MTG_SECRET_GATE_PYTHON" -I`). Require exit 0;
+`python3 -I scripts/secret_gate.py --base refs/remotes/origin/main`.
+On native Windows PowerShell, run
+`& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py --base refs/remotes/origin/main`.
+Require the gate's exit code 0 (`$LASTEXITCODE` in PowerShell);
 missing tooling/authentication, scan errors and skipped scans block publication.
 Then run the existing repository gates. Repeat after changing outgoing commits.
 Push exactly the scanned HEAD. This PR scan covers the current branch against its
