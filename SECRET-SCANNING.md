@@ -179,8 +179,8 @@ that former ownership from an ordinary directory. Tampering with approved tool
 installations or their caller environment is outside this gate guarantee.
 Obsolete shared worktree registrations are left untouched.
 
-This gate deliberately rejects explicit empty askpass selectors with exit 20;
-it never silently selects a different credential context. Native Git can use
-an empty GIT_ASKPASS to disable that helper, but this gate currently requires
-an approved absolute selector or the native null device when one is explicit.
-Do not unset or replace authentication selectors merely to obtain a clean scan.
+An explicitly empty GIT_ASKPASS is preserved as native Git's helper-disable
+value; it is never removed to select a different credential context. An empty
+SSH_ASKPASS still blocks with exit 20 under this gate's explicit SSH-selector
+contract. Other explicit selectors require approved external absolute
+paths. Do not alter authentication selectors merely to obtain a clean scan.

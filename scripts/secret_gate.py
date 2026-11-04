@@ -204,6 +204,8 @@ def command_environment():
         "SSH_ASKPASS",
     ):
         value = env.get(name)
+        if name == "GIT_ASKPASS" and value == "":
+            continue
         if value is not None and os.path.normcase(value) != os.path.normcase(os.devnull):
             path = Path(value)
             if not path.is_absolute() or checkout_owned(path.resolve(), checkout_roots()):
