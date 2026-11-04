@@ -17,7 +17,7 @@ python3 -I tests/test_secret_gate.py -q
 ```
 
 On native Windows, invoke the approved absolute interpreter with PowerShell:
-`& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py`. Python 3.12+, Git, and
+`& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py --base refs/remotes/origin/main`. Python 3.12+, Git, and
 ggshield on PATH are required. Require ggshield **>=1.56.1,<2**; this gate was tested with **1.56.1**.
 Install ggshield through the approved development-tool environment. Use existing
 native ggshield authentication or an approved process-injected
@@ -150,12 +150,13 @@ the gate isolation guarantee.
 
 The Python interpreter is a trusted bootstrap prerequisite. Use an approved
 installation outside all repository checkouts. On Windows, use its absolute path
-for direct invocations (for example, `& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py`).
+for direct invocations (for example, `& "$env:MTG_SECRET_GATE_PYTHON" -I scripts/secret_gate.py --base refs/remotes/origin/main`).
 Set that variable to the existing approved installation; it is not a credential.
 
 
 Tool candidates are checked against their own Git association as well as the
-registered roots. A stale or rewritten registration cannot admit a scanner from
+registered roots. A stale or rewritten registration cannot admit a scanner while its
+Git-file, directory or common-directory association still identifies it as
 a linked checkout. Obsolete registrations are left untouched; this gate does not
 prune other tasks worktree metadata.
 
@@ -169,3 +170,17 @@ Unix direct entrypoints require the same approved interpreter prerequisite.
 Tool association follows commondir for both Git-file and directory metadata.
 Inaccessible PATH candidates are excluded using explicit lstat calls, including
 on Python versions whose type predicates suppress permission errors.
+
+Approved installation trust boundary: tool ownership checks do not establish
+executable provenance. Supply approved external installations through the trusted
+caller PATH, never checkout-provided environment values. If both a checkout
+marker and its registration are removed or rewritten, the gate cannot reconstruct
+that former ownership from an ordinary directory. Tampering with approved tool
+installations or their caller environment is outside this gate guarantee.
+Obsolete shared worktree registrations are left untouched.
+
+An explicitly empty GIT_ASKPASS is preserved as native Git's helper-disable
+value; it is never removed to select a different credential context. An empty
+SSH_ASKPASS still blocks with exit 20 under this gate's explicit SSH-selector
+contract. Other explicit selectors require approved external absolute
+paths. Do not alter authentication selectors merely to obtain a clean scan.
