@@ -266,15 +266,19 @@ def base_commit(ref):
     return commit(ref)
 
 
+def active_grafts(common):
+    """Read confined graft metadata with the documented failure classification."""
+    grafts = metadata_path(common / "info/grafts", common)
+    try:
+        return grafts.exists() and grafts.stat().st_size
+    except OSError as error:
+        raise GateError(20, "BASE_ERROR: unreadable graft metadata.") from error
+
+
 def ranges(args, stream, head):
     """Select complete PR or pre-push commit ranges."""
     common = Path(git("rev-parse", "--git-common-dir"))
-    grafts = metadata_path(common / "info/grafts", common)
-    try:
-        active_grafts = grafts.exists() and grafts.stat().st_size
-    except OSError as error:
-        raise GateError(20, "BASE_ERROR: unreadable graft metadata.") from error
-    if active_grafts or os.environ.get("GIT_GRAFT_FILE"):
+    if active_grafts(common) or os.environ.get("GIT_GRAFT_FILE"):
         raise GateError(20, "BASE_ERROR: grafted history is unsupported; restore complete history.")
     if git("rev-parse", "--is-shallow-repository") != "false":
         raise GateError(20, "BASE_ERROR: shallow history; fetch --unshallow before scanning.")
