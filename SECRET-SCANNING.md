@@ -50,7 +50,12 @@ No hooks or Git configuration are installed automatically; compose existing hook
 rather than replacing them. Agent instructions require the gate even without hooks.
 
 All commits in the selected range reach `ggshield secret scan commit-range`,
-including merged side history and content subsequently removed. There is no hook
+including merged side history and content subsequently removed. Commit messages
+are additionally scanned with `ggshield secret scan path --all-secrets` from
+private temporary UTF-8 documents, removed when the scan ends. Message findings,
+authentication failures and scan errors block with the same exit codes as file
+findings. Messages over 64 KiB, raw commit objects over 128 KiB, or NUL-bearing
+messages block with exit 20 rather than risking a skipped document. There is no hook
 commit-count cap. Native ggshield detector/file limits still apply (including
 binary/oversize content); this is not an attestation that every byte was scanned.
 See the official [commit-range](https://docs.gitguardian.com/ggshield-docs/reference/secret/scan/commit-range)
@@ -63,7 +68,7 @@ Only exit **0 / CLEAN** means a successful scanner run. Other outcomes block:
 | 1 | Findings; remediate before publication |
 | 2 | Invalid gate arguments |
 | 3 | Authentication failed/unavailable; owner must restore approved native auth |
-| 4 | Scan/transport/server/timeout error, or HEAD/base changed between initial resolution and final verification |
+| 4 | Scan/transport/server/timeout error, or HEAD/base/history completeness changed between initial resolution and final verification |
 | 10 | Skipped: empty range or deletion-only input; no clean scan claimed |
 | 20 | Invalid/unavailable base, Git operation, history or hook input |
 | 21 | Missing/untrusted executable, unsupported Python, or unverifiable/unsupported ggshield version |
@@ -184,3 +189,23 @@ value; it is never removed to select a different credential context. An empty
 SSH_ASKPASS still blocks with exit 20 under this gate's explicit SSH-selector
 contract. Other explicit selectors require approved external absolute
 paths. Do not alter authentication selectors merely to obtain a clean scan.
+
+Rejected Git/scanner candidates exclude their entire PATH directory, including
+external directories with symlinks into the checkout. This also removes those
+candidates from ggshield's Git lookup. Approved external installation provenance
+and native Git configuration remain trusted caller prerequisites.
+
+Scanner commands use the fixed relative `config.yaml` inside the isolated
+working directory; caller TEMP paths (including ampersands) are not passed as
+config arguments to Windows batch wrappers. Native approved executables remain
+preferred. Final verification rechecks shallow/grafted history as well as HEAD
+and the intended base; a changed traversal/completeness state blocks CLEAN.
+
+
+Run `python3 -I tests/test_secret_gate.py -q` with the approved interpreter.
+The version-matched merge-resolution integration case runs when ggshield is
+installed; otherwise it is explicitly skipped. It exercises the real CLI, range
+selection and merge-patch parser, with an offline synthetic finding backend and
+network calls forbidden. It proves merge-only content reaches scanning, not
+that the live detector recognizes an arbitrary synthetic marker. Live
+authenticated outgoing-history scans are separate evidence.

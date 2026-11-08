@@ -11,7 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 GATE = Path(__file__).resolve().parents[1] / "scripts" / "secret_gate.py"
 SPEC = importlib.util.spec_from_file_location("secret_gate", GATE)
@@ -46,6 +46,17 @@ assert not any(name in os.environ for name in (
     "GIT_TRACE2_EVENT", "GIT_TRACE2_ENV_VARS",
 ))
 assert "ignored_paths" not in Path(args[args.index("--config-path")+1]).read_text()
+if os.environ.get("GATE_REQUIRE_RELATIVE_CONFIG"):
+    assert args[args.index("--config-path")+1] == "config.yaml"
+if "path" in args:
+    files = list(Path(args[-1]).glob("*.txt"))
+    assert files
+    with open(os.environ["GATE_CALLS"] + ".messages", "a") as calls:
+        calls.write(str(len(files)) + "\\n")
+    if "GATE_MESSAGE_CODE" in os.environ:
+        print("sensitive-output-must-stay-private")
+        sys.exit(int(os.environ["GATE_MESSAGE_CODE"]))
+    sys.exit(1 if any("synthetic-secret-marker" in f.read_text() for f in files) else 0)
 revision = args[-1]
 with open(os.environ["GATE_CALLS"], "a", encoding="utf-8") as calls:
     calls.write(revision + "\\n")
@@ -54,9 +65,11 @@ if "GATE_CODE" in os.environ:
     sys.exit(int(os.environ["GATE_CODE"]))
 commits = subprocess.check_output(["git", "rev-list", revision], text=True)
 for sha in commits.splitlines():
-    diff = subprocess.check_output(["git", "show", sha], text=True)
+    diff = subprocess.check_output(["git", "show", "--format=", sha], text=True)
     if "synthetic-secret-marker" in diff:
         sys.exit(1)
+if os.environ.get("GATE_SHALLOW_BOUNDARY"):
+    (Path(os.environ["GIT_DIR"]) / "shallow").write_text(os.environ["GATE_SHALLOW_BOUNDARY"] + "\\n")
 sys.exit(0)
 """
 
@@ -74,7 +87,9 @@ class SecretGateTests(unittest.TestCase):
         self.repo = self.root / "repo"
         self.repo.mkdir()
         self.env = {
-            k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "GITGUARDIAN_", "GG_"))
+            k: v
+            for k, v in os.environ.items()
+            if not k.startswith(("GIT_", "GITGUARDIAN_", "GG_"))
         }
         self.env.update(
             GIT_CONFIG_NOSYSTEM="1",
@@ -144,7 +159,9 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("CLEAN:", result.stdout)
-        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"])
+        self.assertEqual(
+            self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"]
+        )
 
     def test_feature_upstream_does_not_hide_pr_commits(self):
         """Prove feature upstream does not hide pr commits."""
@@ -152,7 +169,9 @@ class SecretGateTests(unittest.TestCase):
         self.git("config", "branch.feature.remote", "origin")
         self.git("config", "branch.feature.merge", "refs/heads/feature")
         self.assertEqual(self.run_gate().returncode, 0)
-        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"])
+        self.assertEqual(
+            self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"]
+        )
 
     def test_added_then_removed_secret_is_in_history(self):
         """Prove added then removed secret is in history."""
@@ -180,6 +199,89 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 10)
         self.assertIn("SKIPPED:", result.stderr)
         self.assertFalse(self.calls.exists())
+
+    def test_rejected_git_symlink_directory_is_not_forwarded_to_scanner(self):
+        """Reject the whole PATH entry so scanner Git cannot execute checkout code."""
+        if os.name == "nt":
+            self.skipTest("POSIX executable symlink fixture")
+        self.commit("synthetic-secret-marker")
+        bad = self.root / "external-bin"
+        bad.mkdir()
+        marker = self.root / "checkout-git-executed"
+        hostile = self.repo / "hostile-git"
+        hostile.write_text("#!/bin/sh\ntouch " + shlex.quote(str(marker)) + "\n")
+        hostile.chmod(0o700)
+        (bad / "git").symlink_to(hostile)
+        self.env["PATH"] = str(bad) + os.pathsep + self.env["PATH"]
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertFalse(marker.exists())
+
+    def test_secret_only_in_commit_message_blocks(self):
+        """File-only scanner output must not conceal a message-only finding."""
+        self.git(
+            "commit",
+            "--allow-empty",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "synthetic-secret-marker",
+        )
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertNotIn("synthetic-secret-marker", result.stdout + result.stderr)
+        self.assertTrue(Path(str(self.calls) + ".messages").exists())
+
+    def test_message_scan_errors_are_not_clean(self):
+        """Message findings/auth/errors have the same blocking outcomes as files."""
+        for scanner_code, expected in [(1, 1), (3, 3), (2, 4), (128, 4)]:
+            with self.subTest(scanner_code=scanner_code):
+                self.env["GATE_MESSAGE_CODE"] = str(scanner_code)
+                result = self.run_gate("--base", self.base)
+                self.assertEqual(result.returncode, expected, result.stderr)
+                self.assertNotIn("sensitive-output", result.stdout + result.stderr)
+
+    def test_empty_commit_message_is_supported(self):
+        """An empty message has no secret content and must not hide file scanning."""
+        self.git(
+            "commit",
+            "--allow-empty",
+            "--allow-empty-message",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "",
+        )
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(Path(str(self.calls) + ".messages").exists())
+
+    def test_scanner_config_argument_is_relative_to_isolated_cwd(self):
+        """A CMD wrapper never receives a caller TEMP path as an argument."""
+        self.env["GATE_REQUIRE_RELATIVE_CONFIG"] = "1"
+        temp = self.root / "Alice&Bob"
+        temp.mkdir()
+        self.env.update(TMPDIR=str(temp), TEMP=str(temp), TMP=str(temp))
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(Path(str(self.calls) + ".messages").exists())
+        self.assertFalse(list(temp.iterdir()))
+
+    def test_shallow_fetch_during_scan_cannot_claim_clean(self):
+        """A scanner-time depth change blocks even though HEAD/base stay fixed."""
+        self.env["GATE_SHALLOW_BOUNDARY"] = self.head
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertNotIn("CLEAN:", result.stdout)
+
+    def test_oversized_commit_message_blocks_before_skipping(self):
+        """Do not let scanner file-size limits silently omit a large message."""
+        message = self.root / "large-message"
+        message.write_text("fixture " + "x" * (64 * 1024))
+        self.git("commit", "--allow-empty", "--no-gpg-sign", "-q", "-F", str(message))
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertNotIn("CLEAN:", result.stdout)
 
     def test_auth_scan_errors_and_output_redaction(self):
         """Prove auth scan errors and output redaction."""
@@ -228,7 +330,9 @@ class SecretGateTests(unittest.TestCase):
     def test_remote_base_object_must_be_fetched(self):
         """Prove remote base object must be fetched."""
         stale = self.root / "stale"
-        self.git("clone", "--no-hardlinks", "-q", str(self.root / "remote.git"), str(stale))
+        self.git(
+            "clone", "--no-hardlinks", "-q", str(self.root / "remote.git"), str(stale)
+        )
         self.git("push", "-q", "origin", "HEAD:main")
         result = subprocess.run(
             [sys.executable, "-I", str(GATE)],
@@ -282,7 +386,9 @@ class SecretGateTests(unittest.TestCase):
         updates = f"refs/heads/feature {self.head} refs/heads/feature {self.base}\n"
         result = self.run_gate("--pre-push", input_text=updates)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"])
+        self.assertEqual(
+            self.calls.read_text().splitlines(), [f"{self.base}..{self.head}"]
+        )
 
     def test_grafted_history_blocks(self):
         """Legacy grafts must not hide a secret-bearing ancestor."""
@@ -308,7 +414,9 @@ class SecretGateTests(unittest.TestCase):
             (f"refs/heads/feature {self.head} refs/heads/feature {'f' * 40}\n", 20),
         ]
         for updates, expected in cases:
-            self.assertEqual(self.run_gate("--pre-push", input_text=updates).returncode, expected)
+            self.assertEqual(
+                self.run_gate("--pre-push", input_text=updates).returncode, expected
+            )
 
     def test_changed_head_does_not_claim_clean(self):
         """Prove changed head does not claim clean."""
@@ -341,7 +449,9 @@ class SecretGateTests(unittest.TestCase):
         rewritten = self.commit("rewritten")
         updates = f"refs/heads/feature {rewritten} refs/heads/feature {self.head}\n"
         self.assertEqual(self.run_gate("--pre-push", input_text=updates).returncode, 0)
-        self.assertEqual(self.calls.read_text().splitlines(), [f"{self.head}..{rewritten}"])
+        self.assertEqual(
+            self.calls.read_text().splitlines(), [f"{self.head}..{rewritten}"]
+        )
 
     def test_merged_side_branch_commits_are_included(self):
         """Prove merged side branch commits are included."""
@@ -354,6 +464,121 @@ class SecretGateTests(unittest.TestCase):
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 1)
         self.assertIn(secret, self.git("rev-list", self.calls.read_text().strip()))
+
+    @unittest.skipUnless(
+        importlib.util.find_spec("ggshield"),
+        "Install approved ggshield for parser integration",
+    )
+    def test_installed_ggshield_scans_merge_resolution_content(self):
+        """Exercise real ggshield CLI/Git parsing with a synthetic finding backend."""
+        from click.testing import CliRunner
+        from ggshield import __version__
+        from ggshield.__main__ import cli
+        from ggshield.verticals.secret.secret_scan_collection import Result, Results
+        from packaging.version import Version
+
+        version = Version(__version__)
+        self.assertTrue(Version("1.56.1") <= version < Version("2"))
+        self.git("switch", "-q", "-c", "merge-side", self.base)
+        side = self.commit("side")
+        self.git("switch", "-q", "feature")
+        merge = subprocess.run(
+            ["git", "merge", "--no-commit", "merge-side"],
+            check=False,
+            cwd=self.repo,
+            env=self.env,
+            capture_output=True,
+        )
+        self.assertEqual(merge.returncode, 1)  # Both parents changed file.txt.
+        (self.repo / "file.txt").write_text("synthetic-secret-marker\n")
+        self.git("add", "file.txt")
+        self.git("commit", "--no-gpg-sign", "-q", "-m", "fixture merge resolution")
+        merged = self.git("rev-parse", "HEAD")
+        for parent in [self.head, side]:
+            self.assertNotIn(
+                "synthetic-secret-marker", self.git("show", parent + ":file.txt")
+            )
+        config = self.root / "integration.yaml"
+        config.write_text("version: 2\nsecret:\n  show_secrets: false\n")
+        seen = {}
+        client = Mock()
+        client.secret_scan_preferences.maximum_documents_per_scan = 20
+
+        def fixture_backend(scanner, files, **kwargs):
+            results = []
+            for file in files:
+                has_marker = "synthetic-secret-marker" in file.content
+                seen[file.url] = has_marker
+                results.append(
+                    Result(
+                        filename=file.filename,
+                        filemode=file.filemode,
+                        path=file.path,
+                        url=file.url,
+                        secrets=[object()] if has_marker else [],
+                        ignored_secrets_count_by_kind={},
+                    )
+                )
+            return Results(results=results)
+
+        output = Mock()
+        output.process_scan.side_effect = lambda scan: (
+            1 if scan.total_secrets_count else 0
+        )
+        previous = Path.cwd()
+        try:
+            os.chdir(self.repo)
+            with (
+                patch.dict(
+                    os.environ,
+                    dict(
+                        self.env,
+                        GITGUARDIAN_DONT_LOAD_ENV="1",
+                        XDG_CONFIG_HOME=str(self.root / "config"),
+                        XDG_CACHE_HOME=str(self.root / "cache"),
+                    ),
+                    clear=True,
+                ),
+                patch(
+                    "ggshield.cmd.secret.scan.range.create_client_from_config",
+                    return_value=client,
+                ),
+                patch("ggshield.verticals.secret.repo.check_client_api_key"),
+                patch(
+                    "ggshield.verticals.secret.secret_scanner.SecretScanner.scan",
+                    autospec=True,
+                    side_effect=fixture_backend,
+                ),
+                patch(
+                    "ggshield.cmd.secret.scan.range.create_output_handler",
+                    return_value=output,
+                ),
+                patch(
+                    "requests.sessions.Session.send",
+                    side_effect=AssertionError("Network forbidden in fixture"),
+                ) as network,
+            ):
+                result = CliRunner().invoke(
+                    cli,
+                    [
+                        "--no-check-for-updates",
+                        "--config-path",
+                        str(config),
+                        "secret",
+                        "scan",
+                        "commit-range",
+                        "--all-secrets",
+                        self.base + ".." + merged,
+                    ],
+                )
+                network.assert_not_called()
+                self.assertEqual(result.exit_code, 1, repr(result.exception))
+        finally:
+            os.chdir(previous)
+        self.assertTrue(any(merged in url and found for url, found in seen.items()))
+        self.assertFalse(
+            any(merged not in url and found for url, found in seen.items())
+        )
 
     def test_option_like_ref_rejected_before_git(self):
         """Reject agent-supplied option arguments before command invocation."""
@@ -399,7 +624,9 @@ class SecretGateTests(unittest.TestCase):
         with (
             patch.dict(os.environ),
             patch("secret_gate.Path.cwd", return_value=self.repo),
-            patch("secret_gate.shutil.which", return_value=str(self.repo / "ggshield.cmd")),
+            patch(
+                "secret_gate.shutil.which", return_value=str(self.repo / "ggshield.cmd")
+            ),
         ):
             self.assertIsNone(secret_gate.executable("ggshield"))
 
@@ -420,7 +647,9 @@ class SecretGateTests(unittest.TestCase):
         )
         helper = helpers / "git-remote-gateprobe"
         if os.name == "nt":
-            helper.with_suffix(".cmd").write_text(f'@"{sys.executable}" -I "{program}" %*\n')
+            helper.with_suffix(".cmd").write_text(
+                f'@"{sys.executable}" -I "{program}" %*\n'
+            )
         else:
             helper.write_text(
                 f"#!/bin/sh\nexec {shlex.quote(sys.executable)} -I "
@@ -487,7 +716,9 @@ class SecretGateTests(unittest.TestCase):
         """Create a version-compatible no-scan decoy to prove tool exclusion."""
         decoy = directory / ("ggshield.cmd" if os.name == "nt" else "ggshield")
         if os.name == "nt":
-            decoy.write_text('@if "%~1"=="--version" echo ggshield, version 1.56.1\n@exit /b 0\n')
+            decoy.write_text(
+                '@if "%~1"=="--version" echo ggshield, version 1.56.1\n@exit /b 0\n'
+            )
         else:
             decoy.write_text(
                 '#!/bin/sh\nif [ "$1" = "--version" ]; then\n'
@@ -560,7 +791,9 @@ class SecretGateTests(unittest.TestCase):
         (self.repo / "sitecustomize.py").write_text(
             f"from pathlib import Path\nPath({str(marker)!r}).touch()\n"
         )
-        self.env["PYTHONPATH"] = str(self.repo) + os.pathsep + self.env.get("PYTHONPATH", "")
+        self.env["PYTHONPATH"] = (
+            str(self.repo) + os.pathsep + self.env.get("PYTHONPATH", "")
+        )
         # Run the gate without startup imports, then set the scanner's input.
         program = (
             "import os, runpy, sys; "
@@ -631,7 +864,9 @@ class SecretGateTests(unittest.TestCase):
         with (
             patch("secret_gate.executable", return_value="tool"),
             patch("secret_gate.commit", side_effect=[self.head, self.base, self.head]),
-            patch("secret_gate.git", side_effect=[str(self.repo / ".git"), "false", "1"]),
+            patch(
+                "secret_gate.git", side_effect=[str(self.repo / ".git"), "false", "1"]
+            ),
             patch("secret_gate.scan", return_value=0) as scanner,
         ):
             self.assertEqual(secret_gate.main(["--all-history"]), 4)
@@ -740,7 +975,9 @@ class SecretGateTests(unittest.TestCase):
         scripts.mkdir()
         copied_gate = scripts / "secret_gate.py"
         copied_gate.write_text(GATE.read_text())
-        (scripts / "argparse.py").write_text("import sys\nprint('CLEAN: decoy')\nsys.exit(0)\n")
+        (scripts / "argparse.py").write_text(
+            "import sys\nprint('CLEAN: decoy')\nsys.exit(0)\n"
+        )
         for isolated, expected in ((False, 21), (True, 0)):
             command = [sys.executable, *(["-I"] if isolated else []), str(copied_gate)]
             result = subprocess.run(
@@ -880,7 +1117,9 @@ class SecretGateTests(unittest.TestCase):
         registry = self.repo / ".git/worktrees"
         registry.rename(self.root / "saved-registry")
         try:
-            registry.symlink_to(self.repo / ".git/missing-registry", target_is_directory=True)
+            registry.symlink_to(
+                self.repo / ".git/missing-registry", target_is_directory=True
+            )
         except OSError:
             self.skipTest("symlink creation is unavailable")
         self.scanner_decoy(linked)
@@ -889,7 +1128,9 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 20, result.stderr)
         self.assertFalse(self.calls.exists())
 
-    @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
+    @unittest.skipUnless(
+        os.name == "posix" and os.geteuid() != 0, "POSIX permissions required"
+    )
     def test_unreadable_registry_is_a_base_error(self):
         """Unreadable registration directories have the metadata classification."""
         registry = self.repo / ".git/worktrees"
@@ -909,7 +1150,9 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 20, result.stderr)
         self.assertFalse(self.calls.exists())
 
-    @unittest.skipUnless(hasattr(os, "O_NOFOLLOW"), "No-follow descriptor support required")
+    @unittest.skipUnless(
+        hasattr(os, "O_NOFOLLOW"), "No-follow descriptor support required"
+    )
     def test_metadata_open_rejects_a_replaced_final_symlink(self):
         """A final path swapped after confinement must not read outside data."""
         pointer = self.repo / ".git/pointer"
@@ -949,7 +1192,9 @@ class SecretGateTests(unittest.TestCase):
             f"assert os.environ['SSH_ASKPASS'] == {str(approved.resolve())!r}\n"
         )
         fake.write_text(
-            fake.read_text().replace("args = sys.argv[1:]", checks + "args = sys.argv[1:]")
+            fake.read_text().replace(
+                "args = sys.argv[1:]", checks + "args = sys.argv[1:]"
+            )
         )
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -959,9 +1204,14 @@ class SecretGateTests(unittest.TestCase):
         """Keep Git's explicit helper-disable value and reject empty SSH askpass."""
         self.env["GIT_ASKPASS"] = ""
         fake = self.bin / "fake.py"
-        checks = "assert 'GIT_ASKPASS' in os.environ\nassert os.environ['GIT_ASKPASS'] == ''\n"
+        checks = (
+            "assert 'GIT_ASKPASS' in os.environ\n"
+            "assert os.environ['GIT_ASKPASS'] == ''\n"
+        )
         fake.write_text(
-            fake.read_text().replace("args = sys.argv[1:]", checks + "args = sys.argv[1:]")
+            fake.read_text().replace(
+                "args = sys.argv[1:]", checks + "args = sys.argv[1:]"
+            )
         )
         result = self.run_gate("--base", self.base)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -1039,7 +1289,9 @@ class SecretGateTests(unittest.TestCase):
                     shutil.copytree(entry, metadata)
                     common = self.repo / ".git"
                     value = (
-                        str(common) if spelling == "absolute" else os.path.relpath(common, metadata)
+                        str(common)
+                        if spelling == "absolute"
+                        else os.path.relpath(common, metadata)
                     )
                     (metadata / "commondir").write_text(value + "\n")
                     if form == "file":
@@ -1060,13 +1312,16 @@ class SecretGateTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 1, result.stderr)
                     self.assertTrue(self.calls.exists())
 
-    @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
+    @unittest.skipUnless(
+        os.name == "posix" and os.geteuid() != 0, "POSIX permissions required"
+    )
     def test_suppressed_permission_errors_still_exclude_unsearchable_path(self):
         """A real scan drops inaccessible PATH even with Python3.14 predicates."""
         blocked = (self.root / "suppressed-permission-tools").resolve()
         blocked.mkdir()
         original_methods = {
-            name: getattr(Path, name) for name in ("is_dir", "is_file", "exists", "is_symlink")
+            name: getattr(Path, name)
+            for name in ("is_dir", "is_file", "exists", "is_symlink")
         }
 
         def suppress_errors(method):
@@ -1093,7 +1348,9 @@ class SecretGateTests(unittest.TestCase):
             os.chdir(self.repo)
             with contextlib.ExitStack() as stack:
                 for name, method in original_methods.items():
-                    stack.enter_context(patch.object(Path, name, suppress_errors(method)))
+                    stack.enter_context(
+                        patch.object(Path, name, suppress_errors(method))
+                    )
                 stack.enter_context(patch.dict(os.environ, self.env, clear=True))
                 stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
                 stack.enter_context(contextlib.redirect_stderr(io.StringIO()))
@@ -1103,7 +1360,9 @@ class SecretGateTests(unittest.TestCase):
             blocked.chmod(0o700)
         self.assertTrue(self.calls.exists())
 
-    @unittest.skipUnless(os.name == "posix" and os.geteuid() != 0, "POSIX permissions required")
+    @unittest.skipUnless(
+        os.name == "posix" and os.geteuid() != 0, "POSIX permissions required"
+    )
     def test_unsearchable_path_entry_does_not_hide_approved_tools(self):
         """Exclude an inaccessible directory while using reachable trusted tools."""
         blocked = (self.root / "unsearchable-tools").resolve()
