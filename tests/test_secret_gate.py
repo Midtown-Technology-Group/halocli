@@ -18,7 +18,7 @@ SPEC = importlib.util.spec_from_file_location("secret_gate", GATE)
 secret_gate = importlib.util.module_from_spec(SPEC)
 sys.modules["secret_gate"] = secret_gate
 SPEC.loader.exec_module(secret_gate)
-FAKE = """import os, subprocess, sys
+FAKE = """import json, os, subprocess, sys
 sys.excepthook = lambda *_: os._exit(97)
 if sys.flags.optimize:
     raise RuntimeError("fixture requires enabled assertions")
@@ -56,7 +56,32 @@ if "path" in args:
     if "GATE_MESSAGE_CODE" in os.environ:
         print("sensitive-output-must-stay-private")
         sys.exit(int(os.environ["GATE_MESSAGE_CODE"]))
-    sys.exit(1 if any("synthetic-secret-marker" in f.read_text(encoding="utf-8") for f in files) else 0)
+    if any(
+        "synthetic-secret-marker" in f.read_text(encoding="utf-8") for f in files
+    ):
+        sys.exit(1)
+    entries = [dict(filename=str(f), mode="FILE", incidents=[],
+        total_incidents=0, total_occurrences=0) for f in files]
+    report = dict(type="path_scan", entities_with_incidents=entries,
+        total_incidents=0, total_occurrences=0)
+    mode = os.environ.get("GATE_MESSAGE_RECEIPT")
+    if mode == "omit":
+        entries.pop()
+    elif mode == "duplicate":
+        entries.append(entries[0])
+    elif mode == "outside":
+        entries[0]["filename"] = "unexpected.txt"
+    elif mode == "errors":
+        report["errors"] = [dict(description="sensitive-output-must-stay-private")]
+    elif mode == "counts":
+        report["total_incidents"] = 1
+    elif mode == "schema":
+        report["type"] = "unknown_scan"
+    if mode == "malformed":
+        print("sensitive-output-must-stay-private")
+    else:
+        print(json.dumps(report))
+    sys.exit(0)
 revision = args[-1]
 with open(os.environ["GATE_CALLS"], "a", encoding="utf-8") as calls:
     calls.write(revision + "\\n")
@@ -69,7 +94,9 @@ for sha in commits.splitlines():
     if "synthetic-secret-marker" in diff:
         sys.exit(1)
 if os.environ.get("GATE_SHALLOW_BOUNDARY"):
-    (Path(os.environ["GIT_DIR"]) / "shallow").write_text(os.environ["GATE_SHALLOW_BOUNDARY"] + "\\n")
+    (Path(os.environ["GIT_DIR"]) / "shallow").write_text(
+        os.environ["GATE_SHALLOW_BOUNDARY"] + "\\n"
+    )
 sys.exit(0)
 """
 
@@ -235,6 +262,7 @@ class SecretGateTests(unittest.TestCase):
         native_run = subprocess.run
 
         def cp1252_default(*args, **kwargs):
+            """Model a Windows subprocess default without changing binary output."""
             if kwargs.get("text") or kwargs.get("encoding"):
                 kwargs.setdefault("encoding", "cp1252")
             return native_run(*args, **kwargs)
@@ -288,6 +316,7 @@ class SecretGateTests(unittest.TestCase):
         """Model Windows text readers returning None after a decode-thread failure."""
 
         def windows_capture(command, **kwargs):
+            """Model the failed Windows background text reader contract."""
             text_reader = kwargs.get("text") or kwargs.get("encoding")
             return subprocess.CompletedProcess(
                 command, 0, stdout=None if text_reader else b"fixture \xff\n", stderr=b""
@@ -300,6 +329,72 @@ class SecretGateTests(unittest.TestCase):
             self.assertRaises(UnicodeDecodeError),
         ):
             secret_gate.git("cat-file", "commit", self.head, strip=False)
+
+    def assert_message_receipt_blocks(self, mode):
+        """Require document confirmation even after a successful scanner exit."""
+        self.env["GATE_MESSAGE_RECEIPT"] = mode
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertNotIn("CLEAN:", result.stdout + result.stderr)
+        self.assertNotIn("sensitive-output", result.stdout + result.stderr)
+
+    def test_skipped_message_receipt_blocks(self):
+        """Reject a document silently omitted by a successful scanner."""
+        self.assert_message_receipt_blocks("omit")
+
+    def test_duplicate_message_receipt_blocks(self):
+        """Reject duplicate results instead of counting them as distinct documents."""
+        self.assert_message_receipt_blocks("duplicate")
+
+    def test_unexpected_message_receipt_blocks(self):
+        """Require results for the exact generated document paths."""
+        self.assert_message_receipt_blocks("outside")
+
+    def test_malformed_message_receipt_blocks(self):
+        """Suppress unparseable scanner output and block publication."""
+        self.assert_message_receipt_blocks("malformed")
+
+    def test_error_message_receipt_blocks(self):
+        """Reject scan-error metadata even when the process reports success."""
+        self.assert_message_receipt_blocks("errors")
+
+    def test_inconsistent_message_receipt_counts_block(self):
+        """A clean process must also return zero incidents in its document receipt."""
+        self.assert_message_receipt_blocks("counts")
+
+    def test_unknown_message_receipt_schema_blocks(self):
+        """Do not trust an unsupported output shape after a scanner upgrade."""
+        self.assert_message_receipt_blocks("schema")
+
+    def test_serialized_message_limit_includes_header(self):
+        """Include the SHA header in the limit applied before scanner invocation."""
+        path = self.root / "boundary-message"
+        path.write_bytes(b"x" * (64 * 1024 - 1) + b"\n")
+        self.git("commit", "--allow-empty", "--no-gpg-sign", "-q", "-F", str(path))
+        result = self.run_gate("--base", self.base)
+        self.assertEqual(result.returncode, 20, result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_message_document_is_exact_utf8_bytes(self):
+        """Never expand LF into CRLF when writing documents on Windows."""
+        message = self.root / "newline-message"
+        message.write_bytes(("fixture \U0001f601\n" * 3000).encode("utf-8"))
+        self.git("commit", "--allow-empty", "--no-gpg-sign", "-q", "-F", str(message))
+        head = self.git("rev-parse", "HEAD")
+        raw = subprocess.check_output(
+            ["git", "cat-file", "commit", head], cwd=self.repo, env=self.env
+        )
+        expected = ("Commit: " + head + "\n\n").encode("ascii") + raw.partition(b"\n\n")[2]
+        documents = self.root / "exact-documents"
+        previous = Path.cwd()
+        try:
+            os.chdir(self.repo)
+            with patch.dict(os.environ, self.env, clear=True):
+                secret_gate.write_messages(self.head + ".." + head, 1, documents)
+        finally:
+            os.chdir(previous)
+        self.assertEqual((documents / (head + ".txt")).read_bytes(), expected)
+        self.assertLessEqual(len(expected), 64 * 1024)
 
     def test_message_scan_errors_are_not_clean(self):
         """Message findings/auth/errors have the same blocking outcomes as files."""
@@ -564,6 +659,7 @@ class SecretGateTests(unittest.TestCase):
         client.secret_scan_preferences.maximum_documents_per_scan = 20
 
         def fixture_backend(scanner, files, **kwargs):
+            """Return synthetic merge findings without contacting a service."""
             results = []
             for file in files:
                 has_marker = "synthetic-secret-marker" in file.content
@@ -634,6 +730,153 @@ class SecretGateTests(unittest.TestCase):
             os.chdir(previous)
         self.assertTrue(any(merged in url and found for url, found in seen.items()))
         self.assertFalse(any(merged not in url and found for url, found in seen.items()))
+
+    def assert_installed_message_scan(self, scenario, expected):
+        """Route production arguments through the real SDK with a synthetic API."""
+        from click.testing import CliRunner
+        from ggshield import __version__
+        from ggshield.__main__ import cli
+        from pygitguardian.models import (
+            Match,
+            MultiScanResult,
+            PolicyBreak,
+            ScanResult,
+            SecretScanPreferences,
+        )
+
+        if scenario == "finding":
+            self.git(
+                "commit", "--allow-empty", "--no-gpg-sign", "-q", "-m", "synthetic-secret-marker"
+            )
+        head = self.git("rev-parse", "HEAD")
+        count = int(self.git("rev-list", "--count", self.base + ".." + head))
+        seen = []
+        cli_results = []
+        client = Mock()
+        client.maximum_payload_size = 2 * 1024 * 1024
+        client.secret_scan_preferences = SecretScanPreferences(
+            maximum_document_size=1 if scenario == "skip" else 1024 * 1024,
+            maximum_documents_per_scan=20,
+        )
+
+        def detector(documents, *args, **kwargs):
+            """Use real SDK response models and only a synthetic finding marker."""
+            results = []
+            for document in documents:
+                content = document["document"]
+                seen.append(content)
+                incidents = []
+                if "synthetic-secret-marker" in content:
+                    incidents.append(
+                        PolicyBreak(
+                            break_type="Fixture",
+                            policy="Secrets detection",
+                            validity="unknown",
+                            matches=[
+                                Match(
+                                    "synthetic-secret-marker",
+                                    "fixture",
+                                    index_start=content.index("synthetic-secret-marker"),
+                                    index_end=content.index("synthetic-secret-marker")
+                                    + len("synthetic-secret-marker")
+                                    - 1,
+                                )
+                            ],
+                        )
+                    )
+                results.append(ScanResult(len(incidents), incidents, ["Secrets detection"]))
+            response = MultiScanResult(results)
+            response.status_code = 200
+            return response
+
+        client.multi_content_scan.side_effect = detector
+        native_run = subprocess.run
+        native_directory = tempfile.TemporaryDirectory
+
+        @contextlib.contextmanager
+        def private_directory(*args, **kwargs):
+            """Exercise POSIX symlink aliases and Windows' native temporary paths."""
+            with native_directory(*args, **kwargs) as owned:
+                if os.name == "nt":
+                    yield owned
+                else:
+                    physical = Path(owned) / "physical"
+                    physical.mkdir()
+                    alias = Path(owned) / "alias"
+                    alias.symlink_to(physical, target_is_directory=True)
+                    yield str(alias)
+
+        def scanner_cli(command, **kwargs):
+            """Intercept only the scanner; keep real Git and production arguments."""
+            if command[0] != "fixture-sdk":
+                return native_run(command, **kwargs)
+            if command[1:] == ["--version"]:
+                return subprocess.CompletedProcess(command, 0, "ggshield, version " + __version__)
+            previous = Path.cwd()
+            try:
+                os.chdir(kwargs["cwd"])
+                with patch.dict(os.environ, kwargs["env"], clear=True):
+                    result = CliRunner().invoke(cli, command[1:])
+            finally:
+                os.chdir(previous)
+            self.assertIn(result.exit_code, (0, 1), result.output)
+            cli_results.append(("path" in command, result.exit_code))
+            return subprocess.CompletedProcess(
+                command, result.exit_code, result.stdout.encode("utf-8")
+            )
+
+        previous = Path.cwd()
+        captured = io.StringIO()
+        try:
+            os.chdir(self.repo)
+            with (
+                patch.dict(os.environ, self.env, clear=True),
+                patch("secret_gate.subprocess.run", side_effect=scanner_cli),
+                patch("secret_gate.tempfile.TemporaryDirectory", side_effect=private_directory),
+                patch(
+                    "ggshield.cmd.secret.scan.range.create_client_from_config", return_value=client
+                ),
+                patch(
+                    "ggshield.cmd.secret.scan.path.create_client_from_config", return_value=client
+                ),
+                patch("ggshield.verticals.secret.repo.check_client_api_key"),
+                patch("ggshield.verticals.secret.secret_scanner.check_client_api_key"),
+                patch("ggshield.core.cache.Cache.load_cache"),
+                patch("ggshield.core.cache.Cache.save"),
+                patch(
+                    "requests.sessions.Session.send",
+                    side_effect=AssertionError("Network forbidden"),
+                ) as network,
+                contextlib.redirect_stdout(captured),
+            ):
+                try:
+                    secret_gate.scan([(self.base + ".." + head, count)], "fixture-sdk")
+                    code = 0
+                except secret_gate.GateError as error:
+                    code = error.code
+                network.assert_not_called()
+        finally:
+            os.chdir(previous)
+        self.assertEqual(code, expected)
+        self.assertEqual(cli_results, [(False, 0), (True, 1 if scenario == "finding" else 0)])
+        messages = [content for content in seen if content.startswith("Commit: ")]
+        self.assertEqual(len(messages), 0 if scenario == "skip" else count)
+        self.assertNotIn("synthetic-secret-marker", captured.getvalue())
+
+    @unittest.skipUnless(importlib.util.find_spec("ggshield"), "Install approved ggshield")
+    def test_installed_ggshield_confirms_clean_message_documents(self):
+        """Confirm every message using actual path JSON output and SDK scheduling."""
+        self.assert_installed_message_scan("clean", 0)
+
+    @unittest.skipUnless(importlib.util.find_spec("ggshield"), "Install approved ggshield")
+    def test_installed_ggshield_detects_message_only_finding(self):
+        """Find a synthetic message-only marker through the actual path scanner."""
+        self.assert_installed_message_scan("finding", 1)
+
+    @unittest.skipUnless(importlib.util.find_spec("ggshield"), "Install approved ggshield")
+    def test_installed_ggshield_skip_cannot_claim_clean(self):
+        """Block an SDK document-limit skip even though ggshield exits zero."""
+        self.assert_installed_message_scan("skip", 4)
 
     def test_option_like_ref_rejected_before_git(self):
         """Reject agent-supplied option arguments before command invocation."""
@@ -1211,6 +1454,7 @@ class SecretGateTests(unittest.TestCase):
         opener = secret_gate.metadata_opener
 
         def replace_then_open(path, flags):
+            """Swap a confined metadata pointer immediately before its open."""
             pointer.unlink()
             pointer.symlink_to(outside)
             return opener(path, flags)
@@ -1362,7 +1606,10 @@ class SecretGateTests(unittest.TestCase):
         }
 
         def suppress_errors(method):
+            """Model pathlib versions that suppress filesystem permission errors."""
+
             def predicate(path, *args, **kwargs):
+                """Return false for a type predicate on an inaccessible path."""
                 try:
                     return method(path, *args, **kwargs)
                 except OSError:
