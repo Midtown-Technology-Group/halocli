@@ -55,7 +55,9 @@ are additionally scanned with `ggshield secret scan path --all-secrets` from
 private temporary UTF-8 documents, removed when the scan ends. Message findings,
 authentication failures and scan errors block with the same exit codes as file
 findings. Messages over 64 KiB, raw commit objects over 128 KiB, or NUL-bearing
-messages block with exit 20 rather than risking a skipped document. There is no hook
+messages block with exit 20 rather than risking a skipped document. Git output is
+decoded as UTF-8 on every platform; invalid UTF-8 blocks with scan-error exit 4.
+There is no hook
 commit-count cap. Native ggshield detector/file limits still apply (including
 binary/oversize content); this is not an attestation that every byte was scanned.
 See the official [commit-range](https://docs.gitguardian.com/ggshield-docs/reference/secret/scan/commit-range)
