@@ -8,6 +8,7 @@ if __name__ == "__main__" and not sys.flags.isolated:
     sys.exit(21)
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -378,20 +379,65 @@ def scanner_result(result):
 def write_messages(revision, count, directory):
     """Prepare bounded, private commit-message documents without logging content."""
     commits = git("rev-list", revision, "--").splitlines()
-    if len(commits) != count:
+    if len(commits) != count or len(set(commits)) != count:
         raise GateError(4, "SCAN_ERROR: commit traversal changed during scanning.")
     directory.mkdir(mode=0o700)
+    documents = []
     for sha in commits:
         if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", sha):
             raise GateError(20, "BASE_ERROR: invalid outgoing commit identity.")
         if int(git("cat-file", "-s", sha)) > 128 * 1024:
             raise GateError(20, "BASE_ERROR: oversized commit metadata; publication blocked.")
         _, separator, message = git("cat-file", "commit", sha, strip=False).partition("\n\n")
-        if not separator or "\x00" in message or len(message.encode("utf-8")) > 64 * 1024:
+        serialized = ("Commit: " + sha + "\n\n" + message).encode("utf-8")
+        if not separator or "\x00" in message or len(serialized) > 64 * 1024:
             raise GateError(20, "BASE_ERROR: unsupported commit message; publication blocked.")
-        (directory / (sha + ".txt")).write_text(
-            "Commit: " + sha + "\n\n" + message, encoding="utf-8"
-        )
+        document = directory / (sha + ".txt")
+        document.write_bytes(serialized)
+        documents.append(document)
+    return documents
+
+
+def clean_receipt(record):
+    """Recognize a zero-incident result without exposing scanner content."""
+    return (
+        isinstance(record, dict)
+        and record.get("total_incidents") == 0
+        and record.get("total_occurrences") == 0
+        and not record.get("errors")
+        and not record.get("scans")
+        and not record.get("incidents")
+    )
+
+
+def confirm_message_scan(output, documents, directory):
+    """Require exactly one clean SDK result for every generated document."""
+    failure = "SCAN_ERROR: incomplete or unsupported message scan; publication blocked."
+    try:
+        report = json.loads(output)
+    except (ValueError, TypeError) as error:
+        raise GateError(4, failure) from error
+    if not clean_receipt(report) or report.get("type") != "path_scan":
+        raise GateError(4, failure)
+    entries = report.get("entities_with_incidents")
+    if not isinstance(entries, list) or len(entries) != len(documents):
+        raise GateError(4, failure)
+    expected = {os.path.normcase(os.path.normpath(document)) for document in documents}
+    confirmed = set()
+    for entry in entries:
+        if (
+            not clean_receipt(entry)
+            or entry.get("mode") != "FILE"
+            or not isinstance(entry.get("filename"), str)
+        ):
+            raise GateError(4, failure)
+        # Normalize lexically; never follow a scanner-provided filesystem path.
+        path = os.path.normcase(os.path.normpath(os.path.join(directory, entry["filename"])))
+        if path not in expected or path in confirmed:
+            raise GateError(4, failure)
+        confirmed.add(path)
+    if confirmed != expected:
+        raise GateError(4, failure)
 
 
 def scan(revisions, executable):
@@ -437,12 +483,12 @@ def scan(revisions, executable):
         )
         for index, (revision, count) in enumerate(revisions):
             messages = Path(directory) / f"messages-{index}"
-            write_messages(revision, count, messages)
+            documents = write_messages(revision, count, messages)
             print(f"SCANNING: {count} commit(s), {revision}", flush=True)
             # Even censored findings can include sensitive source context.
-            for arguments in (
-                ["commit-range", "--all-secrets", revision],
-                ["path", "--all-secrets", "--recursive", "--yes", messages.name],
+            for arguments, capture in (
+                (["commit-range", "--all-secrets", revision], False),
+                (["path", "--all-secrets", "--recursive", "--yes", "--json", messages.name], True),
             ):
                 result = subprocess.run(
                     [
@@ -457,11 +503,13 @@ def scan(revisions, executable):
                     check=False,
                     env=env,
                     cwd=directory,
-                    stdout=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     timeout=1800,
                 )
                 scanner_result(result)
+                if capture:
+                    confirm_message_scan(result.stdout, documents, directory)
     return 0
 
 
