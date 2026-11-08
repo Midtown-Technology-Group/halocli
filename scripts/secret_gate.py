@@ -462,6 +462,9 @@ def scan(revisions, executable):
         GIT_WORK_TREE=git("rev-parse", "--show-toplevel"),
     )
     with tempfile.TemporaryDirectory(prefix="secret-gate-") as directory:
+        # Resolve only our owned directory, before generating documents or
+        # launching children. SDK paths use the physical cwd on macOS/Windows.
+        directory = str(Path(directory).resolve(strict=True))
         version = subprocess.run(
             [executable, "--version"],
             check=False,

@@ -791,6 +791,20 @@ class SecretGateTests(unittest.TestCase):
 
         client.multi_content_scan.side_effect = detector
         native_run = subprocess.run
+        native_directory = tempfile.TemporaryDirectory
+
+        @contextlib.contextmanager
+        def private_directory(*args, **kwargs):
+            """Exercise POSIX symlink aliases and Windows' native temporary paths."""
+            with native_directory(*args, **kwargs) as owned:
+                if os.name == "nt":
+                    yield owned
+                else:
+                    physical = Path(owned) / "physical"
+                    physical.mkdir()
+                    alias = Path(owned) / "alias"
+                    alias.symlink_to(physical, target_is_directory=True)
+                    yield str(alias)
 
         def scanner_cli(command, **kwargs):
             """Intercept only the scanner; keep real Git and production arguments."""
@@ -818,6 +832,7 @@ class SecretGateTests(unittest.TestCase):
             with (
                 patch.dict(os.environ, self.env, clear=True),
                 patch("secret_gate.subprocess.run", side_effect=scanner_cli),
+                patch("secret_gate.tempfile.TemporaryDirectory", side_effect=private_directory),
                 patch(
                     "ggshield.cmd.secret.scan.range.create_client_from_config", return_value=client
                 ),

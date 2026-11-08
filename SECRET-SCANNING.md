@@ -61,6 +61,9 @@ exit must also include exactly one clean JSON result for every generated documen
 skipped, duplicate, unexpected, incomplete or unsupported results block with exit 4.
 Scanner JSON stays in memory and is never printed or retained. Git output is
 decoded as UTF-8 on every platform; invalid UTF-8 blocks with scan-error exit 4.
+The gate resolves its own private temporary directory before writing documents
+or starting scanners, so filesystem aliases use the same path spelling as the SDK.
+Scanner-provided paths are compared lexically; they are never resolved or opened.
 There is no hook
 commit-count cap. Native ggshield detector/file limits still apply (including
 binary/oversize content); this is not an attestation that every byte was scanned.
