@@ -235,7 +235,8 @@ class SecretGateTests(unittest.TestCase):
         native_run = subprocess.run
 
         def cp1252_default(*args, **kwargs):
-            kwargs.setdefault("encoding", "cp1252")
+            if kwargs.get("text") or kwargs.get("encoding"):
+                kwargs.setdefault("encoding", "cp1252")
             return native_run(*args, **kwargs)
 
         previous = Path.cwd()
@@ -280,6 +281,25 @@ class SecretGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 4, result.stderr)
         self.assertNotIn("CLEAN:", result.stdout + result.stderr)
         self.assertNotIn("fixture", result.stdout + result.stderr)
+        self.assertNotIn("Traceback", result.stdout + result.stderr)
+        self.assertNotIn("UnicodeDecodeError", result.stdout + result.stderr)
+
+    def test_git_decoding_errors_stay_in_parent_process(self):
+        """Model Windows text readers returning None after a decode-thread failure."""
+
+        def windows_capture(command, **kwargs):
+            text_reader = kwargs.get("text") or kwargs.get("encoding")
+            return subprocess.CompletedProcess(
+                command, 0, stdout=None if text_reader else b"fixture \xff\n", stderr=b""
+            )
+
+        with (
+            patch("secret_gate.executable", return_value="approved-git"),
+            patch("secret_gate.command_environment", return_value=self.env),
+            patch("secret_gate.subprocess.run", side_effect=windows_capture),
+            self.assertRaises(UnicodeDecodeError),
+        ):
+            secret_gate.git("cat-file", "commit", self.head, strip=False)
 
     def test_message_scan_errors_are_not_clean(self):
         """Message findings/auth/errors have the same blocking outcomes as files."""

@@ -272,8 +272,6 @@ def git(*args, strip=True):
         check=False,
         env=env,
         capture_output=True,
-        encoding="utf-8",
-        errors="strict",
         timeout=90,
     )
     if result.returncode:
@@ -281,7 +279,8 @@ def git(*args, strip=True):
             20,
             "BASE_ERROR: Git operation failed; check refs/access and fetch the base.",
         )
-    return result.stdout.strip() if strip else result.stdout
+    output = result.stdout.decode("utf-8")
+    return output.strip() if strip else output
 
 
 def commit(ref):
