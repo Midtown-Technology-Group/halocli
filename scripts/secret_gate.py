@@ -7,14 +7,14 @@ if __name__ == "__main__" and not sys.flags.isolated:
     sys.stderr.write("UNAVAILABLE: run this gate with Python -I; publication blocked.\n")
     sys.exit(21)
 
-import argparse  # noqa: E402
-import os  # noqa: E402
-import re  # noqa: E402
-import shutil  # noqa: E402
-import stat  # noqa: E402
-import subprocess  # noqa: E402
-import tempfile  # noqa: E402
-from pathlib import Path  # noqa: E402
+import argparse
+import os
+import re
+import shutil
+import stat
+import subprocess
+import tempfile
+from pathlib import Path
 
 MINIMUM_PYTHON = (3, 12)
 GITDIR_PREFIX = "gitdir:"
@@ -225,15 +225,25 @@ def executable(name):
         return None
     roots = checkout_roots()
     os.environ["NODEFAULTCURRENTDIRECTORYINEXEPATH"] = "1"
-    directories = [
-        str(Path(entry).resolve())
-        for entry in os.get_exec_path()
-        if Path(entry).is_absolute() and not checkout_owned(Path(entry).resolve(), roots)
-    ]
-    os.environ["PATH"] = os.pathsep.join(directories)
     suffixes = [""]
     if os.name == "nt":
         suffixes += os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(os.pathsep)
+    directories = []
+    for entry in os.get_exec_path():
+        directory = Path(entry).resolve()
+        if not Path(entry).is_absolute() or checkout_owned(directory, roots):
+            continue
+        # A rejected Git symlink must not remain available to ggshield's own
+        # PATH lookup, which runs with the scanner credential in its environment.
+        candidates = (
+            shutil.which(str(directory / (tool + suffix)))
+            for tool in ("git", "ggshield")
+            for suffix in suffixes
+        )
+        if any(checkout_owned(Path(found).resolve(), roots) for found in filter(None, candidates)):
+            continue
+        directories.append(str(directory))
+    os.environ["PATH"] = os.pathsep.join(directories)
     for directory in directories:
         for suffix in suffixes:
             # A path containing a directory bypasses Python 3.11's implicit cwd lookup.
@@ -243,7 +253,7 @@ def executable(name):
     return None
 
 
-def git(*args):
+def git(*args, strip=True):
     """Run Git without interactive authentication or replacement objects."""
     if not args or not all(re.fullmatch(r"[\w./@{}^~+:=,-]+", arg) for arg in args):
         raise GateError(20, "BASE_ERROR: invalid Git argument.")
@@ -258,14 +268,19 @@ def git(*args):
         GCM_INTERACTIVE="Never",
     )
     result = subprocess.run(
-        [tool, *args], check=False, env=env, capture_output=True, text=True, timeout=90
+        [tool, *args],
+        check=False,
+        env=env,
+        capture_output=True,
+        timeout=90,
     )
     if result.returncode:
         raise GateError(
             20,
             "BASE_ERROR: Git operation failed; check refs/access and fetch the base.",
         )
-    return result.stdout.strip()
+    output = result.stdout.decode("utf-8")
+    return output.strip() if strip else output
 
 
 def commit(ref):
@@ -350,6 +365,35 @@ def push_range(line):
     return head if set(old) == {"0"} else f"{commit(old)}..{head}"
 
 
+def scanner_result(result):
+    """Keep findings, authentication and scanner failures distinct for every scan."""
+    if result.returncode == 1:
+        raise GateError(1, "FINDINGS: secrets detected; remediate before publication.")
+    if result.returncode == 3:
+        raise GateError(3, "AUTH_FAILED: restore approved native ggshield authentication.")
+    if result.returncode:
+        raise GateError(4, f"SCAN_ERROR: scanner exit {result.returncode}; publication blocked.")
+
+
+def write_messages(revision, count, directory):
+    """Prepare bounded, private commit-message documents without logging content."""
+    commits = git("rev-list", revision, "--").splitlines()
+    if len(commits) != count:
+        raise GateError(4, "SCAN_ERROR: commit traversal changed during scanning.")
+    directory.mkdir(mode=0o700)
+    for sha in commits:
+        if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", sha):
+            raise GateError(20, "BASE_ERROR: invalid outgoing commit identity.")
+        if int(git("cat-file", "-s", sha)) > 128 * 1024:
+            raise GateError(20, "BASE_ERROR: oversized commit metadata; publication blocked.")
+        _, separator, message = git("cat-file", "commit", sha, strip=False).partition("\n\n")
+        if not separator or "\x00" in message or len(message.encode("utf-8")) > 64 * 1024:
+            raise GateError(20, "BASE_ERROR: unsupported commit message; publication blocked.")
+        (directory / (sha + ".txt")).write_text(
+            "Commit: " + sha + "\n\n" + message, encoding="utf-8"
+        )
+
+
 def scan(revisions, executable):
     # Keep native authentication, but prevent config/dotenv/fail-open/logging
     # settings from changing this gate. Never persist or forward findings.
@@ -391,43 +435,33 @@ def scan(revisions, executable):
             "version: 2\nexit_zero: false\nsecret:\n  show_secrets: false\n",
             encoding="utf-8",
         )
-        for revision, count in revisions:
+        for index, (revision, count) in enumerate(revisions):
+            messages = Path(directory) / f"messages-{index}"
+            write_messages(revision, count, messages)
             print(f"SCANNING: {count} commit(s), {revision}", flush=True)
             # Even censored findings can include sensitive source context.
-            result = subprocess.run(
-                [
-                    executable,
-                    "--no-check-for-updates",
-                    "--config-path",
-                    str(config),
-                    "secret",
-                    "scan",
-                    "commit-range",
-                    "--all-secrets",
-                    revision,
-                ],
-                check=False,
-                env=env,
-                cwd=directory,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=1800,
-            )
-            if result.returncode == 1:
-                raise GateError(
-                    1,
-                    "FINDINGS: secrets detected; remediate before publication.",
+            for arguments in (
+                ["commit-range", "--all-secrets", revision],
+                ["path", "--all-secrets", "--recursive", "--yes", messages.name],
+            ):
+                result = subprocess.run(
+                    [
+                        executable,
+                        "--no-check-for-updates",
+                        "--config-path",
+                        config.name,
+                        "secret",
+                        "scan",
+                        *arguments,
+                    ],
+                    check=False,
+                    env=env,
+                    cwd=directory,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=1800,
                 )
-            if result.returncode == 3:
-                raise GateError(
-                    3,
-                    "AUTH_FAILED: restore approved native ggshield authentication.",
-                )
-            if result.returncode:
-                raise GateError(
-                    4,
-                    f"SCAN_ERROR: scanner exit {result.returncode}; publication blocked.",
-                )
+                scanner_result(result)
     return 0
 
 
@@ -443,6 +477,9 @@ def verify_snapshot(args, head, selected):
         current_base = base_commit(args.base) if args.base is not None else remote_base(args.remote)
         if current_base != scanned_base:
             raise GateError(4, "SCAN_ERROR: base changed; rerun for the new destination.")
+    common = Path(git("rev-parse", "--git-common-dir"))
+    if active_grafts(common) or git("rev-parse", "--is-shallow-repository") != "false":
+        raise GateError(4, "SCAN_ERROR: history completeness changed during scanning.")
 
 
 def main(argv=None, stream=None):
