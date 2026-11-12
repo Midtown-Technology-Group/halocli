@@ -1,4 +1,5 @@
-"""SELECT-only guard for `halocli sql` (reads the LOCAL mirror, never Halo).
+"""SELECT-only guard for `halocli sql` (LOCAL mirror) and `halocli reports sql`
+(Halo's reporting API).
 
 The mirror database contains tenant data we could already read through the
 API; this guard exists so an ad-hoc query cannot mutate that local file
@@ -61,4 +62,19 @@ def validate_select_only(query: str) -> str:
             f"'{match.group(0).upper()}'. This guard is conservative: remove "
             "the keyword (even inside a literal) or fix the query."
         )
+    return cleaned
+
+
+def validate_halo_select(query: str) -> str:
+    """Shared SELECT-only guard plus Halo's own rejection rules.
+
+    Halo wraps the statement in its own SELECT, so a `--` line comment is
+    rejected by the tenant ("Incorrect syntax near ...") - which would also
+    silently truncate the statement if it were accepted. Refuse it locally with
+    a message that names the working form. A trailing semicolon is fine here
+    because the shared guard strips it (Halo rejects it server-side).
+    """
+    cleaned = validate_select_only(query)
+    if "--" in cleaned:
+        raise SQLGuardError("Halo rejects `--` line comments; use a /* */ block comment instead.")
     return cleaned

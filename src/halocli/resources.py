@@ -109,8 +109,16 @@ class ResourceOperation:
     # cannot silently fall back to the generic implementation.
     handler: str = ""
 
+    # POST is not always a write: `reports sql` executes a SELECT-only
+    # statement through POST /Report, and Halo's `_testonly` execution never
+    # persists anything. Declaring it here keeps capability summaries and MCP
+    # metadata from advertising an apply gate the command does not have.
+    read_only: bool = False
+
     @property
     def write(self) -> bool:
+        if self.read_only:
+            return False
         return self.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
 
 
@@ -867,6 +875,24 @@ RESOURCES: tuple[HaloResource, ...] = (
             # Both verified live against the tenant while building issue #15:
             # run executes via GET /Report/{id}?loadreport=true; clone POSTs an
             # array copy. See tests/test_reports_commands.py.
+            #
+            # `sql` re-homes ad-hoc SQL on POST /Report: `/CustomQuery` answers
+            # 201 with a null-reference in run_result for every statement on
+            # 2.250.77, so it is not a usable execution surface (its GET only
+            # exposes id/top_max). Declared before `clone` so the ledger's
+            # POST /Report mapping stays on the upsert command.
+            ResourceOperation(
+                name="sql",
+                method="POST",
+                path="/Report",
+                summary=(
+                    "Run one ad-hoc SELECT; rows under report.rows, both "
+                    "_testonly and _loadreportonly required"
+                ),
+                verification="live",
+                handler="report_sql",
+                read_only=True,
+            ),
             ResourceOperation(
                 name="run",
                 method="GET",
@@ -1419,6 +1445,11 @@ RESOURCES: tuple[HaloResource, ...] = (
         "custom-queries",
         "/CustomQuery",
         # Sweep 2026-10-02: envelope '<bare array>', 2 rows, GET/{id} -> 400 (route-verified)
+        # POST is documented in the spec but dead on 2.250.77 (2026-11-12):
+        # every `{sql_script, run:true}` body answers 201 with
+        # run_result.success=false and "Object reference not set to an instance
+        # of an object", and the read surface only exposes id/top_max. Do not
+        # promote a run/write command here; ad-hoc SQL lives at `reports sql`.
         table_fields=("id", "top_max"),
     ),
     HaloResource(

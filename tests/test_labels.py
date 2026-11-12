@@ -234,6 +234,11 @@ def test_table_columns_prefer_hydrated_labels() -> None:
     assert "agent_name" not in cols2
 
 
+def test_table_columns_keep_supplied_headers_for_zero_rows() -> None:
+    """An empty result still names the columns it selected (ad-hoc SQL)."""
+    assert _columns([], table_fields=("IHid", "IHQBOId")) == ["IHid", "IHQBOId"]
+
+
 # ------------------------------------------------------------------ CLI wiring
 
 

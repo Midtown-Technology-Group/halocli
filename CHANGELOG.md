@@ -6,7 +6,29 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.21.0 - 2026-11-12
+
+- **`halocli reports sql "SELECT ..."` runs ad-hoc SQL against the tenant and
+  fails loudly.** The README's reporting-API recipe did not hold on Halo
+  2.250.77: `_testonly` without `_loadreportonly: true` answers 201 with
+  `report.loaded: false`, no `load_error` and no rows, which reads as an empty
+  result; `raw POST /Report` exits 0 with the real SQL error buried in the
+  body; and `/CustomQuery` answers a null-reference for every statement. The
+  new command sends both flags, reads rows from `report.rows[]` and columns
+  from the top-level `available_columns[]`, exits 1 on `load_error`, and
+  guards SELECT-only (rejecting `--` comments before the round trip).
+- **`Invoice` is not a SQL object name here.** Invoices are `INVOICEHEADER` /
+  `INVOICEDETAIL`, and the QuickBooks id is `INVOICEHEADER.IHQBOId` — found via
+  `INFORMATION_SCHEMA`, so "which Halo invoice holds `qboid = 93328`" is one
+  query instead of an id scan. Verified live: `93328`/`93329` are absent while
+  neighbours `93325`-`93327` and `93330` are present.
+- **Docs now match observation** (`/CustomQuery` marked dead, `/Invoice`
+  paging recorded as server-side but benign, CTE/`--`/trailing-`;` limits).
+  `POST /Report` is also declared read-only in the registry so capability
+  summaries stop advertising an apply gate it never had.
+
 ## 1.20.2 - 2026-10-26
+
 - **Release scratch paths are portable.** `scripts/release.py` wrote its
   downloaded MSI/wheel and generated commit message to a hardcoded
   `C:/Users/<name>/AppData/...` directory, so the release tooling (and any test

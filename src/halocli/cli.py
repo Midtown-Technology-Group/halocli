@@ -45,7 +45,7 @@ from halocli.bulk import (
     plan_problems,
     preview_plan,
 )
-from halocli.sqlguard import SQLGuardError, validate_select_only
+from halocli.sqlguard import SQLGuardError, validate_halo_select, validate_select_only
 from halocli.writes import delete_resource, execute_write
 from halocli.todo import (
     GraphMicrosoftTodoRepository,
@@ -486,30 +486,40 @@ def _execution_hint(status_code: int | None, category: str) -> str | None:
     return None
 
 
-async def _run_report(
+async def _execute_report_request(
     *,
     resource: HaloResource,
     op: ResourceOperation,
     path: str,
-    params: dict[str, str],
-    limit: int,
-    # per-report timeout is intentional (gateway deadline) - see the caller
-    timeout: float,  # NOSONAR
+    method: str,
     profile: str,
-) -> dict[str, Any]:
+    # per-query timeout is intentional (gateway deadline) - see the caller
+    timeout: float,  # NOSONAR
+    params: dict[str, str] | None = None,
+    json_body: Any = None,
+) -> tuple[Any, dict[str, Any] | None]:
+    """Send one report execution request; return (body, failure payload).
+
+    Execution is never retried: Halo's 504 is a gateway deadline on a query
+    that already ran, not a transient blip (measured: ~60s to 504, repeatably).
+    Retrying would re-run the same multi-second query up to max_retries times,
+    turning a clear one-minute failure into a four-minute hang.
+    """
     halo_profile = load_profile(profile)
-    # Fail fast on execution: Halo's 504 is a gateway deadline on a heavy query,
-    # not a transient blip (measured: ~60s to 504, repeatably). Retrying would
-    # re-run the same multi-second query up to max_retries times, turning a
-    # clear one-minute failure into a four-minute hang.
     exec_profile = halo_profile.model_copy(update={"max_retries": 0})
     try:
         async with HaloClient(exec_profile, profile_name=profile) as client:
-            body = await client.request("GET", path, params=params, timeout=timeout)
+            body = await client.request(
+                method,
+                path,
+                params=params,
+                json_body=json_body,
+                timeout=timeout,
+            )
     except HaloCLIError as exc:
         # Includes Halo's own 504: its gateway gives up at ~60s on a large
         # report, which is a server limit no client timeout can fix.
-        return _execution_failure(
+        return None, _execution_failure(
             resource=resource,
             op=op,
             path=path,
@@ -521,7 +531,7 @@ async def _run_report(
         )
     except Exception as exc:  # httpx timeouts stringify to ""
         err = classify_error(exc)
-        return _execution_failure(
+        return None, _execution_failure(
             resource=resource,
             op=op,
             path=path,
@@ -530,6 +540,31 @@ async def _run_report(
             error=str(exc) or str(err),
             detail=_execution_hint(err.status_code, err.category),
         )
+    return body, None
+
+
+async def _run_report(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    params: dict[str, str],
+    limit: int,
+    # per-report timeout is intentional (gateway deadline) - see the caller
+    timeout: float,  # NOSONAR
+    profile: str,
+) -> dict[str, Any]:
+    body, failure = await _execute_report_request(
+        resource=resource,
+        op=op,
+        path=path,
+        method="GET",
+        profile=profile,
+        timeout=timeout,
+        params=params,
+    )
+    if failure is not None:
+        return failure
 
     payload: dict[str, Any] = {
         "ok": True,
@@ -611,6 +646,204 @@ async def _run_report(
             f"Showing {limit} of {len(rows):,} rows; pass --limit {len(rows)} for all."
         )
     return payload
+
+
+async def _run_report_sql(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    statement: str,
+    limit: int,
+    # per-query timeout is intentional (gateway deadline) - see _run_report
+    timeout: float,  # NOSONAR
+    profile: str,
+) -> dict[str, Any]:
+    """POST one ad-hoc statement, then shape the result (or the buried error).
+
+    Both execution flags are required and their absence is silent: with only
+    `_testonly` (or `_loadreportonly: false`) Halo answers 201 with
+    `report.loaded: false`, no `load_error` and no rows - a dead-looking empty
+    result. Sending both is the only confirmed working shape on 2.250.77.
+    """
+    body = [{"sql": statement, "_testonly": True, "_loadreportonly": True}]
+    response, failure = await _execute_report_request(
+        resource=resource,
+        op=op,
+        path=path,
+        method="POST",
+        profile=profile,
+        timeout=timeout,
+        json_body=body,
+    )
+    if failure is not None:
+        return failure
+    return _shape_adhoc_sql(response, resource=resource, op=op, path=path, limit=limit)
+
+
+def _shape_adhoc_sql(
+    response: Any,
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    limit: int,
+) -> dict[str, Any]:
+    """Shape a POST /Report execution response, surfacing load_error as failure.
+
+    Observed on 2.250.77: the body is a one-element array; `available_columns[]`
+    sits at the top level (id/name/data_type) and the rows live under
+    `report.rows[]` as strings keyed by column name. A failed statement still
+    answers 201 with `report.loaded: false` and `report.load_error` set, so
+    nothing but this check separates "no rows" from "the SQL did not run".
+    """
+    payload: dict[str, Any] = {
+        "ok": True,
+        "resource": resource.name,
+        "operation": op.name,
+        "method": op.method,
+        "endpoint": path,
+    }
+    body = response[0] if isinstance(response, list) and response else response
+    if not isinstance(body, dict):
+        payload.update(
+            ok=False,
+            category="validation",
+            error=(
+                "Unexpected response shape from Halo: POST /Report returns a "
+                f"one-element array, got {type(response).__name__}"
+            ),
+        )
+        return payload
+    report = body.get("report")
+    if not isinstance(report, dict):
+        payload.update(
+            ok=False,
+            category="validation",
+            error="Response has no 'report' object; Halo did not execute this statement",
+        )
+        return payload
+    if report.get("load_error"):
+        # Halo answers 201 for a failed statement; this is the only failure signal.
+        payload.update(
+            ok=False,
+            category="validation",
+            status_code=201,
+            error=f"Halo could not execute this statement: {report['load_error']}",
+            hint=(
+                "Halo's SQL object names are not the REST resource names (invoices "
+                "are INVOICEHEADER, not Invoice). Look names up in "
+                "INFORMATION_SCHEMA.TABLES/COLUMNS, and use /* */ rather than -- "
+                "for comments."
+            ),
+        )
+        return payload
+    if not report.get("loaded"):
+        payload.update(
+            ok=False,
+            category="validation",
+            error=(
+                "Halo did not execute the statement (report.loaded=false with no "
+                "load_error); both _testonly and _loadreportonly must be true"
+            ),
+        )
+        return payload
+
+    rows = report.get("rows")
+    if not isinstance(rows, list):
+        payload.update(
+            ok=False,
+            category="validation",
+            error=f"Statement executed but 'report.rows' is {type(rows).__name__}, not a list",
+        )
+        return payload
+    columns = [
+        column["name"]
+        for column in body.get("available_columns") or []
+        if isinstance(column, dict) and column.get("name")
+    ]
+    if not columns and rows and isinstance(rows[0], dict):
+        columns = list(rows[0].keys())
+    payload.update(
+        row_count=len(rows),
+        count=min(limit, len(rows)),
+        columns=columns,
+        items=rows[:limit],
+    )
+    if len(rows) >= REPORT_ROW_CAP:
+        payload["capped"] = True
+        payload["hint"] = (
+            f"Halo returned {len(rows):,} rows, which is its maximum: the statement "
+            "may match more. Add TOP and narrower filters."
+        )
+    elif len(rows) > limit:
+        payload["hint"] = (
+            f"Showing {limit} of {len(rows):,} rows; pass --limit {len(rows)} for all."
+        )
+    return payload
+
+
+def _report_sql_command(resource: HaloResource, op: ResourceOperation):
+    """`halocli reports sql "SELECT ..."`: run ad-hoc SQL, fail on load_error."""
+
+    def command(
+        statement: Annotated[
+            str,
+            typer.Argument(help="One SELECT statement. Use TOP; Halo returns every row otherwise."),
+        ],
+        limit: Annotated[
+            int,
+            typer.Option(
+                "--limit",
+                help=(
+                    "Rows to include in the output. Halo executes the statement and "
+                    f"sends every row it has (up to {REPORT_ROW_CAP:,}), so a small "
+                    "limit keeps the payload readable without a second request."
+                ),
+            ),
+        ] = 50,
+        timeout: Annotated[
+            float,
+            typer.Option(
+                "--timeout",
+                help=(
+                    "Seconds to wait for Halo. Default 120 because Halo's gateway "
+                    "answers 504 at roughly 60s on a heavy statement."
+                ),
+            ),
+        ] = 120.0,
+        profile: Annotated[str, typer.Option("--profile")] = "default",
+        output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    ) -> None:
+        if limit < 1:
+            raise typer.BadParameter("--limit must be at least 1")
+        if timeout <= 0:
+            raise typer.BadParameter("--timeout must be greater than 0")
+        try:
+            cleaned = validate_halo_select(statement)
+        except SQLGuardError as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        path = _build_operation_path(op, [])
+        result = _run(
+            _run_report_sql(
+                resource=resource,
+                op=op,
+                path=path,
+                statement=cleaned,
+                limit=limit,
+                timeout=timeout,
+                profile=profile,
+            )
+        )
+        if not result.get("ok"):
+            # Halo answers 201 for a failed statement, so this is the only place
+            # it can surface. Keep stdout clean for `> results.json` callers,
+            # matching `reports run`.
+            render_error(result)
+            raise typer.Exit(1)
+        render(result, output=output, table_fields=tuple(result.get("columns") or ()))
+
+    return command
 
 
 def _report_clone_command(resource: HaloResource, op: ResourceOperation):
@@ -797,6 +1030,7 @@ async def _run_report_clone(
 
 _OPERATION_HANDLERS = {
     "report_run": _report_run_command,
+    "report_sql": _report_sql_command,
     "report_clone": _report_clone_command,
 }
 

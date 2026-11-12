@@ -285,7 +285,12 @@ with one `count` request bounded by the caller's record and page ceilings, and
 reports `"paging_ignored": true` — so a lying pager can neither duplicate rows
 nor turn a bounded list into an unbounded download. `--all` remains the explicit
 opt-in to a full recovery (`/CRMNote` went from 150 items/50 distinct to
-133/133, verified live).
+133/133, verified live). `/Invoice` is the benign variant, verified live on
+2.250.77: `page_no` and `page_size` are ignored but it answers with the whole
+set and a correct `record_count` (288 of 288 in one request), so `list` needs
+no recovery, `--all` returns everything, and `count=N` plus `order`/`orderdesc`
+still bound and sort it. The paging defect there is server-side and costs
+payload size, not correctness.
 
 `/Feed` is a different animal: an activity stream with **no page numbers at
 all** — the pageinate trio is ignored (page 2 is page 1 verbatim, `page_size`
@@ -311,13 +316,14 @@ priorities are GUID-keyed while tickets store integers (joined via
 `priorityid`, since `/Priority/<int>` 404s), and unresolvable ids
 (e.g. external-system references) simply stay bare.
 
-The `reports` resource also declares two nested operations, both verified live
+The `reports` resource also declares nested operations, all verified live
 against the tenant:
 
 ```powershell
 halocli reports run 147 --limit 20                  # execute; row_count/columns/items
 halocli reports clone 147 --name "A copy"           # preview (zero network)
 halocli reports clone 147 --name "A copy" --apply --yes   # create it
+halocli reports sql "SELECT TOP 5 IHid FROM INVOICEHEADER"  # ad-hoc SQL (below)
 ```
 
 `reports run` exits non-zero when Halo cannot execute the query — note that
@@ -572,8 +578,8 @@ Design notes (evidence: `mirror_evidence.json`,
   summary; its previous rows stay (a transient 500 must not wipe the mirror).
 - **`sql` is SELECT-only** against the local file — single statement,
   conservative keyword guard, `--limit` reported not implied. It never
-  reaches Halo; Halo's server-side SQL surface stays deliberately raw —
-  this is not that.
+  reaches Halo; tenant SQL is `halocli reports sql` (see "Ad-hoc SQL
+  Through Halo's Reporting API" below).
 - Tenant-specific facts proven live: status ids are not portable (no
   hardcoded closed-id set — names are configurable via `--closed-status`),
   `dateclosed` drives "closed in window", `/Feed` is cursor-based
@@ -587,28 +593,56 @@ note above was re-proven against our own tenant.
 
 ## Ad-hoc SQL Through Halo's Reporting API
 
-Halo has no SQL endpoint — it executes SQL through the **reporting
-API**, and the contract is peculiar enough to write down (live-confirmed
-on the trial 2026-10-03; distilled from
+Halo has no SQL endpoint — it executes SQL through the **reporting API**.
+`halocli reports sql` is the first-class path; the contract underneath it is
+peculiar enough to write down, and was re-confirmed against Halo **2.250.77**
+on 2026-11-12 (the earlier notes were from trial 2.250.32, distilled from
 [Mtg-Thomas/HaloSQLStudio](https://github.com/Mtg-Thomas/HaloSQLStudio)):
 
 ```powershell
-# the body is a ONE-ELEMENT ARRAY; _testonly runs it without saving
-halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM tickets", "_testonly": true, "_loadreportonly": true}]'
+halocli reports sql "SELECT TOP 5 IHid, IHInvoiceNumber, IHQBOId FROM INVOICEHEADER WHERE IHQBOId = 93330"
+halocli reports sql "SELECT TOP 50 TABLE_NAME FROM INFORMATION_SCHEMA.TABLES" --output table
 ```
 
-- **Errors are HTTP 200**: read `report.load_error`; success is
-  `loaded: true` with `available_columns[]` (`name`, `data_type`) and
-  `report.rows[]` (objects keyed by column name, values as strings).
-- **One statement only** (a second fails: *"Incorrect syntax near ';'"*,
-  proven live) and **no `--` comments** (also rejected live — use
-  `/* */` block comments).
+`reports sql` exits non-zero on a failed statement (Halo answers **201** even
+then), prints `columns`/`row_count`/`items`, and never retries — a 504 is
+Halo's gateway deadline on a query that already ran, not a blip.
+
+The raw equivalent (what the command sends) is:
+
+```powershell
+# ONE-ELEMENT ARRAY, and both flags are load-bearing
+halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 IHid FROM INVOICEHEADER", "_testonly": true, "_loadreportonly": true}]'
+```
+
+- **Both execution flags are required.** `_testonly` alone, or
+  `_loadreportonly: false`, answers 201 with `report.loaded: false`, **no**
+  `load_error` and **no rows** — it looks exactly like an empty result. This
+  is what made the route look broken: a probe with `_loadreportonly: false`
+  came back "successful" and empty. A one-element array is also required; an
+  object body is a plain HTTP 400.
+- **Errors are HTTP 201**: failure is `report.loaded: false` with
+  `report.load_error` set (`"Invalid SQL Statement. Failed with error: Invalid
+  object name 'Invoice'."`). `halocli raw` cannot see this — it exits 0 with
+  the error buried in the body, which is why `reports sql` exists.
+- **Rows and columns sit in different places**: column metadata is the
+  **top-level** `available_columns[]` (`name`, `data_type`,
+  `data_type_group`; mirrored by `filterable_columns[]`), while values are
+  `report.rows[]` — objects keyed by column name, **values as strings**
+  (`"IHQBOId": "93330"`, numbers included). `report.table_html` is a rendered
+  `<table>` for Halo's own UI; a zero-row result leaves it empty, so parse
+  `rows`, not HTML. `result_count` echoes the row count.
+- **One statement only** (*"Incorrect syntax near ';'"*), and a trailing `;`
+  is rejected the same way (`reports sql` strips one). **No `--` comments**
+  (also rejected; use `/* */`, verified working). **No CTEs**: `WITH …` fails
+  with *"Incorrect syntax near the keyword 'WITH'"* because Halo wraps the
+  statement in its own SELECT.
 - **View compatibility:** SQL you *save* as a report backs a Halo VIEW —
   no CTEs, window functions (`ROW_NUMBER`, `LAG`, …), `OFFSET/FETCH`,
   `ORDER BY` *inside view definitions*, temp objects, hints or `EXEC`.
-  Ad-hoc `_testonly` execution was more lenient on our trial
-  (2.250.32 accepted `ORDER BY`), so treat the view rules as the
-  save-time constraint and the two-statement/`--` rules as universal.
+  Ad-hoc execution is more lenient (`ORDER BY` and a missing `TOP` both work
+  on 2.250.77), so treat the view rules as the save-time constraint and the
+  single-statement/`--`/CTE rules as universal.
 - **Scopes are their own permission set**: `read:reporting
   edit:reporting` on the API application (plus `offline_access` for
   refresh) — separate from `all:standard`.
@@ -616,6 +650,27 @@ halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM 
   `$agentid`, `$siteid`, `$clientid` (plain numeric ids only) and
   `@startdate`, `@enddate` (quoted `'YYYY-MM-DD'`); left empty, Halo
   substitutes the logged-in context.
+- **SQL object names are not REST resource names.** `Invoice` is not a table
+  view here: invoices are `INVOICEHEADER` (header, one row per invoice) and
+  `INVOICEDETAIL`, and the QuickBooks id lives in `INVOICEHEADER.IHQBOId`.
+  Discover names, never guess:
+
+  ```powershell
+  halocli reports sql "SELECT TOP 50 TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%INVOICE%'"
+  halocli reports sql "SELECT TOP 50 TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME LIKE '%qboid%'"
+  ```
+
+  Top-level columns come back as `TABLE_NAME`, `COLUMN_NAME`, `DATA_TYPE`,
+  and a FROM-less `SELECT TOP 1 1 AS x` works too, so the surface is plain
+  T-SQL once the wrapper rules above are respected.
+  Worked example, one call instead of an id scan:
+
+  ```powershell
+  halocli reports sql "SELECT TOP 20 IHid, IHInvoiceNumber, IHName, IHQBOId, IHInvoice_Date FROM INVOICEHEADER WHERE IHQBOId IN (93328, 93329)"
+  # -> row_count 0. Neighbours prove the filter runs:
+  halocli reports sql "SELECT TOP 20 IHid, IHQBOId FROM INVOICEHEADER WHERE IHQBOId BETWEEN 93325 AND 93330"
+  # -> 93325, 93326, 93327, 93330 (IHid 20260999-20261002); 93328/93329 are absent in Halo.
+  ```
 - **Metadata is SQL too**: tables/columns via
   `INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo'`. Listing saved
   reports does NOT need SQL though — REST exists:
@@ -629,10 +684,17 @@ halocli raw POST /Report --apply --yes --data '[{"sql": "SELECT TOP 5 name FROM 
   `[{id:0, name:"", sql, apiquery_id:0, _testonly:false,
   _loadreportonly:true}]` — both execute; both surface failures through
   `report.load_error` (the PS module throws on it, we parse it).
+- **`/CustomQuery` is a dead surface on 2.250.77** — do not use it for ad-hoc
+  SQL. `POST /CustomQuery` with `[{sql_script, run: true, top_max}]` answers
+  201 with `run_result.success: false` and *"Object reference not set to an
+  instance of an object"* for every statement (including `SELECT 1`), and its
+  GET surface only exposes `id`/`top_max` (no `sql_script`), so there is
+  nothing to run or inspect. `halocli custom-queries` therefore stays list/get
+  only; execution belongs to `reports sql`.
 - **Running saved reports** is `halocli reports run` (first-class:
   retries disabled because a timeout would re-run an expensive query —
   Halo's 504 is a gateway deadline, not a blip). The same never-retry
-  rule applies to ad-hoc `_testonly` executions.
+  rule applies to ad-hoc executions.
 
 ## Advanced Configuration: Workflows, Runbooks & Rules
 
@@ -1240,7 +1302,9 @@ on every trial run.
 
 **What stays raw, per family** (final reasons in `coverage_policy.json`):
 rules/event-rules/automations (side effects above), `EmailRule`
-(outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL),
+(outbound mail), `CustomQuery`/`DatabaseLookup` (raw SQL — and on
+2.250.77 `POST /CustomQuery` is dead anyway: 201 plus a null-reference
+for every statement),
 integration plumbing (`IntegrationData/*` — sync state, not operator
 input), `ScreenLayout`/`View*` (per-agent UI chrome), and the
 money-adjacent rules (user-accepted stance). **Promoted on live
