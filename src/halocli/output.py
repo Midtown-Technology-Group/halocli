@@ -53,6 +53,11 @@ def _render_table(items: list[dict], *, table_fields: tuple[str, ...] | None = N
 
 def _columns(items: list[dict], *, table_fields: tuple[str, ...] | None = None) -> list[str]:
     if table_fields:
+        if not items:
+            # A zero-row result still has a defined shape (ad-hoc SQL sends its
+            # columns). Without this the table falls through to id/name headers
+            # that the query never selected.
+            return list(table_fields)[:6]
         present = [column for column in table_fields if any(column in item for item in items)]
         if present:
             return _prefer_labels(present, items)[:6]

@@ -486,30 +486,40 @@ def _execution_hint(status_code: int | None, category: str) -> str | None:
     return None
 
 
-async def _run_report(
+async def _execute_report_request(
     *,
     resource: HaloResource,
     op: ResourceOperation,
     path: str,
-    params: dict[str, str],
-    limit: int,
-    # per-report timeout is intentional (gateway deadline) - see the caller
-    timeout: float,  # NOSONAR
+    method: str,
     profile: str,
-) -> dict[str, Any]:
+    # per-query timeout is intentional (gateway deadline) - see the caller
+    timeout: float,  # NOSONAR
+    params: dict[str, str] | None = None,
+    json_body: Any = None,
+) -> tuple[Any, dict[str, Any] | None]:
+    """Send one report execution request; return (body, failure payload).
+
+    Execution is never retried: Halo's 504 is a gateway deadline on a query
+    that already ran, not a transient blip (measured: ~60s to 504, repeatably).
+    Retrying would re-run the same multi-second query up to max_retries times,
+    turning a clear one-minute failure into a four-minute hang.
+    """
     halo_profile = load_profile(profile)
-    # Fail fast on execution: Halo's 504 is a gateway deadline on a heavy query,
-    # not a transient blip (measured: ~60s to 504, repeatably). Retrying would
-    # re-run the same multi-second query up to max_retries times, turning a
-    # clear one-minute failure into a four-minute hang.
     exec_profile = halo_profile.model_copy(update={"max_retries": 0})
     try:
         async with HaloClient(exec_profile, profile_name=profile) as client:
-            body = await client.request("GET", path, params=params, timeout=timeout)
+            body = await client.request(
+                method,
+                path,
+                params=params,
+                json_body=json_body,
+                timeout=timeout,
+            )
     except HaloCLIError as exc:
         # Includes Halo's own 504: its gateway gives up at ~60s on a large
         # report, which is a server limit no client timeout can fix.
-        return _execution_failure(
+        return None, _execution_failure(
             resource=resource,
             op=op,
             path=path,
@@ -521,7 +531,7 @@ async def _run_report(
         )
     except Exception as exc:  # httpx timeouts stringify to ""
         err = classify_error(exc)
-        return _execution_failure(
+        return None, _execution_failure(
             resource=resource,
             op=op,
             path=path,
@@ -530,6 +540,31 @@ async def _run_report(
             error=str(exc) or str(err),
             detail=_execution_hint(err.status_code, err.category),
         )
+    return body, None
+
+
+async def _run_report(
+    *,
+    resource: HaloResource,
+    op: ResourceOperation,
+    path: str,
+    params: dict[str, str],
+    limit: int,
+    # per-report timeout is intentional (gateway deadline) - see the caller
+    timeout: float,  # NOSONAR
+    profile: str,
+) -> dict[str, Any]:
+    body, failure = await _execute_report_request(
+        resource=resource,
+        op=op,
+        path=path,
+        method="GET",
+        profile=profile,
+        timeout=timeout,
+        params=params,
+    )
+    if failure is not None:
+        return failure
 
     payload: dict[str, Any] = {
         "ok": True,
@@ -631,36 +666,18 @@ async def _run_report_sql(
     `report.loaded: false`, no `load_error` and no rows - a dead-looking empty
     result. Sending both is the only confirmed working shape on 2.250.77.
     """
-    halo_profile = load_profile(profile)
-    # Same never-retry stance as `reports run`: a 504 means the query already
-    # ran past Halo's gateway deadline, and a retry re-runs it.
-    exec_profile = halo_profile.model_copy(update={"max_retries": 0})
     body = [{"sql": statement, "_testonly": True, "_loadreportonly": True}]
-    try:
-        async with HaloClient(exec_profile, profile_name=profile) as client:
-            response = await client.request("POST", path, json_body=body, timeout=timeout)
-    except HaloCLIError as exc:
-        return _execution_failure(
-            resource=resource,
-            op=op,
-            path=path,
-            category=exc.category,
-            status_code=exc.status_code,
-            error=str(exc) or type(exc).__name__,
-            detail=_execution_hint(exc.status_code, exc.category),
-            diagnostic=diagnose_permission_failure(exc),
-        )
-    except Exception as exc:  # httpx timeouts stringify to ""
-        err = classify_error(exc)
-        return _execution_failure(
-            resource=resource,
-            op=op,
-            path=path,
-            category=err.category,
-            status_code=err.status_code,
-            error=str(exc) or str(err),
-            detail=_execution_hint(err.status_code, err.category),
-        )
+    response, failure = await _execute_report_request(
+        resource=resource,
+        op=op,
+        path=path,
+        method="POST",
+        profile=profile,
+        timeout=timeout,
+        json_body=body,
+    )
+    if failure is not None:
+        return failure
     return _shape_adhoc_sql(response, resource=resource, op=op, path=path, limit=limit)
 
 
@@ -818,7 +835,7 @@ def _report_sql_command(resource: HaloResource, op: ResourceOperation):
                 profile=profile,
             )
         )
-        render(result, output=output)
+        render(result, output=output, table_fields=tuple(result.get("columns") or ()))
         # Halo reports SQL failures with HTTP 201, so the exit code (not the
         # transport) is what tells an operator/automation the query failed.
         if not result.get("ok"):
