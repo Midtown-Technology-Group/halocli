@@ -75,7 +75,13 @@ def _json_or_none(body: bytes) -> Any:
 def test_reports_declares_run_and_clone() -> None:
     resource = get_resource("reports")
     ops = {op.name: op for op in resource.operations}
-    assert set(ops) == {"run", "clone", "bookmark", "create-pdf", "print"}
+    assert set(ops) == {"sql", "run", "clone", "bookmark", "create-pdf", "print"}
+
+    sql = ops["sql"]
+    assert (sql.method, sql.path, sql.args) == ("POST", "/Report", ())
+    assert sql.handler == "report_sql"
+    assert not sql.write  # execution is a read: no --apply/--yes
+    assert sql.verification == "live"  # probed on 2.250.77
 
     run = ops["run"]
     assert (run.method, run.path, run.args) == ("GET", "/Report/{id}", ("id",))
@@ -583,3 +589,222 @@ def test_clone_reports_source_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
     assert payload["ok"] is False
     assert payload["source_unchanged"] is False
     assert "name" in payload["source_changed_fields"]
+
+
+# ------------------------------------------------------------------------ sql
+#
+# `reports sql` is the ad-hoc execution path. Contract confirmed live on Halo
+# 2.250.77: POST /Report with a one-element array needs BOTH `_testonly` and
+# `_loadreportonly` or Halo answers 201 with `loaded: false` and no rows (the
+# failure that made the route look dead); rows live under `report.rows[]` and
+# the column names under the TOP-LEVEL `available_columns[]`.
+
+
+def _report_response(rows: list[dict], columns: tuple[str, ...] | None = None) -> dict:
+    names = columns if columns is not None else tuple(rows[0].keys()) if rows else ()
+    return {
+        "available_columns": [{"id": 0, "name": name, "data_type": "nvarchar"} for name in names],
+        "report": {"loaded": True, "rows": rows, "table_html": "", "base_link": ""},
+        "result_count": len(rows),
+    }
+
+
+def test_sql_sends_both_execution_flags(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The flags are load-bearing: without both, Halo silently returns nothing."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(201, json=[_report_response([{"IHQBOId": "93330"}])])
+
+    calls = _install_mock(monkeypatch, handler)
+    result = runner.invoke(app, ["reports", "sql", "SELECT TOP 5 IHQBOId FROM INVOICEHEADER"])
+
+    assert result.exit_code == 0, result.output
+    posted = [c for c in calls if not c["path"].endswith("/auth/token")]
+    assert len(posted) == 1
+    assert posted[0]["method"] == "POST"
+    assert posted[0]["path"] == "/api/Report"
+    assert json.loads(posted[0]["body"]) == [
+        {
+            "sql": "SELECT TOP 5 IHQBOId FROM INVOICEHEADER",
+            "_testonly": True,
+            "_loadreportonly": True,
+        }
+    ]
+
+
+def test_sql_reads_top_level_columns_and_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rows are strings under report.rows; columns are top-level, not per row."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(
+            201,
+            json=[_report_response([{"IHid": "20261002", "IHQBOId": "93330"}])],
+        )
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(app, ["reports", "sql", "SELECT TOP 5 IHid, IHQBOId FROM INVOICEHEADER"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["columns"] == ["IHid", "IHQBOId"]
+    assert payload["row_count"] == 1
+    assert payload["items"] == [{"IHid": "20261002", "IHQBOId": "93330"}]
+
+
+def test_sql_surfaces_load_error_as_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed statement arrives as HTTP 201; only load_error reveals it."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(
+            201,
+            json=[
+                {
+                    "available_columns": [],
+                    "report": {
+                        "loaded": False,
+                        "load_error": (
+                            "Invalid SQL Statement. Failed with error: "
+                            "Invalid object name 'Invoice'."
+                        ),
+                        "table_html": "",
+                        "base_link": "",
+                    },
+                }
+            ],
+        )
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(app, ["reports", "sql", "SELECT TOP 5 id FROM Invoice"])
+
+    assert result.exit_code == 1, "a failed statement must not exit 0"
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["category"] == "validation"
+    assert payload["status_code"] == 201
+    assert "Invalid object name 'Invoice'" in payload["error"]
+    assert "INFORMATION_SCHEMA" in payload["hint"]
+
+
+def test_sql_fails_when_halo_reports_not_loaded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """loaded=false without load_error is Halo not running it: never exit 0."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(
+            201,
+            json=[
+                {
+                    "available_columns": [{"id": 0, "name": "x", "data_type": "int"}],
+                    "report": {"loaded": False, "rows": [], "table_html": ""},
+                }
+            ],
+        )
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(app, ["reports", "sql", "SELECT TOP 1 1 AS x"])
+
+    assert result.exit_code == 1, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert "loaded=false" in payload["error"]
+
+
+def test_sql_zero_rows_still_reports_columns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A genuine empty result keeps its shape (an answer, not a failure)."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(201, json=[_report_response([], ("IHid", "IHQBOId"))])
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(
+        app,
+        ["reports", "sql", "SELECT TOP 5 IHid, IHQBOId FROM INVOICEHEADER WHERE IHQBOId = 93328"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["row_count"] == 0
+    assert payload["items"] == []
+    assert payload["columns"] == ["IHid", "IHQBOId"]
+
+
+def test_sql_limit_truncates_with_a_hint(monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"IHid": str(i)} for i in range(3)]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(201, json=[_report_response(rows)])
+
+    _install_mock(monkeypatch, handler)
+    result = runner.invoke(
+        app, ["reports", "sql", "SELECT TOP 3 IHid FROM INVOICEHEADER", "--limit", "2"]
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["row_count"] == 3
+    assert payload["count"] == 2
+    assert len(payload["items"]) == 2
+    assert "--limit 3" in payload["hint"]
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "DELETE FROM INVOICEHEADER",
+        "SELECT TOP 5 IHid FROM INVOICEHEADER; SELECT TOP 5 IHid FROM INVOICEHEADER",
+        "SELECT TOP 5 IHid FROM INVOICEHEADER -- trailing comment",
+    ],
+)
+def test_sql_rejects_unsafe_statements_before_any_request(
+    monkeypatch: pytest.MonkeyPatch, statement: str
+) -> None:
+    """The guard is the trust boundary: refusals must be pre-network."""
+    calls = _install_mock(monkeypatch, lambda r: httpx.Response(200, json={}))
+
+    result = runner.invoke(app, ["reports", "sql", statement])
+
+    assert result.exit_code != 0
+    assert calls == []
+
+
+def test_sql_strips_a_trailing_semicolon(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Halo rejects a trailing ';'; the shared guard removes it before sending."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/token"):
+            return httpx.Response(200, json={"access_token": "abc", "expires_in": 3600})
+        return httpx.Response(201, json=[_report_response([{"x": "1"}])])
+
+    calls = _install_mock(monkeypatch, handler)
+    result = runner.invoke(app, ["reports", "sql", "SELECT TOP 1 1 AS x;"])
+
+    assert result.exit_code == 0, result.output
+    posted = [c for c in calls if not c["path"].endswith("/auth/token")]
+    assert json.loads(posted[0]["body"])[0]["sql"] == "SELECT TOP 1 1 AS x"
+
+
+def test_sql_rejects_non_positive_limit_and_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _install_mock(monkeypatch, lambda r: httpx.Response(200, json={}))
+
+    for argv in (["--limit", "0"], ["--timeout", "0"]):
+        result = runner.invoke(app, ["reports", "sql", "SELECT TOP 1 1 AS x", *argv])
+        assert result.exit_code != 0, argv
+    assert calls == []
+
+
+def test_sql_is_listed_in_reports_help() -> None:
+    result = runner.invoke(app, ["reports", "--help"])
+    assert result.exit_code == 0
+    assert re.search(r"\bsql\b", plain(result.output))

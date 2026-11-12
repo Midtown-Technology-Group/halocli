@@ -11,7 +11,12 @@ Use Python 3.12+; CI tests 3.12â€“3.14 across Windows, macOS, and Linux. In
 ## Operator boundaries
 
 - Writes preview with zero network calls by default; CLI execution requires both `--apply` and `--yes`. Preserve raw-request validation and MCP's non-GET `apply: true` guard. Test refusals without contacting a tenant.
-- Bound list requests and preserve truncation metadata. Do not retry report execution automatically: timeout retries can repeat expensive queries; HTTP 200 may still contain a Halo SQL failure.
+- Bound list requests and preserve truncation metadata. Do not retry report
+  execution automatically: timeout retries can repeat expensive queries. Halo
+  returns 200/201 even when SQL execution failed — check `report.load_error`
+  (and `report.loaded`); `halocli reports sql` does this for ad-hoc statements.
+  `/CustomQuery` is not an execution surface on 2.250.77 (201 plus a
+  null-reference for every statement).
 - Authentication discovery must confirm interactive endpoints before browser login. Prefer OS secure credential storage; file-token-cache fallback is an explicit operator decision. Never commit profiles or expose tokens.
 - Production writes require the user's authorized target and scope, reviewed preview, and independent readback. Do not treat a documented route or mocked test as live verification.
 - Keep release artifacts bound to the selected tag; MSI builds use a clean release environment without dev extras and must pass binary version smoke checks.
