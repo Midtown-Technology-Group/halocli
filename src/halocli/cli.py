@@ -835,11 +835,13 @@ def _report_sql_command(resource: HaloResource, op: ResourceOperation):
                 profile=profile,
             )
         )
-        render(result, output=output, table_fields=tuple(result.get("columns") or ()))
-        # Halo reports SQL failures with HTTP 201, so the exit code (not the
-        # transport) is what tells an operator/automation the query failed.
         if not result.get("ok"):
+            # Halo answers 201 for a failed statement, so this is the only place
+            # it can surface. Keep stdout clean for `> results.json` callers,
+            # matching `reports run`.
+            render_error(result)
             raise typer.Exit(1)
+        render(result, output=output, table_fields=tuple(result.get("columns") or ()))
 
     return command
 

@@ -690,6 +690,10 @@ def test_sql_surfaces_load_error_as_failure(monkeypatch: pytest.MonkeyPatch) -> 
     assert payload["status_code"] == 201
     assert "Invalid object name 'Invoice'" in payload["error"]
     assert "INFORMATION_SCHEMA" in payload["hint"]
+    # Failure text belongs on stderr: a caller redirecting stdout to a results
+    # file must not get an error document there.
+    assert result.stdout.strip() == ""
+    assert "Invalid object name 'Invoice'" in result.stderr
 
 
 def test_sql_fails_when_halo_reports_not_loaded(monkeypatch: pytest.MonkeyPatch) -> None:
