@@ -29,6 +29,12 @@ operator workflows, and major releases are reserved for breaking CLI behavior.
 - **Integration logs default to oldest-first.** The snapshot requests
   `order=date&orderdesc=true` (or `datelogged`) so a `--since 24h` window
   inspects today's failures instead of a page of 2026-05 rows; pinned by test.
+- **Review hardening:** paged streams now walk pages up to `--limit` and report
+  truncation against `record_count`; a non-JSON response is a stream error, not
+  an empty stream; `message` alone is no longer failure evidence for integrator
+  or notification logs; numeric monitoring severity is not guessed (the spec
+  defines no ordering); and document staleness uses the snapshot clock so tests
+  and replays are deterministic.
 
 ## 1.21.0 - 2026-11-12
 

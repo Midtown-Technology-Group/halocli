@@ -628,6 +628,10 @@ Behavior worth knowing:
 - **Newest first.** The integration logs are requested with
   `order=date&orderdesc=true`; without it Halo returns the oldest page and a
   `--since 24h` window would look clean.
+- **Bounded but complete within the ceiling.** Paged logs walk pages up to
+  `--limit` (max 500); when `record_count` shows more rows than were read, the
+  stream reports `truncated`. `message` on a successful integrator or
+  notification row is display text, not failure evidence.
 - **Per-stream degradation.** Each tab is attempted independently. A broken or
   absent route is reported as `unsupported` in `streams` plus a warning; it
   never fails the other streams. `/TaskMonitorEvent` (the Monitoring Events

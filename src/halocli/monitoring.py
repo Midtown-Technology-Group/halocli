@@ -222,24 +222,22 @@ def _failure_code(value: Any) -> bool:
 
 
 def _severity_number(value: Any) -> str:
-    # Halo's monitoring severity ordering is instance-configurable; numeric
-    # levels are treated as "lower is worse" (Trace=0 .. Critical=5 is the
-    # documented log-level order) and anything non-numeric as medium.
-    number = _code(value)
-    if number is None:
-        text = str(value or "").strip().lower()
-        if text in {"critical", "fatal", "error"}:
-            return "critical"
-        if text in {"warning", "warn"}:
-            return "high"
-        return "medium"
-    if number <= 1:
+    """Map explicit severity names; do not invent an order for bare numbers.
+
+    The vendored spec gives ``/TaskMonitorEvent`` no response schema, and
+    Halo's documented Trace..Critical ordering describes log verbosity, not
+    event severity. An unnamed numeric level therefore stays ``medium`` and the
+    raw value is kept in the issue detail instead of guessing which end is
+    worse.
+    """
+    text = str(value or "").strip().lower()
+    if text in {"critical", "fatal", "error"}:
         return "critical"
-    if number == 2:
+    if text in {"warning", "warn"}:
         return "high"
-    if number == 3:
-        return "medium"
-    return "low"
+    if text in {"low", "info", "information", "notice"}:
+        return "low"
+    return "medium"
 
 
 def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None:
@@ -295,7 +293,10 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
         )
 
     if name == "integrator-logs":
-        error = _text(row, "error", "message")
+        # A non-empty `message` is display text, not proof of failure: a
+        # successful run can say "Completed". Require an explicit error field
+        # or a failing status, and keep the message for the detail line.
+        error = _text(row, "error")
         status = row.get("status")
         failed = bool(error) or (isinstance(status, str) and status.lower() in {"fail", "failed"})
         if not failed:
@@ -305,7 +306,7 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
             key=_issue_key(row.get("module_id") or row.get("id")),
             severity="high",
             title="Halo Integrator run failed",
-            detail=error or f"status {status}",
+            detail=error or _text(row, "message") or f"status {status}",
             seen=seen,
             resource_id=row.get("id"),
         )
@@ -338,7 +339,8 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
         )
 
     if name == "notification-logs":
-        error = _text(row, "error", "message")
+        # Same rule as integrator logs: `message` alone is not failure proof.
+        error = _text(row, "error")
         status = str(row.get("status") or "").lower()
         if not error and status not in {"fail", "failed", "error"}:
             return None
@@ -347,7 +349,7 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
             key=_issue_key(row.get("id")),
             severity="medium",
             title=_text(row, "description") or "Notification/webhook delivery failed",
-            detail=error or f"status {row.get('status')}",
+            detail=error or _text(row, "message") or f"status {row.get('status')}",
             seen=seen,
             resource_id=row.get("id"),
         )
@@ -384,13 +386,16 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
     return None
 
 
-def classify_document(spec: StreamSpec, body: dict[str, Any]) -> list[dict[str, Any]]:
+def classify_document(
+    spec: StreamSpec, body: dict[str, Any], *, now: datetime | None = None
+) -> list[dict[str, Any]]:
     """Classify the two singleton documents (queue state and thread health)."""
     issues: list[dict[str, Any]] = []
+    current = now or datetime.now(timezone.utc)
     if spec.name == "task-schedule":
         last_run = parse_time(body.get("lastdailytaskrun"))
         if last_run is not None:
-            age = datetime.now(timezone.utc) - last_run
+            age = current - last_run
             if age > timedelta(hours=36):
                 issues.append(
                     _issue(
@@ -431,12 +436,16 @@ def classify_document(spec: StreamSpec, body: dict[str, Any]) -> list[dict[str, 
 
 
 ORDER_FIELDS = {"integration-errors": "date", "integration-requests": "datelogged"}
+PAGED_STREAMS = {"integration-errors", "integration-requests", "integrator-logs"}
+MAX_PAGE_SIZE = 100
 
 
-def _paging_params(spec: StreamSpec, limit: int) -> dict[str, Any]:
+def _paging_params(spec: StreamSpec, limit: int, page_no: int = 1) -> dict[str, Any]:
     params: dict[str, Any] = dict(spec.params)
-    if spec.name in {"integration-errors", "integration-requests", "integrator-logs"}:
-        params.update({"pageinate": True, "page_no": 1, "page_size": min(limit, 100)})
+    if spec.name in PAGED_STREAMS:
+        params.update(
+            {"pageinate": True, "page_no": page_no, "page_size": min(limit, MAX_PAGE_SIZE)}
+        )
     else:
         params["count"] = limit
     # These logs default to oldest-first; without ordering the window filter
@@ -444,6 +453,45 @@ def _paging_params(spec: StreamSpec, limit: int) -> dict[str, Any]:
     if spec.name in ORDER_FIELDS:
         params.update({"order": ORDER_FIELDS[spec.name], "orderdesc": True})
     return params
+
+
+def _require_payload(payload: Any) -> Any:
+    """Reject bytes/None so an HTML error page is never read as an empty stream."""
+    if isinstance(payload, (dict, list)):
+        return payload
+    kind = "binary" if isinstance(payload, (bytes, bytearray)) else type(payload).__name__
+    raise ValueError(f"expected a JSON collection or document payload, got {kind}")
+
+
+async def _read_collection(
+    client: Any, spec: StreamSpec, limit: int
+) -> tuple[list[dict], int | None]:
+    """Read up to ``limit`` rows, paging where the endpoint supports it."""
+    if spec.name not in PAGED_STREAMS:
+        payload = _require_payload(
+            await client.request("GET", spec.path, params=_paging_params(spec, limit))
+        )
+        page = parse_page_result(payload, list_key=spec.list_key)
+        return [row for row in page.items if isinstance(row, dict)], page.record_count
+
+    rows: list[dict[str, Any]] = []
+    record_count: int | None = None
+    page_size = min(limit, MAX_PAGE_SIZE)
+    page_no = 1
+    while len(rows) < limit:
+        payload = _require_payload(
+            await client.request("GET", spec.path, params=_paging_params(spec, limit, page_no))
+        )
+        page = parse_page_result(payload, list_key=spec.list_key)
+        if page.record_count is not None:
+            record_count = page.record_count
+        if not page.items:
+            break
+        rows.extend(row for row in page.items if isinstance(row, dict))
+        if len(page.items) < page_size:
+            break
+        page_no += 1
+    return rows, record_count
 
 
 def _stream_error(spec: StreamSpec, exc: Exception) -> dict[str, Any]:
@@ -468,32 +516,34 @@ async def _fetch_stream(
     *,
     limit: int,
     cutoff: datetime | None,
+    now: datetime,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     try:
-        payload = await client.request("GET", spec.path, params=_paging_params(spec, limit))
+        if spec.document:
+            payload = _require_payload(
+                await client.request("GET", spec.path, params=_paging_params(spec, limit))
+            )
+            body = normalize_halo_result(payload)
+            if not isinstance(body, dict):
+                raise ValueError("expected a document body")
+            issues = classify_document(spec, body, now=now)
+            meta = {
+                "status": "ok",
+                "rows": 1,
+                "records": None,
+                "filtered_out": 0,
+                "issue_count": len(issues),
+                "note": spec.note,
+            }
+            if spec.name == "task-schedule":
+                meta["queue"] = {key: len(body.get(key) or []) for key in QUEUE_KEYS}
+                meta["last_daily_task_run"] = body.get("lastdailytaskrun")
+            return meta, issues
+
+        rows, record_count = await _read_collection(client, spec, limit)
     except Exception as exc:  # noqa: BLE001 - one bad tab must not kill the snapshot
         return _stream_error(spec, exc), []
 
-    if spec.document:
-        body = normalize_halo_result(payload)
-        if not isinstance(body, dict):
-            return _stream_error(spec, ValueError("expected a document body")), []
-        issues = classify_document(spec, body)
-        meta = {
-            "status": "ok",
-            "rows": 1,
-            "records": None,
-            "filtered_out": 0,
-            "issue_count": len(issues),
-            "note": spec.note,
-        }
-        if spec.name == "task-schedule":
-            meta["queue"] = {key: len(body.get(key) or []) for key in QUEUE_KEYS}
-            meta["last_daily_task_run"] = body.get("lastdailytaskrun")
-        return meta, issues
-
-    page = parse_page_result(payload, list_key=spec.list_key)
-    rows = [row for row in page.items if isinstance(row, dict)]
     kept: list[dict[str, Any]] = []
     filtered_out = 0
     for row in rows:
@@ -512,12 +562,14 @@ async def _fetch_stream(
     meta = {
         "status": "ok",
         "rows": len(kept),
-        "records": page.record_count,
+        "records": record_count,
         "filtered_out": filtered_out,
         "issue_count": len(row_issues),
         "note": spec.note,
     }
-    if available > limit:
+    # Truncation is about coverage, not just the returned slice: a stream that
+    # reported more rows than we read (or hit the caller's ceiling) is partial.
+    if available > limit or (record_count is not None and record_count > len(rows)):
         meta["truncated"] = True
     return meta, row_issues
 
@@ -542,7 +594,9 @@ async def collect_snapshot(
     issues: list[dict[str, Any]] = []
 
     for spec in selected:
-        meta, stream_issues = await _fetch_stream(client, spec, limit=limit, cutoff=cutoff)
+        meta, stream_issues = await _fetch_stream(
+            client, spec, limit=limit, cutoff=cutoff, now=current
+        )
         stream_meta[spec.name] = meta
         issues.extend(stream_issues)
         if meta["status"] == "error":

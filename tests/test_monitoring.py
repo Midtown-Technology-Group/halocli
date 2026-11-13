@@ -352,11 +352,13 @@ def test_monitoring_commands_are_registered() -> None:
 def test_optional_stream_classifiers():
     assert core_severity("critical") == "critical"
     assert core_severity("warning") == "high"
+    assert core_severity("info") == "low"
     assert core_severity("not-a-number") == "medium"
-    assert core_severity(0) == "critical"
-    assert core_severity(2) == "high"
+    # No documented numeric ordering: never guess which end is worse.
+    assert core_severity(0) == "medium"
+    assert core_severity(2) == "medium"
     assert core_severity(3) == "medium"
-    assert core_severity(5) == "low"
+    assert core_severity(5) == "medium"
     assert core_severity(True) == "medium"
 
     monitoring = STREAM_BY_NAME["monitoring-events"]
@@ -365,17 +367,26 @@ def test_optional_stream_classifiers():
         {"id": 1, "severity": 2, "message": "webhook failed", "log_type": "Event"},
     )
     assert issue is not None
-    assert issue["severity"] == "high"
+    assert issue["severity"] == "medium"
     assert issue["title"] == "webhook failed"
 
     integrator = STREAM_BY_NAME["integrator-logs"]
     assert classify_row(integrator, {"id": 1, "status": "ok"}) is None
+    # A success row can carry a human message; that is not failure evidence.
+    assert (
+        classify_row(
+            integrator, {"id": 1, "status": "success", "message": "Completed successfully"}
+        )
+        is None
+    )
     failed = classify_row(integrator, {"id": 1, "status": "Failed"})
     assert failed is not None
     assert failed["severity"] == "high"
+    assert classify_row(integrator, {"id": 1, "error": "boom"}) is not None
 
     notifications = STREAM_BY_NAME["notification-logs"]
     assert classify_row(notifications, {"id": 1, "status": "sent"}) is None
+    assert classify_row(notifications, {"id": 1, "status": "sent", "message": "delivered"}) is None
     assert classify_row(notifications, {"id": 1, "error": "boom"}) is not None
 
     bulk = STREAM_BY_NAME["bulk-emails"]
@@ -422,6 +433,66 @@ def test_health_near_saturation_and_grouping_edge_cases():
     assert grouped[0]["title"] == "worst"
     assert grouped[0]["first_seen"] == _iso(30)
     assert grouped[0]["detail"] == "latest"
+
+
+def test_document_staleness_uses_the_snapshot_clock():
+    tasks = dict(_all_streams()["/TaskSchedule"])
+    tasks["lastdailytaskrun"] = "2030-01-01T00:00:00"
+    future = datetime(2030, 1, 3, tzinfo=timezone.utc)
+    snapshot = asyncio.run(
+        collect_snapshot(
+            FakeClient(_all_streams(**{"/TaskSchedule": tasks})),
+            since=None,
+            streams=["task-schedule"],
+            now=future,
+        )
+    )
+    assert [issue["key"] for issue in snapshot["issues"]] == ["task-schedule|daily-task-run"]
+
+
+def test_paged_streams_honor_the_requested_limit():
+    class PagedClient:
+        def __init__(self):
+            self.pages = []
+
+        async def request(self, method, path, *, params=None, **kwargs):
+            page_no = params["page_no"]
+            self.pages.append(page_no)
+            start = (page_no - 1) * 100
+            rows = [
+                {
+                    "id": start + index,
+                    "date": _iso(),
+                    "module_name": "M",
+                    "entity_type": "E",
+                    "entity_id": start + index,
+                    "error": "boom",
+                }
+                for index in range(100)
+            ]
+            return {"errors": rows, "record_count": 250}
+
+    client = PagedClient()
+    snapshot = asyncio.run(
+        collect_snapshot(client, since=None, streams=["integration-errors"], limit=150, now=NOW)
+    )
+    state = snapshot["streams"]["integration-errors"]
+    assert client.pages == [1, 2]
+    assert state["rows"] == 150
+    assert state["records"] == 250
+    assert state["truncated"] is True
+
+
+def test_invalid_collection_payload_is_a_stream_error():
+    snapshot = _run(
+        _all_streams(**{"/NotificationLog": b"<html>gateway error</html>"}),
+        since=None,
+        streams=["notification-logs"],
+    )
+    state = snapshot["streams"]["notification-logs"]
+    assert state["status"] == "error"
+    assert "JSON collection" in state["error"]
+    assert any("notification-logs" in warning for warning in snapshot["warnings"])
 
 
 def test_snapshot_rejects_bad_limit_and_document_body():
