@@ -1,16 +1,16 @@
 {
  "_meta": {
   "disposition_counts": {
-   "backlog": 16,
-   "deliberately-raw": 934,
+   "backlog": 22,
+   "deliberately-raw": 922,
    "dormant": 10,
-   "first-class": 521,
-   "junk": 26
+   "first-class": 528,
+   "junk": 25
   },
   "generated_by": "scripts/build_coverage_ledger.py",
   "operation_count": 1507,
-  "policy_sha256": "fd1b00929e3dc4e57c0c60066bedd0ce2ef7884fc3a50e5f02bb728d3abc9b57",
-  "spec_sha256": "86caaa6593ba27430c1f4d30d7f0a120b8d544d1a0b44f177d40f1cab32b728f",
+  "policy_sha256": "403371c38c0a5d7b4f46470740672ba1f0e4e727fcc2dda1b6e6662625f76bb3",
+  "spec_sha256": "4698b291db24a0c06268681a81975430bfda8c7e5b05fdaa81143c8d7ef1fff0",
   "sweep": {
    "entries": 797,
    "file": "sweep_results.json",
@@ -5103,32 +5103,32 @@
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "integration error log; integrator diagnostics, not operator surface",
+   "note": "",
    "path": "/IntegrationError",
-   "via": ""
+   "via": "halocli integration-errors list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "backlog",
    "method": "post",
-   "note": "integration error log; integrator diagnostics, not operator surface",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/IntegrationError",
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "backlog",
    "method": "delete",
-   "note": "integration error log; integrator diagnostics, not operator surface",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/IntegrationError/{id}",
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "integration error log; integrator diagnostics, not operator surface",
+   "note": "",
    "path": "/IntegrationError/{id}",
-   "via": ""
+   "via": "halocli integration-errors get"
   },
   {
    "disposition": "deliberately-raw",
@@ -5187,32 +5187,32 @@
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "integration request log; integrator plumbing",
+   "note": "",
    "path": "/IntegrationRequest",
-   "via": ""
+   "via": "halocli integration-requests list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "backlog",
    "method": "post",
-   "note": "integration request log; integrator plumbing",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/IntegrationRequest",
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "backlog",
    "method": "delete",
-   "note": "integration request log; integrator plumbing",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/IntegrationRequest/{id}",
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "integration request log; integrator plumbing",
+   "note": "",
    "path": "/IntegrationRequest/{id}",
-   "via": ""
+   "via": "halocli integration-requests get"
   },
   {
    "disposition": "first-class",
@@ -5236,11 +5236,11 @@
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "integrator log (GET-only); sync diagnostics",
+   "note": "",
    "path": "/IntegratorLog",
-   "via": ""
+   "via": "halocli integrator-logs list"
   },
   {
    "disposition": "deliberately-raw",
@@ -6517,11 +6517,11 @@
    "via": "halocli notifications get"
   },
   {
-   "disposition": "junk",
+   "disposition": "first-class",
    "method": "get",
-   "note": "single undocumented GET, no params; vestigial-looking",
+   "note": "",
    "path": "/NotificationLog",
-   "via": ""
+   "via": "halocli notification-logs list"
   },
   {
    "disposition": "first-class",
@@ -6762,23 +6762,23 @@
    "via": "halocli outgoing-attempts get"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "first-class",
    "method": "get",
-   "note": "POST queues outbound mail (send surface); raw, overlaps /Outgoing",
+   "note": "",
    "path": "/Outgoingemail",
-   "via": ""
+   "via": "halocli outgoing-emails list"
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "backlog",
    "method": "post",
-   "note": "POST queues outbound mail (send surface); raw, overlaps /Outgoing",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Outgoingemail",
    "via": ""
   },
   {
-   "disposition": "deliberately-raw",
+   "disposition": "backlog",
    "method": "delete",
-   "note": "POST queues outbound mail (send surface); raw, overlaps /Outgoing",
+   "note": "segment is registry-covered but this operation is not registry-mapped - promote it or argue it",
    "path": "/Outgoingemail/{id}",
    "via": ""
   },

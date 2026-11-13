@@ -2770,6 +2770,16 @@
       "target": "$.paths['/Webhook/{id}'].delete.description",
       "description": "curated summary for a surfaced operation",
       "update": "Removes the document with its steps. Delete-verified on the trial (2026-10-05) for both a minimal probe and an imported 4-step runbook."
+    },
+    {
+      "target": "$.paths['/NotificationLog'].get.summary",
+      "description": "curated summary for a surfaced operation",
+      "update": "List backend notification and webhook delivery log entries"
+    },
+    {
+      "target": "$.paths['/NotificationLog'].get.description",
+      "description": "curated description for a surfaced operation",
+      "update": "Returns the notification/webhook delivery log held by Backend Service Monitoring. The response is a bare list and the tenant may hold no rows. Read-only."
     }
   ]
 }

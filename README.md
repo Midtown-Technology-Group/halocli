@@ -591,6 +591,58 @@ Ideas adapted from Servosity's msp-skills halopsa CLI (Apache-2.0) — the
 SELECT-only guard stance and the hand-written digest concept; every field
 note above was re-proven against our own tenant.
 
+## Backend Service Monitoring: one ranked issue list
+
+Halo's **Configuration > Advanced Settings > Backend Service Monitoring** area
+spreads failures across ten tabs with different envelopes. `halocli monitoring`
+reads them once and returns one ranked, deduplicated issue list:
+
+```powershell
+halocli monitoring issues --since 24h          # triage / paging surface
+halocli monitoring issues --fail-on-issue      # exit 2 when anything is wrong
+halocli monitoring snapshot --since 7d         # issues + per-stream state
+halocli monitoring health                      # worker/asyncio thread pools
+halocli monitoring queue                       # current task-scheduler backlog
+```
+
+What is read, and why:
+
+| Stream | Route | Signal |
+| --- | --- | --- |
+| Integration errors | `GET /IntegrationError` | every row is a failed sync |
+| Integration requests | `GET /IntegrationRequest` | `resultcode` 4xx/5xx |
+| Halo Integrator | `GET /IntegratorLog` | failed run markers |
+| Schedule occurrences | `GET /ScheduleOccurrence` | error text or no retries left |
+| Outgoing mail | `GET /Outgoingemail?errorsonly=true` | failed sends |
+| Notifications | `GET /NotificationLog` | delivery errors |
+| Bulk mail | `GET /BulkEmail` | failed/retrying campaigns |
+| Mail campaigns | `GET /MailCampaignLog` | failed recipient counts |
+| Task scheduler | `GET /TaskSchedule` | backlog over `--queue-threshold` (default 25), stale daily run |
+| Health | `GET /Health` | exhausted/near-exhausted worker pool |
+
+Behavior worth knowing:
+
+- **Grouped, not row-spammed.** Repeated failures with the same key collapse
+  into one issue carrying `count`, `first_seen`, `last_seen`, and up to ten
+  sample `resource_ids`. A retry loop becomes one alert that gets louder.
+- **Newest first.** The integration logs are requested with
+  `order=date&orderdesc=true`; without it Halo returns the oldest page and a
+  `--since 24h` window would look clean.
+- **Per-stream degradation.** Each tab is attempted independently. A broken or
+  absent route is reported as `unsupported` in `streams` plus a warning; it
+  never fails the other streams. `/TaskMonitorEvent` (the Monitoring Events
+  tab) answers HTTP 500 on 2.250.x, so it is attempted but not advertised as a
+  registry resource.
+- **Read-only.** Resend/retry/reprocess remain `halocli raw` calls: the
+  vendored spec documents no payload for them, and guessing at a mail or
+  automation write is not a safe default. The same evidence feeds the Bifrost
+  `halo-service-monitoring` Solution, which adds durable tracking and alerting.
+
+The raw rows are still available as first-class reads when you want them:
+`halocli integrator-logs list`, `halocli integration-errors list`,
+`halocli integration-requests list`, `halocli notification-logs list`, and
+`halocli outgoing-emails list --param errorsonly=true`.
+
 ## Ad-hoc SQL Through Halo's Reporting API
 
 Halo has no SQL endpoint — it executes SQL through the **reporting API**.

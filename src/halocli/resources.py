@@ -3298,6 +3298,70 @@ RESOURCES: tuple[HaloResource, ...] = (
         list_key="emails",
         # GET /{id} answers 400 with a probe token = route alive.
     ),
+    # --- Backend service monitoring -------------------------------------------
+    # Halo's Configuration > Advanced Settings > Backend Service Monitoring
+    # tabs, as read surfaces. Live-verified 2026-11-13 against the operator
+    # tenant (2.250.x): row keys below are the observed payload shapes, and
+    # envelope keys come from the response bodies, not the spec (several of
+    # these routes have no documented response schema).
+    HaloResource(
+        "integrator-logs",
+        "/IntegratorLog",
+        aliases=("integrator-log",),
+        # body: {page_no, page_size, record_count, results}; 0 rows on the
+        # operator tenant, so table_fields stay generic.
+        table_fields=("id", "date", "status", "module_name", "error"),
+        list_key="results",
+        supports_get=False,
+    ),
+    HaloResource(
+        "integration-errors",
+        "/IntegrationError",
+        aliases=("integration-error",),
+        # body: {errors: [...], record_count}; live row keys observed.
+        table_fields=(
+            "id",
+            "date",
+            "module_name",
+            "entity_type",
+            "entity_name",
+            "error",
+        ),
+        list_key="errors",
+    ),
+    HaloResource(
+        "integration-requests",
+        "/IntegrationRequest",
+        aliases=("integration-request",),
+        # body: {requests: [...], record_count}; inbound/outbound integrations.
+        table_fields=(
+            "id",
+            "datelogged",
+            "isoutgoing",
+            "operation",
+            "type",
+            "resultcode",
+            "url",
+        ),
+        list_key="requests",
+    ),
+    HaloResource(
+        "notification-logs",
+        "/NotificationLog",
+        aliases=("notification-log",),
+        # body is a bare list. 0 rows live, so fields stay generic.
+        table_fields=("id", "date", "description", "status", "error"),
+        supports_get=False,
+    ),
+    HaloResource(
+        "outgoing-emails",
+        "/Outgoingemail",
+        aliases=("outgoing-email",),
+        # body is a bare list; --param errorsonly=true filters failures.
+        # Writes stay deliberately-raw (mail stance) via op_overrides.
+        table_fields=("id", "datesent", "to", "subject", "error"),
+        supports_get=False,
+    ),
 )
 
 RESOURCE_BY_NAME = {resource.name: resource for resource in RESOURCES}

@@ -22,6 +22,12 @@ from halocli.config import AuthMode, HaloProfile, load_profile, save_profile, up
 from halocli.discovery import DiscoveryStatus, discover_auth
 from halocli.errors import HaloCLIError, classify_error, diagnose_permission_failure
 from halocli.models import TokenPayload
+from halocli.monitoring import (
+    STREAM_BY_NAME,
+    collect_snapshot,
+    issues_only,
+    parse_since,
+)
 from halocli.output import progress, render, render_error, warn
 from halocli.labels import hydrate_items
 from halocli.resources import RESOURCES, HaloResource, ResourceOperation, get_resource
@@ -61,8 +67,12 @@ from halocli.utils import DEFAULT_LIST_LIMIT, list_all, normalize_halo_result
 app = typer.Typer(help="HaloPSA CLI for safe operator and automation workflows.")
 auth_app = typer.Typer(help="Authentication helpers.")
 todo_app = typer.Typer(help="Create and preview lightweight Halo Todo tasks.")
+monitoring_app = typer.Typer(
+    help="Read Halo's backend service monitoring tabs (logs, queues, health)."
+)
 app.add_typer(auth_app, name="auth")
 app.add_typer(todo_app, name="todo")
+app.add_typer(monitoring_app, name="monitoring")
 
 
 def main() -> None:
@@ -1643,6 +1653,179 @@ async def _bulk_apply(
     if not payload["ok"]:
         raise typer.Exit(1)
     return payload
+
+
+# --------------------------------------------------------- backend monitoring
+# Read-only triage over Halo's Backend Service Monitoring tabs. Each tab has a
+# different envelope and failure mode; the snapshot degrades per stream instead
+# of failing the whole read. Resend/retry/reprocess stay on `raw`: the vendored
+# spec documents no payload for them, so a first-class command would guess.
+
+
+def _monitoring_window(value: str):
+    try:
+        return parse_since(value)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+
+def _monitoring_streams(names: list[str] | None) -> list[str] | None:
+    if not names:
+        return None
+    unknown = sorted({name for name in names if name not in STREAM_BY_NAME})
+    if unknown:
+        choices = ", ".join(STREAM_BY_NAME)
+        raise typer.BadParameter(f"unknown stream(s): {', '.join(unknown)}; choose from {choices}")
+    return names
+
+
+def _monitoring_limit(value: int) -> int:
+    if value < 1 or value > 500:
+        raise typer.BadParameter("--limit must be between 1 and 500")
+    return value
+
+
+async def _run_monitoring_snapshot(
+    *,
+    profile: str,
+    output: str,
+    since: str,
+    limit: int,
+    streams: list[str] | None,
+    queue_threshold: int,
+    triage_only: bool,
+) -> dict:
+    window = _monitoring_window(since)
+    selected = _monitoring_streams(streams)
+    safe_limit = _monitoring_limit(limit)
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        snapshot = await collect_snapshot(
+            client,
+            since=window,
+            limit=safe_limit,
+            streams=selected,
+            queue_threshold=max(0, queue_threshold),
+        )
+    payload = issues_only(snapshot) if triage_only else snapshot
+    render(payload, output=output)
+    return payload
+
+
+async def _run_monitoring_document(*, profile: str, output: str, path: str, key: str) -> None:
+    halo_profile = load_profile(profile)
+    async with HaloClient(halo_profile, profile_name=profile) as client:
+        body = await client.request("GET", path)
+    render({"ok": True, key: normalize_halo_result(body)}, output=output)
+
+
+@monitoring_app.command("snapshot")
+def monitoring_snapshot(
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    since: Annotated[
+        str,
+        typer.Option("--since", help="Window for timestamped rows: 90m, 24h, 7d, or all."),
+    ] = "24h",
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Maximum rows read per stream (1-500)."),
+    ] = 200,
+    stream: Annotated[
+        list[str] | None,
+        typer.Option("--stream", help="Only these streams (repeatable)."),
+    ] = None,
+    queue_threshold: Annotated[
+        int,
+        typer.Option("--queue-threshold", help="Pending-item count that counts as a backlog."),
+    ] = 25,
+) -> None:
+    """Read every backend monitoring tab once and return ranked issues.
+
+    Each stream is attempted independently. A tab that is missing on this Halo
+    version is reported as unsupported instead of failing the others.
+    """
+    _run(
+        _run_monitoring_snapshot(
+            profile=profile,
+            output=output,
+            since=since,
+            limit=limit,
+            streams=stream,
+            queue_threshold=queue_threshold,
+            triage_only=False,
+        )
+    )
+
+
+@monitoring_app.command("issues")
+def monitoring_issues(
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+    since: Annotated[
+        str,
+        typer.Option("--since", help="Window for timestamped rows: 90m, 24h, 7d, or all."),
+    ] = "24h",
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Maximum rows read per stream (1-500)."),
+    ] = 200,
+    stream: Annotated[
+        list[str] | None,
+        typer.Option("--stream", help="Only these streams (repeatable)."),
+    ] = None,
+    queue_threshold: Annotated[
+        int,
+        typer.Option("--queue-threshold", help="Pending-item count that counts as a backlog."),
+    ] = 25,
+    fail_on_issue: Annotated[
+        bool,
+        typer.Option(
+            "--fail-on-issue",
+            help="Exit 2 when any issue is present (for cron/paging wrappers).",
+        ),
+    ] = False,
+) -> None:
+    """Return only the ranked issues (the alerting/paging surface)."""
+    payload = _run(
+        _run_monitoring_snapshot(
+            profile=profile,
+            output=output,
+            since=since,
+            limit=limit,
+            streams=stream,
+            queue_threshold=queue_threshold,
+            triage_only=True,
+        )
+    )
+    if fail_on_issue and payload.get("counts", {}).get("total", 0):
+        raise typer.Exit(2)
+
+
+@monitoring_app.command("health")
+def monitoring_health(
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Return Halo's worker/asyncio thread-pool document."""
+    _run(
+        _run_monitoring_document(
+            profile=profile, output=output, path="/Health", key="health"
+        )
+    )
+
+
+@monitoring_app.command("queue")
+def monitoring_queue(
+    profile: Annotated[str, typer.Option("--profile")] = "default",
+    output: Annotated[str, typer.Option("--output", "-o")] = "json",
+) -> None:
+    """Return the current task-scheduler queue document and its pending counts."""
+    _run(
+        _run_monitoring_document(
+            profile=profile, output=output, path="/TaskSchedule", key="task_schedule"
+        )
+    )
 
 
 # --------------------------------------------------------------------- mirror
