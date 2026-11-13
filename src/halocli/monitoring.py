@@ -367,15 +367,15 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
         )
 
     if name == "mail-campaign-logs":
-        failed = _code(row.get("failed")) or _code(row.get("failure_count"))
-        if not failed:
+        failed_count = _code(row.get("failed")) or _code(row.get("failure_count"))
+        if not failed_count:
             return None
         return _issue(
             stream=name,
             key=_issue_key(row.get("id")),
             severity="medium",
             title="Mail campaign has failed recipients",
-            detail=f"{failed} recipient(s) failed",
+            detail=f"{failed_count} recipient(s) failed",
             seen=seen,
             resource_id=row.get("id"),
         )
@@ -503,22 +503,22 @@ async def _fetch_stream(
         kept.append(row)
     available = len(kept)
     kept = kept[:limit]
-    issues: list[dict[str, Any]] = []
+    row_issues: list[dict[str, Any]] = []
     for row in kept:
         issue = classify_row(spec, row)
         if issue is not None:
-            issues.append(issue)
+            row_issues.append(issue)
     meta = {
         "status": "ok",
         "rows": len(kept),
         "records": page.record_count,
         "filtered_out": filtered_out,
-        "issue_count": len(issues),
+        "issue_count": len(row_issues),
         "note": spec.note,
     }
     if available > limit:
         meta["truncated"] = True
-    return meta, issues
+    return meta, row_issues
 
 
 async def collect_snapshot(
