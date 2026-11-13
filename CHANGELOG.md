@@ -6,6 +6,36 @@ HaloCLI uses semantic-ish versioning while it is young: patch releases are
 small fixes and packaging polish, minor releases may add commands or change
 operator workflows, and major releases are reserved for breaking CLI behavior.
 
+## 1.22.0 - 2026-11-13
+
+- **`halocli monitoring` turns Halo's Backend Service Monitoring tabs into one
+  ranked issue list.** `snapshot` reads integration errors, integration
+  requests, the Halo Integrator log, schedule occurrences, failed outgoing
+  mail, notification logs, bulk mail, mail campaigns, the task-scheduler queue
+  document, and `/Health`; `issues` returns only the triage surface. Repeated
+  failures collapse into one grouped issue with `count`, `first_seen`,
+  `last_seen`, and bounded sample ids, so a retry loop pages once, not 56
+  times. `--fail-on-issue` exits 2 for cron/paging wrappers.
+- **Per-stream degradation is explicit.** Each tab is attempted independently;
+  a route that is missing or broken (for example `/TaskMonitorEvent` answers
+  HTTP 500 on 2.250.x) is reported as `unsupported` with a warning instead of
+  failing the whole read. `/TaskMonitorEvent` stays out of the registry because
+  advertising a command that always 500s is worse than reporting it unavailable.
+- **New read resources:** `integrator-logs`, `integration-errors`,
+  `integration-requests`, `notification-logs`, and `outgoing-emails`
+  (`--param errorsonly=true`). Resend/retry/reprocess stay on `raw`: the
+  vendored spec documents no payload for them, so a first-class command would
+  be a guess.
+- **Integration logs default to oldest-first.** The snapshot requests
+  `order=date&orderdesc=true` (or `datelogged`) so a `--since 24h` window
+  inspects today's failures instead of a page of 2026-05 rows; pinned by test.
+- **Review hardening:** paged streams now walk pages up to `--limit` and report
+  truncation against `record_count`; a non-JSON response is a stream error, not
+  an empty stream; `message` alone is no longer failure evidence for integrator
+  or notification logs; numeric monitoring severity is not guessed (the spec
+  defines no ordering); and document staleness uses the snapshot clock so tests
+  and replays are deterministic.
+
 ## 1.21.0 - 2026-11-12
 
 - **`halocli reports sql "SELECT ..."` runs ad-hoc SQL against the tenant and

@@ -1094,9 +1094,9 @@
       "methods": "DELETE,GET,POST"
     },
     "IntegrationError": {
-      "disposition": "deliberately-raw",
-      "reason": "integration error log; integrator diagnostics, not operator surface",
-      "evidence": "List of IntegrationError",
+      "disposition": "covered",
+      "reason": "live 2026-11-13: error rows returned to the backend monitoring reader",
+      "evidence": "GET /IntegrationError body.errors row keys observed",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
@@ -1122,9 +1122,9 @@
       "methods": "GET"
     },
     "IntegrationRequest": {
-      "disposition": "deliberately-raw",
-      "reason": "integration request log; integrator plumbing",
-      "evidence": "List of IntegrationRequest",
+      "disposition": "covered",
+      "reason": "live 2026-11-13: request rows returned to the backend monitoring reader",
+      "evidence": "GET /IntegrationRequest body.requests row keys observed (resultcode/isoutgoing)",
       "ops": 4,
       "methods": "DELETE,GET,POST"
     },
@@ -1143,9 +1143,9 @@
       "methods": "GET"
     },
     "IntegratorLog": {
-      "disposition": "deliberately-raw",
-      "reason": "integrator log (GET-only); sync diagnostics",
-      "evidence": "List of IntegratorLog",
+      "disposition": "covered",
+      "reason": "live 2026-11-13: paged run log returned to the backend monitoring reader",
+      "evidence": "GET /IntegratorLog body.results (empty on the operator tenant)",
       "ops": 1,
       "methods": "GET"
     },
@@ -1486,9 +1486,9 @@
       "methods": "DELETE,GET,POST"
     },
     "NotificationLog": {
-      "disposition": "junk-or-dead",
-      "reason": "single undocumented GET, no params; vestigial-looking",
-      "evidence": "GET /NotificationLog: no summary/params",
+      "disposition": "covered",
+      "reason": "live 2026-11-13: route answers 200 (empty list) and is read by the backend monitoring reader",
+      "evidence": "GET /NotificationLog returns a bare list",
       "ops": 1,
       "methods": "GET"
     },
@@ -1563,9 +1563,9 @@
       "methods": "GET"
     },
     "Outgoingemail": {
-      "disposition": "deliberately-raw",
-      "reason": "POST queues outbound mail (send surface); raw, overlaps /Outgoing",
-      "evidence": "POST /Outgoingemail; no GET /{id} detail route",
+      "disposition": "covered",
+      "reason": "live 2026-11-13: failed-mail reads (errorsonly=true) used by the backend monitoring reader; writes stay raw",
+      "evidence": "GET /Outgoingemail returns a bare list; errorsonly filter",
       "ops": 3,
       "methods": "DELETE,GET,POST"
     },
