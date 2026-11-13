@@ -13,11 +13,20 @@ from halocli.cli import app
 from halocli.errors import HaloCLIError
 from halocli.monitoring import (
     STREAM_BY_NAME,
+    StreamSpec,
+    _severity_number,
+    classify_document,
+    classify_row,
     collect_snapshot,
+    group_issues,
     issues_only,
     parse_since,
     parse_time,
 )
+
+
+def core_severity(value):
+    return _severity_number(value)
 
 
 NOW = datetime(2026, 11, 13, 16, 0, tzinfo=timezone.utc)
@@ -338,3 +347,151 @@ def test_monitoring_commands_are_registered() -> None:
     assert "snapshot" in result.output
     assert "issues" in result.output
     assert "queue" in result.output
+
+
+def test_optional_stream_classifiers():
+    assert core_severity("critical") == "critical"
+    assert core_severity("warning") == "high"
+    assert core_severity("not-a-number") == "medium"
+    assert core_severity(0) == "critical"
+    assert core_severity(2) == "high"
+    assert core_severity(3) == "medium"
+    assert core_severity(5) == "low"
+    assert core_severity(True) == "medium"
+
+    monitoring = STREAM_BY_NAME["monitoring-events"]
+    issue = classify_row(
+        monitoring,
+        {"id": 1, "severity": 2, "message": "webhook failed", "log_type": "Event"},
+    )
+    assert issue is not None
+    assert issue["severity"] == "high"
+    assert issue["title"] == "webhook failed"
+
+    integrator = STREAM_BY_NAME["integrator-logs"]
+    assert classify_row(integrator, {"id": 1, "status": "ok"}) is None
+    failed = classify_row(integrator, {"id": 1, "status": "Failed"})
+    assert failed is not None
+    assert failed["severity"] == "high"
+
+    notifications = STREAM_BY_NAME["notification-logs"]
+    assert classify_row(notifications, {"id": 1, "status": "sent"}) is None
+    assert classify_row(notifications, {"id": 1, "error": "boom"}) is not None
+
+    bulk = STREAM_BY_NAME["bulk-emails"]
+    assert classify_row(bulk, {"id": 1, "status": "sent"}) is None
+    retrying = classify_row(bulk, {"id": 1, "status": "pending", "next_retry_date": _iso()})
+    assert retrying is not None
+    assert "next retry" in retrying["detail"]
+
+    campaigns = STREAM_BY_NAME["mail-campaign-logs"]
+    assert classify_row(campaigns, {"id": 1}) is None
+    assert classify_row(campaigns, {"id": 1, "failure_count": "3"}) is not None
+
+    assert classify_row(monitoring, {}) is not None
+    unknown = StreamSpec("unknown-stream", "/Unknown")
+    assert classify_row(unknown, {"id": 1}) is None
+
+
+def test_health_near_saturation_and_grouping_edge_cases():
+    near = classify_document(
+        STREAM_BY_NAME["backend-health"],
+        {
+            "inuse_worker_threads": 95,
+            "available_worker_threads": 5,
+            "max_worker_threads": 100,
+        },
+    )
+    assert near[0]["severity"] == "high"
+
+    grouped = group_issues(
+        [
+            {"key": "k", "severity": "medium", "title": "worse", "last_seen": _iso(10)},
+            {
+                "key": "k",
+                "severity": "critical",
+                "title": "worst",
+                "last_seen": _iso(1),
+                "detail": "latest",
+            },
+            {"key": "k", "severity": "low", "title": "old", "last_seen": _iso(30)},
+        ]
+    )
+    assert len(grouped) == 1
+    assert grouped[0]["severity"] == "critical"
+    assert grouped[0]["title"] == "worst"
+    assert grouped[0]["first_seen"] == _iso(30)
+    assert grouped[0]["detail"] == "latest"
+
+
+def test_snapshot_rejects_bad_limit_and_document_body():
+    with pytest.raises(ValueError):
+        asyncio.run(collect_snapshot(FakeClient(_all_streams()), limit=0))
+    snapshot = _run(
+        _all_streams(**{"/Health": ["not-a-document"]}), since=None, streams=["backend-health"]
+    )
+    assert snapshot["streams"]["backend-health"]["status"] == "error"
+
+
+class _FakeHaloClient:
+    responses = _all_streams()
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        return False
+
+    async def request(self, method, path, *, params=None, **kwargs):
+        value = self.responses.get(path, [])
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+
+def _cli(monkeypatch):
+    import halocli.cli as cli
+
+    monkeypatch.setattr(cli, "load_profile", lambda name: object())
+    monkeypatch.setattr(cli, "HaloClient", _FakeHaloClient)
+    return get_command(app)
+
+
+def test_cli_issues_exits_two_when_issues_exist(monkeypatch):
+    _FakeHaloClient.responses = _all_streams(
+        **{"/Outgoingemail": [{"id": 9, "datesent": _iso(), "subject": "s", "error": "e"}]}
+    )
+    result = ClickCliRunner().invoke(
+        _cli(monkeypatch),
+        ["monitoring", "issues", "--since", "all", "--fail-on-issue"],
+    )
+    assert result.exit_code == 2
+    assert '"total": 1' in result.output
+
+
+def test_cli_snapshot_and_document_commands(monkeypatch):
+    _FakeHaloClient.responses = _all_streams()
+    cli_app = _cli(monkeypatch)
+    snapshot = ClickCliRunner().invoke(cli_app, ["monitoring", "snapshot", "--since", "all"])
+    assert snapshot.exit_code == 0
+    assert '"streams"' in snapshot.output
+    health = ClickCliRunner().invoke(cli_app, ["monitoring", "health"])
+    assert health.exit_code == 0
+    assert '"health"' in health.output
+    queue = ClickCliRunner().invoke(cli_app, ["monitoring", "queue"])
+    assert queue.exit_code == 0
+    assert '"task_schedule"' in queue.output
+
+
+def test_cli_monitoring_input_validation(monkeypatch):
+    cli_app = _cli(monkeypatch)
+    for args in (
+        ["monitoring", "issues", "--since", "eventually"],
+        ["monitoring", "issues", "--stream", "nope"],
+        ["monitoring", "issues", "--limit", "0"],
+    ):
+        result = ClickCliRunner().invoke(cli_app, args)
+        assert result.exit_code != 0
