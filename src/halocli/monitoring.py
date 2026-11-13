@@ -276,7 +276,8 @@ def classify_row(spec: StreamSpec, row: dict[str, Any]) -> dict[str, Any] | None
             key=_issue_key(kind, operation, _text(row, "url") or row.get("msid") or row.get("id")),
             severity="high",
             title=f"Integration {kind} request failed: {operation}",
-            detail=_text(row, "error") or _text(row, "response_body")
+            detail=_text(row, "error")
+            or _text(row, "response_body")
             or f"HTTP {row.get('resultcode')}",
             seen=seen,
             resource_id=row.get("id"),
@@ -541,9 +542,7 @@ async def collect_snapshot(
     issues: list[dict[str, Any]] = []
 
     for spec in selected:
-        meta, stream_issues = await _fetch_stream(
-            client, spec, limit=limit, cutoff=cutoff
-        )
+        meta, stream_issues = await _fetch_stream(client, spec, limit=limit, cutoff=cutoff)
         stream_meta[spec.name] = meta
         issues.extend(stream_issues)
         if meta["status"] == "error":
@@ -611,9 +610,7 @@ def group_issues(issues: list[dict[str, Any]], *, sample_limit: int = 10) -> lis
             grouped[key] = merged
             continue
         current["count"] += 1
-        if SEVERITY_RANK.get(issue["severity"], 9) < SEVERITY_RANK.get(
-            current["severity"], 9
-        ):
+        if SEVERITY_RANK.get(issue["severity"], 9) < SEVERITY_RANK.get(current["severity"], 9):
             current["severity"] = issue["severity"]
             current["title"] = issue["title"]
         seen = issue.get("last_seen")

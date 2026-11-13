@@ -226,9 +226,7 @@ def test_repeated_same_failure_groups_into_one_issue() -> None:
         for index in range(3)
     ]
     snapshot = _run(
-        _all_streams(
-            **{"/IntegrationError": {"errors": rows, "record_count": len(rows)}}
-        ),
+        _all_streams(**{"/IntegrationError": {"errors": rows, "record_count": len(rows)}}),
         since=None,
         streams=["integration-errors"],
     )
@@ -290,8 +288,7 @@ def test_log_streams_request_newest_first() -> None:
 
 def test_limit_bounds_rows_and_reports_truncation() -> None:
     rows = [
-        {"id": 40 + index, "datesent": _iso(), "subject": "s", "error": "e"}
-        for index in range(3)
+        {"id": 40 + index, "datesent": _iso(), "subject": "s", "error": "e"} for index in range(3)
     ]
     snapshot = _run(_all_streams(**{"/Outgoingemail": rows}), since=None, limit=1)
     assert len(snapshot["issues"]) == 1
@@ -303,9 +300,7 @@ def test_task_schedule_backlog_and_stale_daily_run() -> None:
     tasks = _healthy_tasks()
     tasks["events"] = [{"id": index} for index in range(30)]
     tasks["lastdailytaskrun"] = _iso(60 * 40)
-    snapshot = _run(
-        _all_streams(**{"/TaskSchedule": tasks}), since=None, queue_threshold=25
-    )
+    snapshot = _run(_all_streams(**{"/TaskSchedule": tasks}), since=None, queue_threshold=25)
     keys = {issue["key"] for issue in snapshot["issues"]}
     assert "task-schedule|backlog:events" in keys
     assert "task-schedule|daily-task-run" in keys

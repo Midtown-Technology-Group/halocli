@@ -1808,11 +1808,7 @@ def monitoring_health(
     output: Annotated[str, typer.Option("--output", "-o")] = "json",
 ) -> None:
     """Return Halo's worker/asyncio thread-pool document."""
-    _run(
-        _run_monitoring_document(
-            profile=profile, output=output, path="/Health", key="health"
-        )
-    )
+    _run(_run_monitoring_document(profile=profile, output=output, path="/Health", key="health"))
 
 
 @monitoring_app.command("queue")
